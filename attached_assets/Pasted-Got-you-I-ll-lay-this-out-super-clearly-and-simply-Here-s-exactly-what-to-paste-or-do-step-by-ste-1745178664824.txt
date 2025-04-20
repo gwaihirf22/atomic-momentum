@@ -1,0 +1,180 @@
+Got you — I’ll lay this out super clearly and simply:
+Here’s exactly what to paste or do step-by-step inside Replit to get Atomic Momentum running.
+
+⸻
+
+Step 1 — Create the Project
+	•	Open Replit App (or Replit in browser)
+	•	Tap Create Repl
+	•	Choose Flutter as the template
+	•	Name it something like atomic_momentum
+	•	Create the Repl
+
+(It might take a minute to set up because Flutter projects are big)
+
+⸻
+
+Step 2 — Clean Up the Default Flutter Project
+
+Replit will create a default Flutter app (with counters, etc).
+You want to replace that with our Atomic Momentum base.
+	•	Go into your /lib folder
+	•	Delete everything inside /lib (there’s usually just a main.dart)
+	•	Now create the right folder structure:
+
+/lib
+  main.dart
+  screens/
+    home_screen.dart
+
+(You might need to create the screens folder manually: right-click /lib, create new folder.)
+
+⸻
+
+Step 3 — Paste in the Code
+
+main.dart — paste this:
+
+import 'package:flutter/material.dart';
+import 'screens/home_screen.dart';
+
+void main() {
+  runApp(MomentumApp());
+}
+
+class MomentumApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Atomic Momentum',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
+      ),
+      themeMode: ThemeMode.system,
+      home: HomeScreen(),
+    );
+  }
+}
+
+
+
+⸻
+
+screens/home_screen.dart — paste this:
+
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  final List<Map<String, dynamic>> dummyHabits = [
+    {
+      'name': 'Drink Water',
+      'progress': 5,
+      'target': 8,
+    },
+    {
+      'name': 'Read Bible',
+      'progress': 3,
+      'target': 7,
+    },
+    {
+      'name': 'Workout',
+      'progress': 7,
+      'target': 7,
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Momentum'),
+        centerTitle: true,
+      ),
+      body: ListView.builder(
+        itemCount: dummyHabits.length,
+        itemBuilder: (context, index) {
+          final habit = dummyHabits[index];
+          return Card(
+            margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: ListTile(
+              title: Text(habit['name']),
+              subtitle: LinearProgressIndicator(
+                value: habit['progress'] / habit['target'],
+                minHeight: 8,
+              ),
+              trailing: Text('${habit['progress']}/${habit['target']}'),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Later: open Add Habit screen
+        },
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+
+
+⸻
+
+Step 4 — Run the App!
+
+Now:
+	•	Hit Run inside Replit.
+	•	It may say “building flutter project” — that’s normal (may take a minute the first time).
+	•	Then you should see Momentum running, with your dummy habits showing up.
+
+⸻
+
+Step 5 — (Optional) If Errors Happen
+
+If Replit says something like “Missing packages” or “flutter pub get” needed:
+	•	Open the Shell/Console tab in Replit
+	•	Type:
+
+flutter pub get
+
+Hit enter.
+That will sync dependencies and fix common build errors.
+
+⸻
+
+Full Cheat-Sheet You Can Save:
+
+Action	Command or Step
+Sync packages	flutter pub get
+Run app	Click the green Run button
+See errors	Check Shell/Console for logs
+Reset build	flutter clean then flutter pub get
+
+
+
+⸻
+
+Quick Recap:
+	•	Create Replit project (Flutter template)
+	•	Delete old lib/main.dart
+	•	Create new /lib/main.dart and /lib/screens/home_screen.dart
+	•	Paste my code into those files
+	•	Run it
+
+⸻
+
+If you want, after this is working:
+
+We can start adding the Add Habit screen next so you can actually tap the + button and create real habits.
+
+Would you like me to also prep the “Add Habit” screen code after you get this running?
+(We can keep this momentum going — pun absolutely intended!)
+
+Let me know!
