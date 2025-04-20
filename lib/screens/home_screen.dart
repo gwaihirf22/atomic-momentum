@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       '${habit.progress}/${habit.target}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).primaryColor,
+                        color: habit.color,
                       ),
                     ),
                   ],
@@ -132,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: habit.progress / habit.target,
                   minHeight: 10,
                   backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(habit.color),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 SizedBox(height: 8),
@@ -143,14 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       onPressed: habit.progress > 0
                           ? () => _updateHabitProgress(habit, habit.progress - 1)
                           : null,
-                      color: Theme.of(context).primaryColor,
+                      color: habit.color,
                     ),
                     IconButton(
                       icon: Icon(Icons.add_circle_outline),
                       onPressed: habit.progress < habit.target
                           ? () => _updateHabitProgress(habit, habit.progress + 1)
                           : null,
-                      color: Theme.of(context).primaryColor,
+                      color: habit.color,
                     ),
                   ],
                 ),
