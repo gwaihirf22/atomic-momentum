@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import '../models/habit.dart';
 
 class HabitService {
@@ -18,18 +19,21 @@ class HabitService {
       name: 'Drink Water',
       progress: 5,
       target: 8,
+      color: Colors.blue,
     ),
     Habit(
       id: '2',
       name: 'Read Bible',
       progress: 3,
       target: 7,
+      color: Colors.teal,
     ),
     Habit(
       id: '3',
       name: 'Workout',
       progress: 7,
       target: 7,
+      color: Colors.orange,
     ),
   ];
 

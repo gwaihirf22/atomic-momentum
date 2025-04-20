@@ -15,6 +15,18 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   final HabitService _habitService = HabitService();
   bool _isSubmitting = false;
 
+  // Predefined colors for habit tracking
+  final List<Color> _availableColors = [
+    Colors.purple, 
+    Colors.blue, 
+    Colors.teal, 
+    Colors.orange, 
+    Colors.red,
+  ];
+  
+  // Default selected color
+  Color _selectedColor = Colors.purple;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -37,6 +49,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         name: name,
         target: target,
         progress: 0,
+        color: _selectedColor,
       ));
 
       setState(() {
@@ -85,12 +98,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 TextFormField(
                   controller: _targetController,
                   decoration: InputDecoration(
-                    labelText: 'Daily Target',
+                    labelText: 'Goal Number',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     prefixIcon: Icon(Icons.track_changes),
-                    hintText: 'How many times per day?',
+                    hintText: 'How many times per week?',
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -114,6 +127,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     return null;
                   },
                 ),
+                SizedBox(height: 24),
+                _buildColorPicker(),
                 SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitForm,
@@ -127,6 +142,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                           ),
                   ),
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedColor,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -140,13 +156,76 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     );
   }
 
+  Widget _buildColorPicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Habit Color',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        Container(
+          height: 60,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _availableColors.length,
+            itemBuilder: (context, index) {
+              final color = _availableColors[index];
+              final isSelected = _selectedColor == color;
+              
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedColor = color;
+                  });
+                },
+                child: Container(
+                  margin: EdgeInsets.only(right: 16),
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? Colors.white : Colors.transparent,
+                      width: 3,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.6),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: isSelected
+                      ? Icon(
+                          Icons.check,
+                          color: Colors.white,
+                        )
+                      : null,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeaderIcon() {
     return Column(
       children: [
         Icon(
           Icons.add_task,
           size: 80,
-          color: Theme.of(context).primaryColor,
+          color: _selectedColor,
         ),
         SizedBox(height: 16),
         Text(
