@@ -1,0 +1,212 @@
+import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import webbrowser
+
+class AtomicMomentumApp(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        """Serve a GET request."""
+        if self.path == '/':
+            self.path = '/index.html'
+        
+        # Make sure to set proper MIME types for Flutter app
+        if self.path.endswith('.js'):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/javascript')
+            self.end_headers()
+            with open('demo.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
+        elif self.path.endswith('.html'):
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            with open('demo.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
+        
+        # Fallback to demo HTML
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        with open('demo.html', 'rb') as file:
+            self.wfile.write(file.read())
+
+# Create the demo HTML page
+with open('demo.html', 'w') as f:
+    f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Momentum</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .app-header {
+            text-align: center;
+            background-color: #673ab7;
+            color: white;
+            padding: 16px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        .habit-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .habit-title {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #673ab7;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-evenly;
+            margin-top: 8px;
+        }
+        button {
+            border: none;
+            background-color: transparent;
+            color: #673ab7;
+            cursor: pointer;
+            font-size: 24px;
+        }
+        button:disabled {
+            color: #bdbdbd;
+            cursor: default;
+        }
+        .add-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background-color: #673ab7;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>Momentum</h1>
+    </div>
+    
+    <div id="habits-container">
+        <!-- Drink Water Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Drink Water</h2>
+                <span>5/8</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 62.5%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('water', -1)">-</button>
+                <button onclick="updateProgress('water', 1)">+</button>
+            </div>
+        </div>
+        
+        <!-- Read Bible Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Read Bible</h2>
+                <span>3/7</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 42.8%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('bible', -1)">-</button>
+                <button onclick="updateProgress('bible', 1)">+</button>
+            </div>
+        </div>
+        
+        <!-- Workout Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Workout</h2>
+                <span>7/7</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('workout', -1)" id="workout-minus">-</button>
+                <button onclick="updateProgress('workout', 1)" id="workout-plus" disabled>+</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="add-button" onclick="alert('Add Habit feature will be implemented soon!')">+</div>
+
+    <script>
+        const habits = {
+            water: { progress: 5, target: 8 },
+            bible: { progress: 3, target: 7 },
+            workout: { progress: 7, target: 7 }
+        };
+        
+        function updateProgress(habitId, change) {
+            const habit = habits[habitId];
+            const newProgress = habit.progress + change;
+            
+            if (newProgress >= 0 && newProgress <= habit.target) {
+                habit.progress = newProgress;
+                
+                // Update the UI
+                const cards = document.querySelectorAll('.habit-card');
+                let card;
+                
+                if (habitId === 'water') card = cards[0];
+                else if (habitId === 'bible') card = cards[1];
+                else if (habitId === 'workout') card = cards[2];
+                
+                const progressText = card.querySelector('.habit-title span');
+                progressText.textContent = `${habit.progress}/${habit.target}`;
+                
+                const progressFill = card.querySelector('.progress-fill');
+                progressFill.style.width = `${(habit.progress / habit.target) * 100}%`;
+                
+                // Enable/disable buttons based on progress
+                const minusBtn = card.querySelector('button:first-child');
+                const plusBtn = card.querySelector('button:last-child');
+                
+                minusBtn.disabled = habit.progress <= 0;
+                plusBtn.disabled = habit.progress >= habit.target;
+            }
+        }
+    </script>
+</body>
+</html>""")
+
+print("Created demo.html file")
+
+# Start the server
+httpd = HTTPServer(('0.0.0.0', 5000), AtomicMomentumApp)
+print('Server running at http://0.0.0.0:5000')
+httpd.serve_forever()
