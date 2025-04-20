@@ -3,7 +3,7 @@
 ## Version 1 Features (MVP)
 - [x] Home screen with habit list
 - [x] Progress bars for habits
-- [ ] Add Habit screen
+- [x] Add Habit screen with color selection
 - [ ] Save habits locally
 - [ ] Dark Mode toggle
 
