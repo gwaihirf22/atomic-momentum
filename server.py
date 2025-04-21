@@ -1506,6 +1506,45 @@ with open('demo.html', 'w') as f:
             notifSwitchContainer.appendChild(notifSwitchInput);
             notifSwitchContainer.appendChild(notifSwitchSlider);
             
+            // Disable toggle if notifications are not supported
+            if (!areNotificationsSupported()) {
+                notifSwitchInput.disabled = true;
+                notifSwitchInput.checked = false;
+                notifSwitchSlider.style.backgroundColor = '#ccc';
+                notifSliderButton.style.left = '4px';
+                
+                // Add a note about browser support
+                const notificationNote = document.createElement('div');
+                notificationNote.textContent = 'Notifications not supported in this browser';
+                notificationNote.style.fontSize = '12px';
+                notificationNote.style.color = '#F44336';
+                notificationNote.style.marginTop = '8px';
+                notificationNote.style.fontStyle = 'italic';
+                notificationSection.appendChild(notificationNote);
+            } else {
+                // Check if we're in an iframe, which typically blocks notifications
+                try {
+                    if (window.self !== window.top) {
+                        notifSwitchInput.disabled = true;
+                        notifSwitchInput.checked = false;
+                        notifSwitchSlider.style.backgroundColor = '#ccc';
+                        notifSliderButton.style.left = '4px';
+                        
+                        // Add a note about iframe restrictions
+                        const notificationNote = document.createElement('div');
+                        notificationNote.textContent = 'Notifications blocked in preview mode. Try in regular browser window.';
+                        notificationNote.style.fontSize = '12px';
+                        notificationNote.style.color = '#FF9800';
+                        notificationNote.style.marginTop = '8px';
+                        notificationNote.style.fontStyle = 'italic';
+                        notificationSection.appendChild(notificationNote);
+                    }
+                } catch (e) {
+                    // If we can't access window.top, we're in a restrictive context
+                    console.log("Running in a restrictive context, notifications may be blocked");
+                }
+            }
+            
             // Toggle notifications
             notifSwitchInput.onchange = (e) => {
                 const checked = e.target.checked;
@@ -1513,18 +1552,32 @@ with open('demo.html', 'w') as f:
                 notifSliderButton.style.left = checked ? '30px' : '4px';
                 
                 if (checked) {
-                    requestNotificationPermission().then(granted => {
-                        if (granted) {
-                            showToast("Notifications enabled!", "#4CAF50");
-                            startReminderCheck();
-                        } else {
-                            // If permission was denied, reset the toggle
+                    try {
+                        requestNotificationPermission().then(granted => {
+                            if (granted) {
+                                showToast("Notifications enabled!", "#4CAF50");
+                                startReminderCheck();
+                            } else {
+                                // If permission was denied, reset the toggle
+                                e.target.checked = false;
+                                notifSwitchSlider.style.backgroundColor = '#ccc';
+                                notifSliderButton.style.left = '4px';
+                                showToast("Notification permission was denied by the browser", "#F44336");
+                            }
+                        }).catch(error => {
+                            console.error("Error enabling notifications:", error);
                             e.target.checked = false;
                             notifSwitchSlider.style.backgroundColor = '#ccc';
                             notifSliderButton.style.left = '4px';
-                            showToast("Notification permission was denied by the browser", "#F44336");
-                        }
-                    });
+                            showToast("Browser blocked notification permission request", "#F44336");
+                        });
+                    } catch (error) {
+                        console.error("Exception enabling notifications:", error);
+                        e.target.checked = false;
+                        notifSwitchSlider.style.backgroundColor = '#ccc';
+                        notifSliderButton.style.left = '4px';
+                        showToast("Browser blocked notification permission request", "#F44336");
+                    }
                 } else {
                     // Disable notifications
                     localStorage.setItem('notificationsEnabled', 'false');
@@ -2696,6 +2749,7 @@ with open('demo.html', 'w') as f:
         function requestNotificationPermission() {
             if (!areNotificationsSupported()) {
                 console.log('Notifications not supported in this browser');
+                showToast("Notifications not supported in this browser", "#FF9800");
                 return Promise.resolve(false);
             }
             
@@ -2708,20 +2762,33 @@ with open('demo.html', 'w') as f:
             if (Notification.permission === 'denied') {
                 isNotificationsEnabled = false;
                 localStorage.setItem('notificationsEnabled', 'false');
+                showToast("Notification permission was denied by the browser", "#F44336");
                 return Promise.resolve(false);
             }
             
-            // Need to request permission
-            return Notification.requestPermission()
-                .then(permission => {
-                    isNotificationsEnabled = permission === 'granted';
-                    localStorage.setItem('notificationsEnabled', String(isNotificationsEnabled));
-                    return isNotificationsEnabled;
-                })
-                .catch(error => {
-                    console.error('Error requesting notification permission:', error);
-                    return false;
-                });
+            try {
+                // Need to request permission
+                return Notification.requestPermission()
+                    .then(permission => {
+                        isNotificationsEnabled = permission === 'granted';
+                        localStorage.setItem('notificationsEnabled', String(isNotificationsEnabled));
+                        
+                        if (!isNotificationsEnabled) {
+                            showToast("Notification permission was denied. Enable in browser settings.", "#F44336");
+                        }
+                        
+                        return isNotificationsEnabled;
+                    })
+                    .catch(error => {
+                        console.error('Error requesting notification permission:', error);
+                        showToast("Browser blocked notification permission request", "#F44336");
+                        return false;
+                    });
+            } catch (error) {
+                console.error('Exception requesting notification permission:', error);
+                showToast("Browser blocked notification permission request", "#F44336");
+                return Promise.resolve(false);
+            }
         }
         
         // Function to show a notification
@@ -2804,12 +2871,42 @@ with open('demo.html', 'w') as f:
             // Check if notifications were previously enabled
             const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
             
+            // Check if notifications are supported at all before proceeding
+            if (!areNotificationsSupported()) {
+                // Show a message that notifications aren't supported
+                setTimeout(() => {
+                    showToast("Browser doesn't support notifications", "#F44336");
+                }, 2000);
+                localStorage.setItem('notificationsEnabled', 'false');
+                // Set up UI to show notifications are unavailable
+                return;
+            }
+
+            // Check for permissions in iframe or restrictive contexts
+            try {
+                if (window.self !== window.top) {
+                    // We're in an iframe, which typically blocks notifications
+                    setTimeout(() => {
+                        showToast("Notifications are blocked in preview mode. Try in a regular browser window.", "#FF9800");
+                    }, 2000);
+                    return;
+                }
+            } catch (e) {
+                // If we can't access window.top, we're definitely in a restrictive context
+                console.log("Running in a restrictive context, notifications may be blocked");
+            }
+            
             if (storedNotificationsEnabled === 'true') {
                 // User previously enabled notifications, try to restore
                 requestNotificationPermission().then(granted => {
                     if (granted) {
                         startReminderCheck();
+                    } else {
+                        showToast("Notification permissions were revoked. Enable in browser settings.", "#F44336");
                     }
+                }).catch(error => {
+                    console.error("Error restoring notification permissions:", error);
+                    showToast("Error accessing notification permissions", "#F44336");
                 });
             } else if (storedNotificationsEnabled === null) {
                 // First time user, show permission request
@@ -2822,6 +2919,9 @@ with open('demo.html', 'w') as f:
                             } else {
                                 showToast("Notifications disabled. You can enable them later in Settings.", "#FF9800");
                             }
+                        }).catch(error => {
+                            console.error("Error requesting notification permissions:", error);
+                            showToast("Browser blocked notification request", "#F44336");
                         });
                     } else {
                         localStorage.setItem('notificationsEnabled', 'false');
