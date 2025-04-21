@@ -5,7 +5,17 @@ import webbrowser
 class AtomicMomentumApp(SimpleHTTPRequestHandler):
     def do_GET(self):
         """Serve a GET request."""
-        # Always serve the demo HTML for any path
+        if self.path == '/notifications-test' or self.path == '/notifications-test.html':
+            # Serve the notification test page
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            with open('notifications-test.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
+            
+        # For all other paths, serve the main app
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
@@ -26,7 +36,28 @@ with open('demo.html', 'w') as f:
             max-width: 500px;
             margin: 0 auto;
             padding: 20px;
+            padding-bottom: 70px; /* Extra padding at the bottom to account for the notification banner */
             background-color: #f5f5f5;
+        }
+        .notification-test-banner {
+            background-color: #673ab7;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        .notification-test-banner a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .notification-test-banner a:hover {
+            text-decoration: none;
         }
         .app-header {
             display: flex;
@@ -90,7 +121,7 @@ with open('demo.html', 'w') as f:
         }
         .add-button {
             position: fixed;
-            bottom: 20px;
+            bottom: 70px; /* Increased to avoid overlap with notification banner */
             right: 20px;
             width: 56px;
             height: 56px;
@@ -161,6 +192,10 @@ with open('demo.html', 'w') as f:
     </div>
     
     <div class="add-button" onclick="showAddHabitScreen()">+</div>
+    
+    <div class="notification-test-banner">
+        Need to test notifications? <a href="/notifications-test" target="_blank">Open the Notification Test Page</a> in a new tab
+    </div>
 
     <script>
         // Default habits to use if none are saved

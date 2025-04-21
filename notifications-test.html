@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Momentum - Notification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #673ab7;
+            border-bottom: 2px solid #673ab7;
+            padding-bottom: 10px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #673ab7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #5e35b1;
+        }
+        button:disabled {
+            background-color: #9e9e9e;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .granted {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .denied {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .default {
+            background-color: #fff8e1;
+            color: #ff8f00;
+        }
+        .instructions {
+            background-color: #e8eaf6;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .notification-preview {
+            border: 1px dashed #673ab7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            background-color: #f5f5f5;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #notificationLog {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Atomic Momentum - Notification Testing</h1>
+    
+    <div class="instructions">
+        <h3>Why this page exists:</h3>
+        <p>Replit's preview mode runs apps in an iframe or sandboxed environment, which blocks browser notification permissions. This standalone page allows you to test notifications outside of Replit's preview restrictions.</p>
+        
+        <h3>How to use:</h3>
+        <ol>
+            <li>Click "Request Permission" to enable browser notifications</li>
+            <li>Once granted, use the test buttons to try different notification types</li>
+            <li>The permission status and notification log will be displayed below</li>
+        </ol>
+    </div>
+    
+    <div class="card">
+        <h2>Notification Permission</h2>
+        <div id="permissionStatus" class="status default">Checking permission status...</div>
+        <button id="requestPermission">Request Permission</button>
+        <button id="revokePermission" disabled>How to Revoke Permission</button>
+    </div>
+    
+    <div class="card">
+        <h2>Test Notifications</h2>
+        <div>
+            <button id="testBasic" disabled>Basic Notification</button>
+            <button id="testHabit" disabled>Habit Reminder</button>
+            <button id="testWithActions" disabled>Notification with Actions</button>
+        </div>
+        
+        <div class="notification-preview">
+            <h3>Notification Preview:</h3>
+            <div id="notificationPreview">
+                <p>⏰ Example Habit Reminder</p>
+                <p><small>Don't forget!</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Notification Log</h2>
+        <div id="notificationLog">
+            <pre>--- Log will appear here ---</pre>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Implementation Code</h2>
+        <p>This is the core code used to request permissions and show notifications:</p>
+        <pre>
+// Request notification permission
+function requestNotificationPermission() {
+    if (!('Notification' in window)) {
+        console.log('Notifications not supported');
+        return Promise.resolve(false);
+    }
+    
+    return Notification.requestPermission()
+        .then(permission => {
+            return permission === 'granted';
+        });
+}
+
+// Show a notification
+function showNotification(title, options) {
+    if (Notification.permission !== 'granted') return;
+    
+    const notification = new Notification(title, options);
+    
+    notification.onclick = function() {
+        window.focus();
+        notification.close();
+    };
+    
+    return notification;
+}</pre>
+    </div>
+
+    <script>
+        // DOM elements
+        const permissionStatus = document.getElementById('permissionStatus');
+        const requestPermissionBtn = document.getElementById('requestPermission');
+        const revokePermissionBtn = document.getElementById('revokePermission');
+        const testBasicBtn = document.getElementById('testBasic');
+        const testHabitBtn = document.getElementById('testHabit');
+        const testWithActionsBtn = document.getElementById('testWithActions');
+        const notificationLog = document.getElementById('notificationLog');
+        
+        // Log function
+        function log(message) {
+            const now = new Date();
+            const timestamp = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            const entry = document.createElement('pre');
+            entry.textContent = `[${timestamp}] ${message}`;
+            notificationLog.prepend(entry);
+        }
+        
+        // Check if notifications are supported
+        function checkNotificationSupport() {
+            if (!('Notification' in window)) {
+                permissionStatus.textContent = 'Notifications are NOT supported in this browser';
+                permissionStatus.className = 'status denied';
+                requestPermissionBtn.disabled = true;
+                log('Notifications are not supported in this browser');
+                return false;
+            }
+            return true;
+        }
+        
+        // Update UI based on current permission
+        function updatePermissionStatus() {
+            if (!checkNotificationSupport()) return;
+            
+            const permission = Notification.permission;
+            
+            permissionStatus.textContent = `Permission status: ${permission}`;
+            
+            if (permission === 'granted') {
+                permissionStatus.className = 'status granted';
+                requestPermissionBtn.disabled = true;
+                revokePermissionBtn.disabled = false;
+                testBasicBtn.disabled = false;
+                testHabitBtn.disabled = false;
+                testWithActionsBtn.disabled = false;
+                log('Notification permission is granted');
+            } else if (permission === 'denied') {
+                permissionStatus.className = 'status denied';
+                requestPermissionBtn.disabled = false;
+                revokePermissionBtn.disabled = false;
+                log('Notification permission is denied by the browser');
+            } else {
+                permissionStatus.className = 'status default';
+                requestPermissionBtn.disabled = false;
+                log('Notification permission is default (not decided)');
+            }
+        }
+        
+        // Request permission for notifications
+        function requestPermission() {
+            if (!checkNotificationSupport()) return;
+            
+            log('Requesting notification permission...');
+            
+            Notification.requestPermission()
+                .then(permission => {
+                    log(`Permission request result: ${permission}`);
+                    updatePermissionStatus();
+                })
+                .catch(error => {
+                    log(`Error requesting permission: ${error}`);
+                });
+        }
+        
+        // Show a notification
+        function showNotification(title, options = {}) {
+            if (Notification.permission !== 'granted') {
+                log('Cannot show notification - permission not granted');
+                return;
+            }
+            
+            try {
+                const notification = new Notification(title, options);
+                
+                notification.onclick = function() {
+                    window.focus();
+                    log('User clicked on notification');
+                    notification.close();
+                };
+                
+                log(`Showing notification: "${title}"`);
+                return notification;
+            } catch (error) {
+                log(`Error showing notification: ${error}`);
+            }
+        }
+        
+        // Test notifications
+        function testBasicNotification() {
+            showNotification('Basic Notification', {
+                body: 'This is a simple notification from Atomic Momentum'
+            });
+        }
+        
+        function testHabitNotification() {
+            const habits = [
+                { name: 'Drinking Water', icon: '💧' },
+                { name: 'Meditation', icon: '🧘' },
+                { name: 'Reading', icon: '📚' },
+                { name: 'Exercise', icon: '🏃' },
+                { name: 'Take Vitamins', icon: '💊' }
+            ];
+            
+            const habit = habits[Math.floor(Math.random() * habits.length)];
+            
+            showNotification(`${habit.icon} ${habit.name} Reminder`, {
+                body: "Don't forget to complete this habit today!",
+                icon: '/favicon.ico'
+            });
+        }
+        
+        function testNotificationWithActions() {
+            if (!('actions' in Notification.prototype)) {
+                log('This browser does not support notification actions');
+                showNotification('Advanced Notification', {
+                    body: 'Your browser does not support notification actions',
+                    icon: '/favicon.ico'
+                });
+                return;
+            }
+            
+            showNotification('Habit Completed!', {
+                body: 'Great job maintaining your streak!',
+                icon: '/favicon.ico',
+                badge: '/favicon.ico',
+                actions: [
+                    { action: 'view', title: 'View Details' },
+                    { action: 'close', title: 'Dismiss' }
+                ]
+            });
+        }
+        
+        // Show revoke instructions
+        function showRevokeInstructions() {
+            alert(`To revoke notification permissions:
+            
+1. Click the lock/info icon in your browser's address bar
+2. Find "Notifications" in the site permissions
+3. Change the setting to "Block" or "Ask" (default)
+4. Refresh this page after changing the permission`);
+        }
+        
+        // Event listeners
+        requestPermissionBtn.addEventListener('click', requestPermission);
+        revokePermissionBtn.addEventListener('click', showRevokeInstructions);
+        testBasicBtn.addEventListener('click', testBasicNotification);
+        testHabitBtn.addEventListener('click', testHabitNotification);
+        testWithActionsBtn.addEventListener('click', testNotificationWithActions);
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', updatePermissionStatus);
+    </script>
+</body>
+</html>
