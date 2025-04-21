@@ -156,7 +156,9 @@
                 color: "#2196F3",
                 lastUpdatedDate: new Date().toISOString(),
                 resetFrequency: "weekly",
-                history: {} // Store habit history by date
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null // Last date the streak was updated
             },
             bible: { 
                 progress: 3, 
@@ -165,7 +167,9 @@
                 color: "#009688",
                 lastUpdatedDate: new Date().toISOString(),
                 resetFrequency: "weekly",
-                history: {} // Store habit history by date
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null // Last date the streak was updated
             },
             workout: { 
                 progress: 7, 
@@ -174,7 +178,9 @@
                 color: "#FF9800",
                 lastUpdatedDate: new Date().toISOString(),
                 resetFrequency: "weekly",
-                history: {} // Store habit history by date
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null // Last date the streak was updated
             }
         };
         
@@ -217,11 +223,17 @@
                     habits = JSON.parse(savedHabits);
                     console.log('Loaded habits from localStorage:', habits);
                     
-                    // Initialize history for habits that don't have it yet
+                    // Initialize history and streak properties for habits that don't have them yet
                     Object.keys(habits).forEach(habitId => {
                         const habit = habits[habitId];
                         if (!habit.history) {
                             habit.history = {};
+                        }
+                        if (habit.streak === undefined) {
+                            habit.streak = 0;
+                        }
+                        if (habit.lastStreakDate === undefined) {
+                            habit.lastStreakDate = null;
                         }
                     });
                     
@@ -307,12 +319,44 @@
             
             const titleLeft = document.createElement('div');
             
-            const heading = document.createElement('h2');
+            const heading = document.createElement('div');
+            heading.style.display = 'flex';
+            heading.style.alignItems = 'center';
+            heading.style.gap = '8px';
+            
+            const headingText = document.createElement('h2');
+            headingText.style.margin = '0';
+            
             // Check if habit has an icon and add it before the name
             if (habit.icon) {
-                heading.textContent = `${habit.icon} ${habit.name}`;
+                headingText.textContent = `${habit.icon} ${habit.name}`;
             } else {
-                heading.textContent = habit.name;
+                headingText.textContent = habit.name;
+            }
+            
+            heading.appendChild(headingText);
+            
+            // Add streak badge if streak > 0
+            if (habit.streak && habit.streak > 0) {
+                const streakBadge = document.createElement('div');
+                streakBadge.style.display = 'flex';
+                streakBadge.style.alignItems = 'center';
+                streakBadge.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
+                streakBadge.style.borderRadius = '12px';
+                streakBadge.style.padding = '2px 8px';
+                streakBadge.style.fontSize = '14px';
+                
+                const fireEmoji = document.createElement('span');
+                fireEmoji.textContent = '🔥';
+                fireEmoji.style.marginRight = '3px';
+                
+                const streakCount = document.createElement('span');
+                streakCount.textContent = habit.streak;
+                streakCount.style.fontWeight = 'bold';
+                
+                streakBadge.appendChild(fireEmoji);
+                streakBadge.appendChild(streakCount);
+                heading.appendChild(streakBadge);
             }
             
             const progress = document.createElement('span');
@@ -437,6 +481,109 @@
             return card;
         }
         
+        // Function to show a toast message
+        function showToast(message, bgColor = '#4CAF50', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = bgColor;
+            toast.style.color = 'white';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '4px';
+            toast.style.zIndex = '1000';
+            toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            
+            document.body.appendChild(toast);
+            
+            // Animate toast
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, duration);
+        }
+        
+        // Function to update streak counts
+        function updateStreak(habit, today, isCompleted) {
+            // Initialize streak properties if they don't exist
+            if (habit.streak === undefined) {
+                habit.streak = 0;
+            }
+            if (habit.lastStreakDate === undefined) {
+                habit.lastStreakDate = null;
+            }
+            
+            const prevDate = habit.lastStreakDate ? new Date(habit.lastStreakDate) : null;
+            const todayDate = new Date(today);
+            
+            // Format dates for comparison (strip time part)
+            const todayFormatted = formatDate(todayDate);
+            const yesterdayFormatted = formatDate(new Date(todayDate.getTime() - 86400000)); // 24hrs in ms
+            
+            // Handle streak updates
+            if (isCompleted) {
+                // Case 1: First completion ever
+                if (habit.lastStreakDate === null) {
+                    habit.streak = 1;
+                    habit.lastStreakDate = today;
+                    showToast("Great job! You started a streak! 🔥", "#4CAF50");
+                }
+                // Case 2: Completed today after having completed yesterday
+                else if (formatDate(prevDate) === yesterdayFormatted && todayFormatted !== formatDate(prevDate)) {
+                    habit.streak += 1;
+                    habit.lastStreakDate = today;
+                    
+                    // Show a motivational message based on streak length
+                    if (habit.streak >= 10) {
+                        showToast(`Incredible! ${habit.streak} day streak! 🔥🔥🔥`, "#4CAF50");
+                    } else if (habit.streak >= 5) {
+                        showToast(`Awesome! ${habit.streak} day streak! 🔥🔥`, "#4CAF50");
+                    } else {
+                        showToast(`Great job! ${habit.streak} day streak! 🔥`, "#4CAF50");
+                    }
+                }
+                // Case 3: Completed today but missed yesterday (or more days)
+                else if (formatDate(prevDate) !== yesterdayFormatted && todayFormatted !== formatDate(prevDate)) {
+                    // Reset streak and start a new one
+                    habit.streak = 1;
+                    habit.lastStreakDate = today;
+                    showToast("Starting fresh! New streak begins! 🔥", "#4CAF50");
+                }
+                // Case 4: Already marked complete today, no streak change needed
+                else if (formatDate(prevDate) === todayFormatted) {
+                    // No change to streak, already counted today
+                }
+            } 
+            else if (!isCompleted && habit.history[today] && habit.history[today].completed) {
+                // User uncompleted a previously completed habit
+                // We don't modify the streak here since they might complete it again today
+                // But we could show a gentle reminder
+                showToast("Remember to complete your habit to keep your streak!", "#FFC107");
+            }
+            
+            // Check if we broke a streak (this is more for streak maintenance)
+            // If today is 2+ days after the last streak date, and the habit is not completed
+            if (prevDate && !isCompleted) {
+                const daysSinceLastStreak = Math.floor((todayDate - prevDate) / 86400000);
+                
+                // If we missed 2+ days, reset the streak (only do this once when checking)
+                if (daysSinceLastStreak >= 2 && habit.streak > 0 && formatDate(prevDate) !== todayFormatted) {
+                    showToast("Don't worry, you can start fresh tomorrow! 💪", "#FF9800");
+                    habit.streak = 0;
+                }
+            }
+        }
+        
         function updateProgress(habitId, change) {
             const habit = habits[habitId];
             const newProgress = habit.progress + change;
@@ -458,9 +605,12 @@
                     habit.history = {};
                 }
                 
+                let isCompleted = false;
+                
                 // Record current date's completion status
                 if (newProgress === habit.target) {
                     // Habit completed for the day
+                    isCompleted = true;
                     habit.history[today] = {
                         completed: true,
                         progress: newProgress,
@@ -468,6 +618,7 @@
                     };
                 } else if (oldProgress === habit.target && newProgress < habit.target) {
                     // Habit was previously completed today but now uncompleted
+                    isCompleted = false;
                     habit.history[today] = {
                         completed: false,
                         progress: newProgress,
@@ -475,12 +626,16 @@
                     };
                 } else {
                     // Partial progress
+                    isCompleted = false;
                     habit.history[today] = {
                         completed: false,
                         progress: newProgress,
                         target: habit.target
                     };
                 }
+                
+                // Update streak information
+                updateStreak(habit, today, isCompleted);
                 
                 // Save the updated state
                 saveHabits();
