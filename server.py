@@ -1604,13 +1604,20 @@ with open('demo.html', 'w') as f:
                 notifSliderButton.style.left = '4px';
                 
                 // Add a note about browser support
+                const notificationContainer = document.createElement('div');
+                notificationContainer.style.backgroundColor = isDarkMode ? '#333' : '#f8f8f8';
+                notificationContainer.style.padding = '10px';
+                notificationContainer.style.borderRadius = '4px';
+                notificationContainer.style.marginTop = '10px';
+                
                 const notificationNote = document.createElement('div');
                 notificationNote.textContent = 'Notifications not supported in this browser';
                 notificationNote.style.fontSize = '12px';
                 notificationNote.style.color = '#F44336';
-                notificationNote.style.marginTop = '8px';
                 notificationNote.style.fontStyle = 'italic';
-                notificationsSection.appendChild(notificationNote);
+                
+                notificationContainer.appendChild(notificationNote);
+                notificationsSection.appendChild(notificationContainer);
             } else {
                 // Check if we're in an iframe, which typically blocks notifications
                 try {
@@ -1621,13 +1628,20 @@ with open('demo.html', 'w') as f:
                         notifSliderButton.style.left = '4px';
                         
                         // Add a note about iframe restrictions
+                        const notificationContainer = document.createElement('div');
+                        notificationContainer.style.backgroundColor = isDarkMode ? '#333' : '#f8f8f8';
+                        notificationContainer.style.padding = '10px';
+                        notificationContainer.style.borderRadius = '4px';
+                        notificationContainer.style.marginTop = '10px';
+                        
                         const notificationNote = document.createElement('div');
                         notificationNote.textContent = 'Notifications blocked in preview mode. Try in regular browser window.';
                         notificationNote.style.fontSize = '12px';
                         notificationNote.style.color = '#FF9800';
-                        notificationNote.style.marginTop = '8px';
                         notificationNote.style.fontStyle = 'italic';
-                        notificationsSection.appendChild(notificationNote);
+                        
+                        notificationContainer.appendChild(notificationNote);
+                        notificationsSection.appendChild(notificationContainer);
                     }
                 } catch (e) {
                     // If we can't access window.top, we're in a restrictive context
@@ -2812,59 +2826,58 @@ with open('demo.html', 'w') as f:
                 
                 // Helper function to display legacy habit history items
                 function displayLegacyHabitItem(container, habit, date, isDarkMode) {
-                            
-                            // Create habit item
-                            const habitItem = document.createElement('div');
-                            habitItem.style.padding = '10px';
-                            habitItem.style.marginBottom = '10px';
-                            habitItem.style.borderRadius = '6px';
-                            habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
-                            
-                            // Habit name with icon
-                            const habitName = document.createElement('div');
-                            habitName.style.fontWeight = 'bold';
-                            habitName.style.marginBottom = '5px';
-                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
-                            
-                            // Progress info
-                            const progressInfo = document.createElement('div');
-                            progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
-                            
-                            // Status indicator
-                            const statusIndicator = document.createElement('div');
-                            statusIndicator.style.display = 'flex';
-                            statusIndicator.style.alignItems = 'center';
-                            statusIndicator.style.marginTop = '5px';
-                            
-                            const statusDot = document.createElement('div');
-                            statusDot.style.width = '10px';
-                            statusDot.style.height = '10px';
-                            statusDot.style.borderRadius = '50%';
-                            statusDot.style.marginRight = '6px';
-                            
-                            const statusText = document.createElement('div');
-                            statusText.style.fontSize = '14px';
-                            
-                            if (habit.history[date].completed) {
-                                statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
-                                statusText.textContent = 'Completed';
-                                statusText.style.color = '#4CAF50';
-                            } else {
-                                statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
-                                statusText.textContent = 'Not completed';
-                                statusText.style.color = '#F44336';
-                            }
-                            
-                            statusIndicator.appendChild(statusDot);
-                            statusIndicator.appendChild(statusText);
-                            
-                            // Add elements to habit item
-                            habitItem.appendChild(habitName);
-                            habitItem.appendChild(progressInfo);
-                            habitItem.appendChild(statusIndicator);
-                            
-                            container.appendChild(habitItem);
-                        }
+                    // Create habit item
+                    const habitItem = document.createElement('div');
+                    habitItem.style.padding = '10px';
+                    habitItem.style.marginBottom = '10px';
+                    habitItem.style.borderRadius = '6px';
+                    habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                    
+                    // Habit name with icon
+                    const habitName = document.createElement('div');
+                    habitName.style.fontWeight = 'bold';
+                    habitName.style.marginBottom = '5px';
+                    habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                    
+                    // Progress info
+                    const progressInfo = document.createElement('div');
+                    progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                    
+                    // Status indicator
+                    const statusIndicator = document.createElement('div');
+                    statusIndicator.style.display = 'flex';
+                    statusIndicator.style.alignItems = 'center';
+                    statusIndicator.style.marginTop = '5px';
+                    
+                    const statusDot = document.createElement('div');
+                    statusDot.style.width = '10px';
+                    statusDot.style.height = '10px';
+                    statusDot.style.borderRadius = '50%';
+                    statusDot.style.marginRight = '6px';
+                    
+                    const statusText = document.createElement('div');
+                    statusText.style.fontSize = '14px';
+                    
+                    if (habit.history[date].completed) {
+                        statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                        statusText.textContent = 'Completed';
+                        statusText.style.color = '#4CAF50';
+                    } else {
+                        statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                        statusText.textContent = 'Not completed';
+                        statusText.style.color = '#F44336';
+                    }
+                    
+                    statusIndicator.appendChild(statusDot);
+                    statusIndicator.appendChild(statusText);
+                    
+                    // Add elements to habit item
+                    habitItem.appendChild(habitName);
+                    habitItem.appendChild(progressInfo);
+                    habitItem.appendChild(statusIndicator);
+                    
+                    container.appendChild(habitItem);
+                }
                 
                 // If no habits for this day, show message
                 if (!hasHabits) {
