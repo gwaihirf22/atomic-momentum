@@ -801,6 +801,8 @@ with open('demo.html', 'w') as f:
             };
             
             form.appendChild(heading);
+            form.appendChild(iconLabel);
+            form.appendChild(emojiContainer);
             form.appendChild(nameInput);
             form.appendChild(targetInput);
             form.appendChild(colorLabel);
@@ -846,6 +848,7 @@ with open('demo.html', 'w') as f:
                         target: parseInt(targetInput.value, 10),
                         progress: 0,
                         color: selectedColor,
+                        icon: selectedEmoji, // Add the selected emoji
                         lastUpdatedDate: new Date().toISOString(),
                         resetFrequency: "weekly" // Default to weekly reset
                     };
