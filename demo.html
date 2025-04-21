@@ -307,6 +307,54 @@
                 console.error('Error saving habits to localStorage:', e);
             }
         }
+
+        // Load habit history from localStorage
+        function loadHabitHistory() {
+            const savedHistory = localStorage.getItem('atomic_momentum_habit_history');
+            if (savedHistory) {
+                try {
+                    return JSON.parse(savedHistory);
+                } catch (e) {
+                    console.error('Error loading habit history from localStorage:', e);
+                    return {};
+                }
+            }
+            return {};
+        }
+        
+        // Save habit history to localStorage
+        function saveHabitHistory(history) {
+            try {
+                localStorage.setItem('atomic_momentum_habit_history', JSON.stringify(history));
+                console.log('Saved habit history to localStorage');
+            } catch (e) {
+                console.error('Error saving habit history to localStorage:', e);
+            }
+        }
+        
+        // Record daily habit status in habitHistory
+        function recordDailyHabitStatus() {
+            const currentDate = formatDate(new Date());
+            const habitHistory = loadHabitHistory();
+            
+            // Create entry for current date if it doesn't exist
+            if (!habitHistory[currentDate]) {
+                habitHistory[currentDate] = {};
+            }
+            
+            // Record status for each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const isCompleted = habit.progress >= habit.target;
+                
+                // Store as "completed" or "not_completed"
+                habitHistory[currentDate][habitId] = isCompleted ? "completed" : "not_completed";
+            });
+            
+            // Save the updated history
+            saveHabitHistory(habitHistory);
+            console.log('Recorded habit status for', currentDate);
+        }
         
         // Render all habits in the UI
         function renderHabits() {
