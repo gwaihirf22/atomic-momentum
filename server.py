@@ -720,12 +720,31 @@ with open('demo.html', 'w') as f:
                             }
                             
                             const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
                             if (!habit.history[lastUpdateFormatted]) {
                                 habit.history[lastUpdateFormatted] = {
-                                    completed: habit.progress >= habit.target,
+                                    completed: wasCompleted,
                                     progress: habit.progress,
                                     target: habit.target
                                 };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across day boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
                             }
                             
                             habit.progress = 0;
@@ -765,12 +784,31 @@ with open('demo.html', 'w') as f:
                             }
                             
                             const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
                             if (!habit.history[lastUpdateFormatted]) {
                                 habit.history[lastUpdateFormatted] = {
-                                    completed: habit.progress >= habit.target,
+                                    completed: wasCompleted,
                                     progress: habit.progress,
                                     target: habit.target
                                 };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across week boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
                             }
                             
                             habit.progress = 0;
@@ -789,12 +827,31 @@ with open('demo.html', 'w') as f:
                             }
                             
                             const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
                             if (!habit.history[lastUpdateFormatted]) {
                                 habit.history[lastUpdateFormatted] = {
-                                    completed: habit.progress >= habit.target,
+                                    completed: wasCompleted,
                                     progress: habit.progress,
                                     target: habit.target
                                 };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across month boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
                             }
                             
                             habit.progress = 0;
