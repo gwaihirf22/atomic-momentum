@@ -174,7 +174,9 @@ with open('demo.html', 'w') as f:
                 resetFrequency: "weekly",
                 history: {}, // Store habit history by date
                 streak: 0,   // Current streak count
-                lastStreakDate: null // Last date the streak was updated
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
             },
             bible: { 
                 progress: 3, 
@@ -185,7 +187,9 @@ with open('demo.html', 'w') as f:
                 resetFrequency: "weekly",
                 history: {}, // Store habit history by date
                 streak: 0,   // Current streak count
-                lastStreakDate: null // Last date the streak was updated
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
             },
             workout: { 
                 progress: 7, 
@@ -196,7 +200,9 @@ with open('demo.html', 'w') as f:
                 resetFrequency: "weekly",
                 history: {}, // Store habit history by date
                 streak: 0,   // Current streak count
-                lastStreakDate: null // Last date the streak was updated
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
             }
         };
         
@@ -239,7 +245,7 @@ with open('demo.html', 'w') as f:
                     habits = JSON.parse(savedHabits);
                     console.log('Loaded habits from localStorage:', habits);
                     
-                    // Initialize history and streak properties for habits that don't have them yet
+                    // Initialize history, streak, and reminder properties for habits that don't have them yet
                     Object.keys(habits).forEach(habitId => {
                         const habit = habits[habitId];
                         if (!habit.history) {
@@ -250,6 +256,13 @@ with open('demo.html', 'w') as f:
                         }
                         if (habit.lastStreakDate === undefined) {
                             habit.lastStreakDate = null;
+                        }
+                        // Initialize reminder properties if they don't exist
+                        if (habit.reminderTime === undefined) {
+                            habit.reminderTime = null;
+                        }
+                        if (habit.reminderEnabled === undefined) {
+                            habit.reminderEnabled = false;
                         }
                     });
                     
@@ -1016,10 +1029,56 @@ with open('demo.html', 'w') as f:
             targetInput.style.width = '100%';
             targetInput.style.padding = '16px';
             targetInput.style.fontSize = '16px';
-            targetInput.style.marginBottom = '24px';
+            targetInput.style.marginBottom = '16px';
             targetInput.style.borderRadius = '8px';
             targetInput.style.border = '1px solid #ccc';
             targetInput.style.boxSizing = 'border-box';
+            
+            // Reminder section
+            const reminderLabel = document.createElement('div');
+            reminderLabel.textContent = 'Daily Reminder (Optional)';
+            reminderLabel.style.fontSize = '16px';
+            reminderLabel.style.fontWeight = 'bold';
+            reminderLabel.style.marginBottom = '10px';
+            
+            const reminderRow = document.createElement('div');
+            reminderRow.style.display = 'flex';
+            reminderRow.style.alignItems = 'center';
+            reminderRow.style.gap = '10px';
+            reminderRow.style.marginBottom = '24px';
+            
+            const reminderToggle = document.createElement('input');
+            reminderToggle.type = 'checkbox';
+            reminderToggle.id = 'reminder-toggle';
+            reminderToggle.style.transform = 'scale(1.5)';
+            reminderToggle.style.margin = '0 5px 0 0';
+            
+            const reminderToggleLabel = document.createElement('label');
+            reminderToggleLabel.htmlFor = 'reminder-toggle';
+            reminderToggleLabel.textContent = 'Enable Reminder';
+            reminderToggleLabel.style.flex = '1';
+            
+            const reminderTime = document.createElement('input');
+            reminderTime.type = 'time';
+            reminderTime.style.padding = '8px';
+            reminderTime.style.borderRadius = '4px';
+            reminderTime.style.border = '1px solid #ccc';
+            reminderTime.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+            reminderTime.style.color = isDarkMode ? '#fff' : '#000';
+            reminderTime.disabled = true; // Initially disabled
+            
+            // Enable/disable time input based on checkbox
+            reminderToggle.onchange = () => {
+                reminderTime.disabled = !reminderToggle.checked;
+                if (reminderToggle.checked && !reminderTime.value) {
+                    // Set default time to 8:00 PM if not set
+                    reminderTime.value = '20:00';
+                }
+            };
+            
+            reminderRow.appendChild(reminderToggle);
+            reminderRow.appendChild(reminderToggleLabel);
+            reminderRow.appendChild(reminderTime);
             
             const colorLabel = document.createElement('div');
             colorLabel.textContent = 'Habit Color';
@@ -2452,10 +2511,151 @@ with open('demo.html', 'w') as f:
             document.body.appendChild(appScreen);
         }
         
+        // Global notification permission setting
+        let isNotificationsEnabled = false;
+        
+        // Check if notifications are available in this browser
+        function areNotificationsSupported() {
+            return 'Notification' in window;
+        }
+        
+        // Request permission for notifications
+        function requestNotificationPermission() {
+            if (!areNotificationsSupported()) {
+                console.log('Notifications not supported in this browser');
+                return Promise.resolve(false);
+            }
+            
+            if (Notification.permission === 'granted') {
+                isNotificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+                return Promise.resolve(true);
+            }
+            
+            if (Notification.permission === 'denied') {
+                isNotificationsEnabled = false;
+                localStorage.setItem('notificationsEnabled', 'false');
+                return Promise.resolve(false);
+            }
+            
+            // Need to request permission
+            return Notification.requestPermission()
+                .then(permission => {
+                    isNotificationsEnabled = permission === 'granted';
+                    localStorage.setItem('notificationsEnabled', String(isNotificationsEnabled));
+                    return isNotificationsEnabled;
+                })
+                .catch(error => {
+                    console.error('Error requesting notification permission:', error);
+                    return false;
+                });
+        }
+        
+        // Function to show a notification
+        function showNotification(habit) {
+            if (!isNotificationsEnabled) return;
+            
+            try {
+                const icon = habit.icon || '⏰';
+                const title = `${icon} ${habit.name} Reminder`;
+                const options = {
+                    body: "Don't forget!",
+                    icon: '/favicon.ico' // Will use default icon if not found
+                };
+                
+                const notification = new Notification(title, options);
+                
+                // Close the notification after 10 seconds
+                setTimeout(() => {
+                    notification.close();
+                }, 10000);
+                
+                // Add click event to focus the window when notification is clicked
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
+        }
+        
+        // Check for habits that need reminders
+        function checkReminders() {
+            if (!isNotificationsEnabled) return;
+            
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            
+            // Format the current time in 24-hour format (HH:MM)
+            const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+            
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                
+                // Skip if reminders aren't enabled for this habit or no time is set
+                if (!habit.reminderEnabled || !habit.reminderTime) return;
+                
+                // Check if the current time matches the reminder time (checking only once per minute)
+                if (currentTime === habit.reminderTime) {
+                    showNotification(habit);
+                }
+            });
+        }
+        
+        // Set up a timer to check for reminders every minute
+        let reminderTimer = null;
+        
+        function startReminderCheck() {
+            // Clear any existing timer
+            if (reminderTimer) {
+                clearInterval(reminderTimer);
+            }
+            
+            // Only start checking if notifications are enabled
+            if (isNotificationsEnabled) {
+                // Check once immediately
+                checkReminders();
+                
+                // Set interval to check every minute (60000 ms)
+                reminderTimer = setInterval(checkReminders, 60000);
+            }
+        }
+        
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadHabits();
             applyTheme();
+            
+            // Check if notifications were previously enabled
+            const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
+            
+            if (storedNotificationsEnabled === 'true') {
+                // User previously enabled notifications, try to restore
+                requestNotificationPermission().then(granted => {
+                    if (granted) {
+                        startReminderCheck();
+                    }
+                });
+            } else if (storedNotificationsEnabled === null) {
+                // First time user, show permission request
+                setTimeout(() => {
+                    if (confirm("Would you like to enable notifications for habit reminders?")) {
+                        requestNotificationPermission().then(granted => {
+                            if (granted) {
+                                showToast("Notifications enabled successfully!", "#4CAF50");
+                                startReminderCheck();
+                            } else {
+                                showToast("Notifications disabled. You can enable them later in Settings.", "#FF9800");
+                            }
+                        });
+                    } else {
+                        localStorage.setItem('notificationsEnabled', 'false');
+                        showToast("Notifications disabled. You can enable them later in Settings.", "#FF9800");
+                    }
+                }, 2000); // Ask after 2 seconds so user can see the app first
+            }
         });
     </script>
 </body>
