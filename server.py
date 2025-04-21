@@ -2555,16 +2555,16 @@ with open('demo.html', 'w') as f:
                     const habitHistory = loadHabitHistory();
                     
                     // If a habit filter is active, only show data for that habit
-                    if (currentFilterHabit) {
-                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][currentFilterHabit]) {
+                    if (window.calendarCurrentFilterHabit) {
+                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][window.calendarCurrentFilterHabit]) {
                             // History exists for this habit on this date
                             totalHabits = 1;
-                            if (habitHistory[checkDate][currentFilterHabit] === "completed") {
+                            if (habitHistory[checkDate][window.calendarCurrentFilterHabit] === "completed") {
                                 totalCompleted = 1;
                             }
                         } else {
                             // Check individual habit history as fallback
-                            const habit = habits[currentFilterHabit];
+                            const habit = habits[window.calendarCurrentFilterHabit];
                             if (habit && habit.history && habit.history[checkDate]) {
                                 totalHabits = 1;
                                 if (habit.history[checkDate].completed) {
@@ -2723,13 +2723,13 @@ with open('demo.html', 'w') as f:
                     const dateHistory = habitHistory[date];
                     
                     // Check if we have any habits to display based on filter
-                    if (currentFilterHabit) {
+                    if (window.calendarCurrentFilterHabit) {
                         // Only show the filtered habit
-                        if (dateHistory[currentFilterHabit]) {
+                        if (dateHistory[window.calendarCurrentFilterHabit]) {
                             hasHabits = true;
-                            const status = dateHistory[currentFilterHabit]; // "completed" or "not_completed"
-                            const habit = habits[currentFilterHabit]; // Get the current habit info
-                            displayHabitHistoryItem(habitsList, currentFilterHabit, status, habit, isDarkMode);
+                            const status = dateHistory[window.calendarCurrentFilterHabit]; // "completed" or "not_completed"
+                            const habit = habits[window.calendarCurrentFilterHabit]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, window.calendarCurrentFilterHabit, status, habit, isDarkMode);
                         }
                     } else {
                         // Show all habits
@@ -2805,9 +2805,9 @@ with open('demo.html', 'w') as f:
                 
                 // Fall back to individual habit history data (backward compatibility)
                 if (!hasHabits) {
-                    if (currentFilterHabit) {
+                    if (window.calendarCurrentFilterHabit) {
                         // Only check the filtered habit
-                        const habit = habits[currentFilterHabit];
+                        const habit = habits[window.calendarCurrentFilterHabit];
                         if (habit && habit.history && habit.history[date]) {
                             hasHabits = true;
                             displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
@@ -2971,14 +2971,15 @@ with open('demo.html', 'w') as f:
                 habitSelect.appendChild(option);
             });
             
-            // Global variable to store the current filter
-            let currentFilterHabit = null;
+            // Define filter variable at the top of showCalendarScreen function
+            // and create a function to update it so it's available in the entire scope
+            window.calendarCurrentFilterHabit = null;
             
             // Handle filter change
             habitSelect.onchange = () => {
                 const selectedHabitId = habitSelect.value;
                 // Set filter to the selected habit or null if "All Habits" is selected
-                currentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
+                window.calendarCurrentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
                 // Re-render the calendar with the filter applied
                 renderCalendarDays();
             };
