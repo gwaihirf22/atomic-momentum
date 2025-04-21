@@ -1315,6 +1315,11 @@
             
             const iconContainer = document.createElement('div');
             iconContainer.className = 'icon-container';
+            iconContainer.style.display = 'grid';
+            iconContainer.style.gridTemplateColumns = 'repeat(4, 1fr)';
+            iconContainer.style.gap = '10px';
+            iconContainer.style.marginBottom = '20px';
+            iconContainer.style.justifyContent = 'center';
             
             // List of available SVG icons
             const icons = [
@@ -1345,10 +1350,33 @@
                 const iconBtn = document.createElement('div');
                 iconBtn.className = 'icon-btn';
                 iconBtn.title = icon.label;
+                iconBtn.style.width = '42px';
+                iconBtn.style.height = '42px';
+                iconBtn.style.display = 'flex';
+                iconBtn.style.alignItems = 'center';
+                iconBtn.style.justifyContent = 'center';
+                iconBtn.style.cursor = 'pointer';
+                iconBtn.style.border = '1px solid #ccc';
+                iconBtn.style.borderRadius = '8px';
+                iconBtn.style.transition = 'all 0.3s ease';
+                iconBtn.style.backgroundColor = isDarkMode ? '#333' : '#fff';
                 
                 // Add SVG icon or "None" text
                 if (icon.id) {
-                    iconBtn.innerHTML = `<svg><use href="#${icon.id}" /></svg>`;
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', '24');
+                    svg.setAttribute('height', '24');
+                    svg.setAttribute('fill', 'none');
+                    svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('stroke', 'currentColor');
+                    svg.setAttribute('stroke-width', '2');
+                    svg.style.color = isDarkMode ? '#fff' : '#000';
+                    
+                    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
+                    
+                    svg.appendChild(use);
+                    iconBtn.appendChild(svg);
                 } else {
                     iconBtn.textContent = 'None';
                     iconBtn.style.fontSize = '12px';
@@ -1356,7 +1384,9 @@
                 
                 // Set initial appearance
                 if (icon.id === selectedIconId) {
-                    iconBtn.classList.add('selected');
+                    iconBtn.style.backgroundColor = '#e0e0e0';
+                    iconBtn.style.transform = 'scale(1.1)';
+                    iconBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
                 }
                 
                 // Handle selection click
@@ -1366,12 +1396,15 @@
                     
                     // Update all buttons to reflect new selection
                     iconContainer.querySelectorAll('.icon-btn').forEach(btn => {
-                        if (btn === iconBtn) {
-                            btn.classList.add('selected');
-                        } else {
-                            btn.classList.remove('selected');
-                        }
+                        btn.style.backgroundColor = isDarkMode ? '#333' : '#fff';
+                        btn.style.transform = 'scale(1.0)';
+                        btn.style.boxShadow = 'none';
                     });
+                    
+                    // Highlight selected icon
+                    iconBtn.style.backgroundColor = '#e0e0e0';
+                    iconBtn.style.transform = 'scale(1.1)';
+                    iconBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
                 };
                 
                 iconContainer.appendChild(iconBtn);
