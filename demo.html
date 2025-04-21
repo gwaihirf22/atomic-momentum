@@ -1504,7 +1504,7 @@
                 notificationNote.style.color = '#F44336';
                 notificationNote.style.marginTop = '8px';
                 notificationNote.style.fontStyle = 'italic';
-                notificationSection.appendChild(notificationNote);
+                notificationsSection.appendChild(notificationNote);
             } else {
                 // Check if we're in an iframe, which typically blocks notifications
                 try {
@@ -1521,7 +1521,7 @@
                         notificationNote.style.color = '#FF9800';
                         notificationNote.style.marginTop = '8px';
                         notificationNote.style.fontStyle = 'italic';
-                        notificationSection.appendChild(notificationNote);
+                        notificationsSection.appendChild(notificationNote);
                     }
                 } catch (e) {
                     // If we can't access window.top, we're in a restrictive context
@@ -2857,12 +2857,8 @@
             
             // Check if notifications are supported at all before proceeding
             if (!areNotificationsSupported()) {
-                // Show a message that notifications aren't supported
-                setTimeout(() => {
-                    showToast("Browser doesn't support notifications", "#F44336");
-                }, 2000);
+                console.log("Browser doesn't support notifications");
                 localStorage.setItem('notificationsEnabled', 'false');
-                // Set up UI to show notifications are unavailable
                 return;
             }
 
@@ -2870,14 +2866,13 @@
             try {
                 if (window.self !== window.top) {
                     // We're in an iframe, which typically blocks notifications
-                    setTimeout(() => {
-                        showToast("Notifications are blocked in preview mode. Try in a regular browser window.", "#FF9800");
-                    }, 2000);
+                    console.log("In iframe mode - notifications are typically blocked");
                     return;
                 }
             } catch (e) {
                 // If we can't access window.top, we're definitely in a restrictive context
                 console.log("Running in a restrictive context, notifications may be blocked");
+                return;
             }
             
             if (storedNotificationsEnabled === 'true') {
