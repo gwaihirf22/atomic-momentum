@@ -1494,13 +1494,14 @@
             appearanceSection.appendChild(appearanceTitle);
             appearanceSection.appendChild(darkModeRow);
             
-            // Notifications Section
+            // Notifications Section - ensure same background color as other sections in both themes
             const notificationsSection = document.createElement('div');
             notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
             notificationsSection.style.padding = '16px';
             notificationsSection.style.borderRadius = '8px';
             notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             notificationsSection.style.marginBottom = '16px';
+            notificationsSection.style.color = isDarkMode ? '#fff' : '#000';
             
             const notificationsTitle = document.createElement('h3');
             notificationsTitle.textContent = 'Notifications';
@@ -1687,6 +1688,7 @@
             developerSection.style.borderRadius = '8px';
             developerSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             developerSection.style.marginBottom = '16px';
+            developerSection.style.color = isDarkMode ? '#fff' : '#000';
             
             const developerTitle = document.createElement('h3');
             developerTitle.textContent = 'Developer Testing';
