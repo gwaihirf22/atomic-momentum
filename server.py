@@ -1532,6 +1532,7 @@ with open('demo.html', 'w') as f:
             const notificationsTitle = document.createElement('h3');
             notificationsTitle.textContent = 'Notifications';
             notificationsTitle.style.margin = '0 0 16px 0';
+            notificationsTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             // Notification Switch Row
             const notificationRow = document.createElement('div');
@@ -1545,6 +1546,7 @@ with open('demo.html', 'w') as f:
             const notificationLabelTitle = document.createElement('div');
             notificationLabelTitle.textContent = 'Enable Notifications';
             notificationLabelTitle.style.fontWeight = 'bold';
+            notificationLabelTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             const notificationLabelDesc = document.createElement('div');
             notificationLabelDesc.textContent = 'Receive reminders for your habits';
@@ -1719,6 +1721,7 @@ with open('demo.html', 'w') as f:
             const developerTitle = document.createElement('h3');
             developerTitle.textContent = 'Developer Testing';
             developerTitle.style.margin = '0 0 16px 0';
+            developerTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             // Developer note
             const developerNote = document.createElement('div');
@@ -1838,18 +1841,26 @@ with open('demo.html', 'w') as f:
                 appScreen.style.backgroundColor = '#121212';
                 appScreen.style.color = '#fff';
                 appearanceSection.style.backgroundColor = '#1e1e1e';
+                notificationsSection.style.backgroundColor = '#1e1e1e';
+                notificationsSection.style.color = '#fff';
                 darkModeLabelDesc.style.color = '#aaa';
                 developerSection.style.backgroundColor = '#1e1e1e';
+                developerSection.style.color = '#fff';
                 resetTestDesc.style.color = '#aaa';
                 developerNote.style.color = '#ff9800';
+                resetTestTitle.style.color = '#fff';
             } else {
                 appScreen.style.backgroundColor = '#f5f5f5';
                 appScreen.style.color = '#000';
                 appearanceSection.style.backgroundColor = '#ffffff';
+                notificationsSection.style.backgroundColor = '#ffffff';
+                notificationsSection.style.color = '#000';
                 darkModeLabelDesc.style.color = '#757575';
                 developerSection.style.backgroundColor = '#ffffff';
+                developerSection.style.color = '#000';
                 resetTestDesc.style.color = '#757575';
                 developerNote.style.color = '#e65100';
+                resetTestTitle.style.color = '#000';
             }
         }
         
