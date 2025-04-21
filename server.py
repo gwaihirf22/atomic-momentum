@@ -158,9 +158,30 @@ with open('demo.html', 'w') as f:
     <script>
         // Default habits to use if none are saved
         const defaultHabits = {
-            water: { progress: 5, target: 8, name: "Drink Water", color: "#2196F3" },
-            bible: { progress: 3, target: 7, name: "Read Bible", color: "#009688" },
-            workout: { progress: 7, target: 7, name: "Workout", color: "#FF9800" }
+            water: { 
+                progress: 5, 
+                target: 8, 
+                name: "Drink Water", 
+                color: "#2196F3",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly"
+            },
+            bible: { 
+                progress: 3, 
+                target: 7, 
+                name: "Read Bible", 
+                color: "#009688",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly"
+            },
+            workout: { 
+                progress: 7, 
+                target: 7, 
+                name: "Workout", 
+                color: "#FF9800",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly"
+            }
         };
         
         // Our in-memory habits
@@ -190,6 +211,9 @@ with open('demo.html', 'w') as f:
                 try {
                     habits = JSON.parse(savedHabits);
                     console.log('Loaded habits from localStorage:', habits);
+                    
+                    // Check for habits that need to be reset based on their frequency
+                    checkHabitResets();
                 } catch (e) {
                     console.error('Error loading habits from localStorage:', e);
                     habits = {...defaultHabits};
@@ -287,12 +311,94 @@ with open('demo.html', 'w') as f:
             
             if (newProgress >= 0 && newProgress <= habit.target) {
                 habit.progress = newProgress;
+                habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
                 
                 // Save the updated state
                 saveHabits();
                 
                 // Re-render all habits
                 renderHabits();
+            }
+        }
+        
+        // Check if habits need to be reset based on their frequency
+        function checkHabitResets() {
+            const currentDate = new Date();
+            let hasChanges = false;
+            
+            // Process each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                
+                // Make sure habit has lastUpdatedDate (backward compatibility)
+                if (!habit.lastUpdatedDate) {
+                    habit.lastUpdatedDate = new Date().toISOString();
+                    habit.resetFrequency = habit.resetFrequency || "weekly";
+                    hasChanges = true;
+                    return; // Skip this iteration
+                }
+                
+                const lastUpdated = new Date(habit.lastUpdatedDate);
+                
+                switch (habit.resetFrequency || "weekly") {
+                    case "daily":
+                        // Reset if it's a different calendar day
+                        if (currentDate.getDate() !== lastUpdated.getDate() ||
+                            currentDate.getMonth() !== lastUpdated.getMonth() ||
+                            currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                        
+                    case "weekly":
+                        // Get ISO week numbers (1-52)
+                        const getWeekNumber = (d) => {
+                            // ISO week date weeks start on Monday, so correct the day number
+                            const dayNum = d.getUTCDay() || 7;
+                            
+                            // Set the target date to the Thursday of this week
+                            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + (4 - dayNum)));
+                            
+                            // Get first day of year
+                            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                            
+                            // Calculate full weeks to nearest Thursday
+                            const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                            
+                            return weekNum;
+                        };
+                        
+                        const currentWeek = getWeekNumber(currentDate);
+                        const lastWeek = getWeekNumber(lastUpdated);
+                        const currentYear = currentDate.getFullYear();
+                        const lastYear = lastUpdated.getFullYear();
+                        
+                        // Reset if the week number changed
+                        if (currentWeek !== lastWeek || currentYear !== lastYear) {
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                        
+                    case "monthly":
+                        // Reset if it's a different month
+                        if (currentDate.getMonth() !== lastUpdated.getMonth() ||
+                            currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                }
+            });
+            
+            // Save if changes were made
+            if (hasChanges) {
+                saveHabits();
+                console.log('Habits were reset based on their reset frequency');
             }
         }
         
@@ -537,7 +643,9 @@ with open('demo.html', 'w') as f:
                         name: nameInput.value.trim(),
                         target: parseInt(targetInput.value, 10),
                         progress: 0,
-                        color: selectedColor
+                        color: selectedColor,
+                        lastUpdatedDate: new Date().toISOString(),
+                        resetFrequency: "weekly" // Default to weekly reset
                     };
                     
                     saveHabits();
