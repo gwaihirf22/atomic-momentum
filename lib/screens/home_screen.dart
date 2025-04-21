@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import '../models/habit.dart';
 import '../services/habit_service.dart';
 import 'add_habit_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  final Function(ThemeMode) onThemeChanged;
+  final bool isDarkMode;
+  
+  const HomeScreen({
+    Key? key, 
+    required this.onThemeChanged, 
+    required this.isDarkMode
+  }) : super(key: key);
+  
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -56,6 +66,23 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('Momentum'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(
+                    onThemeChanged: widget.onThemeChanged,
+                    isDarkMode: widget.isDarkMode,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: _isLoading 
           ? _buildLoadingState()
