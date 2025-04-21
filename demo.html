@@ -872,6 +872,7 @@
                 appScreen.style.color = checked ? '#fff' : '#000';
                 appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
                 darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
+                developerSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
                 
                 // Notify all theme listeners
                 notifyThemeChange();
@@ -886,6 +887,122 @@
             // Add all sections to the settings container
             settingsContainer.appendChild(appearanceSection);
             
+            // Developer Testing Section
+            const developerSection = document.createElement('div');
+            developerSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            developerSection.style.padding = '16px';
+            developerSection.style.borderRadius = '8px';
+            developerSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            developerSection.style.marginBottom = '16px';
+            
+            const developerTitle = document.createElement('h3');
+            developerTitle.textContent = 'Developer Testing';
+            developerTitle.style.margin = '0 0 16px 0';
+            
+            // Developer note
+            const developerNote = document.createElement('div');
+            developerNote.textContent = '⚠️ For testing only - Will be removed before production';
+            developerNote.style.fontSize = '12px';
+            developerNote.style.color = isDarkMode ? '#ff9800' : '#e65100';
+            developerNote.style.marginBottom = '12px';
+            developerNote.style.fontWeight = 'bold';
+            
+            // Reset Test Button Row
+            const resetTestRow = document.createElement('div');
+            resetTestRow.style.display = 'flex';
+            resetTestRow.style.alignItems = 'center';
+            resetTestRow.style.justifyContent = 'space-between';
+            resetTestRow.style.padding = '8px 0';
+            
+            const resetTestLabel = document.createElement('div');
+            
+            const resetTestTitle = document.createElement('div');
+            resetTestTitle.textContent = 'Force Reset Progress';
+            resetTestTitle.style.fontWeight = 'bold';
+            
+            const resetTestDesc = document.createElement('div');
+            resetTestDesc.textContent = 'Test habit reset without waiting for time boundaries';
+            resetTestDesc.style.fontSize = '14px';
+            resetTestDesc.style.color = isDarkMode ? '#aaa' : '#757575';
+            resetTestDesc.style.marginTop = '4px';
+            
+            resetTestLabel.appendChild(resetTestTitle);
+            resetTestLabel.appendChild(resetTestDesc);
+            
+            // Reset button
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset All';
+            resetButton.style.padding = '8px 16px';
+            resetButton.style.backgroundColor = '#f44336';
+            resetButton.style.color = 'white';
+            resetButton.style.border = 'none';
+            resetButton.style.borderRadius = '4px';
+            resetButton.style.cursor = 'pointer';
+            resetButton.style.fontWeight = 'bold';
+            resetButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            
+            // Reset button hover effect
+            resetButton.onmouseover = () => {
+                resetButton.style.backgroundColor = '#d32f2f';
+            };
+            
+            resetButton.onmouseout = () => {
+                resetButton.style.backgroundColor = '#f44336';
+            };
+            
+            // Implement reset functionality
+            resetButton.onclick = () => {
+                // Force reset all habit progress
+                Object.keys(habits).forEach(habitId => {
+                    const habit = habits[habitId];
+                    habit.progress = 0;
+                    habit.lastUpdatedDate = new Date().toISOString();
+                });
+                
+                // Save changes
+                saveHabits();
+                
+                // Show feedback toast
+                const toast = document.createElement('div');
+                toast.textContent = 'Habit progress reset!';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.backgroundColor = '#333';
+                toast.style.color = 'white';
+                toast.style.padding = '10px 20px';
+                toast.style.borderRadius = '4px';
+                toast.style.zIndex = '1000';
+                toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                
+                document.body.appendChild(toast);
+                
+                // Animate toast
+                setTimeout(() => {
+                    toast.style.opacity = '1';
+                }, 10);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            };
+            
+            resetTestRow.appendChild(resetTestLabel);
+            resetTestRow.appendChild(resetButton);
+            
+            developerSection.appendChild(developerTitle);
+            developerSection.appendChild(developerNote);
+            developerSection.appendChild(resetTestRow);
+            
+            // Add developer section to the settings container
+            settingsContainer.appendChild(developerSection);
+            
             // Assemble the screen
             appScreen.appendChild(appBar);
             appScreen.appendChild(settingsContainer);
@@ -898,11 +1015,17 @@
                 appScreen.style.color = '#fff';
                 appearanceSection.style.backgroundColor = '#1e1e1e';
                 darkModeLabelDesc.style.color = '#aaa';
+                developerSection.style.backgroundColor = '#1e1e1e';
+                resetTestDesc.style.color = '#aaa';
+                developerNote.style.color = '#ff9800';
             } else {
                 appScreen.style.backgroundColor = '#f5f5f5';
                 appScreen.style.color = '#000';
                 appearanceSection.style.backgroundColor = '#ffffff';
                 darkModeLabelDesc.style.color = '#757575';
+                developerSection.style.backgroundColor = '#ffffff';
+                resetTestDesc.style.color = '#757575';
+                developerNote.style.color = '#e65100';
             }
         }
         
