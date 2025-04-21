@@ -1,113 +1,35 @@
-<!DOCTYPE html>
+import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import webbrowser
+
+class AtomicMomentumApp(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        """Serve a GET request."""
+        if self.path == '/notifications-test' or self.path == '/notifications-test.html':
+            # Serve the notification test page
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            with open('notifications-test.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
+            
+        # For all other paths, serve the main app
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        with open('demo.html', 'rb') as file:
+            self.wfile.write(file.read())
+
+# Create the demo HTML page
+with open('demo.html', 'w') as f:
+    f.write("""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Atomic Momentum</title>
-    <!-- Heroicons SVG Definitions -->
-    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-        <!-- Water/Hydration -->
-        <symbol id="icon-droplet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
-        </symbol>
-        
-        <!-- Reading/Book -->
-        <symbol id="icon-book-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-        </symbol>
-        
-        <!-- Exercise/Fitness -->
-        <symbol id="icon-dumbbell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
-            <line x1="16" y1="8" x2="2" y2="22"></line>
-            <line x1="17.5" y1="15" x2="9" y2="15"></line>
-        </symbol>
-        
-        <!-- Nutrition/Diet -->
-        <symbol id="icon-salad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 2a9 9 0 0 1 9 9M3 12V9m0 0a9 9 0 0 1 9-9m0 18a9 9 0 0 1-9-9m9 9a9 9 0 0 0 9-9m-9 9V3m9 9a9 9 0 0 0-9-9"></path>
-        </symbol>
-        
-        <!-- Meditation/Wellness -->
-        <symbol id="icon-lotus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-            <path d="M2 17l10 5 10-5"></path>
-            <path d="M2 12l10 5 10-5"></path>
-        </symbol>
-        
-        <!-- Sleep -->
-        <symbol id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-        </symbol>
-        
-        <!-- Health/Medicine -->
-        <symbol id="icon-pill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="8" y1="12" x2="16" y2="12"></line>
-            <line x1="12" y1="8" x2="12" y2="16"></line>
-        </symbol>
-        
-        <!-- Avoidance/No -->
-        <symbol id="icon-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-        </symbol>
-        
-        <!-- Computer/Work -->
-        <symbol id="icon-desktop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="8" y1="21" x2="16" y2="21"></line>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
-        </symbol>
-        
-        <!-- Art/Creativity -->
-        <symbol id="icon-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="13.5" cy="6.5" r="2.5"></circle>
-            <circle cx="19" cy="13" r="2"></circle>
-            <circle cx="6" cy="12" r="2"></circle>
-            <circle cx="10" cy="18.5" r="2.5"></circle>
-            <path d="M16 12h-4v4"></path>
-        </symbol>
-        
-        <!-- Music -->
-        <symbol id="icon-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18V5l12-2v13"></path>
-            <circle cx="6" cy="18" r="3"></circle>
-            <circle cx="18" cy="16" r="3"></circle>
-        </symbol>
-        
-        <!-- Gardening/Growth -->
-        <symbol id="icon-plant" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 3a9 9 0 0 0 9 9 9 9 0 0 0-9 9 9 9 0 0 0-9-9 9 9 0 0 0 9-9z"></path>
-        </symbol>
-        
-        <!-- Cleaning -->
-        <symbol id="icon-broom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 8l10-5v5l-8 3z"></path>
-            <path d="M14 3l7 6-8 4-10-5z"></path>
-        </symbol>
-        
-        <!-- Notes/Writing -->
-        <symbol id="icon-pencil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
-            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
-            <path d="M2 2l7.586 7.586"></path>
-            <circle cx="11" cy="11" r="2"></circle>
-        </symbol>
-        
-        <!-- Time/Alarm -->
-        <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-        </symbol>
-        
-        <!-- Heart/Health -->
-        <symbol id="icon-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-        </symbol>
-    </svg>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -225,99 +147,6 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 3px 5px rgba(0,0,0,0.2);
-        }
-        
-        /* Icon picker styling */
-        .icon-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
-            justify-content: center;
-        }
-        
-        .icon-btn {
-            width: 44px;
-            height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            background-color: #ffffff;
-        }
-        
-        .icon-btn svg {
-            width: 24px;
-            height: 24px;
-            stroke: #757575;
-            transition: all 0.2s ease;
-        }
-        
-        .icon-btn:hover {
-            border-color: #673ab7;
-            background-color: #f5f5f5;
-        }
-        
-        .icon-btn:hover svg {
-            stroke: #673ab7;
-        }
-        
-        .icon-btn.selected {
-            border-color: #673ab7;
-            background-color: rgba(103, 58, 183, 0.1);
-            transform: scale(1.05);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .icon-btn.selected svg {
-            stroke: #673ab7;
-        }
-        
-        /* Dark mode styles for icon picker */
-        body[data-theme="dark"] .icon-btn {
-            background-color: #333;
-            border-color: #555;
-        }
-        
-        body[data-theme="dark"] .icon-btn svg {
-            stroke: #bbb;
-        }
-        
-        body[data-theme="dark"] .icon-btn:hover {
-            border-color: #9575cd;
-            background-color: #444;
-        }
-        
-        body[data-theme="dark"] .icon-btn:hover svg {
-            stroke: #9575cd;
-        }
-        
-        body[data-theme="dark"] .icon-btn.selected {
-            border-color: #9575cd;
-            background-color: rgba(149, 117, 205, 0.2);
-        }
-        
-        body[data-theme="dark"] .icon-btn.selected svg {
-            stroke: #9575cd;
-        }
-        
-        /* Habit icon styling */
-        .habit-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-            width: 20px;
-            height: 20px;
-        }
-        
-        .habit-icon svg {
-            width: 20px;
-            height: 20px;
-            stroke: #757575;
         }
     </style>
 </head>
@@ -629,27 +458,10 @@
             headingText.style.margin = '0';
             
             // Check if habit has an icon and add it before the name
-            headingText.textContent = habit.name;
-            
-            // Create icon element if habit has an iconId
-            if (habit.iconId) {
-                const iconWrapper = document.createElement('div');
-                iconWrapper.className = 'habit-icon';
-                iconWrapper.innerHTML = `<svg><use href="#${habit.iconId}" /></svg>`;
-                
-                // Set icon color based on habit color
-                const iconColor = habit.color || '#757575';
-                iconWrapper.querySelector('svg').style.stroke = iconColor;
-                
-                // Insert icon before the habit name
-                heading.insertBefore(iconWrapper, headingText);
-            } 
-            // Backward compatibility for old emoji icons
-            else if (habit.icon) {
-                const legacyIcon = document.createElement('span');
-                legacyIcon.textContent = habit.icon + ' ';
-                legacyIcon.style.marginRight = '8px';
-                heading.insertBefore(legacyIcon, headingText);
+            if (habit.icon) {
+                headingText.textContent = `${habit.icon} ${habit.name}`;
+            } else {
+                headingText.textContent = habit.name;
             }
             
             heading.appendChild(headingText);
@@ -3467,4 +3279,11 @@
         });
     </script>
 </body>
-</html>
+</html>""")
+
+print("Created demo.html file")
+
+# Start the server
+httpd = HTTPServer(('0.0.0.0', 5000), AtomicMomentumApp)
+print('Server running at http://0.0.0.0:5000')
+httpd.serve_forever()
