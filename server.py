@@ -1324,6 +1324,57 @@ with open('demo.html', 'w') as f:
             heading.style.textAlign = 'center';
             heading.style.marginBottom = '20px';
             
+            // Emoji icon selector
+            const iconLabel = document.createElement('div');
+            iconLabel.textContent = 'Choose an Icon (Optional)';
+            iconLabel.style.fontSize = '16px';
+            iconLabel.style.fontWeight = 'bold';
+            iconLabel.style.marginBottom = '10px';
+            
+            const emojiContainer = document.createElement('div');
+            emojiContainer.style.display = 'flex';
+            emojiContainer.style.flexWrap = 'wrap';
+            emojiContainer.style.gap = '10px';
+            emojiContainer.style.marginBottom = '20px';
+            emojiContainer.style.justifyContent = 'center';
+            
+            // Popular emoji choices for habits
+            const emojis = ['💧', '📚', '🏃', '🥗', '💪', '🧘', '💤', '💊', '🚫', '💻', '🎨', '🎵', '🌱', '🧹', '📝', '⏰', ''];
+            let selectedEmoji = habit.icon || ''; // Pre-select current icon if exists
+            
+            emojis.forEach(emoji => {
+                const emojiBtn = document.createElement('div');
+                emojiBtn.textContent = emoji || 'None';
+                emojiBtn.style.width = '42px';
+                emojiBtn.style.height = '42px';
+                emojiBtn.style.display = 'flex';
+                emojiBtn.style.alignItems = 'center';
+                emojiBtn.style.justifyContent = 'center';
+                emojiBtn.style.fontSize = emoji ? '24px' : '12px';
+                emojiBtn.style.cursor = 'pointer';
+                emojiBtn.style.border = '1px solid #ccc';
+                emojiBtn.style.borderRadius = '8px';
+                emojiBtn.style.transition = 'all 0.3s ease';
+                emojiBtn.style.backgroundColor = emoji === selectedEmoji ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                emojiBtn.style.transform = emoji === selectedEmoji ? 'scale(1.1)' : 'scale(1.0)';
+                emojiBtn.style.boxShadow = emoji === selectedEmoji ? '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                
+                emojiBtn.onclick = () => {
+                    selectedEmoji = emoji;
+                    // Update all buttons to show selection
+                    emojiContainer.querySelectorAll('div').forEach(btn => {
+                        btn.style.backgroundColor = btn.textContent === (selectedEmoji || 'None') ? 
+                            '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                        btn.style.transform = btn.textContent === (selectedEmoji || 'None') ? 
+                            'scale(1.1)' : 'scale(1.0)';
+                        btn.style.boxShadow = btn.textContent === (selectedEmoji || 'None') ? 
+                            '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                    });
+                };
+                
+                emojiContainer.appendChild(emojiBtn);
+            });
+            
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.placeholder = 'Habit Name';
@@ -1447,6 +1498,8 @@ with open('demo.html', 'w') as f:
             };
             
             form.appendChild(heading);
+            form.appendChild(iconLabel);
+            form.appendChild(emojiContainer);
             form.appendChild(nameInput);
             form.appendChild(targetInput);
             form.appendChild(colorLabel);
@@ -1535,7 +1588,8 @@ with open('demo.html', 'w') as f:
                         ...habits[habitId], // Keep existing properties
                         name: nameInput.value.trim(),
                         target: parseInt(targetInput.value, 10),
-                        color: selectedColor
+                        color: selectedColor,
+                        icon: selectedEmoji // Save the selected emoji
                     };
                     
                     saveHabits();
