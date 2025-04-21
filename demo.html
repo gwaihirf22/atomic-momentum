@@ -168,7 +168,10 @@
     <div class="add-button" onclick="showAddHabitScreen()">+</div>
     
     <div class="notification-test-banner">
-        Need to test notifications? <a href="/notifications-test" target="_blank">Open the Notification Test Page</a> in a new tab
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
+            <span>📱 Using iOS? Notifications have limited support. <a href="/notifications-test" target="_blank">View testing options</a></span>
+            <button onclick="this.parentElement.parentElement.style.display = 'none'" style="background: transparent; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+        </div>
     </div>
 
     <script>
