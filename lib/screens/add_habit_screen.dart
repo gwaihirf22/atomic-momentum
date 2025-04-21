@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/habit.dart';
+import '../providers/theme_provider.dart';
 import '../services/habit_service.dart';
 
 class AddHabitScreen extends StatefulWidget {
