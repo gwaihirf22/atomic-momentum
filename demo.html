@@ -127,14 +127,115 @@
         </div>
     </div>
     
-    <div class="add-button" onclick="alert('Add Habit feature will be implemented soon!')">+</div>
+    <div class="add-button" onclick="showAddHabitForm()">+</div>
 
     <script>
-        const habits = {
-            water: { progress: 5, target: 8 },
-            bible: { progress: 3, target: 7 },
-            workout: { progress: 7, target: 7 }
+        // Default habits to use if none are saved
+        const defaultHabits = {
+            water: { progress: 5, target: 8, name: "Drink Water", color: "#2196F3" },
+            bible: { progress: 3, target: 7, name: "Read Bible", color: "#009688" },
+            workout: { progress: 7, target: 7, name: "Workout", color: "#FF9800" }
         };
+        
+        // Our in-memory habits
+        let habits = {};
+        
+        // Load habits from localStorage
+        function loadHabits() {
+            const savedHabits = localStorage.getItem('atomic_momentum_habits');
+            if (savedHabits) {
+                try {
+                    habits = JSON.parse(savedHabits);
+                    console.log('Loaded habits from localStorage:', habits);
+                } catch (e) {
+                    console.error('Error loading habits from localStorage:', e);
+                    habits = {...defaultHabits};
+                    saveHabits();
+                }
+            } else {
+                // Use default habits if none are saved
+                habits = {...defaultHabits};
+                saveHabits();
+            }
+            
+            // Update UI with loaded habits
+            renderHabits();
+        }
+        
+        // Save habits to localStorage
+        function saveHabits() {
+            try {
+                localStorage.setItem('atomic_momentum_habits', JSON.stringify(habits));
+                console.log('Saved habits to localStorage');
+            } catch (e) {
+                console.error('Error saving habits to localStorage:', e);
+            }
+        }
+        
+        // Render all habits in the UI
+        function renderHabits() {
+            const container = document.getElementById('habits-container');
+            container.innerHTML = ''; // Clear existing habits
+            
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const habitElement = createHabitElement(habitId, habit);
+                container.appendChild(habitElement);
+            });
+        }
+        
+        // Create a habit card element
+        function createHabitElement(habitId, habit) {
+            const card = document.createElement('div');
+            card.className = 'habit-card';
+            
+            const title = document.createElement('div');
+            title.className = 'habit-title';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = habit.name;
+            
+            const progress = document.createElement('span');
+            progress.textContent = `${habit.progress}/${habit.target}`;
+            progress.style.color = habit.color;
+            
+            title.appendChild(heading);
+            title.appendChild(progress);
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-fill';
+            progressFill.style.width = `${(habit.progress / habit.target) * 100}%`;
+            progressFill.style.backgroundColor = habit.color;
+            
+            progressBar.appendChild(progressFill);
+            
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            
+            const minusBtn = document.createElement('button');
+            minusBtn.textContent = '-';
+            minusBtn.style.color = habit.color;
+            minusBtn.disabled = habit.progress <= 0;
+            minusBtn.onclick = () => updateProgress(habitId, -1);
+            
+            const plusBtn = document.createElement('button');
+            plusBtn.textContent = '+';
+            plusBtn.style.color = habit.color;
+            plusBtn.disabled = habit.progress >= habit.target;
+            plusBtn.onclick = () => updateProgress(habitId, 1);
+            
+            actions.appendChild(minusBtn);
+            actions.appendChild(plusBtn);
+            
+            card.appendChild(title);
+            card.appendChild(progressBar);
+            card.appendChild(actions);
+            
+            return card;
+        }
         
         function updateProgress(habitId, change) {
             const habit = habits[habitId];
@@ -143,28 +244,155 @@
             if (newProgress >= 0 && newProgress <= habit.target) {
                 habit.progress = newProgress;
                 
-                // Update the UI
-                const cards = document.querySelectorAll('.habit-card');
-                let card;
+                // Save the updated state
+                saveHabits();
                 
-                if (habitId === 'water') card = cards[0];
-                else if (habitId === 'bible') card = cards[1];
-                else if (habitId === 'workout') card = cards[2];
-                
-                const progressText = card.querySelector('.habit-title span');
-                progressText.textContent = `${habit.progress}/${habit.target}`;
-                
-                const progressFill = card.querySelector('.progress-fill');
-                progressFill.style.width = `${(habit.progress / habit.target) * 100}%`;
-                
-                // Enable/disable buttons based on progress
-                const minusBtn = card.querySelector('button:first-child');
-                const plusBtn = card.querySelector('button:last-child');
-                
-                minusBtn.disabled = habit.progress <= 0;
-                plusBtn.disabled = habit.progress >= habit.target;
+                // Re-render all habits
+                renderHabits();
             }
         }
+        
+        // Add a new habit form display
+        function showAddHabitForm() {
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.zIndex = '1000';
+            
+            const form = document.createElement('div');
+            form.style.backgroundColor = 'white';
+            form.style.padding = '20px';
+            form.style.borderRadius = '8px';
+            form.style.width = '80%';
+            form.style.maxWidth = '400px';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = 'Add New Habit';
+            heading.style.textAlign = 'center';
+            heading.style.marginBottom = '20px';
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Habit Name';
+            nameInput.style.width = '100%';
+            nameInput.style.padding = '10px';
+            nameInput.style.marginBottom = '10px';
+            nameInput.style.borderRadius = '4px';
+            nameInput.style.border = '1px solid #ccc';
+            nameInput.style.boxSizing = 'border-box';
+            
+            const targetInput = document.createElement('input');
+            targetInput.type = 'number';
+            targetInput.placeholder = 'Goal Number';
+            targetInput.min = '1';
+            targetInput.max = '100';
+            targetInput.style.width = '100%';
+            targetInput.style.padding = '10px';
+            targetInput.style.marginBottom = '20px';
+            targetInput.style.borderRadius = '4px';
+            targetInput.style.border = '1px solid #ccc';
+            targetInput.style.boxSizing = 'border-box';
+            
+            const colorLabel = document.createElement('div');
+            colorLabel.textContent = 'Habit Color';
+            colorLabel.style.fontSize = '16px';
+            colorLabel.style.fontWeight = 'bold';
+            colorLabel.style.marginBottom = '10px';
+            
+            const colorsPicker = document.createElement('div');
+            colorsPicker.style.display = 'flex';
+            colorsPicker.style.justifyContent = 'space-around';
+            colorsPicker.style.marginBottom = '20px';
+            
+            const colors = ['#673ab7', '#2196F3', '#4CAF50', '#9C27B0', '#FF5722', '#009688', '#FF9800'];
+            let selectedColor = colors[0];
+            
+            colors.forEach(color => {
+                const colorBtn = document.createElement('div');
+                colorBtn.style.width = '30px';
+                colorBtn.style.height = '30px';
+                colorBtn.style.backgroundColor = color;
+                colorBtn.style.borderRadius = '50%';
+                colorBtn.style.cursor = 'pointer';
+                colorBtn.style.border = color === selectedColor ? '3px solid #333' : 'none';
+                
+                colorBtn.onclick = () => {
+                    selectedColor = color;
+                    document.querySelectorAll('#color-picker > div').forEach(btn => {
+                        btn.style.border = btn.style.backgroundColor === color ? '3px solid #333' : 'none';
+                    });
+                };
+                
+                colorsPicker.appendChild(colorBtn);
+            });
+            colorsPicker.id = 'color-picker';
+            
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.justifyContent = 'space-between';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.style.border = 'none';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.backgroundColor = '#f5f5f5';
+            cancelBtn.style.cursor = 'pointer';
+            
+            cancelBtn.onclick = () => {
+                document.body.removeChild(modal);
+            };
+            
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Save';
+            saveBtn.style.padding = '10px 20px';
+            saveBtn.style.border = 'none';
+            saveBtn.style.borderRadius = '4px';
+            saveBtn.style.backgroundColor = '#673ab7';
+            saveBtn.style.color = 'white';
+            saveBtn.style.cursor = 'pointer';
+            
+            saveBtn.onclick = () => {
+                if (nameInput.value.trim() && targetInput.value.trim()) {
+                    const habitId = 'habit_' + Date.now();
+                    habits[habitId] = {
+                        name: nameInput.value.trim(),
+                        target: parseInt(targetInput.value, 10),
+                        progress: 0,
+                        color: selectedColor
+                    };
+                    
+                    saveHabits();
+                    renderHabits();
+                    document.body.removeChild(modal);
+                } else {
+                    alert('Please fill out all fields');
+                }
+            };
+            
+            buttonsContainer.appendChild(cancelBtn);
+            buttonsContainer.appendChild(saveBtn);
+            
+            form.appendChild(heading);
+            form.appendChild(nameInput);
+            form.appendChild(targetInput);
+            form.appendChild(colorLabel);
+            form.appendChild(colorsPicker);
+            form.appendChild(buttonsContainer);
+            
+            modal.appendChild(form);
+            document.body.appendChild(modal);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', loadHabits);
     </script>
 </body>
 </html>
