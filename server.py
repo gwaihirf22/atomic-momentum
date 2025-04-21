@@ -340,6 +340,9 @@ with open('demo.html', 'w') as f:
                 // Re-initialize event listeners and state
                 document.addEventListener('DOMContentLoaded', loadHabits);
                 loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
             };
             
             // Title
@@ -401,7 +404,8 @@ with open('demo.html', 'w') as f:
             
             const colorsPicker = document.createElement('div');
             colorsPicker.style.display = 'flex';
-            colorsPicker.style.overflowX = 'auto';
+            colorsPicker.style.justifyContent = 'center'; // Center the color picker
+            colorsPicker.style.flexWrap = 'wrap'; // Allow wrapping to prevent horizontal scroll
             colorsPicker.style.marginBottom = '24px';
             colorsPicker.style.paddingBottom = '10px';
             
@@ -411,12 +415,12 @@ with open('demo.html', 'w') as f:
             
             colors.forEach(color => {
                 const colorBtn = document.createElement('div');
-                colorBtn.style.minWidth = '40px';
-                colorBtn.style.height = '40px';
+                colorBtn.style.width = '36px'; // Fixed width instead of minWidth
+                colorBtn.style.height = '36px'; // Slightly smaller height
                 colorBtn.style.backgroundColor = color;
                 colorBtn.style.borderRadius = '50%';
                 colorBtn.style.cursor = 'pointer';
-                colorBtn.style.marginRight = '12px';
+                colorBtn.style.margin = '8px'; // Add margin on all sides for even spacing
                 colorBtn.style.transition = 'all 0.3s ease';
                 colorBtn.style.boxSizing = 'border-box';
                 colorBtn.style.display = 'flex';
@@ -483,6 +487,9 @@ with open('demo.html', 'w') as f:
                 // Re-initialize event listeners and state
                 document.addEventListener('DOMContentLoaded', loadHabits);
                 loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
             };
             
             form.appendChild(heading);
@@ -541,6 +548,9 @@ with open('demo.html', 'w') as f:
                     // Re-initialize event listeners
                     document.addEventListener('DOMContentLoaded', loadHabits);
                     loadHabits();
+                    
+                    // Ensure theme is applied correctly when returning to main screen
+                    applyTheme();
                 } else {
                     alert('Please fill out all fields');
                 }
@@ -708,8 +718,8 @@ with open('demo.html', 'w') as f:
                 localStorage.setItem('isDarkMode', checked);
                 
                 // Apply theme immediately to settings screen
-                document.body.style.backgroundColor = checked ? '#121212' : '#f5f5f5';
-                document.body.style.color = checked ? '#fff' : '#000';
+                appScreen.style.backgroundColor = checked ? '#121212' : '#f5f5f5';
+                appScreen.style.color = checked ? '#fff' : '#000';
                 appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
                 darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
                 
@@ -732,12 +742,17 @@ with open('demo.html', 'w') as f:
             
             document.body.appendChild(appScreen);
             
-            // Apply current theme to settings screen
+            // Apply current theme to settings screen consistently
             if (isDarkMode) {
-                document.body.style.backgroundColor = '#121212';
-                document.body.style.color = '#fff';
+                appScreen.style.backgroundColor = '#121212';
+                appScreen.style.color = '#fff';
                 appearanceSection.style.backgroundColor = '#1e1e1e';
                 darkModeLabelDesc.style.color = '#aaa';
+            } else {
+                appScreen.style.backgroundColor = '#f5f5f5';
+                appScreen.style.color = '#000';
+                appearanceSection.style.backgroundColor = '#ffffff';
+                darkModeLabelDesc.style.color = '#757575';
             }
         }
         
