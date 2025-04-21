@@ -1520,17 +1520,19 @@ with open('demo.html', 'w') as f:
             appearanceSection.appendChild(appearanceTitle);
             appearanceSection.appendChild(darkModeRow);
             
-            // Notifications Section
+            // Notifications Section - ensure same background color as other sections in both themes
             const notificationsSection = document.createElement('div');
             notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
             notificationsSection.style.padding = '16px';
             notificationsSection.style.borderRadius = '8px';
             notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             notificationsSection.style.marginBottom = '16px';
+            notificationsSection.style.color = isDarkMode ? '#fff' : '#000';
             
             const notificationsTitle = document.createElement('h3');
             notificationsTitle.textContent = 'Notifications';
             notificationsTitle.style.margin = '0 0 16px 0';
+            notificationsTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             // Notification Switch Row
             const notificationRow = document.createElement('div');
@@ -1544,6 +1546,7 @@ with open('demo.html', 'w') as f:
             const notificationLabelTitle = document.createElement('div');
             notificationLabelTitle.textContent = 'Enable Notifications';
             notificationLabelTitle.style.fontWeight = 'bold';
+            notificationLabelTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             const notificationLabelDesc = document.createElement('div');
             notificationLabelDesc.textContent = 'Receive reminders for your habits';
@@ -1604,13 +1607,21 @@ with open('demo.html', 'w') as f:
                 notifSliderButton.style.left = '4px';
                 
                 // Add a note about browser support
+                const notificationContainer = document.createElement('div');
+                notificationContainer.style.backgroundColor = isDarkMode ? '#3a0500' : '#ffebee';
+                notificationContainer.style.padding = '10px';
+                notificationContainer.style.borderRadius = '4px';
+                notificationContainer.style.marginTop = '10px';
+                notificationContainer.style.border = isDarkMode ? '1px solid #5c0000' : '1px solid #ffcdd2';
+                
                 const notificationNote = document.createElement('div');
                 notificationNote.textContent = 'Notifications not supported in this browser';
                 notificationNote.style.fontSize = '12px';
-                notificationNote.style.color = '#F44336';
-                notificationNote.style.marginTop = '8px';
-                notificationNote.style.fontStyle = 'italic';
-                notificationsSection.appendChild(notificationNote);
+                notificationNote.style.color = isDarkMode ? '#ff6b68' : '#F44336';
+                notificationNote.style.fontWeight = 'bold';
+                
+                notificationContainer.appendChild(notificationNote);
+                notificationsSection.appendChild(notificationContainer);
             } else {
                 // Check if we're in an iframe, which typically blocks notifications
                 try {
@@ -1621,13 +1632,21 @@ with open('demo.html', 'w') as f:
                         notifSliderButton.style.left = '4px';
                         
                         // Add a note about iframe restrictions
+                        const notificationContainer = document.createElement('div');
+                        notificationContainer.style.backgroundColor = isDarkMode ? '#4d3200' : '#fff8e1';
+                        notificationContainer.style.padding = '10px';
+                        notificationContainer.style.borderRadius = '4px';
+                        notificationContainer.style.marginTop = '10px';
+                        notificationContainer.style.border = isDarkMode ? '1px solid #6d4c00' : '1px solid #ffecb3';
+                        
                         const notificationNote = document.createElement('div');
                         notificationNote.textContent = 'Notifications blocked in preview mode. Try in regular browser window.';
                         notificationNote.style.fontSize = '12px';
-                        notificationNote.style.color = '#FF9800';
-                        notificationNote.style.marginTop = '8px';
-                        notificationNote.style.fontStyle = 'italic';
-                        notificationsSection.appendChild(notificationNote);
+                        notificationNote.style.color = isDarkMode ? '#ffcc80' : '#e65100';
+                        notificationNote.style.fontWeight = 'bold';
+                        
+                        notificationContainer.appendChild(notificationNote);
+                        notificationsSection.appendChild(notificationContainer);
                     }
                 } catch (e) {
                     // If we can't access window.top, we're in a restrictive context
@@ -1697,10 +1716,12 @@ with open('demo.html', 'w') as f:
             developerSection.style.borderRadius = '8px';
             developerSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             developerSection.style.marginBottom = '16px';
+            developerSection.style.color = isDarkMode ? '#fff' : '#000';
             
             const developerTitle = document.createElement('h3');
             developerTitle.textContent = 'Developer Testing';
             developerTitle.style.margin = '0 0 16px 0';
+            developerTitle.style.color = isDarkMode ? '#fff' : '#000';
             
             // Developer note
             const developerNote = document.createElement('div');
@@ -1815,24 +1836,39 @@ with open('demo.html', 'w') as f:
             
             document.body.appendChild(appScreen);
             
-            // Apply current theme to settings screen consistently
-            if (isDarkMode) {
-                appScreen.style.backgroundColor = '#121212';
-                appScreen.style.color = '#fff';
-                appearanceSection.style.backgroundColor = '#1e1e1e';
-                darkModeLabelDesc.style.color = '#aaa';
-                developerSection.style.backgroundColor = '#1e1e1e';
-                resetTestDesc.style.color = '#aaa';
-                developerNote.style.color = '#ff9800';
-            } else {
-                appScreen.style.backgroundColor = '#f5f5f5';
-                appScreen.style.color = '#000';
-                appearanceSection.style.backgroundColor = '#ffffff';
-                darkModeLabelDesc.style.color = '#757575';
-                developerSection.style.backgroundColor = '#ffffff';
-                resetTestDesc.style.color = '#757575';
-                developerNote.style.color = '#e65100';
+            // Create a function to update theme that can be called whenever theme changes
+            function updateSettingsTheme(darkMode) {
+                appScreen.style.backgroundColor = darkMode ? '#121212' : '#f5f5f5';
+                appScreen.style.color = darkMode ? '#fff' : '#000';
+                
+                // Appearance section
+                appearanceSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                appearanceSection.style.color = darkMode ? '#fff' : '#000';
+                darkModeLabelDesc.style.color = darkMode ? '#aaa' : '#757575';
+                
+                // Notifications section
+                notificationsSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                notificationsSection.style.color = darkMode ? '#fff' : '#000';
+                notificationsTitle.style.color = darkMode ? '#fff' : '#000';
+                notificationLabelTitle.style.color = darkMode ? '#fff' : '#000';
+                notificationLabelDesc.style.color = darkMode ? '#aaa' : '#757575';
+                
+                // Developer section
+                developerSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                developerSection.style.color = darkMode ? '#fff' : '#000';
+                developerTitle.style.color = darkMode ? '#fff' : '#000';
+                resetTestTitle.style.color = darkMode ? '#fff' : '#000';
+                resetTestDesc.style.color = darkMode ? '#aaa' : '#757575';
+                developerNote.style.color = darkMode ? '#ff9800' : '#e65100';
             }
+            
+            // Apply current theme to settings screen consistently
+            updateSettingsTheme(isDarkMode);
+            
+            // Add this screen's theme elements to the theme listeners
+            addThemeListener((darkMode) => {
+                updateSettingsTheme(darkMode);
+            });
         }
         
         // Apply theme based on saved preference
@@ -2541,16 +2577,16 @@ with open('demo.html', 'w') as f:
                     const habitHistory = loadHabitHistory();
                     
                     // If a habit filter is active, only show data for that habit
-                    if (currentFilterHabit) {
-                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][currentFilterHabit]) {
+                    if (window.calendarCurrentFilterHabit) {
+                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][window.calendarCurrentFilterHabit]) {
                             // History exists for this habit on this date
                             totalHabits = 1;
-                            if (habitHistory[checkDate][currentFilterHabit] === "completed") {
+                            if (habitHistory[checkDate][window.calendarCurrentFilterHabit] === "completed") {
                                 totalCompleted = 1;
                             }
                         } else {
                             // Check individual habit history as fallback
-                            const habit = habits[currentFilterHabit];
+                            const habit = habits[window.calendarCurrentFilterHabit];
                             if (habit && habit.history && habit.history[checkDate]) {
                                 totalHabits = 1;
                                 if (habit.history[checkDate].completed) {
@@ -2709,13 +2745,13 @@ with open('demo.html', 'w') as f:
                     const dateHistory = habitHistory[date];
                     
                     // Check if we have any habits to display based on filter
-                    if (currentFilterHabit) {
+                    if (window.calendarCurrentFilterHabit) {
                         // Only show the filtered habit
-                        if (dateHistory[currentFilterHabit]) {
+                        if (dateHistory[window.calendarCurrentFilterHabit]) {
                             hasHabits = true;
-                            const status = dateHistory[currentFilterHabit]; // "completed" or "not_completed"
-                            const habit = habits[currentFilterHabit]; // Get the current habit info
-                            displayHabitHistoryItem(habitsList, currentFilterHabit, status, habit, isDarkMode);
+                            const status = dateHistory[window.calendarCurrentFilterHabit]; // "completed" or "not_completed"
+                            const habit = habits[window.calendarCurrentFilterHabit]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, window.calendarCurrentFilterHabit, status, habit, isDarkMode);
                         }
                     } else {
                         // Show all habits
@@ -2791,9 +2827,9 @@ with open('demo.html', 'w') as f:
                 
                 // Fall back to individual habit history data (backward compatibility)
                 if (!hasHabits) {
-                    if (currentFilterHabit) {
+                    if (window.calendarCurrentFilterHabit) {
                         // Only check the filtered habit
-                        const habit = habits[currentFilterHabit];
+                        const habit = habits[window.calendarCurrentFilterHabit];
                         if (habit && habit.history && habit.history[date]) {
                             hasHabits = true;
                             displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
@@ -2812,59 +2848,58 @@ with open('demo.html', 'w') as f:
                 
                 // Helper function to display legacy habit history items
                 function displayLegacyHabitItem(container, habit, date, isDarkMode) {
-                            
-                            // Create habit item
-                            const habitItem = document.createElement('div');
-                            habitItem.style.padding = '10px';
-                            habitItem.style.marginBottom = '10px';
-                            habitItem.style.borderRadius = '6px';
-                            habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
-                            
-                            // Habit name with icon
-                            const habitName = document.createElement('div');
-                            habitName.style.fontWeight = 'bold';
-                            habitName.style.marginBottom = '5px';
-                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
-                            
-                            // Progress info
-                            const progressInfo = document.createElement('div');
-                            progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
-                            
-                            // Status indicator
-                            const statusIndicator = document.createElement('div');
-                            statusIndicator.style.display = 'flex';
-                            statusIndicator.style.alignItems = 'center';
-                            statusIndicator.style.marginTop = '5px';
-                            
-                            const statusDot = document.createElement('div');
-                            statusDot.style.width = '10px';
-                            statusDot.style.height = '10px';
-                            statusDot.style.borderRadius = '50%';
-                            statusDot.style.marginRight = '6px';
-                            
-                            const statusText = document.createElement('div');
-                            statusText.style.fontSize = '14px';
-                            
-                            if (habit.history[date].completed) {
-                                statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
-                                statusText.textContent = 'Completed';
-                                statusText.style.color = '#4CAF50';
-                            } else {
-                                statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
-                                statusText.textContent = 'Not completed';
-                                statusText.style.color = '#F44336';
-                            }
-                            
-                            statusIndicator.appendChild(statusDot);
-                            statusIndicator.appendChild(statusText);
-                            
-                            // Add elements to habit item
-                            habitItem.appendChild(habitName);
-                            habitItem.appendChild(progressInfo);
-                            habitItem.appendChild(statusIndicator);
-                            
-                            container.appendChild(habitItem);
-                        }
+                    // Create habit item
+                    const habitItem = document.createElement('div');
+                    habitItem.style.padding = '10px';
+                    habitItem.style.marginBottom = '10px';
+                    habitItem.style.borderRadius = '6px';
+                    habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                    
+                    // Habit name with icon
+                    const habitName = document.createElement('div');
+                    habitName.style.fontWeight = 'bold';
+                    habitName.style.marginBottom = '5px';
+                    habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                    
+                    // Progress info
+                    const progressInfo = document.createElement('div');
+                    progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                    
+                    // Status indicator
+                    const statusIndicator = document.createElement('div');
+                    statusIndicator.style.display = 'flex';
+                    statusIndicator.style.alignItems = 'center';
+                    statusIndicator.style.marginTop = '5px';
+                    
+                    const statusDot = document.createElement('div');
+                    statusDot.style.width = '10px';
+                    statusDot.style.height = '10px';
+                    statusDot.style.borderRadius = '50%';
+                    statusDot.style.marginRight = '6px';
+                    
+                    const statusText = document.createElement('div');
+                    statusText.style.fontSize = '14px';
+                    
+                    if (habit.history[date].completed) {
+                        statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                        statusText.textContent = 'Completed';
+                        statusText.style.color = '#4CAF50';
+                    } else {
+                        statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                        statusText.textContent = 'Not completed';
+                        statusText.style.color = '#F44336';
+                    }
+                    
+                    statusIndicator.appendChild(statusDot);
+                    statusIndicator.appendChild(statusText);
+                    
+                    // Add elements to habit item
+                    habitItem.appendChild(habitName);
+                    habitItem.appendChild(progressInfo);
+                    habitItem.appendChild(statusIndicator);
+                    
+                    container.appendChild(habitItem);
+                }
                 
                 // If no habits for this day, show message
                 if (!hasHabits) {
@@ -2958,14 +2993,15 @@ with open('demo.html', 'w') as f:
                 habitSelect.appendChild(option);
             });
             
-            // Global variable to store the current filter
-            let currentFilterHabit = null;
+            // Define filter variable at the top of showCalendarScreen function
+            // and create a function to update it so it's available in the entire scope
+            window.calendarCurrentFilterHabit = null;
             
             // Handle filter change
             habitSelect.onchange = () => {
                 const selectedHabitId = habitSelect.value;
                 // Set filter to the selected habit or null if "All Habits" is selected
-                currentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
+                window.calendarCurrentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
                 // Re-render the calendar with the filter applied
                 renderCalendarDays();
             };
