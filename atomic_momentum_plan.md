@@ -4,7 +4,7 @@
 - [x] Home screen with habit list
 - [x] Progress bars for habits
 - [x] Add Habit screen with color selection
-- [ ] Save habits locally
+- [x] Save habits locally using shared_preferences
 - [ ] Dark Mode toggle
 
 ## Bugs / Issues

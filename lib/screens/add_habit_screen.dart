@@ -34,30 +34,44 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     super.dispose();
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isSubmitting = true;
       });
 
-      // Create new habit
-      final name = _nameController.text.trim();
-      final target = int.parse(_targetController.text.trim());
-      
-      _habitService.addHabit(Habit(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        target: target,
-        progress: 0,
-        color: _selectedColor,
-      ));
+      try {
+        // Create new habit
+        final name = _nameController.text.trim();
+        final target = int.parse(_targetController.text.trim());
+        
+        // Add habit and save to storage
+        await _habitService.addHabit(Habit(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: name,
+          target: target,
+          progress: 0,
+          color: _selectedColor,
+        ));
 
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      // Return to previous screen
-      Navigator.pop(context);
+        // Return to previous screen
+        Navigator.pop(context);
+      } catch (e) {
+        // Show error if something went wrong
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving habit: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } finally {
+        // Update UI state if we're still mounted
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
     }
   }
 

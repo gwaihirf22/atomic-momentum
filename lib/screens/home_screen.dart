@@ -11,6 +11,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final HabitService _habitService = HabitService();
   List<Habit> habits = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -18,17 +19,33 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadHabits();
   }
 
-  void _loadHabits() {
+  Future<void> _loadHabits() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    // Wait a small amount of time to ensure the habit service 
+    // has a chance to load habits from shared preferences
+    await Future.delayed(Duration(milliseconds: 100));
+    
+    // Refresh the UI with the loaded habits
     setState(() {
       habits = _habitService.getHabits();
+      _isLoading = false;
     });
   }
 
-  void _updateHabitProgress(Habit habit, int newProgress) {
+  Future<void> _updateHabitProgress(Habit habit, int newProgress) async {
     if (newProgress >= 0 && newProgress <= habit.target) {
       setState(() {
-        _habitService.updateHabitProgress(habit.id, newProgress);
-        _loadHabits();
+        _isLoading = true;
+      });
+      
+      await _habitService.updateHabitProgress(habit.id, newProgress);
+      
+      setState(() {
+        habits = _habitService.getHabits();
+        _isLoading = false;
       });
     }
   }
@@ -40,9 +57,11 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('Momentum'),
         centerTitle: true,
       ),
-      body: habits.isEmpty 
-          ? _buildEmptyState() 
-          : _buildHabitList(),
+      body: _isLoading 
+          ? _buildLoadingState()
+          : habits.isEmpty 
+              ? _buildEmptyState() 
+              : _buildHabitList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -54,6 +73,25 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         child: Icon(Icons.add),
         tooltip: 'Add a new habit',
+      ),
+    );
+  }
+  
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            'Loading your habits...',
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).textTheme.bodySmall?.color,
+            ),
+          ),
+        ],
       ),
     );
   }
