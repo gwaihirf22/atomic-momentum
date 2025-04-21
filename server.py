@@ -698,7 +698,7 @@ with open('demo.html', 'w') as f:
             sliderButton.style.content = '""';
             sliderButton.style.height = '26px';
             sliderButton.style.width = '26px';
-            sliderButton.style.left = isDarkMode ? '4px' : '30px';
+            sliderButton.style.left = isDarkMode ? '30px' : '4px';
             sliderButton.style.bottom = '4px';
             sliderButton.style.backgroundColor = 'white';
             sliderButton.style.borderRadius = '50%';
