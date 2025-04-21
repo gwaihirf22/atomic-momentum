@@ -283,6 +283,11 @@ with open('demo.html', 'w') as f:
             
             const title = document.createElement('div');
             title.className = 'habit-title';
+            title.style.display = 'flex';
+            title.style.justifyContent = 'space-between';
+            title.style.alignItems = 'center';
+            
+            const titleLeft = document.createElement('div');
             
             const heading = document.createElement('h2');
             heading.textContent = habit.name;
@@ -291,8 +296,25 @@ with open('demo.html', 'w') as f:
             progress.textContent = `${habit.progress}/${habit.target}`;
             progress.style.color = habit.color;
             
-            title.appendChild(heading);
-            title.appendChild(progress);
+            titleLeft.appendChild(heading);
+            titleLeft.appendChild(progress);
+            
+            // Add edit button (pencil icon)
+            const editBtn = document.createElement('button');
+            editBtn.innerHTML = '✏️'; // Pencil emoji
+            editBtn.style.background = 'transparent';
+            editBtn.style.border = 'none';
+            editBtn.style.fontSize = '20px';
+            editBtn.style.cursor = 'pointer';
+            editBtn.style.padding = '0 5px';
+            editBtn.title = 'Edit habit';
+            editBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent any other event handlers
+                showEditHabitScreen(habitId, habit);
+            };
+            
+            title.appendChild(titleLeft);
+            title.appendChild(editBtn);
             
             const progressBar = document.createElement('div');
             progressBar.className = 'progress-bar';
@@ -1099,6 +1121,353 @@ with open('demo.html', 'w') as f:
             
             // Notify all registered theme listeners
             notifyThemeChange();
+        }
+        
+        // Show Edit Habit Screen (fullscreen)
+        function showEditHabitScreen(habitId, habit) {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen form that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Edit Habit';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create form container (scrollable)
+            const formContainer = document.createElement('div');
+            formContainer.style.flex = '1';
+            formContainer.style.overflowY = 'auto';
+            formContainer.style.padding = '20px';
+            
+            // Create form content
+            const form = document.createElement('div');
+            form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            form.style.padding = '20px';
+            form.style.borderRadius = '8px';
+            form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = 'Edit Habit';
+            heading.style.textAlign = 'center';
+            heading.style.marginBottom = '20px';
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Habit Name';
+            nameInput.style.width = '100%';
+            nameInput.style.padding = '16px';
+            nameInput.style.fontSize = '16px';
+            nameInput.style.marginBottom = '16px'; 
+            nameInput.style.borderRadius = '8px';
+            nameInput.style.border = '1px solid #ccc';
+            nameInput.style.boxSizing = 'border-box';
+            nameInput.value = habit.name; // Pre-fill with habit name
+            
+            const targetInput = document.createElement('input');
+            targetInput.type = 'number';
+            targetInput.placeholder = 'Goal Number (weekly)';
+            targetInput.min = '1';
+            targetInput.max = '100';
+            targetInput.style.width = '100%';
+            targetInput.style.padding = '16px';
+            targetInput.style.fontSize = '16px';
+            targetInput.style.marginBottom = '24px';
+            targetInput.style.borderRadius = '8px';
+            targetInput.style.border = '1px solid #ccc';
+            targetInput.style.boxSizing = 'border-box';
+            targetInput.value = habit.target; // Pre-fill with habit target
+            
+            const colorLabel = document.createElement('div');
+            colorLabel.textContent = 'Habit Color';
+            colorLabel.style.fontSize = '16px';
+            colorLabel.style.fontWeight = 'bold';
+            colorLabel.style.marginBottom = '10px';
+            
+            const colorsPicker = document.createElement('div');
+            colorsPicker.style.display = 'flex';
+            colorsPicker.style.justifyContent = 'center'; // Center the color picker
+            colorsPicker.style.flexWrap = 'wrap'; // Allow wrapping to prevent horizontal scroll
+            colorsPicker.style.marginBottom = '24px';
+            colorsPicker.style.paddingBottom = '10px';
+            
+            const colors = ['#673ab7', '#2196F3', '#4CAF50', '#9C27B0', '#FF5722', '#009688', '#FF9800'];
+            let selectedColor = habit.color; // Pre-select current habit color
+            let saveButton; // Reference to the save button that will be created later
+            
+            colors.forEach(color => {
+                const colorBtn = document.createElement('div');
+                colorBtn.style.width = '36px'; // Fixed width instead of minWidth
+                colorBtn.style.height = '36px'; // Slightly smaller height
+                colorBtn.style.backgroundColor = color;
+                colorBtn.style.borderRadius = '50%';
+                colorBtn.style.cursor = 'pointer';
+                colorBtn.style.margin = '8px'; // Add margin on all sides for even spacing
+                colorBtn.style.transition = 'all 0.3s ease';
+                colorBtn.style.boxSizing = 'border-box';
+                colorBtn.style.display = 'flex';
+                colorBtn.style.alignItems = 'center';
+                colorBtn.style.justifyContent = 'center';
+                
+                if (color === selectedColor) {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                } else {
+                    colorBtn.style.border = '1px solid rgba(0,0,0,0.1)';
+                }
+                
+                colorBtn.onclick = () => {
+                    selectedColor = color;
+                    document.querySelectorAll('#color-picker > div').forEach(btn => {
+                        btn.style.transform = 'scale(1.0)';
+                        btn.style.border = '1px solid rgba(0,0,0,0.1)';
+                        btn.style.boxShadow = 'none';
+                        btn.innerHTML = '';
+                    });
+                    
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    saveButton.style.backgroundColor = color;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                };
+                
+                colorsPicker.appendChild(colorBtn);
+            });
+            colorsPicker.id = 'color-picker';
+            
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.justifyContent = 'space-between';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.style.border = 'none';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.backgroundColor = '#f5f5f5';
+            cancelBtn.style.cursor = 'pointer';
+            
+            cancelBtn.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            form.appendChild(heading);
+            form.appendChild(nameInput);
+            form.appendChild(targetInput);
+            form.appendChild(colorLabel);
+            form.appendChild(colorsPicker);
+            
+            formContainer.appendChild(form);
+            
+            // Save button (large bottom button)
+            const saveButtonContainer = document.createElement('div');
+            saveButtonContainer.style.padding = '16px';
+            saveButtonContainer.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            saveButtonContainer.style.boxShadow = isDarkMode ? '0 -1px 3px rgba(255,255,255,0.1)' : '0 -1px 3px rgba(0,0,0,0.1)';
+            
+            // Create a container for buttons (Save and Cancel side by side)
+            const buttonRow = document.createElement('div');
+            buttonRow.style.display = 'flex';
+            buttonRow.style.gap = '10px';
+            buttonRow.style.width = '100%';
+            
+            // Cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.style.flex = '1';
+            cancelButton.style.padding = '18px';
+            cancelButton.style.backgroundColor = '#9e9e9e';
+            cancelButton.style.color = 'white';
+            cancelButton.style.border = 'none';
+            cancelButton.style.borderRadius = '16px';
+            cancelButton.style.fontSize = '18px';
+            cancelButton.style.fontWeight = 'bold';
+            cancelButton.style.cursor = 'pointer';
+            cancelButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            cancelButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            cancelButton.onmouseover = () => {
+                cancelButton.style.transform = 'translateY(-2px)';
+                cancelButton.style.boxShadow = '0 8px 12px rgba(0,0,0,0.25)';
+            };
+            
+            cancelButton.onmouseout = () => {
+                cancelButton.style.transform = 'translateY(0)';
+                cancelButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            
+            cancelButton.onclick = () => {
+                // Return to main screen without saving
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Save button
+            saveButton = document.createElement('button');
+            saveButton.textContent = 'Save Changes';
+            saveButton.style.flex = '2';
+            saveButton.style.padding = '18px';
+            saveButton.style.backgroundColor = selectedColor;
+            saveButton.style.color = 'white';
+            saveButton.style.border = 'none';
+            saveButton.style.borderRadius = '16px';
+            saveButton.style.fontSize = '18px';
+            saveButton.style.fontWeight = 'bold';
+            saveButton.style.cursor = 'pointer';
+            saveButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            saveButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            saveButton.onmouseover = () => {
+                saveButton.style.transform = 'translateY(-2px)';
+                saveButton.style.boxShadow = '0 8px 12px rgba(0,0,0,0.25)';
+            };
+            
+            saveButton.onmouseout = () => {
+                saveButton.style.transform = 'translateY(0)';
+                saveButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            
+            saveButton.onclick = () => {
+                if (nameInput.value.trim() && targetInput.value.trim()) {
+                    // Preserve existing progress, lastUpdatedDate and resetFrequency
+                    habits[habitId] = {
+                        ...habits[habitId], // Keep existing properties
+                        name: nameInput.value.trim(),
+                        target: parseInt(targetInput.value, 10),
+                        color: selectedColor
+                    };
+                    
+                    saveHabits();
+                    
+                    // Show feedback toast
+                    const toast = document.createElement('div');
+                    toast.textContent = 'Habit updated!';
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '20px';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.backgroundColor = '#4caf50';
+                    toast.style.color = 'white';
+                    toast.style.padding = '10px 20px';
+                    toast.style.borderRadius = '4px';
+                    toast.style.zIndex = '1000';
+                    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Animate toast
+                    setTimeout(() => {
+                        toast.style.opacity = '1';
+                    }, 10);
+                    
+                    setTimeout(() => {
+                        // Return to main screen
+                        document.body.innerHTML = mainContent;
+                        
+                        // Re-initialize event listeners
+                        document.addEventListener('DOMContentLoaded', loadHabits);
+                        loadHabits();
+                        
+                        // Ensure theme is applied correctly when returning to main screen
+                        applyTheme();
+                    }, 1000);
+                } else {
+                    alert('Please fill out all fields');
+                }
+            };
+            
+            buttonRow.appendChild(cancelButton);
+            buttonRow.appendChild(saveButton);
+            
+            saveButtonContainer.appendChild(buttonRow);
+            
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(formContainer);
+            appScreen.appendChild(saveButtonContainer);
+            
+            document.body.appendChild(appScreen);
+            
+            // Focus the first input for better UX
+            nameInput.focus();
         }
         
         // Initialize on page load
