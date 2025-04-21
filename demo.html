@@ -1306,52 +1306,75 @@
             heading.style.marginBottom = '20px';
             
             // Emoji icon selector
+            // Icon selector
             const iconLabel = document.createElement('div');
             iconLabel.textContent = 'Choose an Icon (Optional)';
             iconLabel.style.fontSize = '16px';
             iconLabel.style.fontWeight = 'bold';
             iconLabel.style.marginBottom = '10px';
             
-            const emojiContainer = document.createElement('div');
-            emojiContainer.style.display = 'flex';
-            emojiContainer.style.flexWrap = 'wrap';
-            emojiContainer.style.gap = '10px';
-            emojiContainer.style.marginBottom = '20px';
-            emojiContainer.style.justifyContent = 'center';
+            const iconContainer = document.createElement('div');
+            iconContainer.className = 'icon-container';
             
-            // Popular emoji choices for habits
-            const emojis = ['💧', '📚', '🏃', '🥗', '💪', '🧘', '💤', '💊', '🚫', '💻', '🎨', '🎵', '🌱', '🧹', '📝', '⏰', ''];
+            // List of available SVG icons
+            const icons = [
+                { id: '', label: 'None' }, // Empty option
+                { id: 'icon-droplet', label: 'Water' },
+                { id: 'icon-book-open', label: 'Reading' },
+                { id: 'icon-dumbbell', label: 'Exercise' },
+                { id: 'icon-salad', label: 'Nutrition' },
+                { id: 'icon-lotus', label: 'Meditation' },
+                { id: 'icon-moon', label: 'Sleep' },
+                { id: 'icon-pill', label: 'Health' },
+                { id: 'icon-x-circle', label: 'Avoid' },
+                { id: 'icon-desktop', label: 'Work' },
+                { id: 'icon-palette', label: 'Art' },
+                { id: 'icon-music', label: 'Music' },
+                { id: 'icon-plant', label: 'Growth' },
+                { id: 'icon-broom', label: 'Clean' },
+                { id: 'icon-pencil', label: 'Write' },
+                { id: 'icon-clock', label: 'Time' },
+                { id: 'icon-heart', label: 'Heart' }
+            ];
+            
+            let selectedIconId = '';
+            // For backward compatibility - keep supporting old emoji format
             let selectedEmoji = '';
             
-            emojis.forEach(emoji => {
-                const emojiBtn = document.createElement('div');
-                emojiBtn.textContent = emoji || 'None';
-                emojiBtn.style.width = '42px';
-                emojiBtn.style.height = '42px';
-                emojiBtn.style.display = 'flex';
-                emojiBtn.style.alignItems = 'center';
-                emojiBtn.style.justifyContent = 'center';
-                emojiBtn.style.fontSize = emoji ? '24px' : '12px';
-                emojiBtn.style.cursor = 'pointer';
-                emojiBtn.style.border = '1px solid #ccc';
-                emojiBtn.style.borderRadius = '8px';
-                emojiBtn.style.transition = 'all 0.3s ease';
-                emojiBtn.style.backgroundColor = emoji === selectedEmoji ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+            icons.forEach(icon => {
+                const iconBtn = document.createElement('div');
+                iconBtn.className = 'icon-btn';
+                iconBtn.title = icon.label;
                 
-                emojiBtn.onclick = () => {
-                    selectedEmoji = emoji;
-                    // Update all buttons to show selection
-                    emojiContainer.querySelectorAll('div').forEach(btn => {
-                        btn.style.backgroundColor = btn.textContent === (selectedEmoji || 'None') ? 
-                            '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
-                        btn.style.transform = btn.textContent === (selectedEmoji || 'None') ? 
-                            'scale(1.1)' : 'scale(1.0)';
-                        btn.style.boxShadow = btn.textContent === (selectedEmoji || 'None') ? 
-                            '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                // Add SVG icon or "None" text
+                if (icon.id) {
+                    iconBtn.innerHTML = `<svg><use href="#${icon.id}" /></svg>`;
+                } else {
+                    iconBtn.textContent = 'None';
+                    iconBtn.style.fontSize = '12px';
+                }
+                
+                // Set initial appearance
+                if (icon.id === selectedIconId) {
+                    iconBtn.classList.add('selected');
+                }
+                
+                // Handle selection click
+                iconBtn.onclick = () => {
+                    selectedIconId = icon.id;
+                    selectedEmoji = ''; // Clear emoji when an icon is selected
+                    
+                    // Update all buttons to reflect new selection
+                    iconContainer.querySelectorAll('.icon-btn').forEach(btn => {
+                        if (btn === iconBtn) {
+                            btn.classList.add('selected');
+                        } else {
+                            btn.classList.remove('selected');
+                        }
                     });
                 };
                 
-                emojiContainer.appendChild(emojiBtn);
+                iconContainer.appendChild(iconBtn);
             });
             
             const nameInput = document.createElement('input');
@@ -1522,7 +1545,7 @@
             
             form.appendChild(heading);
             form.appendChild(iconLabel);
-            form.appendChild(emojiContainer);
+            form.appendChild(iconContainer);
             form.appendChild(nameInput);
             form.appendChild(targetInput);
             form.appendChild(colorLabel);
@@ -1570,7 +1593,8 @@
                         target: parseInt(targetInput.value, 10),
                         progress: 0,
                         color: selectedColor,
-                        icon: selectedEmoji, // Add the selected emoji
+                        icon: selectedEmoji, // Keep for backward compatibility
+                        iconId: selectedIconId, // Add the selected SVG icon ID
                         lastUpdatedDate: new Date().toISOString(),
                         resetFrequency: "weekly", // Default to weekly reset
                         reminderEnabled: reminderToggle.checked,
