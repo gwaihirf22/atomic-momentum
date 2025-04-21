@@ -2537,16 +2537,53 @@ with open('demo.html', 'w') as f:
                     let totalCompleted = 0;
                     let totalHabits = 0;
                     
-                    // Count completed habits for this day
-                    Object.keys(habits).forEach(habitId => {
-                        const habit = habits[habitId];
-                        if (habit.history && habit.history[checkDate]) {
-                            totalHabits++;
-                            if (habit.history[checkDate].completed) {
-                                totalCompleted++;
+                    // First check the global habit history structure
+                    const habitHistory = loadHabitHistory();
+                    
+                    // If a habit filter is active, only show data for that habit
+                    if (currentFilterHabit) {
+                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][currentFilterHabit]) {
+                            // History exists for this habit on this date
+                            totalHabits = 1;
+                            if (habitHistory[checkDate][currentFilterHabit] === "completed") {
+                                totalCompleted = 1;
+                            }
+                        } else {
+                            // Check individual habit history as fallback
+                            const habit = habits[currentFilterHabit];
+                            if (habit && habit.history && habit.history[checkDate]) {
+                                totalHabits = 1;
+                                if (habit.history[checkDate].completed) {
+                                    totalCompleted = 1;
+                                }
                             }
                         }
-                    });
+                    } else {
+                        // No filter, show data for all habits
+                        if (habitHistory && habitHistory[checkDate]) {
+                            // Use the habit history data structure
+                            const dateHistory = habitHistory[checkDate];
+                            totalHabits = Object.keys(dateHistory).length;
+                            
+                            // Count completed habits
+                            Object.values(dateHistory).forEach(status => {
+                                if (status === "completed") {
+                                    totalCompleted++;
+                                }
+                            });
+                        } else {
+                            // Fall back to individual habit history data (backward compatibility)
+                            Object.keys(habits).forEach(habitId => {
+                                const habit = habits[habitId];
+                                if (habit.history && habit.history[checkDate]) {
+                                    totalHabits++;
+                                    if (habit.history[checkDate].completed) {
+                                        totalCompleted++;
+                                    }
+                                }
+                            });
+                        }
+                    }
                     
                     // Only show indicator if there are habits for this day
                     if (totalHabits > 0) {
@@ -2658,7 +2695,6 @@ with open('demo.html', 'w') as f:
                 
                 if (habitHistory && habitHistory[date]) {
                     // Found history for this date in the habitHistory
-                    hasHabits = true;
                     
                     // Display header indicating this is from the history system
                     const historyHeader = document.createElement('div');
@@ -2672,10 +2708,30 @@ with open('demo.html', 'w') as f:
                     // Get history for this date
                     const dateHistory = habitHistory[date];
                     
-                    // Iterate through habits to display them with their recorded status
-                    Object.keys(dateHistory).forEach(habitId => {
-                        const status = dateHistory[habitId]; // "completed" or "not_completed"
-                        const habit = habits[habitId]; // Get the current habit info
+                    // Check if we have any habits to display based on filter
+                    if (currentFilterHabit) {
+                        // Only show the filtered habit
+                        if (dateHistory[currentFilterHabit]) {
+                            hasHabits = true;
+                            const status = dateHistory[currentFilterHabit]; // "completed" or "not_completed"
+                            const habit = habits[currentFilterHabit]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, currentFilterHabit, status, habit, isDarkMode);
+                        }
+                    } else {
+                        // Show all habits
+                        hasHabits = Object.keys(dateHistory).length > 0;
+                        
+                        // Iterate through habits to display them with their recorded status
+                        Object.keys(dateHistory).forEach(habitId => {
+                            const status = dateHistory[habitId]; // "completed" or "not_completed"
+                            const habit = habits[habitId]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, habitId, status, habit, isDarkMode);
+                        });
+                    }
+                }
+                
+                // Helper function to display a habit history item
+                function displayHabitHistoryItem(container, habitId, status, habit, isDarkMode) {
                         
                         // Create habit item even if the habit no longer exists
                         const habitItem = document.createElement('div');
@@ -2730,14 +2786,32 @@ with open('demo.html', 'w') as f:
                         habitItem.appendChild(habitName);
                         habitItem.appendChild(statusIndicator);
                         
-                        habitsList.appendChild(habitItem);
-                    });
-                } else {
-                    // Fall back to individual habit history data (backward compatibility)
-                    Object.keys(habits).forEach(habitId => {
-                        const habit = habits[habitId];
-                        if (habit.history && habit.history[date]) {
+                        container.appendChild(habitItem);
+                }
+                
+                // Fall back to individual habit history data (backward compatibility)
+                if (!hasHabits) {
+                    if (currentFilterHabit) {
+                        // Only check the filtered habit
+                        const habit = habits[currentFilterHabit];
+                        if (habit && habit.history && habit.history[date]) {
                             hasHabits = true;
+                            displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
+                        }
+                    } else {
+                        // Check all habits
+                        Object.keys(habits).forEach(habitId => {
+                            const habit = habits[habitId];
+                            if (habit.history && habit.history[date]) {
+                                hasHabits = true;
+                                displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
+                            }
+                        });
+                    }
+                }
+                
+                // Helper function to display legacy habit history items
+                function displayLegacyHabitItem(container, habit, date, isDarkMode) {
                             
                             // Create habit item
                             const habitItem = document.createElement('div');
@@ -2789,10 +2863,8 @@ with open('demo.html', 'w') as f:
                             habitItem.appendChild(progressInfo);
                             habitItem.appendChild(statusIndicator);
                             
-                            habitsList.appendChild(habitItem);
+                            container.appendChild(habitItem);
                         }
-                    });
-                }
                 
                 // If no habits for this day, show message
                 if (!hasHabits) {
@@ -2886,11 +2958,15 @@ with open('demo.html', 'w') as f:
                 habitSelect.appendChild(option);
             });
             
+            // Global variable to store the current filter
+            let currentFilterHabit = null;
+            
             // Handle filter change
             habitSelect.onchange = () => {
                 const selectedHabitId = habitSelect.value;
-                // This would filter the calendar view to show only the selected habit's data
-                // For now, we're just re-rendering the full calendar as filtering would require more complex logic
+                // Set filter to the selected habit or null if "All Habits" is selected
+                currentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
+                // Re-render the calendar with the filter applied
                 renderCalendarDays();
             };
             
