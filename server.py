@@ -575,7 +575,8 @@ with open('demo.html', 'w') as f:
             appScreen.style.maxWidth = '500px';
             appScreen.style.margin = '0 auto';
             appScreen.style.padding = '0';
-            appScreen.style.backgroundColor = '#f5f5f5';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
             appScreen.style.height = '100vh';
             appScreen.style.display = 'flex';
             appScreen.style.flexDirection = 'column';
@@ -623,10 +624,10 @@ with open('demo.html', 'w') as f:
             
             // Settings section: Appearance
             const appearanceSection = document.createElement('div');
-            appearanceSection.style.backgroundColor = 'white';
+            appearanceSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
             appearanceSection.style.padding = '16px';
             appearanceSection.style.borderRadius = '8px';
-            appearanceSection.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            appearanceSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             appearanceSection.style.marginBottom = '16px';
             
             const appearanceTitle = document.createElement('h3');
@@ -710,6 +711,9 @@ with open('demo.html', 'w') as f:
                 document.body.style.color = checked ? '#fff' : '#000';
                 appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
                 darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
+                
+                // Notify all theme listeners
+                notifyThemeChange();
             };
             
             darkModeRow.appendChild(darkModeLabel);
