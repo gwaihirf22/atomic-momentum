@@ -335,21 +335,23 @@
             nameInput.type = 'text';
             nameInput.placeholder = 'Habit Name';
             nameInput.style.width = '100%';
-            nameInput.style.padding = '10px';
-            nameInput.style.marginBottom = '10px';
-            nameInput.style.borderRadius = '4px';
+            nameInput.style.padding = '16px';
+            nameInput.style.fontSize = '16px';
+            nameInput.style.marginBottom = '16px'; 
+            nameInput.style.borderRadius = '8px';
             nameInput.style.border = '1px solid #ccc';
             nameInput.style.boxSizing = 'border-box';
             
             const targetInput = document.createElement('input');
             targetInput.type = 'number';
-            targetInput.placeholder = 'Goal Number';
+            targetInput.placeholder = 'Goal Number (weekly)';
             targetInput.min = '1';
             targetInput.max = '100';
             targetInput.style.width = '100%';
-            targetInput.style.padding = '10px';
-            targetInput.style.marginBottom = '20px';
-            targetInput.style.borderRadius = '4px';
+            targetInput.style.padding = '16px';
+            targetInput.style.fontSize = '16px';
+            targetInput.style.marginBottom = '24px';
+            targetInput.style.borderRadius = '8px';
             targetInput.style.border = '1px solid #ccc';
             targetInput.style.boxSizing = 'border-box';
             
@@ -361,26 +363,63 @@
             
             const colorsPicker = document.createElement('div');
             colorsPicker.style.display = 'flex';
-            colorsPicker.style.justifyContent = 'space-around';
-            colorsPicker.style.marginBottom = '20px';
+            colorsPicker.style.overflowX = 'auto';
+            colorsPicker.style.marginBottom = '24px';
+            colorsPicker.style.paddingBottom = '10px';
             
             const colors = ['#673ab7', '#2196F3', '#4CAF50', '#9C27B0', '#FF5722', '#009688', '#FF9800'];
             let selectedColor = colors[0];
+            let createButton; // Reference to the save button that will be created later
             
             colors.forEach(color => {
                 const colorBtn = document.createElement('div');
-                colorBtn.style.width = '30px';
-                colorBtn.style.height = '30px';
+                colorBtn.style.minWidth = '55px';
+                colorBtn.style.height = '55px';
                 colorBtn.style.backgroundColor = color;
                 colorBtn.style.borderRadius = '50%';
                 colorBtn.style.cursor = 'pointer';
-                colorBtn.style.border = color === selectedColor ? '3px solid #333' : 'none';
+                colorBtn.style.marginRight = '16px';
+                colorBtn.style.transition = 'all 0.3s ease';
+                colorBtn.style.boxSizing = 'border-box';
+                colorBtn.style.display = 'flex';
+                colorBtn.style.alignItems = 'center';
+                colorBtn.style.justifyContent = 'center';
+                
+                if (color === selectedColor) {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '24px';
+                    colorBtn.appendChild(checkIcon);
+                } else {
+                    colorBtn.style.border = '1px solid rgba(0,0,0,0.1)';
+                }
                 
                 colorBtn.onclick = () => {
                     selectedColor = color;
                     document.querySelectorAll('#color-picker > div').forEach(btn => {
-                        btn.style.border = btn.style.backgroundColor === color ? '3px solid #333' : 'none';
+                        btn.style.transform = 'scale(1.0)';
+                        btn.style.border = '1px solid rgba(0,0,0,0.1)';
+                        btn.style.boxShadow = 'none';
+                        btn.innerHTML = '';
                     });
+                    
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    createButton.style.backgroundColor = color;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '24px';
+                    colorBtn.appendChild(checkIcon);
                 };
                 
                 colorsPicker.appendChild(colorBtn);
@@ -422,20 +461,31 @@
             saveButtonContainer.style.backgroundColor = 'white';
             saveButtonContainer.style.boxShadow = '0 -1px 3px rgba(0,0,0,0.1)';
             
-            const saveButtonLarge = document.createElement('button');
-            saveButtonLarge.textContent = 'Save Habit';
-            saveButtonLarge.style.width = '100%';
-            saveButtonLarge.style.padding = '16px';
-            saveButtonLarge.style.backgroundColor = '#673ab7';
-            saveButtonLarge.style.color = 'white';
-            saveButtonLarge.style.border = 'none';
-            saveButtonLarge.style.borderRadius = '4px';
-            saveButtonLarge.style.fontSize = '16px';
-            saveButtonLarge.style.fontWeight = 'bold';
-            saveButtonLarge.style.cursor = 'pointer';
-            saveButtonLarge.style.textTransform = 'uppercase';
+            createButton = document.createElement('button');
+            createButton.textContent = 'Create Habit';
+            createButton.style.width = '100%';
+            createButton.style.padding = '16px';
+            createButton.style.backgroundColor = selectedColor;
+            createButton.style.color = 'white';
+            createButton.style.border = 'none';
+            createButton.style.borderRadius = '12px';
+            createButton.style.fontSize = '16px';
+            createButton.style.fontWeight = 'bold';
+            createButton.style.cursor = 'pointer';
+            createButton.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            createButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
             
-            saveButtonLarge.onclick = () => {
+            createButton.onmouseover = () => {
+                createButton.style.transform = 'translateY(-2px)';
+                createButton.style.boxShadow = '0 6px 10px rgba(0,0,0,0.15)';
+            };
+            
+            createButton.onmouseout = () => {
+                createButton.style.transform = 'translateY(0)';
+                createButton.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            };
+            
+            createButton.onclick = () => {
                 if (nameInput.value.trim() && targetInput.value.trim()) {
                     const habitId = 'habit_' + Date.now();
                     habits[habitId] = {
@@ -458,7 +508,7 @@
                 }
             };
             
-            saveButtonContainer.appendChild(saveButtonLarge);
+            saveButtonContainer.appendChild(createButton);
             
             // Assemble the screen
             appScreen.appendChild(appBar);
