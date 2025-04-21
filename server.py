@@ -280,6 +280,11 @@ with open('demo.html', 'w') as f:
         function createHabitElement(habitId, habit) {
             const card = document.createElement('div');
             card.className = 'habit-card';
+            // Add subtle shadow and increased spacing
+            card.style.boxShadow = isDarkModeEnabled() ? '0 2px 8px rgba(255,255,255,0.05)' : '0 2px 8px rgba(0,0,0,0.1)';
+            card.style.marginBottom = '15px'; // Increase vertical spacing between cards
+            card.style.padding = '15px'; // Increase internal padding
+            card.style.borderRadius = '10px'; // More rounded corners for a modern look
             
             const title = document.createElement('div');
             title.className = 'habit-title';
@@ -290,7 +295,12 @@ with open('demo.html', 'w') as f:
             const titleLeft = document.createElement('div');
             
             const heading = document.createElement('h2');
-            heading.textContent = habit.name;
+            // Check if habit has an icon and add it before the name
+            if (habit.icon) {
+                heading.textContent = `${habit.icon} ${habit.name}`;
+            } else {
+                heading.textContent = habit.name;
+            }
             
             const progress = document.createElement('span');
             progress.textContent = `${habit.progress}/${habit.target}`;
@@ -298,6 +308,11 @@ with open('demo.html', 'w') as f:
             
             titleLeft.appendChild(heading);
             titleLeft.appendChild(progress);
+            
+            // Create button container for edit and delete
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '5px';
             
             // Add edit button (pencil icon)
             const editBtn = document.createElement('button');
@@ -313,8 +328,66 @@ with open('demo.html', 'w') as f:
                 showEditHabitScreen(habitId, habit);
             };
             
+            // Add delete button (trash icon)
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️'; // Trash emoji
+            deleteBtn.style.background = 'transparent';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.fontSize = '20px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.padding = '0 5px';
+            deleteBtn.title = 'Delete habit';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent any other event handlers
+                
+                // Show confirmation dialog
+                if (confirm(`Are you sure you want to delete "${habit.name}"?`)) {
+                    // Delete the habit
+                    delete habits[habitId];
+                    
+                    // Save updated habits
+                    saveHabits();
+                    
+                    // Re-render the UI
+                    renderHabits();
+                    
+                    // Show feedback toast
+                    const toast = document.createElement('div');
+                    toast.textContent = 'Habit deleted!';
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '20px';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.backgroundColor = '#f44336';
+                    toast.style.color = 'white';
+                    toast.style.padding = '10px 20px';
+                    toast.style.borderRadius = '4px';
+                    toast.style.zIndex = '1000';
+                    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Animate toast
+                    setTimeout(() => {
+                        toast.style.opacity = '1';
+                    }, 10);
+                    
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        setTimeout(() => {
+                            document.body.removeChild(toast);
+                        }, 300);
+                    }, 3000);
+                }
+            };
+            
+            btnContainer.appendChild(editBtn);
+            btnContainer.appendChild(deleteBtn);
+            
             title.appendChild(titleLeft);
-            title.appendChild(editBtn);
+            title.appendChild(btnContainer);
             
             const progressBar = document.createElement('div');
             progressBar.className = 'progress-bar';
@@ -557,6 +630,55 @@ with open('demo.html', 'w') as f:
             heading.textContent = 'Add New Habit';
             heading.style.textAlign = 'center';
             heading.style.marginBottom = '20px';
+            
+            // Emoji icon selector
+            const iconLabel = document.createElement('div');
+            iconLabel.textContent = 'Choose an Icon (Optional)';
+            iconLabel.style.fontSize = '16px';
+            iconLabel.style.fontWeight = 'bold';
+            iconLabel.style.marginBottom = '10px';
+            
+            const emojiContainer = document.createElement('div');
+            emojiContainer.style.display = 'flex';
+            emojiContainer.style.flexWrap = 'wrap';
+            emojiContainer.style.gap = '10px';
+            emojiContainer.style.marginBottom = '20px';
+            emojiContainer.style.justifyContent = 'center';
+            
+            // Popular emoji choices for habits
+            const emojis = ['💧', '📚', '🏃', '🥗', '💪', '🧘', '💤', '💊', '🚫', '💻', '🎨', '🎵', '🌱', '🧹', '📝', '⏰', ''];
+            let selectedEmoji = '';
+            
+            emojis.forEach(emoji => {
+                const emojiBtn = document.createElement('div');
+                emojiBtn.textContent = emoji || 'None';
+                emojiBtn.style.width = '42px';
+                emojiBtn.style.height = '42px';
+                emojiBtn.style.display = 'flex';
+                emojiBtn.style.alignItems = 'center';
+                emojiBtn.style.justifyContent = 'center';
+                emojiBtn.style.fontSize = emoji ? '24px' : '12px';
+                emojiBtn.style.cursor = 'pointer';
+                emojiBtn.style.border = '1px solid #ccc';
+                emojiBtn.style.borderRadius = '8px';
+                emojiBtn.style.transition = 'all 0.3s ease';
+                emojiBtn.style.backgroundColor = emoji === selectedEmoji ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                
+                emojiBtn.onclick = () => {
+                    selectedEmoji = emoji;
+                    // Update all buttons to show selection
+                    emojiContainer.querySelectorAll('div').forEach(btn => {
+                        btn.style.backgroundColor = btn.textContent === (selectedEmoji || 'None') ? 
+                            '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                        btn.style.transform = btn.textContent === (selectedEmoji || 'None') ? 
+                            'scale(1.1)' : 'scale(1.0)';
+                        btn.style.boxShadow = btn.textContent === (selectedEmoji || 'None') ? 
+                            '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                    });
+                };
+                
+                emojiContainer.appendChild(emojiBtn);
+            });
             
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
