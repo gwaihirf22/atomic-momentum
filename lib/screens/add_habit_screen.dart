@@ -77,11 +77,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add New Habit'),
-        centerTitle: true,
-      ),
+    return GestureDetector(
+      // Dismiss keyboard when tapping outside of text fields
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Add New Habit'),
+          centerTitle: true,
+        ),
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16.0),
@@ -94,11 +97,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 SizedBox(height: 24),
                 TextFormField(
                   controller: _nameController,
+                  style: TextStyle(fontSize: 16),
                   decoration: InputDecoration(
                     labelText: 'Habit Name',
+                    labelStyle: TextStyle(fontSize: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     prefixIcon: Icon(Icons.edit),
                   ),
                   validator: (value) {
@@ -111,13 +117,17 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 SizedBox(height: 16),
                 TextFormField(
                   controller: _targetController,
+                  style: TextStyle(fontSize: 16),
                   decoration: InputDecoration(
                     labelText: 'Goal Number',
+                    labelStyle: TextStyle(fontSize: 16),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     prefixIcon: Icon(Icons.track_changes),
                     hintText: 'How many times per week?',
+                    hintStyle: TextStyle(fontSize: 16),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -167,7 +177,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildColorPicker() {
@@ -197,31 +207,31 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     _selectedColor = color;
                   });
                 },
-                child: Container(
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
                   margin: EdgeInsets.only(right: 16),
-                  width: 60,
-                  height: 60,
+                  width: isSelected ? 65 : 55,
+                  height: isSelected ? 65 : 55,
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isSelected ? Colors.white : Colors.transparent,
-                      width: 3,
+                      color: isSelected ? Colors.black : Colors.grey.withOpacity(0.3),
+                      width: isSelected ? 3 : 1,
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: color.withOpacity(0.6),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            )
-                          ]
-                        : [],
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSelected ? color.withOpacity(0.6) : Colors.transparent,
+                        blurRadius: isSelected ? 8 : 0,
+                        spreadRadius: isSelected ? 2 : 0,
+                      )
+                    ],
                   ),
                   child: isSelected
                       ? Icon(
                           Icons.check,
                           color: Colors.white,
+                          size: 28,
                         )
                       : null,
                 ),
