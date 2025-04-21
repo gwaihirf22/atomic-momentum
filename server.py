@@ -29,12 +29,21 @@ with open('demo.html', 'w') as f:
             background-color: #f5f5f5;
         }
         .app-header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             background-color: #673ab7;
             color: white;
             padding: 16px;
             border-radius: 8px 8px 0 0;
             margin-bottom: 20px;
+        }
+        .app-header h1 {
+            margin: 0;
+        }
+        .settings-icon {
+            font-size: 24px;
+            cursor: pointer;
         }
         .habit-card {
             background-color: white;
@@ -94,6 +103,7 @@ with open('demo.html', 'w') as f:
 <body>
     <div class="app-header">
         <h1>Momentum</h1>
+        <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
     </div>
     
     <div id="habits-container">
@@ -477,8 +487,226 @@ with open('demo.html', 'w') as f:
             nameInput.focus();
         }
         
+        // Settings screen with dark mode toggle
+        function showSettingsScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Load current theme setting
+            const isDarkMode = localStorage.getItem('isDarkMode') === 'true';
+            
+            // Create full-screen settings page
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = '#f5f5f5';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Apply theme if it was changed
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Settings';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create settings container
+            const settingsContainer = document.createElement('div');
+            settingsContainer.style.flex = '1';
+            settingsContainer.style.overflowY = 'auto';
+            settingsContainer.style.padding = '20px';
+            
+            // Settings section: Appearance
+            const appearanceSection = document.createElement('div');
+            appearanceSection.style.backgroundColor = 'white';
+            appearanceSection.style.padding = '16px';
+            appearanceSection.style.borderRadius = '8px';
+            appearanceSection.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            appearanceSection.style.marginBottom = '16px';
+            
+            const appearanceTitle = document.createElement('h3');
+            appearanceTitle.textContent = 'Appearance';
+            appearanceTitle.style.margin = '0 0 16px 0';
+            
+            // Dark Mode Switch
+            const darkModeRow = document.createElement('div');
+            darkModeRow.style.display = 'flex';
+            darkModeRow.style.alignItems = 'center';
+            darkModeRow.style.justifyContent = 'space-between';
+            darkModeRow.style.padding = '8px 0';
+            
+            const darkModeLabel = document.createElement('div');
+            
+            const darkModeLabelTitle = document.createElement('div');
+            darkModeLabelTitle.textContent = 'Dark Mode';
+            darkModeLabelTitle.style.fontWeight = 'bold';
+            
+            const darkModeLabelDesc = document.createElement('div');
+            darkModeLabelDesc.textContent = 'Switch between light and dark themes';
+            darkModeLabelDesc.style.fontSize = '14px';
+            darkModeLabelDesc.style.color = '#757575';
+            darkModeLabelDesc.style.marginTop = '4px';
+            
+            darkModeLabel.appendChild(darkModeLabelTitle);
+            darkModeLabel.appendChild(darkModeLabelDesc);
+            
+            // Switch component
+            const switchContainer = document.createElement('label');
+            switchContainer.style.position = 'relative';
+            switchContainer.style.display = 'inline-block';
+            switchContainer.style.width = '60px';
+            switchContainer.style.height = '34px';
+            
+            const switchInput = document.createElement('input');
+            switchInput.type = 'checkbox';
+            switchInput.checked = isDarkMode;
+            switchInput.style.opacity = '0';
+            switchInput.style.width = '0';
+            switchInput.style.height = '0';
+            
+            const switchSlider = document.createElement('span');
+            switchSlider.style.position = 'absolute';
+            switchSlider.style.cursor = 'pointer';
+            switchSlider.style.top = '0';
+            switchSlider.style.left = '0';
+            switchSlider.style.right = '0';
+            switchSlider.style.bottom = '0';
+            switchSlider.style.backgroundColor = isDarkMode ? '#673ab7' : '#ccc';
+            switchSlider.style.borderRadius = '34px';
+            switchSlider.style.transition = '.4s';
+            
+            // Slider button
+            const sliderButton = document.createElement('span');
+            sliderButton.style.position = 'absolute';
+            sliderButton.style.content = '""';
+            sliderButton.style.height = '26px';
+            sliderButton.style.width = '26px';
+            sliderButton.style.left = isDarkMode ? '4px' : '30px';
+            sliderButton.style.bottom = '4px';
+            sliderButton.style.backgroundColor = 'white';
+            sliderButton.style.borderRadius = '50%';
+            sliderButton.style.transition = '.4s';
+            
+            switchSlider.appendChild(sliderButton);
+            switchContainer.appendChild(switchInput);
+            switchContainer.appendChild(switchSlider);
+            
+            // Toggle dark mode
+            switchInput.onchange = (e) => {
+                const checked = e.target.checked;
+                switchSlider.style.backgroundColor = checked ? '#673ab7' : '#ccc';
+                sliderButton.style.left = checked ? '30px' : '4px';
+                
+                // Save the theme preference
+                localStorage.setItem('isDarkMode', checked);
+                
+                // Apply theme immediately to settings screen
+                document.body.style.backgroundColor = checked ? '#121212' : '#f5f5f5';
+                document.body.style.color = checked ? '#fff' : '#000';
+                appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
+                darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
+            };
+            
+            darkModeRow.appendChild(darkModeLabel);
+            darkModeRow.appendChild(switchContainer);
+            
+            appearanceSection.appendChild(appearanceTitle);
+            appearanceSection.appendChild(darkModeRow);
+            
+            // Add all sections to the settings container
+            settingsContainer.appendChild(appearanceSection);
+            
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(settingsContainer);
+            
+            document.body.appendChild(appScreen);
+            
+            // Apply current theme to settings screen
+            if (isDarkMode) {
+                document.body.style.backgroundColor = '#121212';
+                document.body.style.color = '#fff';
+                appearanceSection.style.backgroundColor = '#1e1e1e';
+                darkModeLabelDesc.style.color = '#aaa';
+            }
+        }
+        
+        // Apply theme based on saved preference
+        function applyTheme() {
+            const isDarkMode = localStorage.getItem('isDarkMode') === 'true';
+            
+            if (isDarkMode) {
+                document.body.style.backgroundColor = '#121212';
+                document.body.style.color = '#fff';
+                
+                // Update card backgrounds
+                const cards = document.querySelectorAll('.habit-card');
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#1e1e1e';
+                });
+                
+                // Update progress bars
+                const progressBars = document.querySelectorAll('.progress-bar');
+                progressBars.forEach(bar => {
+                    bar.style.backgroundColor = '#333';
+                });
+            } else {
+                document.body.style.backgroundColor = '#f5f5f5';
+                document.body.style.color = '#000';
+                
+                // Update card backgrounds
+                const cards = document.querySelectorAll('.habit-card');
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#fff';
+                });
+                
+                // Update progress bars
+                const progressBars = document.querySelectorAll('.progress-bar');
+                progressBars.forEach(bar => {
+                    bar.style.backgroundColor = '#e0e0e0';
+                });
+            }
+        }
+        
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', loadHabits);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHabits();
+            applyTheme();
+        });
     </script>
 </body>
 </html>""")
