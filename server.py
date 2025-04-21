@@ -227,6 +227,9 @@ with open('demo.html', 'w') as f:
             
             // Update UI with loaded habits
             renderHabits();
+            
+            // Ensure theme is applied consistently after load
+            applyTheme();
         }
         
         // Save habits to localStorage
@@ -310,6 +313,9 @@ with open('demo.html', 'w') as f:
             const newProgress = habit.progress + change;
             
             if (newProgress >= 0 && newProgress <= habit.target) {
+                // Store current theme state
+                const currentIsDarkMode = isDarkModeEnabled();
+                
                 habit.progress = newProgress;
                 habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
                 
@@ -318,6 +324,15 @@ with open('demo.html', 'w') as f:
                 
                 // Re-render all habits
                 renderHabits();
+                
+                // Ensure theme is consistently applied after update
+                if (currentIsDarkMode !== isDarkModeEnabled()) {
+                    console.log('Theme state changed unexpectedly, fixing...');
+                    localStorage.setItem('isDarkMode', currentIsDarkMode);
+                }
+                
+                // Apply theme consistently
+                applyTheme();
             }
         }
         
@@ -399,6 +414,9 @@ with open('demo.html', 'w') as f:
             if (hasChanges) {
                 saveHabits();
                 console.log('Habits were reset based on their reset frequency');
+                
+                // Apply theme consistently after habits are reset
+                applyTheme();
             }
         }
         
