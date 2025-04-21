@@ -410,12 +410,12 @@ with open('demo.html', 'w') as f:
             
             colors.forEach(color => {
                 const colorBtn = document.createElement('div');
-                colorBtn.style.minWidth = '55px';
-                colorBtn.style.height = '55px';
+                colorBtn.style.minWidth = '40px';
+                colorBtn.style.height = '40px';
                 colorBtn.style.backgroundColor = color;
                 colorBtn.style.borderRadius = '50%';
                 colorBtn.style.cursor = 'pointer';
-                colorBtn.style.marginRight = '16px';
+                colorBtn.style.marginRight = '12px';
                 colorBtn.style.transition = 'all 0.3s ease';
                 colorBtn.style.boxSizing = 'border-box';
                 colorBtn.style.display = 'flex';
@@ -431,7 +431,7 @@ with open('demo.html', 'w') as f:
                     const checkIcon = document.createElement('div');
                     checkIcon.innerHTML = '✓';
                     checkIcon.style.color = 'white';
-                    checkIcon.style.fontSize = '24px';
+                    checkIcon.style.fontSize = '18px';
                     colorBtn.appendChild(checkIcon);
                 } else {
                     colorBtn.style.border = '1px solid rgba(0,0,0,0.1)';
@@ -455,7 +455,7 @@ with open('demo.html', 'w') as f:
                     const checkIcon = document.createElement('div');
                     checkIcon.innerHTML = '✓';
                     checkIcon.style.color = 'white';
-                    checkIcon.style.fontSize = '24px';
+                    checkIcon.style.fontSize = '18px';
                     colorBtn.appendChild(checkIcon);
                 };
                 
