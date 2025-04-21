@@ -41,7 +41,11 @@ with open('demo.html', 'w') as f:
         .app-header h1 {
             margin: 0;
         }
-        .settings-icon {
+        .header-icons {
+            display: flex;
+            align-items: center;
+        }
+        .calendar-icon, .settings-icon {
             font-size: 24px;
             cursor: pointer;
         }
@@ -103,7 +107,10 @@ with open('demo.html', 'w') as f:
 <body>
     <div class="app-header">
         <h1>Momentum</h1>
-        <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+        <div class="header-icons">
+            <div class="calendar-icon" onclick="showCalendarScreen()" style="margin-right: 15px;">📅</div>
+            <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+        </div>
     </div>
     
     <div id="habits-container" style="padding: 0 10px;">
@@ -164,7 +171,8 @@ with open('demo.html', 'w') as f:
                 name: "Drink Water", 
                 color: "#2196F3",
                 lastUpdatedDate: new Date().toISOString(),
-                resetFrequency: "weekly"
+                resetFrequency: "weekly",
+                history: {} // Store habit history by date
             },
             bible: { 
                 progress: 3, 
@@ -172,7 +180,8 @@ with open('demo.html', 'w') as f:
                 name: "Read Bible", 
                 color: "#009688",
                 lastUpdatedDate: new Date().toISOString(),
-                resetFrequency: "weekly"
+                resetFrequency: "weekly",
+                history: {} // Store habit history by date
             },
             workout: { 
                 progress: 7, 
@@ -180,12 +189,24 @@ with open('demo.html', 'w') as f:
                 name: "Workout", 
                 color: "#FF9800",
                 lastUpdatedDate: new Date().toISOString(),
-                resetFrequency: "weekly"
+                resetFrequency: "weekly",
+                history: {} // Store habit history by date
             }
         };
         
         // Our in-memory habits
         let habits = {};
+        
+        // Function to format date as YYYY-MM-DD for consistent history keys
+        function formatDate(date) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        
+        // Get today's date in YYYY-MM-DD format
+        function getTodayFormatted() {
+            return formatDate(new Date());
+        }
         
         // Global theme management
         function isDarkModeEnabled() {
@@ -211,6 +232,14 @@ with open('demo.html', 'w') as f:
                 try {
                     habits = JSON.parse(savedHabits);
                     console.log('Loaded habits from localStorage:', habits);
+                    
+                    // Initialize history for habits that don't have it yet
+                    Object.keys(habits).forEach(habitId => {
+                        const habit = habits[habitId];
+                        if (!habit.history) {
+                            habit.history = {};
+                        }
+                    });
                     
                     // Check for habits that need to be reset based on their frequency
                     checkHabitResets();
@@ -433,8 +462,41 @@ with open('demo.html', 'w') as f:
                 const currentIsDarkMode = isDarkModeEnabled();
                 document.body.dataset.themeMode = currentIsDarkMode ? 'dark' : 'light'; // Additional backup
                 
+                const oldProgress = habit.progress;
                 habit.progress = newProgress;
                 habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
+                
+                // Record habit progress in history
+                const today = getTodayFormatted();
+                
+                // Initialize history object if needed
+                if (!habit.history) {
+                    habit.history = {};
+                }
+                
+                // Record current date's completion status
+                if (newProgress === habit.target) {
+                    // Habit completed for the day
+                    habit.history[today] = {
+                        completed: true,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                } else if (oldProgress === habit.target && newProgress < habit.target) {
+                    // Habit was previously completed today but now uncompleted
+                    habit.history[today] = {
+                        completed: false,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                } else {
+                    // Partial progress
+                    habit.history[today] = {
+                        completed: false,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                }
                 
                 // Save the updated state
                 saveHabits();
@@ -496,6 +558,21 @@ with open('demo.html', 'w') as f:
                         if (currentDate.getDate() !== lastUpdated.getDate() ||
                             currentDate.getMonth() !== lastUpdated.getMonth() ||
                             currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: habit.progress >= habit.target,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
                             habit.progress = 0;
                             habit.lastUpdatedDate = currentDate.toISOString();
                             hasChanges = true;
@@ -527,6 +604,20 @@ with open('demo.html', 'w') as f:
                         
                         // Reset if the week number changed
                         if (currentWeek !== lastWeek || currentYear !== lastYear) {
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: habit.progress >= habit.target,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
                             habit.progress = 0;
                             habit.lastUpdatedDate = currentDate.toISOString();
                             hasChanges = true;
@@ -537,6 +628,20 @@ with open('demo.html', 'w') as f:
                         // Reset if it's a different month
                         if (currentDate.getMonth() !== lastUpdated.getMonth() ||
                             currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: habit.progress >= habit.target,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
                             habit.progress = 0;
                             habit.lastUpdatedDate = currentDate.toISOString();
                             hasChanges = true;
@@ -1647,6 +1752,492 @@ with open('demo.html', 'w') as f:
             
             // Focus the first input for better UX
             nameInput.focus();
+        }
+        
+        // Show Calendar Screen
+        function showCalendarScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen view that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Habit Calendar';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create calendar container (scrollable)
+            const calendarContainer = document.createElement('div');
+            calendarContainer.style.flex = '1';
+            calendarContainer.style.overflowY = 'auto';
+            calendarContainer.style.padding = '20px';
+            
+            // Create calendar content
+            const calendarContent = document.createElement('div');
+            calendarContent.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            calendarContent.style.padding = '20px';
+            calendarContent.style.borderRadius = '8px';
+            calendarContent.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            
+            const calendarHeading = document.createElement('h2');
+            calendarHeading.textContent = 'Habit History';
+            calendarHeading.style.textAlign = 'center';
+            calendarHeading.style.marginBottom = '20px';
+            
+            // Create month selector for calendar
+            const monthSelector = document.createElement('div');
+            monthSelector.style.display = 'flex';
+            monthSelector.style.justifyContent = 'space-between';
+            monthSelector.style.alignItems = 'center';
+            monthSelector.style.marginBottom = '20px';
+            
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&larr;';
+            prevButton.style.background = 'transparent';
+            prevButton.style.border = 'none';
+            prevButton.style.fontSize = '20px';
+            prevButton.style.cursor = 'pointer';
+            prevButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+            
+            const currentMonthDisplay = document.createElement('div');
+            const currentDate = new Date();
+            currentMonthDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+            currentMonthDisplay.style.fontSize = '18px';
+            currentMonthDisplay.style.fontWeight = 'bold';
+            
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&rarr;';
+            nextButton.style.background = 'transparent';
+            nextButton.style.border = 'none';
+            nextButton.style.fontSize = '20px';
+            nextButton.style.cursor = 'pointer';
+            nextButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+            
+            monthSelector.appendChild(prevButton);
+            monthSelector.appendChild(currentMonthDisplay);
+            monthSelector.appendChild(nextButton);
+            
+            // Calendar grid
+            const calendarGrid = document.createElement('div');
+            calendarGrid.style.display = 'grid';
+            calendarGrid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            calendarGrid.style.gap = '5px';
+            
+            // Add day headers (Sun-Sat)
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.textContent = day;
+                dayHeader.style.textAlign = 'center';
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.style.paddingBottom = '10px';
+                calendarGrid.appendChild(dayHeader);
+            });
+            
+            // Current month and year
+            let currentViewMonth = currentDate.getMonth();
+            let currentViewYear = currentDate.getFullYear();
+            
+            // Function to render calendar days
+            function renderCalendarDays() {
+                // Clear existing days (except headers)
+                while (calendarGrid.childElementCount > 7) {
+                    calendarGrid.removeChild(calendarGrid.lastChild);
+                }
+                
+                // Update month display
+                currentMonthDisplay.textContent = `${new Date(currentViewYear, currentViewMonth, 1).toLocaleString('default', { month: 'long' })} ${currentViewYear}`;
+                
+                // First day of the month
+                const firstDay = new Date(currentViewYear, currentViewMonth, 1);
+                // Last day of the month
+                const lastDay = new Date(currentViewYear, currentViewMonth + 1, 0);
+                
+                // Starting empty cells for days from previous month
+                const firstDayIndex = firstDay.getDay(); // 0 = Sunday, 6 = Saturday
+                
+                // Create empty cells for days before the 1st
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.style.height = '40px';
+                    emptyCell.style.padding = '5px';
+                    emptyCell.style.textAlign = 'center';
+                    calendarGrid.appendChild(emptyCell);
+                }
+                
+                // Create cells for all days in the month
+                for (let day = 1; day <= lastDay.getDate(); day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.textContent = day;
+                    dayCell.style.height = '40px';
+                    dayCell.style.padding = '5px';
+                    dayCell.style.textAlign = 'center';
+                    dayCell.style.borderRadius = '50%';
+                    dayCell.style.cursor = 'pointer';
+                    dayCell.style.display = 'flex';
+                    dayCell.style.flexDirection = 'column';
+                    dayCell.style.justifyContent = 'center';
+                    dayCell.style.alignItems = 'center';
+                    dayCell.style.position = 'relative';
+                    
+                    // Check if it's today
+                    const isToday = 
+                        day === currentDate.getDate() && 
+                        currentViewMonth === currentDate.getMonth() && 
+                        currentViewYear === currentDate.getFullYear();
+                    
+                    if (isToday) {
+                        dayCell.style.backgroundColor = '#673ab7';
+                        dayCell.style.color = 'white';
+                        dayCell.style.fontWeight = 'bold';
+                    } else {
+                        dayCell.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                    }
+                    
+                    // Format date to check for habit completion
+                    const checkDate = formatDate(new Date(currentViewYear, currentViewMonth, day));
+                    
+                    // Add habit completion indicators
+                    let totalCompleted = 0;
+                    let totalHabits = 0;
+                    
+                    // Count completed habits for this day
+                    Object.keys(habits).forEach(habitId => {
+                        const habit = habits[habitId];
+                        if (habit.history && habit.history[checkDate]) {
+                            totalHabits++;
+                            if (habit.history[checkDate].completed) {
+                                totalCompleted++;
+                            }
+                        }
+                    });
+                    
+                    // Only show indicator if there are habits for this day
+                    if (totalHabits > 0) {
+                        // Add completion indicator dot
+                        const indicatorContainer = document.createElement('div');
+                        indicatorContainer.style.display = 'flex';
+                        indicatorContainer.style.gap = '3px';
+                        indicatorContainer.style.marginTop = '3px';
+                        
+                        if (totalCompleted === totalHabits && totalHabits > 0) {
+                            // All habits completed - show checkmark
+                            const checkmark = document.createElement('div');
+                            checkmark.innerHTML = '✓';
+                            checkmark.style.fontSize = '12px';
+                            checkmark.style.color = '#4CAF50';
+                            checkmark.style.fontWeight = 'bold';
+                            indicatorContainer.appendChild(checkmark);
+                        } else if (totalCompleted > 0) {
+                            // Some habits completed - show partial indicator
+                            const partialIndicator = document.createElement('div');
+                            partialIndicator.style.width = '8px';
+                            partialIndicator.style.height = '8px';
+                            partialIndicator.style.borderRadius = '50%';
+                            partialIndicator.style.backgroundColor = '#FFC107'; // Yellow for partial
+                            indicatorContainer.appendChild(partialIndicator);
+                        } else {
+                            // No habits completed - show empty indicator
+                            const emptyIndicator = document.createElement('div');
+                            emptyIndicator.style.width = '8px';
+                            emptyIndicator.style.height = '8px';
+                            emptyIndicator.style.borderRadius = '50%';
+                            emptyIndicator.style.backgroundColor = '#F44336'; // Red for none
+                            indicatorContainer.appendChild(emptyIndicator);
+                        }
+                        
+                        dayCell.appendChild(indicatorContainer);
+                    }
+                    
+                    // Add click handler to show daily habit details
+                    dayCell.onclick = () => {
+                        showDailyHabitDetails(checkDate);
+                    };
+                    
+                    calendarGrid.appendChild(dayCell);
+                }
+            }
+            
+            // Function to show daily habit details
+            function showDailyHabitDetails(date) {
+                // Create details popup
+                const popup = document.createElement('div');
+                popup.style.position = 'fixed';
+                popup.style.top = '50%';
+                popup.style.left = '50%';
+                popup.style.transform = 'translate(-50%, -50%)';
+                popup.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+                popup.style.padding = '20px';
+                popup.style.borderRadius = '8px';
+                popup.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                popup.style.zIndex = '1000';
+                popup.style.maxWidth = '90%';
+                popup.style.width = '300px';
+                popup.style.maxHeight = '80vh';
+                popup.style.overflowY = 'auto';
+                
+                // Create popup header
+                const popupHeader = document.createElement('div');
+                popupHeader.style.display = 'flex';
+                popupHeader.style.justifyContent = 'space-between';
+                popupHeader.style.alignItems = 'center';
+                popupHeader.style.marginBottom = '15px';
+                
+                const dateTitle = document.createElement('h3');
+                const dateObj = new Date(date);
+                dateTitle.textContent = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                dateTitle.style.margin = '0';
+                
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '&times;';
+                closeButton.style.backgroundColor = 'transparent';
+                closeButton.style.border = 'none';
+                closeButton.style.fontSize = '24px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+                closeButton.onclick = () => {
+                    document.body.removeChild(popup);
+                    
+                    // Re-add the overlay that was added when showing popup
+                    if (document.querySelector('.overlay')) {
+                        document.body.removeChild(document.querySelector('.overlay'));
+                    }
+                };
+                
+                popupHeader.appendChild(dateTitle);
+                popupHeader.appendChild(closeButton);
+                
+                // Create list of habits for this day
+                const habitsList = document.createElement('div');
+                
+                let hasHabits = false;
+                
+                // Add each habit detail
+                Object.keys(habits).forEach(habitId => {
+                    const habit = habits[habitId];
+                    if (habit.history && habit.history[date]) {
+                        hasHabits = true;
+                        
+                        // Create habit item
+                        const habitItem = document.createElement('div');
+                        habitItem.style.padding = '10px';
+                        habitItem.style.marginBottom = '10px';
+                        habitItem.style.borderRadius = '6px';
+                        habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                        
+                        // Habit name with icon
+                        const habitName = document.createElement('div');
+                        habitName.style.fontWeight = 'bold';
+                        habitName.style.marginBottom = '5px';
+                        habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                        
+                        // Progress info
+                        const progressInfo = document.createElement('div');
+                        progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                        
+                        // Status indicator
+                        const statusIndicator = document.createElement('div');
+                        statusIndicator.style.display = 'flex';
+                        statusIndicator.style.alignItems = 'center';
+                        statusIndicator.style.marginTop = '5px';
+                        
+                        const statusDot = document.createElement('div');
+                        statusDot.style.width = '10px';
+                        statusDot.style.height = '10px';
+                        statusDot.style.borderRadius = '50%';
+                        statusDot.style.marginRight = '6px';
+                        
+                        const statusText = document.createElement('div');
+                        statusText.style.fontSize = '14px';
+                        
+                        if (habit.history[date].completed) {
+                            statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                            statusText.textContent = 'Completed';
+                            statusText.style.color = '#4CAF50';
+                        } else {
+                            statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                            statusText.textContent = 'Not completed';
+                            statusText.style.color = '#F44336';
+                        }
+                        
+                        statusIndicator.appendChild(statusDot);
+                        statusIndicator.appendChild(statusText);
+                        
+                        // Add elements to habit item
+                        habitItem.appendChild(habitName);
+                        habitItem.appendChild(progressInfo);
+                        habitItem.appendChild(statusIndicator);
+                        
+                        habitsList.appendChild(habitItem);
+                    }
+                });
+                
+                // If no habits for this day, show message
+                if (!hasHabits) {
+                    const noHabitsMsg = document.createElement('div');
+                    noHabitsMsg.textContent = 'No habit data for this day.';
+                    noHabitsMsg.style.textAlign = 'center';
+                    noHabitsMsg.style.padding = '20px';
+                    noHabitsMsg.style.color = isDarkMode ? '#aaa' : '#666';
+                    habitsList.appendChild(noHabitsMsg);
+                }
+                
+                // Add dark overlay behind popup
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                overlay.style.zIndex = '999';
+                
+                // Close popup when clicking overlay
+                overlay.onclick = () => {
+                    document.body.removeChild(popup);
+                    document.body.removeChild(overlay);
+                };
+                
+                // Assemble popup
+                popup.appendChild(popupHeader);
+                popup.appendChild(habitsList);
+                
+                // Add to body
+                document.body.appendChild(overlay);
+                document.body.appendChild(popup);
+            }
+            
+            // Initial render
+            renderCalendarDays();
+            
+            // Month navigation handlers
+            prevButton.onclick = () => {
+                currentViewMonth--;
+                if (currentViewMonth < 0) {
+                    currentViewMonth = 11;
+                    currentViewYear--;
+                }
+                renderCalendarDays();
+            };
+            
+            nextButton.onclick = () => {
+                currentViewMonth++;
+                if (currentViewMonth > 11) {
+                    currentViewMonth = 0;
+                    currentViewYear++;
+                }
+                renderCalendarDays();
+            };
+            
+            // Add filter for specific habit (optional feature)
+            const filterContainer = document.createElement('div');
+            filterContainer.style.marginTop = '20px';
+            filterContainer.style.padding = '10px';
+            filterContainer.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+            filterContainer.style.borderRadius = '8px';
+            
+            const filterLabel = document.createElement('div');
+            filterLabel.textContent = 'Filter by Habit (Optional)';
+            filterLabel.style.marginBottom = '10px';
+            filterLabel.style.fontWeight = 'bold';
+            
+            const habitSelect = document.createElement('select');
+            habitSelect.style.width = '100%';
+            habitSelect.style.padding = '10px';
+            habitSelect.style.borderRadius = '6px';
+            habitSelect.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            habitSelect.style.color = isDarkMode ? '#fff' : '#000';
+            
+            // Add option for all habits
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'All Habits';
+            habitSelect.appendChild(allOption);
+            
+            // Add options for each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const option = document.createElement('option');
+                option.value = habitId;
+                option.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                habitSelect.appendChild(option);
+            });
+            
+            // Handle filter change
+            habitSelect.onchange = () => {
+                const selectedHabitId = habitSelect.value;
+                // This would filter the calendar view to show only the selected habit's data
+                // For now, we're just re-rendering the full calendar as filtering would require more complex logic
+                renderCalendarDays();
+            };
+            
+            filterContainer.appendChild(filterLabel);
+            filterContainer.appendChild(habitSelect);
+            
+            // Assemble the calendar screen
+            calendarContent.appendChild(calendarHeading);
+            calendarContent.appendChild(monthSelector);
+            calendarContent.appendChild(calendarGrid);
+            calendarContent.appendChild(filterContainer); // Add the filter section
+            
+            calendarContainer.appendChild(calendarContent);
+            
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(calendarContainer);
+            
+            document.body.appendChild(appScreen);
         }
         
         // Initialize on page load
