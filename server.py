@@ -791,6 +791,7 @@ with open('demo.html', 'w') as f:
         function checkHabitResets() {
             const currentDate = new Date();
             let hasChanges = false;
+            let shouldRecordHistory = false;
             
             // Process each habit
             Object.keys(habits).forEach(habitId => {
@@ -965,6 +966,9 @@ with open('demo.html', 'w') as f:
             if (hasChanges) {
                 saveHabits();
                 console.log('Habits were reset based on their reset frequency');
+                
+                // Record daily habit status in history when resets occur
+                recordDailyHabitStatus();
                 
                 // Apply theme consistently after habits are reset
                 applyTheme();
@@ -1760,6 +1764,9 @@ with open('demo.html', 'w') as f:
                 
                 // Save changes
                 saveHabits();
+                
+                // Record all habits' status in habit history before resetting
+                recordDailyHabitStatus();
                 
                 // Show feedback toast
                 const toast = document.createElement('div');
@@ -2646,13 +2653,31 @@ with open('demo.html', 'w') as f:
                 
                 let hasHabits = false;
                 
-                // Add each habit detail
-                Object.keys(habits).forEach(habitId => {
-                    const habit = habits[habitId];
-                    if (habit.history && habit.history[date]) {
-                        hasHabits = true;
+                // First check the habit history global data structure
+                const habitHistory = loadHabitHistory();
+                
+                if (habitHistory && habitHistory[date]) {
+                    // Found history for this date in the habitHistory
+                    hasHabits = true;
+                    
+                    // Display header indicating this is from the history system
+                    const historyHeader = document.createElement('div');
+                    historyHeader.textContent = 'Habit History Record';
+                    historyHeader.style.fontSize = '14px';
+                    historyHeader.style.marginBottom = '15px';
+                    historyHeader.style.textAlign = 'center';
+                    historyHeader.style.color = isDarkMode ? '#aaa' : '#666';
+                    habitsList.appendChild(historyHeader);
+                    
+                    // Get history for this date
+                    const dateHistory = habitHistory[date];
+                    
+                    // Iterate through habits to display them with their recorded status
+                    Object.keys(dateHistory).forEach(habitId => {
+                        const status = dateHistory[habitId]; // "completed" or "not_completed"
+                        const habit = habits[habitId]; // Get the current habit info
                         
-                        // Create habit item
+                        // Create habit item even if the habit no longer exists
                         const habitItem = document.createElement('div');
                         habitItem.style.padding = '10px';
                         habitItem.style.marginBottom = '10px';
@@ -2663,11 +2688,15 @@ with open('demo.html', 'w') as f:
                         const habitName = document.createElement('div');
                         habitName.style.fontWeight = 'bold';
                         habitName.style.marginBottom = '5px';
-                        habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
                         
-                        // Progress info
-                        const progressInfo = document.createElement('div');
-                        progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                        if (habit) {
+                            // Habit still exists, use current name and icon
+                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                        } else {
+                            // Habit was deleted, show placeholder
+                            habitName.textContent = `Habit (deleted)`;
+                            habitName.style.color = isDarkMode ? '#777' : '#999';
+                        }
                         
                         // Status indicator
                         const statusIndicator = document.createElement('div');
@@ -2684,7 +2713,7 @@ with open('demo.html', 'w') as f:
                         const statusText = document.createElement('div');
                         statusText.style.fontSize = '14px';
                         
-                        if (habit.history[date].completed) {
+                        if (status === "completed") {
                             statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
                             statusText.textContent = 'Completed';
                             statusText.style.color = '#4CAF50';
@@ -2699,17 +2728,76 @@ with open('demo.html', 'w') as f:
                         
                         // Add elements to habit item
                         habitItem.appendChild(habitName);
-                        habitItem.appendChild(progressInfo);
                         habitItem.appendChild(statusIndicator);
                         
                         habitsList.appendChild(habitItem);
-                    }
-                });
+                    });
+                } else {
+                    // Fall back to individual habit history data (backward compatibility)
+                    Object.keys(habits).forEach(habitId => {
+                        const habit = habits[habitId];
+                        if (habit.history && habit.history[date]) {
+                            hasHabits = true;
+                            
+                            // Create habit item
+                            const habitItem = document.createElement('div');
+                            habitItem.style.padding = '10px';
+                            habitItem.style.marginBottom = '10px';
+                            habitItem.style.borderRadius = '6px';
+                            habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                            
+                            // Habit name with icon
+                            const habitName = document.createElement('div');
+                            habitName.style.fontWeight = 'bold';
+                            habitName.style.marginBottom = '5px';
+                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                            
+                            // Progress info
+                            const progressInfo = document.createElement('div');
+                            progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                            
+                            // Status indicator
+                            const statusIndicator = document.createElement('div');
+                            statusIndicator.style.display = 'flex';
+                            statusIndicator.style.alignItems = 'center';
+                            statusIndicator.style.marginTop = '5px';
+                            
+                            const statusDot = document.createElement('div');
+                            statusDot.style.width = '10px';
+                            statusDot.style.height = '10px';
+                            statusDot.style.borderRadius = '50%';
+                            statusDot.style.marginRight = '6px';
+                            
+                            const statusText = document.createElement('div');
+                            statusText.style.fontSize = '14px';
+                            
+                            if (habit.history[date].completed) {
+                                statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                                statusText.textContent = 'Completed';
+                                statusText.style.color = '#4CAF50';
+                            } else {
+                                statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                                statusText.textContent = 'Not completed';
+                                statusText.style.color = '#F44336';
+                            }
+                            
+                            statusIndicator.appendChild(statusDot);
+                            statusIndicator.appendChild(statusText);
+                            
+                            // Add elements to habit item
+                            habitItem.appendChild(habitName);
+                            habitItem.appendChild(progressInfo);
+                            habitItem.appendChild(statusIndicator);
+                            
+                            habitsList.appendChild(habitItem);
+                        }
+                    });
+                }
                 
                 // If no habits for this day, show message
                 if (!hasHabits) {
                     const noHabitsMsg = document.createElement('div');
-                    noHabitsMsg.textContent = 'No habit data for this day.';
+                    noHabitsMsg.textContent = 'No history recorded for this day.';
                     noHabitsMsg.style.textAlign = 'center';
                     noHabitsMsg.style.padding = '20px';
                     noHabitsMsg.style.color = isDarkMode ? '#aaa' : '#666';
