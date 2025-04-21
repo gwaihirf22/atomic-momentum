@@ -1182,6 +1182,8 @@ with open('demo.html', 'w') as f:
             form.appendChild(nameInput);
             form.appendChild(targetInput);
             form.appendChild(colorLabel);
+            form.appendChild(reminderLabel);
+            form.appendChild(reminderRow);
             form.appendChild(colorsPicker);
             
             formContainer.appendChild(form);
@@ -1226,7 +1228,12 @@ with open('demo.html', 'w') as f:
                         color: selectedColor,
                         icon: selectedEmoji, // Add the selected emoji
                         lastUpdatedDate: new Date().toISOString(),
-                        resetFrequency: "weekly" // Default to weekly reset
+                        resetFrequency: "weekly", // Default to weekly reset
+                        reminderEnabled: reminderToggle.checked,
+                        reminderTime: reminderToggle.checked ? reminderTime.value : null,
+                        streak: 0,
+                        lastStreakDate: null,
+                        history: {}
                     };
                     
                     saveHabits();
