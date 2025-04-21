@@ -166,6 +166,23 @@ with open('demo.html', 'w') as f:
         // Our in-memory habits
         let habits = {};
         
+        // Global theme management
+        function isDarkModeEnabled() {
+            return localStorage.getItem('isDarkMode') === 'true';
+        }
+        
+        // Theme change listeners (for reactive updates)
+        const themeListeners = [];
+        
+        function addThemeListener(callback) {
+            themeListeners.push(callback);
+        }
+        
+        function notifyThemeChange() {
+            const isDark = isDarkModeEnabled();
+            themeListeners.forEach(listener => listener(isDark));
+        }
+        
         // Load habits from localStorage
         function loadHabits() {
             const savedHabits = localStorage.getItem('atomic_momentum_habits');
@@ -283,6 +300,9 @@ with open('demo.html', 'w') as f:
             // Save current screen content
             const mainContent = document.body.innerHTML;
             
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
             // Create full-screen form that simulates a navigation to a new screen
             document.body.innerHTML = '';
             
@@ -292,7 +312,8 @@ with open('demo.html', 'w') as f:
             appScreen.style.maxWidth = '500px';
             appScreen.style.margin = '0 auto';
             appScreen.style.padding = '0';
-            appScreen.style.backgroundColor = '#f5f5f5';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
             appScreen.style.height = '100vh';
             appScreen.style.display = 'flex';
             appScreen.style.flexDirection = 'column';
@@ -337,10 +358,10 @@ with open('demo.html', 'w') as f:
             
             // Create form content
             const form = document.createElement('div');
-            form.style.backgroundColor = 'white';
+            form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
             form.style.padding = '20px';
             form.style.borderRadius = '8px';
-            form.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+            form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
             
             const heading = document.createElement('h2');
             heading.textContent = 'Add New Habit';
@@ -474,8 +495,8 @@ with open('demo.html', 'w') as f:
             // Save button (large bottom button)
             const saveButtonContainer = document.createElement('div');
             saveButtonContainer.style.padding = '16px';
-            saveButtonContainer.style.backgroundColor = 'white';
-            saveButtonContainer.style.boxShadow = '0 -1px 3px rgba(0,0,0,0.1)';
+            saveButtonContainer.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            saveButtonContainer.style.boxShadow = isDarkMode ? '0 -1px 3px rgba(255,255,255,0.1)' : '0 -1px 3px rgba(0,0,0,0.1)';
             
             createButton = document.createElement('button');
             createButton.textContent = 'Create Habit';
@@ -543,7 +564,7 @@ with open('demo.html', 'w') as f:
             const mainContent = document.body.innerHTML;
             
             // Load current theme setting
-            const isDarkMode = localStorage.getItem('isDarkMode') === 'true';
+            const isDarkMode = isDarkModeEnabled();
             
             // Create full-screen settings page
             document.body.innerHTML = '';
@@ -717,7 +738,7 @@ with open('demo.html', 'w') as f:
         
         // Apply theme based on saved preference
         function applyTheme() {
-            const isDarkMode = localStorage.getItem('isDarkMode') === 'true';
+            const isDarkMode = isDarkModeEnabled();
             
             if (isDarkMode) {
                 document.body.style.backgroundColor = '#121212';
@@ -750,6 +771,9 @@ with open('demo.html', 'w') as f:
                     bar.style.backgroundColor = '#e0e0e0';
                 });
             }
+            
+            // Notify all registered theme listeners
+            notifyThemeChange();
         }
         
         // Initialize on page load
