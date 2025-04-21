@@ -248,9 +248,30 @@ with open('demo.html', 'w') as f:
             container.innerHTML = ''; // Clear existing habits
             container.style.padding = '0 10px'; // Ensure padding applies to dynamically generated content
             
+            // Get current theme state
+            const isDarkMode = isDarkModeEnabled();
+            
             Object.keys(habits).forEach(habitId => {
                 const habit = habits[habitId];
                 const habitElement = createHabitElement(habitId, habit);
+                
+                // Apply theme-specific styling to the card
+                if (isDarkMode) {
+                    habitElement.style.backgroundColor = '#1e1e1e';
+                    // Find progress bar and set its background
+                    const progressBar = habitElement.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.backgroundColor = '#333';
+                    }
+                } else {
+                    habitElement.style.backgroundColor = '#fff';
+                    // Find progress bar and set its background
+                    const progressBar = habitElement.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.backgroundColor = '#e0e0e0';
+                    }
+                }
+                
                 container.appendChild(habitElement);
             });
         }
@@ -313,8 +334,9 @@ with open('demo.html', 'w') as f:
             const newProgress = habit.progress + change;
             
             if (newProgress >= 0 && newProgress <= habit.target) {
-                // Store current theme state
+                // Store current theme state before any changes
                 const currentIsDarkMode = isDarkModeEnabled();
+                document.body.dataset.themeMode = currentIsDarkMode ? 'dark' : 'light'; // Additional backup
                 
                 habit.progress = newProgress;
                 habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
@@ -328,11 +350,29 @@ with open('demo.html', 'w') as f:
                 // Ensure theme is consistently applied after update
                 if (currentIsDarkMode !== isDarkModeEnabled()) {
                     console.log('Theme state changed unexpectedly, fixing...');
-                    localStorage.setItem('isDarkMode', currentIsDarkMode);
+                    localStorage.setItem('isDarkMode', String(currentIsDarkMode));
+                } else if (document.body.dataset.themeMode === 'dark' && !isDarkModeEnabled()) {
+                    console.log('Theme state changed based on dataset check, fixing...');
+                    localStorage.setItem('isDarkMode', 'true');
+                } else if (document.body.dataset.themeMode === 'light' && isDarkModeEnabled()) {
+                    console.log('Theme state changed based on dataset check, fixing...');
+                    localStorage.setItem('isDarkMode', 'false');
                 }
                 
                 // Apply theme consistently
                 applyTheme();
+                
+                // One more check after everything to ensure dark mode styling is applied
+                const cards = document.querySelectorAll('.habit-card');
+                if (currentIsDarkMode) {
+                    cards.forEach(card => {
+                        card.style.backgroundColor = '#1e1e1e';
+                        const progressBar = card.querySelector('.progress-bar');
+                        if (progressBar) {
+                            progressBar.style.backgroundColor = '#333';
+                        }
+                    });
+                }
             }
         }
         
@@ -889,6 +929,7 @@ with open('demo.html', 'w') as f:
             if (isDarkMode) {
                 document.body.style.backgroundColor = '#121212';
                 document.body.style.color = '#fff';
+                document.body.dataset.themeMode = 'dark'; // Set data attribute for tracking
                 
                 // Update card backgrounds
                 const cards = document.querySelectorAll('.habit-card');
@@ -904,6 +945,7 @@ with open('demo.html', 'w') as f:
             } else {
                 document.body.style.backgroundColor = '#f5f5f5';
                 document.body.style.color = '#000';
+                document.body.dataset.themeMode = 'light'; // Set data attribute for tracking
                 
                 // Update card backgrounds
                 const cards = document.querySelectorAll('.habit-card');
@@ -917,6 +959,20 @@ with open('demo.html', 'w') as f:
                     bar.style.backgroundColor = '#e0e0e0';
                 });
             }
+            
+            // Force styling update on all habit cards to ensure theme is applied
+            setTimeout(() => {
+                const isDark = isDarkModeEnabled();
+                const cards = document.querySelectorAll('.habit-card');
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = isDark ? '#1e1e1e' : '#fff';
+                    const bar = card.querySelector('.progress-bar');
+                    if (bar) {
+                        bar.style.backgroundColor = isDark ? '#333' : '#e0e0e0';
+                    }
+                });
+            }, 10);
             
             // Notify all registered theme listeners
             notifyThemeChange();
