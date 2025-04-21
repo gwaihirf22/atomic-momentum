@@ -1810,32 +1810,39 @@
             
             document.body.appendChild(appScreen);
             
-            // Apply current theme to settings screen consistently
-            if (isDarkMode) {
-                appScreen.style.backgroundColor = '#121212';
-                appScreen.style.color = '#fff';
-                appearanceSection.style.backgroundColor = '#1e1e1e';
-                notificationsSection.style.backgroundColor = '#1e1e1e';
-                notificationsSection.style.color = '#fff';
-                darkModeLabelDesc.style.color = '#aaa';
-                developerSection.style.backgroundColor = '#1e1e1e';
-                developerSection.style.color = '#fff';
-                resetTestDesc.style.color = '#aaa';
-                developerNote.style.color = '#ff9800';
-                resetTestTitle.style.color = '#fff';
-            } else {
-                appScreen.style.backgroundColor = '#f5f5f5';
-                appScreen.style.color = '#000';
-                appearanceSection.style.backgroundColor = '#ffffff';
-                notificationsSection.style.backgroundColor = '#ffffff';
-                notificationsSection.style.color = '#000';
-                darkModeLabelDesc.style.color = '#757575';
-                developerSection.style.backgroundColor = '#ffffff';
-                developerSection.style.color = '#000';
-                resetTestDesc.style.color = '#757575';
-                developerNote.style.color = '#e65100';
-                resetTestTitle.style.color = '#000';
+            // Create a function to update theme that can be called whenever theme changes
+            function updateSettingsTheme(darkMode) {
+                appScreen.style.backgroundColor = darkMode ? '#121212' : '#f5f5f5';
+                appScreen.style.color = darkMode ? '#fff' : '#000';
+                
+                // Appearance section
+                appearanceSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                appearanceSection.style.color = darkMode ? '#fff' : '#000';
+                darkModeLabelDesc.style.color = darkMode ? '#aaa' : '#757575';
+                
+                // Notifications section
+                notificationsSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                notificationsSection.style.color = darkMode ? '#fff' : '#000';
+                notificationsTitle.style.color = darkMode ? '#fff' : '#000';
+                notificationLabelTitle.style.color = darkMode ? '#fff' : '#000';
+                notificationLabelDesc.style.color = darkMode ? '#aaa' : '#757575';
+                
+                // Developer section
+                developerSection.style.backgroundColor = darkMode ? '#1e1e1e' : '#ffffff';
+                developerSection.style.color = darkMode ? '#fff' : '#000';
+                developerTitle.style.color = darkMode ? '#fff' : '#000';
+                resetTestTitle.style.color = darkMode ? '#fff' : '#000';
+                resetTestDesc.style.color = darkMode ? '#aaa' : '#757575';
+                developerNote.style.color = darkMode ? '#ff9800' : '#e65100';
             }
+            
+            // Apply current theme to settings screen consistently
+            updateSettingsTheme(isDarkMode);
+            
+            // Add this screen's theme elements to the theme listeners
+            addThemeListener((darkMode) => {
+                updateSettingsTheme(darkMode);
+            });
         }
         
         // Apply theme based on saved preference
