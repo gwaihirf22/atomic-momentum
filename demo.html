@@ -430,28 +430,14 @@
                 const streakBadge = document.createElement('div');
                 streakBadge.style.display = 'flex';
                 streakBadge.style.alignItems = 'center';
-                
-                // Enhanced styling for the streak badge
-                const badgeColor = getStreakBadgeColor(habit.streak);
-                streakBadge.style.backgroundColor = badgeColor.bg;
-                streakBadge.style.color = badgeColor.text;
-                streakBadge.style.borderRadius = '16px';
-                streakBadge.style.padding = '4px 10px';
-                streakBadge.style.fontSize = '16px';
-                streakBadge.style.fontWeight = 'bold';
-                streakBadge.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                streakBadge.style.marginLeft = '8px';
-                streakBadge.style.transition = 'all 0.2s ease';
-                
-                // Make badge glow for significant streaks
-                if (habit.streak >= 30) {
-                    streakBadge.style.boxShadow = '0 0 8px ' + badgeColor.glow;
-                }
+                streakBadge.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
+                streakBadge.style.borderRadius = '12px';
+                streakBadge.style.padding = '2px 8px';
+                streakBadge.style.fontSize = '14px';
                 
                 const fireEmoji = document.createElement('span');
-                // Add more fire emojis for longer streaks
-                fireEmoji.textContent = getStreakEmoji(habit.streak);
-                fireEmoji.style.marginRight = '5px';
+                fireEmoji.textContent = '🔥';
+                fireEmoji.style.marginRight = '3px';
                 
                 const streakCount = document.createElement('span');
                 streakCount.textContent = habit.streak;
@@ -459,13 +445,7 @@
                 
                 streakBadge.appendChild(fireEmoji);
                 streakBadge.appendChild(streakCount);
-                
-                // Add the streak badge to the heading
                 heading.appendChild(streakBadge);
-                
-                // Add hover effect to show streak message
-                streakBadge.title = getStreakMessage(habit.streak);
-                streakBadge.style.cursor = 'help';
             }
             
             const progress = document.createElement('span');
@@ -590,181 +570,6 @@
             return card;
         }
         
-        // Helper function to get the appropriate streak emoji based on streak length
-        function getStreakEmoji(streak) {
-            if (streak >= 100) return '🔥🔥🔥🔥';
-            if (streak >= 30) return '🔥🔥🔥';
-            if (streak >= 7) return '🔥🔥';
-            return '🔥';
-        }
-        
-        // Helper function to get streak badge colors based on streak length
-        function getStreakBadgeColor(streak) {
-            if (streak >= 100) {
-                return {
-                    bg: 'rgba(156, 39, 176, 0.2)', // Purple
-                    text: '#9c27b0',
-                    glow: 'rgba(156, 39, 176, 0.6)'
-                };
-            } else if (streak >= 30) {
-                return {
-                    bg: 'rgba(244, 67, 54, 0.2)', // Red
-                    text: '#f44336',
-                    glow: 'rgba(244, 67, 54, 0.6)'
-                };
-            } else if (streak >= 7) {
-                return {
-                    bg: 'rgba(255, 152, 0, 0.2)', // Orange
-                    text: '#ff9800',
-                    glow: 'rgba(255, 152, 0, 0.6)'
-                };
-            } else {
-                return {
-                    bg: 'rgba(76, 175, 80, 0.2)', // Green
-                    text: '#4CAF50',
-                    glow: 'rgba(76, 175, 80, 0.6)'
-                };
-            }
-        }
-        
-        // Helper function to get motivational messages for streak tooltips
-        function getStreakMessage(streak) {
-            if (streak >= 100) {
-                return 'Incredible! You're a legend with a 100+ day streak!';
-            } else if (streak >= 30) {
-                return 'Amazing! 30+ day streak shows your true commitment!';
-            } else if (streak >= 7) {
-                return 'Awesome! You've maintained a week-long streak!';
-            } else {
-                return `You're on a ${streak} day streak! Keep it up!`;
-            }
-        }
-        
-        // Function to show a special milestone celebration toast
-        function showMilestoneToast(habitName, days, color) {
-            // Create milestone toast with confetti animation
-            const milestoneToast = document.createElement('div');
-            milestoneToast.style.position = 'fixed';
-            milestoneToast.style.bottom = '20px';
-            milestoneToast.style.left = '50%';
-            milestoneToast.style.transform = 'translateX(-50%)';
-            milestoneToast.style.backgroundColor = color;
-            milestoneToast.style.color = 'white';
-            milestoneToast.style.padding = '15px 25px';
-            milestoneToast.style.borderRadius = '8px';
-            milestoneToast.style.zIndex = '1000';
-            milestoneToast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
-            milestoneToast.style.opacity = '0';
-            milestoneToast.style.transition = 'opacity 0.3s, transform 0.3s';
-            milestoneToast.style.fontWeight = 'bold';
-            milestoneToast.style.fontSize = '16px';
-            milestoneToast.style.textAlign = 'center';
-            milestoneToast.style.minWidth = '280px';
-            
-            // Create a title for the milestone message
-            const title = document.createElement('div');
-            title.style.fontSize = '18px';
-            title.style.marginBottom = '8px';
-            title.style.fontWeight = 'bold';
-            
-            // Get emoji pattern based on milestone
-            let emoji = days >= 100 ? '🏆🔥🎯' : (days >= 30 ? '🌟🔥💯' : '🔥✨👏');
-            
-            title.textContent = `${emoji} MILESTONE ACHIEVED ${emoji}`;
-            
-            // Create message content
-            const message = document.createElement('div');
-            let messageText = '';
-            
-            if (days === 100) {
-                messageText = `WOW! You've maintained "${habitName}" for 100 DAYS! That's legendary consistency!`;
-            } else if (days === 30) {
-                messageText = `Amazing! A full month of "${habitName}" completed! That's a month of positive change!`;
-            } else if (days === 7) {
-                messageText = `Awesome! You've completed "${habitName}" for 7 days! A full week of success!`;
-            }
-            
-            message.textContent = messageText;
-            
-            // Add elements to toast
-            milestoneToast.appendChild(title);
-            milestoneToast.appendChild(message);
-            
-            document.body.appendChild(milestoneToast);
-            
-            // Animate entrance
-            setTimeout(() => {
-                milestoneToast.style.opacity = '1';
-                milestoneToast.style.transform = 'translateX(-50%) scale(1.05)';
-                
-                // Add "confetti" effect
-                createConfetti();
-                
-                setTimeout(() => {
-                    milestoneToast.style.transform = 'translateX(-50%) scale(1)';
-                }, 200);
-            }, 10);
-            
-            // Remove after longer duration (special milestone deserves more attention)
-            setTimeout(() => {
-                milestoneToast.style.opacity = '0';
-                milestoneToast.style.transform = 'translateX(-50%) scale(0.95)';
-                setTimeout(() => {
-                    document.body.removeChild(milestoneToast);
-                }, 300);
-            }, 5000); // Show for 5 seconds for milestones
-        }
-        
-        // Simple confetti animation effect
-        function createConfetti() {
-            const confettiCount = 100;
-            const colors = ['#FF5722', '#FFC107', '#4CAF50', '#2196F3', '#9C27B0', '#E91E63'];
-            
-            for (let i = 0; i < confettiCount; i++) {
-                const confetti = document.createElement('div');
-                confetti.style.position = 'fixed';
-                confetti.style.width = Math.random() * 10 + 5 + 'px';
-                confetti.style.height = Math.random() * 10 + 5 + 'px';
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.borderRadius = '50%';
-                confetti.style.zIndex = '999';
-                confetti.style.opacity = Math.random() + 0.5;
-                confetti.style.pointerEvents = 'none'; // Don't block interactions
-                
-                // Random starting position (centered around the middle of the screen)
-                const startX = 50 + (Math.random() * 20 - 10); // 40%-60% of screen width
-                const startY = 70; // Near the top of the bottom quarter
-                
-                confetti.style.left = startX + 'vw';
-                confetti.style.top = startY + 'vh';
-                
-                // Add animation with random values
-                const endX = startX + (Math.random() * 20 - 10); // Move left or right somewhat
-                const endY = startY + 15 + Math.random() * 15; // Always move down
-                const duration = 1 + Math.random() * 3; // 1-4 seconds
-                const delay = Math.random() * 0.5; // 0-0.5 second delay
-                
-                confetti.animate([
-                    { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
-                    { transform: `translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 + 50}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
-                ], {
-                    duration: duration * 1000,
-                    delay: delay * 1000,
-                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-                    fill: 'forwards'
-                });
-                
-                document.body.appendChild(confetti);
-                
-                // Clean up confetti after animation completes
-                setTimeout(() => {
-                    if (document.body.contains(confetti)) {
-                        document.body.removeChild(confetti);
-                    }
-                }, (duration + delay) * 1000 + 100);
-            }
-        }
-        
         // Function to show a toast message
         function showToast(message, bgColor = '#4CAF50', duration = 3000) {
             const toast = document.createElement('div');
@@ -827,22 +632,10 @@
                     habit.streak += 1;
                     habit.lastStreakDate = today;
                     
-                    // Check for milestone streak achievements (100, 30, 7 days)
-                    // Note: We check for exact matches to only celebrate once when the milestone is reached
-                    if (habit.streak === 100) {
-                        // 100-day streak milestone celebration
-                        showMilestoneToast(habit.name, 100, "#9c27b0");
-                    } else if (habit.streak === 30) {
-                        // 30-day streak milestone celebration
-                        showMilestoneToast(habit.name, 30, "#f44336");
-                    } else if (habit.streak === 7) {
-                        // 7-day streak milestone celebration
-                        showMilestoneToast(habit.name, 7, "#ff9800");
-                    } 
-                    // Standard streak messages for non-milestone days
-                    else if (habit.streak > 10) {
-                        showToast(`Amazing! ${habit.streak} day streak! ${getStreakEmoji(habit.streak)}`, "#4CAF50");
-                    } else if (habit.streak > 5) {
+                    // Show a motivational message based on streak length
+                    if (habit.streak >= 10) {
+                        showToast(`Incredible! ${habit.streak} day streak! 🔥🔥🔥`, "#4CAF50");
+                    } else if (habit.streak >= 5) {
                         showToast(`Awesome! ${habit.streak} day streak! 🔥🔥`, "#4CAF50");
                     } else {
                         showToast(`Great job! ${habit.streak} day streak! 🔥`, "#4CAF50");
