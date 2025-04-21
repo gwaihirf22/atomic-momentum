@@ -39,6 +39,21 @@ with open('demo.html', 'w') as f:
             padding-bottom: 70px; /* Extra padding at the bottom to account for the notification banner */
             background-color: #f5f5f5;
         }
+        .streak-badge {
+            display: flex;
+            align-items: center;
+            background-color: rgba(255, 69, 0, 0.15);
+            border: 1px solid rgba(255, 69, 0, 0.3);
+            border-radius: 12px;
+            padding: 3px 10px;
+            font-size: 14px;
+            margin-left: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+        .streak-badge:hover {
+            transform: scale(1.05);
+        }
         .notification-test-banner {
             background-color: #673ab7;
             color: white;
@@ -454,24 +469,61 @@ with open('demo.html', 'w') as f:
             // Add streak badge if streak > 0
             if (habit.streak && habit.streak > 0) {
                 const streakBadge = document.createElement('div');
+                streakBadge.className = 'streak-badge'; // Added class for CSS styling
                 streakBadge.style.display = 'flex';
                 streakBadge.style.alignItems = 'center';
-                streakBadge.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
+                
+                // Apply theme-specific styling to streak badge
+                if (isDarkModeEnabled()) {
+                    streakBadge.style.backgroundColor = 'rgba(255, 69, 0, 0.25)'; // Slightly more vibrant in dark mode
+                    streakBadge.style.border = '1px solid rgba(255, 69, 0, 0.4)';
+                    streakBadge.style.color = '#ffffff';
+                    streakBadge.style.boxShadow = '0 1px 3px rgba(255,255,255,0.05)';
+                } else {
+                    streakBadge.style.backgroundColor = 'rgba(255, 69, 0, 0.15)';
+                    streakBadge.style.border = '1px solid rgba(255, 69, 0, 0.3)';
+                    streakBadge.style.color = '#333333';
+                    streakBadge.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                }
+                
                 streakBadge.style.borderRadius = '12px';
-                streakBadge.style.padding = '2px 8px';
+                streakBadge.style.padding = '3px 10px'; // Slightly larger padding
                 streakBadge.style.fontSize = '14px';
+                streakBadge.style.marginLeft = '8px'; // Space from habit name
                 
                 const fireEmoji = document.createElement('span');
                 fireEmoji.textContent = '🔥';
-                fireEmoji.style.marginRight = '3px';
+                fireEmoji.style.marginRight = '4px';
                 
                 const streakCount = document.createElement('span');
-                streakCount.textContent = habit.streak;
+                // Add "day" or "days" text for clarity
+                streakCount.textContent = habit.streak + (habit.streak === 1 ? ' day' : ' days');
                 streakCount.style.fontWeight = 'bold';
                 
                 streakBadge.appendChild(fireEmoji);
                 streakBadge.appendChild(streakCount);
                 heading.appendChild(streakBadge);
+                
+                // Add pulsing animation for new streaks or milestone streaks (7, 14, 30, etc.)
+                if (habit.streak === 1 || habit.streak === 7 || habit.streak === 14 || 
+                    habit.streak === 21 || habit.streak === 30 || habit.streak === 60 || 
+                    habit.streak === 90 || habit.streak === 100) {
+                    streakBadge.style.animation = 'pulse 2s infinite';
+                    
+                    // Create keyframes for pulse animation if they don't exist yet
+                    if (!document.getElementById('streak-pulse-animation')) {
+                        const styleSheet = document.createElement('style');
+                        styleSheet.id = 'streak-pulse-animation';
+                        styleSheet.textContent = `
+                            @keyframes pulse {
+                                0% { transform: scale(1); }
+                                50% { transform: scale(1.05); }
+                                100% { transform: scale(1); }
+                            }
+                        `;
+                        document.head.appendChild(styleSheet);
+                    }
+                }
             }
             
             const progress = document.createElement('span');
@@ -658,8 +710,22 @@ with open('demo.html', 'w') as f:
                     habit.streak += 1;
                     habit.lastStreakDate = today;
                     
-                    // Show a motivational message based on streak length
-                    if (habit.streak >= 10) {
+                    // Show enhanced motivational messages for streaks with special styling for milestones
+                    if (habit.streak === 7) {
+                        showToast(`🏆 One Week Milestone! ${habit.streak} day streak! 🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 14) {
+                        showToast(`🏆 Two Week Champion! ${habit.streak} day streak! 🔥🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 21) {
+                        showToast(`🏆 21 Day Habit Formed! ${habit.streak} day streak! 🔥🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 30) {
+                        showToast(`🏆 Monthly Master! ${habit.streak} day streak! 🔥🔥🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 60) {
+                        showToast(`🏆 60 Day Dedication! ${habit.streak} day streak! 🔥🔥🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 90) {
+                        showToast(`🏆 90 Day Transformation! ${habit.streak} day streak! 🔥🔥🔥🔥🔥`, "#FF9800", 4000);
+                    } else if (habit.streak === 100) {
+                        showToast(`🏆 CENTURY MILESTONE! ${habit.streak} day streak! 🔥🔥🔥🔥🔥`, "#FF9800", 5000);
+                    } else if (habit.streak >= 10) {
                         showToast(`Incredible! ${habit.streak} day streak! 🔥🔥🔥`, "#4CAF50");
                     } else if (habit.streak >= 5) {
                         showToast(`Awesome! ${habit.streak} day streak! 🔥🔥`, "#4CAF50");
