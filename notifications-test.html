@@ -163,6 +163,31 @@ function showNotification(title, options) {
     return notification;
 }</pre>
     </div>
+    
+    <div class="card">
+        <h2>Alternative Testing Options</h2>
+        <p>If you're unable to test notifications in your current browser, here are some other options:</p>
+        
+        <div style="background-color: #e8f5e9; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3>Option 1: Desktop Browser</h3>
+            <p>Copy the public URL of this Replit project and open it in a desktop browser like Chrome, Firefox, or Edge. This provides the most complete testing experience.</p>
+        </div>
+        
+        <div style="background-color: #fff8e1; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3>Option 2: Android Chrome</h3>
+            <p>Android devices with Chrome browser have good support for web notifications. Access this page on an Android device for testing.</p>
+        </div>
+        
+        <div style="background-color: #f3e5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3>Option 3: Emulate in Desktop DevTools</h3>
+            <p>In Chrome desktop, you can use DevTools to simulate notifications. Open DevTools (F12), go to Application tab → Notifications, and test from there.</p>
+        </div>
+        
+        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin: 15px 0;">
+            <h3>iOS Testing Limitations</h3>
+            <p>For iOS development, web notifications are limited. In a production Flutter app, we would use native iOS push notifications instead of web notifications.</p>
+        </div>
+    </div>
 
     <script>
         // DOM elements
@@ -185,13 +210,75 @@ function showNotification(title, options) {
         
         // Check if notifications are supported
         function checkNotificationSupport() {
+            // First check if the Notification API exists
             if (!('Notification' in window)) {
                 permissionStatus.textContent = 'Notifications are NOT supported in this browser';
                 permissionStatus.className = 'status denied';
                 requestPermissionBtn.disabled = true;
                 log('Notifications are not supported in this browser');
+                
+                // Show more detailed information about the environment
+                const detailedInfo = document.createElement('div');
+                detailedInfo.className = 'instructions';
+                detailedInfo.innerHTML = `
+                    <h3>Why notifications aren't working:</h3>
+                    <p>Your current browser environment doesn't support the Notification API. This could be due to:</p>
+                    <ul>
+                        <li>Using a mobile browser (iOS Safari has limited notification support)</li>
+                        <li>Running in a private/incognito browsing mode</li>
+                        <li>Browser settings that disable the Notification API</li>
+                        <li>Corporate policy restrictions</li>
+                    </ul>
+                    
+                    <h3>Try these alternatives:</h3>
+                    <ul>
+                        <li>Open this page in a desktop browser like Chrome, Firefox, or Edge</li>
+                        <li>On Android, try Chrome browser with notifications enabled</li>
+                        <li>Make sure you're not in a private/incognito browsing mode</li>
+                        <li>Check your browser settings to ensure notifications are allowed</li>
+                    </ul>
+                `;
+                
+                // Insert after the permission status display
+                permissionStatus.parentNode.insertBefore(detailedInfo, permissionStatus.nextSibling);
+                
                 return false;
             }
+            
+            // Additional check for iOS devices, which technically have the API but don't fully implement it
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                permissionStatus.textContent = 'Notifications are not fully supported on iOS devices';
+                permissionStatus.className = 'status denied';
+                requestPermissionBtn.disabled = true;
+                log('iOS detected - notifications have limited support');
+                
+                // Show iOS-specific advice
+                const iosInfo = document.createElement('div');
+                iosInfo.className = 'instructions';
+                iosInfo.innerHTML = `
+                    <h3>iOS Notification Limitations:</h3>
+                    <p>Apple iOS (iPhone/iPad) has limited support for web notifications:</p>
+                    <ul>
+                        <li>iOS Safari does not fully implement the Web Notifications API</li>
+                        <li>Even if permission is granted, notifications may not display</li>
+                        <li>This is a limitation of iOS, not a bug in our application</li>
+                    </ul>
+                    
+                    <h3>To test notifications:</h3>
+                    <ul>
+                        <li>Use a desktop browser like Chrome, Firefox, or Edge</li>
+                        <li>On Android, use Chrome with notifications enabled</li>
+                        <li>For iOS users, the Atomic Momentum app will include native notifications in the final version</li>
+                    </ul>
+                `;
+                
+                // Insert after the permission status display
+                permissionStatus.parentNode.insertBefore(iosInfo, permissionStatus.nextSibling);
+                
+                return false;
+            }
+            
             return true;
         }
         
