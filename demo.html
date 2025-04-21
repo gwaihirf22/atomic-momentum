@@ -1414,8 +1414,122 @@
             appearanceSection.appendChild(appearanceTitle);
             appearanceSection.appendChild(darkModeRow);
             
+            // Notifications Section
+            const notificationsSection = document.createElement('div');
+            notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            notificationsSection.style.padding = '16px';
+            notificationsSection.style.borderRadius = '8px';
+            notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            notificationsSection.style.marginBottom = '16px';
+            
+            const notificationsTitle = document.createElement('h3');
+            notificationsTitle.textContent = 'Notifications';
+            notificationsTitle.style.margin = '0 0 16px 0';
+            
+            // Notification Switch Row
+            const notificationRow = document.createElement('div');
+            notificationRow.style.display = 'flex';
+            notificationRow.style.alignItems = 'center';
+            notificationRow.style.justifyContent = 'space-between';
+            notificationRow.style.padding = '8px 0';
+            
+            const notificationLabel = document.createElement('div');
+            
+            const notificationLabelTitle = document.createElement('div');
+            notificationLabelTitle.textContent = 'Enable Notifications';
+            notificationLabelTitle.style.fontWeight = 'bold';
+            
+            const notificationLabelDesc = document.createElement('div');
+            notificationLabelDesc.textContent = 'Receive reminders for your habits';
+            notificationLabelDesc.style.fontSize = '14px';
+            notificationLabelDesc.style.color = isDarkMode ? '#aaa' : '#757575';
+            notificationLabelDesc.style.marginTop = '4px';
+            
+            notificationLabel.appendChild(notificationLabelTitle);
+            notificationLabel.appendChild(notificationLabelDesc);
+            
+            // Notification Switch component
+            const notifSwitchContainer = document.createElement('label');
+            notifSwitchContainer.style.position = 'relative';
+            notifSwitchContainer.style.display = 'inline-block';
+            notifSwitchContainer.style.width = '60px';
+            notifSwitchContainer.style.height = '34px';
+            
+            const notifSwitchInput = document.createElement('input');
+            notifSwitchInput.type = 'checkbox';
+            const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
+            notifSwitchInput.checked = storedNotificationsEnabled === 'true';
+            notifSwitchInput.style.opacity = '0';
+            notifSwitchInput.style.width = '0';
+            notifSwitchInput.style.height = '0';
+            
+            const notifSwitchSlider = document.createElement('span');
+            notifSwitchSlider.style.position = 'absolute';
+            notifSwitchSlider.style.cursor = 'pointer';
+            notifSwitchSlider.style.top = '0';
+            notifSwitchSlider.style.left = '0';
+            notifSwitchSlider.style.right = '0';
+            notifSwitchSlider.style.bottom = '0';
+            notifSwitchSlider.style.backgroundColor = notifSwitchInput.checked ? '#673ab7' : '#ccc';
+            notifSwitchSlider.style.borderRadius = '34px';
+            notifSwitchSlider.style.transition = '.4s';
+            
+            // Notification Slider button
+            const notifSliderButton = document.createElement('span');
+            notifSliderButton.style.position = 'absolute';
+            notifSliderButton.style.content = '""';
+            notifSliderButton.style.height = '26px';
+            notifSliderButton.style.width = '26px';
+            notifSliderButton.style.left = notifSwitchInput.checked ? '30px' : '4px';
+            notifSliderButton.style.bottom = '4px';
+            notifSliderButton.style.backgroundColor = 'white';
+            notifSliderButton.style.borderRadius = '50%';
+            notifSliderButton.style.transition = '.4s';
+            
+            notifSwitchSlider.appendChild(notifSliderButton);
+            notifSwitchContainer.appendChild(notifSwitchInput);
+            notifSwitchContainer.appendChild(notifSwitchSlider);
+            
+            // Toggle notifications
+            notifSwitchInput.onchange = (e) => {
+                const checked = e.target.checked;
+                notifSwitchSlider.style.backgroundColor = checked ? '#673ab7' : '#ccc';
+                notifSliderButton.style.left = checked ? '30px' : '4px';
+                
+                if (checked) {
+                    requestNotificationPermission().then(granted => {
+                        if (granted) {
+                            showToast("Notifications enabled!", "#4CAF50");
+                            startReminderCheck();
+                        } else {
+                            // If permission was denied, reset the toggle
+                            e.target.checked = false;
+                            notifSwitchSlider.style.backgroundColor = '#ccc';
+                            notifSliderButton.style.left = '4px';
+                            showToast("Notification permission was denied by the browser", "#F44336");
+                        }
+                    });
+                } else {
+                    // Disable notifications
+                    localStorage.setItem('notificationsEnabled', 'false');
+                    isNotificationsEnabled = false;
+                    if (reminderTimer) {
+                        clearInterval(reminderTimer);
+                        reminderTimer = null;
+                    }
+                    showToast("Notifications disabled", "#FF9800");
+                }
+            };
+            
+            notificationRow.appendChild(notificationLabel);
+            notificationRow.appendChild(notifSwitchContainer);
+            
+            notificationsSection.appendChild(notificationsTitle);
+            notificationsSection.appendChild(notificationRow);
+            
             // Add all sections to the settings container
             settingsContainer.appendChild(appearanceSection);
+            settingsContainer.appendChild(notificationsSection);
             
             // Developer Testing Section
             const developerSection = document.createElement('div');
@@ -1762,11 +1876,59 @@
             targetInput.style.width = '100%';
             targetInput.style.padding = '16px';
             targetInput.style.fontSize = '16px';
-            targetInput.style.marginBottom = '24px';
+            targetInput.style.marginBottom = '16px';
             targetInput.style.borderRadius = '8px';
             targetInput.style.border = '1px solid #ccc';
             targetInput.style.boxSizing = 'border-box';
             targetInput.value = habit.target; // Pre-fill with habit target
+            
+            // Reminder section
+            const reminderLabel = document.createElement('div');
+            reminderLabel.textContent = 'Daily Reminder (Optional)';
+            reminderLabel.style.fontSize = '16px';
+            reminderLabel.style.fontWeight = 'bold';
+            reminderLabel.style.marginBottom = '10px';
+            
+            const reminderRow = document.createElement('div');
+            reminderRow.style.display = 'flex';
+            reminderRow.style.alignItems = 'center';
+            reminderRow.style.gap = '10px';
+            reminderRow.style.marginBottom = '24px';
+            
+            const reminderToggle = document.createElement('input');
+            reminderToggle.type = 'checkbox';
+            reminderToggle.id = 'reminder-toggle';
+            reminderToggle.style.transform = 'scale(1.5)';
+            reminderToggle.style.margin = '0 5px 0 0';
+            reminderToggle.checked = habit.reminderEnabled || false; // Pre-fill reminder enabled state
+            
+            const reminderToggleLabel = document.createElement('label');
+            reminderToggleLabel.htmlFor = 'reminder-toggle';
+            reminderToggleLabel.textContent = 'Enable Reminder';
+            reminderToggleLabel.style.flex = '1';
+            
+            const reminderTime = document.createElement('input');
+            reminderTime.type = 'time';
+            reminderTime.style.padding = '8px';
+            reminderTime.style.borderRadius = '4px';
+            reminderTime.style.border = '1px solid #ccc';
+            reminderTime.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+            reminderTime.style.color = isDarkMode ? '#fff' : '#000';
+            reminderTime.disabled = !reminderToggle.checked; // Initially disabled if toggle not checked
+            reminderTime.value = habit.reminderTime || '20:00'; // Pre-fill with existing time or default
+            
+            // Enable/disable time input based on checkbox
+            reminderToggle.onchange = () => {
+                reminderTime.disabled = !reminderToggle.checked;
+                if (reminderToggle.checked && !reminderTime.value) {
+                    // Set default time to 8:00 PM if not set
+                    reminderTime.value = '20:00';
+                }
+            };
+            
+            reminderRow.appendChild(reminderToggle);
+            reminderRow.appendChild(reminderToggleLabel);
+            reminderRow.appendChild(reminderTime);
             
             const colorLabel = document.createElement('div');
             colorLabel.textContent = 'Habit Color';
@@ -1869,6 +2031,8 @@
             form.appendChild(emojiContainer);
             form.appendChild(nameInput);
             form.appendChild(targetInput);
+            form.appendChild(reminderLabel);
+            form.appendChild(reminderRow);
             form.appendChild(colorLabel);
             form.appendChild(colorsPicker);
             
@@ -1956,7 +2120,9 @@
                         name: nameInput.value.trim(),
                         target: parseInt(targetInput.value, 10),
                         color: selectedColor,
-                        icon: selectedEmoji // Save the selected emoji
+                        icon: selectedEmoji, // Save the selected emoji
+                        reminderEnabled: reminderToggle.checked,
+                        reminderTime: reminderToggle.checked ? reminderTime.value : null
                     };
                     
                     saveHabits();
