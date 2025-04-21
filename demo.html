@@ -1579,16 +1579,17 @@
                 
                 // Add a note about browser support
                 const notificationContainer = document.createElement('div');
-                notificationContainer.style.backgroundColor = isDarkMode ? '#333' : '#f8f8f8';
+                notificationContainer.style.backgroundColor = isDarkMode ? '#3a0500' : '#ffebee';
                 notificationContainer.style.padding = '10px';
                 notificationContainer.style.borderRadius = '4px';
                 notificationContainer.style.marginTop = '10px';
+                notificationContainer.style.border = isDarkMode ? '1px solid #5c0000' : '1px solid #ffcdd2';
                 
                 const notificationNote = document.createElement('div');
                 notificationNote.textContent = 'Notifications not supported in this browser';
                 notificationNote.style.fontSize = '12px';
-                notificationNote.style.color = '#F44336';
-                notificationNote.style.fontStyle = 'italic';
+                notificationNote.style.color = isDarkMode ? '#ff6b68' : '#F44336';
+                notificationNote.style.fontWeight = 'bold';
                 
                 notificationContainer.appendChild(notificationNote);
                 notificationsSection.appendChild(notificationContainer);
@@ -1603,16 +1604,17 @@
                         
                         // Add a note about iframe restrictions
                         const notificationContainer = document.createElement('div');
-                        notificationContainer.style.backgroundColor = isDarkMode ? '#333' : '#f8f8f8';
+                        notificationContainer.style.backgroundColor = isDarkMode ? '#4d3200' : '#fff8e1';
                         notificationContainer.style.padding = '10px';
                         notificationContainer.style.borderRadius = '4px';
                         notificationContainer.style.marginTop = '10px';
+                        notificationContainer.style.border = isDarkMode ? '1px solid #6d4c00' : '1px solid #ffecb3';
                         
                         const notificationNote = document.createElement('div');
                         notificationNote.textContent = 'Notifications blocked in preview mode. Try in regular browser window.';
                         notificationNote.style.fontSize = '12px';
-                        notificationNote.style.color = '#FF9800';
-                        notificationNote.style.fontStyle = 'italic';
+                        notificationNote.style.color = isDarkMode ? '#ffcc80' : '#e65100';
+                        notificationNote.style.fontWeight = 'bold';
                         
                         notificationContainer.appendChild(notificationNote);
                         notificationsSection.appendChild(notificationContainer);
