@@ -3,18 +3,40 @@
 ## Version 1 Features (MVP)
 - [x] Home screen with habit list
 - [x] Progress bars for habits
-- [x] Add Habit screen with color selection
-- [x] Save habits locally using shared_preferences
-- [ ] Dark Mode toggle
+- [x] Add/Edit Habit screens with color and emoji selection
+- [x] Save habits locally (localStorage in web version)
+- [x] Dark Mode toggle
 
-## Bugs / Issues
-- None yet
+## Version 2 Features (Current)
+- [x] Calendar view with habit tracking history
+- [x] Habit streaks with motivational feedback
+- [x] Notifications and reminders
+- [x] Settings screen with theme controls
+- [x] Visual progress indicators and completion tracking
+
+## Version 3 Features (Planned)
+- [ ] Multi-file architecture (proper separation of concerns)
+- [ ] Backend data storage
+- [ ] User authentication and profiles
+- [ ] Advanced analytics and insights
+- [ ] Mobile app implementation with Flutter
+
+## Current Bugs / Issues
+- Browser compatibility variations with notifications
+- Performance considerations with long-term localStorage use
+- Some edge cases in theme switching components
+
+## Implementation Notes
+- Originally planned as Flutter app, currently web-based
+- All code currently in server.py (needs refactoring)
+- Using simple Python HTTP server for development
 
 ## Future Ideas
-- Habit streaks
-- Cloud backup
-- Notifications
-- Premium unlock for themes
+- Habit categories and tagging
+- Social features and sharing
+- Export/import functionality
+- AI-powered habit suggestions
+- Integration with health tracking platforms
 
 ---
 Built with love and momentum.
