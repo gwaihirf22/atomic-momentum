@@ -37,3 +37,4 @@ run = ["sh", "-c", "flutter run -d web-server --web-port=5000 --web-hostname=0.0
 [[ports]]
 localPort = 5000
 externalPort = 80
+exposeLocalhost = true

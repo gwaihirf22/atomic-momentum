@@ -143,7 +143,7 @@ with open('demo.html', 'w') as f:
         </div>
     </div>
     
-    <div class="add-button" onclick="showAddHabitForm()">+</div>
+    <div class="add-button" onclick="showAddHabitScreen()">+</div>
 
     <script>
         // Default habits to use if none are saved
@@ -268,26 +268,69 @@ with open('demo.html', 'w') as f:
             }
         }
         
-        // Add a new habit form display
-        function showAddHabitForm() {
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
-            modal.style.display = 'flex';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-            modal.style.zIndex = '1000';
+        // Show Add Habit Screen (fullscreen)
+        function showAddHabitScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
             
+            // Create full-screen form that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = '#f5f5f5';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Add New Habit';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create form container (scrollable)
+            const formContainer = document.createElement('div');
+            formContainer.style.flex = '1';
+            formContainer.style.overflowY = 'auto';
+            formContainer.style.padding = '20px';
+            
+            // Create form content
             const form = document.createElement('div');
             form.style.backgroundColor = 'white';
             form.style.padding = '20px';
             form.style.borderRadius = '8px';
-            form.style.width = '80%';
-            form.style.maxWidth = '400px';
+            form.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
             
             const heading = document.createElement('h2');
             heading.textContent = 'Add New Habit';
@@ -363,19 +406,42 @@ with open('demo.html', 'w') as f:
             cancelBtn.style.cursor = 'pointer';
             
             cancelBtn.onclick = () => {
-                document.body.removeChild(modal);
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
             };
             
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Save';
-            saveBtn.style.padding = '10px 20px';
-            saveBtn.style.border = 'none';
-            saveBtn.style.borderRadius = '4px';
-            saveBtn.style.backgroundColor = '#673ab7';
-            saveBtn.style.color = 'white';
-            saveBtn.style.cursor = 'pointer';
+            form.appendChild(heading);
+            form.appendChild(nameInput);
+            form.appendChild(targetInput);
+            form.appendChild(colorLabel);
+            form.appendChild(colorsPicker);
             
-            saveBtn.onclick = () => {
+            formContainer.appendChild(form);
+            
+            // Save button (large bottom button)
+            const saveButtonContainer = document.createElement('div');
+            saveButtonContainer.style.padding = '16px';
+            saveButtonContainer.style.backgroundColor = 'white';
+            saveButtonContainer.style.boxShadow = '0 -1px 3px rgba(0,0,0,0.1)';
+            
+            const saveButtonLarge = document.createElement('button');
+            saveButtonLarge.textContent = 'Save Habit';
+            saveButtonLarge.style.width = '100%';
+            saveButtonLarge.style.padding = '16px';
+            saveButtonLarge.style.backgroundColor = '#673ab7';
+            saveButtonLarge.style.color = 'white';
+            saveButtonLarge.style.border = 'none';
+            saveButtonLarge.style.borderRadius = '4px';
+            saveButtonLarge.style.fontSize = '16px';
+            saveButtonLarge.style.fontWeight = 'bold';
+            saveButtonLarge.style.cursor = 'pointer';
+            saveButtonLarge.style.textTransform = 'uppercase';
+            
+            saveButtonLarge.onclick = () => {
                 if (nameInput.value.trim() && targetInput.value.trim()) {
                     const habitId = 'habit_' + Date.now();
                     habits[habitId] = {
@@ -386,25 +452,29 @@ with open('demo.html', 'w') as f:
                     };
                     
                     saveHabits();
-                    renderHabits();
-                    document.body.removeChild(modal);
+                    
+                    // Return to main screen
+                    document.body.innerHTML = mainContent;
+                    
+                    // Re-initialize event listeners
+                    document.addEventListener('DOMContentLoaded', loadHabits);
+                    loadHabits();
                 } else {
                     alert('Please fill out all fields');
                 }
             };
             
-            buttonsContainer.appendChild(cancelBtn);
-            buttonsContainer.appendChild(saveBtn);
+            saveButtonContainer.appendChild(saveButtonLarge);
             
-            form.appendChild(heading);
-            form.appendChild(nameInput);
-            form.appendChild(targetInput);
-            form.appendChild(colorLabel);
-            form.appendChild(colorsPicker);
-            form.appendChild(buttonsContainer);
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(formContainer);
+            appScreen.appendChild(saveButtonContainer);
             
-            modal.appendChild(form);
-            document.body.appendChild(modal);
+            document.body.appendChild(appScreen);
+            
+            // Focus the first input for better UX
+            nameInput.focus();
         }
         
         // Initialize on page load
