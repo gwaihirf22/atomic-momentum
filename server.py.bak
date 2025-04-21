@@ -1,0 +1,3187 @@
+import os
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import webbrowser
+
+class AtomicMomentumApp(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        """Serve a GET request."""
+        if self.path == '/notifications-test' or self.path == '/notifications-test.html':
+            # Serve the notification test page
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            with open('notifications-test.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
+            
+        # For all other paths, serve the main app
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        with open('demo.html', 'rb') as file:
+            self.wfile.write(file.read())
+
+# Create the demo HTML page
+with open('demo.html', 'w') as f:
+    f.write("""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Atomic Momentum</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 70px; /* Extra padding at the bottom to account for the notification banner */
+            background-color: #f5f5f5;
+        }
+        .notification-test-banner {
+            background-color: #673ab7;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        .notification-test-banner a {
+            color: white;
+            text-decoration: underline;
+            font-weight: bold;
+        }
+        .notification-test-banner a:hover {
+            text-decoration: none;
+        }
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #673ab7;
+            color: white;
+            padding: 16px;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        .app-header h1 {
+            margin: 0;
+        }
+        .header-icons {
+            display: flex;
+            align-items: center;
+        }
+        .calendar-icon, .settings-icon {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .habit-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .habit-title {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .progress-bar {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #673ab7;
+        }
+        .actions {
+            display: flex;
+            justify-content: space-evenly;
+            margin-top: 8px;
+        }
+        button {
+            border: none;
+            background-color: transparent;
+            color: #673ab7;
+            cursor: pointer;
+            font-size: 24px;
+        }
+        button:disabled {
+            color: #bdbdbd;
+            cursor: default;
+        }
+        .add-button {
+            position: fixed;
+            bottom: 70px; /* Increased to avoid overlap with notification banner */
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background-color: #673ab7;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>Momentum</h1>
+        <div class="header-icons">
+            <div class="calendar-icon" onclick="showCalendarScreen()" style="margin-right: 15px;">📅</div>
+            <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+        </div>
+    </div>
+    
+    <div id="habits-container" style="padding: 0 10px;">
+        <!-- Drink Water Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Drink Water</h2>
+                <span>5/8</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 62.5%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('water', -1)">-</button>
+                <button onclick="updateProgress('water', 1)">+</button>
+            </div>
+        </div>
+        
+        <!-- Read Bible Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Read Bible</h2>
+                <span>3/7</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 42.8%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('bible', -1)">-</button>
+                <button onclick="updateProgress('bible', 1)">+</button>
+            </div>
+        </div>
+        
+        <!-- Workout Habit -->
+        <div class="habit-card">
+            <div class="habit-title">
+                <h2>Workout</h2>
+                <span>7/7</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 100%"></div>
+            </div>
+            <div class="actions">
+                <button onclick="updateProgress('workout', -1)" id="workout-minus">-</button>
+                <button onclick="updateProgress('workout', 1)" id="workout-plus" disabled>+</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="add-button" onclick="showAddHabitScreen()">+</div>
+    
+    <div class="notification-test-banner">
+        <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">
+            <span>📱 Using iOS? Notifications have limited support. <a href="/notifications-test" target="_blank">View testing options</a></span>
+            <button onclick="this.parentElement.parentElement.style.display = 'none'" style="background: transparent; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+        </div>
+    </div>
+
+    <script>
+        // Default habits to use if none are saved
+        const defaultHabits = {
+            water: { 
+                progress: 5, 
+                target: 8, 
+                name: "Drink Water", 
+                color: "#2196F3",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly",
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
+            },
+            bible: { 
+                progress: 3, 
+                target: 7, 
+                name: "Read Bible", 
+                color: "#009688",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly",
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
+            },
+            workout: { 
+                progress: 7, 
+                target: 7, 
+                name: "Workout", 
+                color: "#FF9800",
+                lastUpdatedDate: new Date().toISOString(),
+                resetFrequency: "weekly",
+                history: {}, // Store habit history by date
+                streak: 0,   // Current streak count
+                lastStreakDate: null, // Last date the streak was updated
+                reminderTime: null, // Optional time for daily reminder
+                reminderEnabled: false // Whether notifications are enabled for this habit
+            }
+        };
+        
+        // Our in-memory habits
+        let habits = {};
+        
+        // Function to format date as YYYY-MM-DD for consistent history keys
+        function formatDate(date) {
+            const d = new Date(date);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+        
+        // Get today's date in YYYY-MM-DD format
+        function getTodayFormatted() {
+            return formatDate(new Date());
+        }
+        
+        // Global theme management
+        function isDarkModeEnabled() {
+            return localStorage.getItem('isDarkMode') === 'true';
+        }
+        
+        // Theme change listeners (for reactive updates)
+        const themeListeners = [];
+        
+        function addThemeListener(callback) {
+            themeListeners.push(callback);
+        }
+        
+        function notifyThemeChange() {
+            const isDark = isDarkModeEnabled();
+            themeListeners.forEach(listener => listener(isDark));
+        }
+        
+        // Load habits from localStorage
+        function loadHabits() {
+            const savedHabits = localStorage.getItem('atomic_momentum_habits');
+            if (savedHabits) {
+                try {
+                    habits = JSON.parse(savedHabits);
+                    console.log('Loaded habits from localStorage:', habits);
+                    
+                    // Initialize history, streak, and reminder properties for habits that don't have them yet
+                    Object.keys(habits).forEach(habitId => {
+                        const habit = habits[habitId];
+                        if (!habit.history) {
+                            habit.history = {};
+                        }
+                        if (habit.streak === undefined) {
+                            habit.streak = 0;
+                        }
+                        if (habit.lastStreakDate === undefined) {
+                            habit.lastStreakDate = null;
+                        }
+                        // Initialize reminder properties if they don't exist
+                        if (habit.reminderTime === undefined) {
+                            habit.reminderTime = null;
+                        }
+                        if (habit.reminderEnabled === undefined) {
+                            habit.reminderEnabled = false;
+                        }
+                    });
+                    
+                    // Check for habits that need to be reset based on their frequency
+                    checkHabitResets();
+                } catch (e) {
+                    console.error('Error loading habits from localStorage:', e);
+                    habits = {...defaultHabits};
+                    saveHabits();
+                }
+            } else {
+                // Use default habits if none are saved
+                habits = {...defaultHabits};
+                saveHabits();
+            }
+            
+            // Update UI with loaded habits
+            renderHabits();
+            
+            // Ensure theme is applied consistently after load
+            applyTheme();
+        }
+        
+        // Save habits to localStorage
+        function saveHabits() {
+            try {
+                localStorage.setItem('atomic_momentum_habits', JSON.stringify(habits));
+                console.log('Saved habits to localStorage');
+            } catch (e) {
+                console.error('Error saving habits to localStorage:', e);
+            }
+        }
+
+        // Load habit history from localStorage
+        function loadHabitHistory() {
+            const savedHistory = localStorage.getItem('atomic_momentum_habit_history');
+            if (savedHistory) {
+                try {
+                    return JSON.parse(savedHistory);
+                } catch (e) {
+                    console.error('Error loading habit history from localStorage:', e);
+                    return {};
+                }
+            }
+            return {};
+        }
+        
+        // Save habit history to localStorage
+        function saveHabitHistory(history) {
+            try {
+                localStorage.setItem('atomic_momentum_habit_history', JSON.stringify(history));
+                console.log('Saved habit history to localStorage');
+            } catch (e) {
+                console.error('Error saving habit history to localStorage:', e);
+            }
+        }
+        
+        // Record daily habit status in habitHistory
+        function recordDailyHabitStatus() {
+            const currentDate = formatDate(new Date());
+            const habitHistory = loadHabitHistory();
+            
+            // Create entry for current date if it doesn't exist
+            if (!habitHistory[currentDate]) {
+                habitHistory[currentDate] = {};
+            }
+            
+            // Record status for each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const isCompleted = habit.progress >= habit.target;
+                
+                // Store as "completed" or "not_completed"
+                habitHistory[currentDate][habitId] = isCompleted ? "completed" : "not_completed";
+            });
+            
+            // Save the updated history
+            saveHabitHistory(habitHistory);
+            console.log('Recorded habit status for', currentDate);
+        }
+        
+        // Render all habits in the UI
+        function renderHabits() {
+            const container = document.getElementById('habits-container');
+            container.innerHTML = ''; // Clear existing habits
+            container.style.padding = '0 10px'; // Ensure padding applies to dynamically generated content
+            
+            // Get current theme state
+            const isDarkMode = isDarkModeEnabled();
+            
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const habitElement = createHabitElement(habitId, habit);
+                
+                // Apply theme-specific styling to the card
+                if (isDarkMode) {
+                    habitElement.style.backgroundColor = '#1e1e1e';
+                    // Find progress bar and set its background
+                    const progressBar = habitElement.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.backgroundColor = '#333';
+                    }
+                } else {
+                    habitElement.style.backgroundColor = '#fff';
+                    // Find progress bar and set its background
+                    const progressBar = habitElement.querySelector('.progress-bar');
+                    if (progressBar) {
+                        progressBar.style.backgroundColor = '#e0e0e0';
+                    }
+                }
+                
+                container.appendChild(habitElement);
+            });
+        }
+        
+        // Create a habit card element
+        function createHabitElement(habitId, habit) {
+            const card = document.createElement('div');
+            card.className = 'habit-card';
+            // Add subtle shadow and increased spacing
+            card.style.boxShadow = isDarkModeEnabled() ? '0 2px 8px rgba(255,255,255,0.05)' : '0 2px 8px rgba(0,0,0,0.1)';
+            card.style.marginBottom = '15px'; // Increase vertical spacing between cards
+            card.style.padding = '15px'; // Increase internal padding
+            card.style.borderRadius = '10px'; // More rounded corners for a modern look
+            
+            const title = document.createElement('div');
+            title.className = 'habit-title';
+            title.style.display = 'flex';
+            title.style.justifyContent = 'space-between';
+            title.style.alignItems = 'center';
+            
+            const titleLeft = document.createElement('div');
+            
+            const heading = document.createElement('div');
+            heading.style.display = 'flex';
+            heading.style.alignItems = 'center';
+            heading.style.gap = '8px';
+            
+            const headingText = document.createElement('h2');
+            headingText.style.margin = '0';
+            
+            // Check if habit has an icon and add it before the name
+            if (habit.icon) {
+                headingText.textContent = `${habit.icon} ${habit.name}`;
+            } else {
+                headingText.textContent = habit.name;
+            }
+            
+            heading.appendChild(headingText);
+            
+            // Add streak badge if streak > 0
+            if (habit.streak && habit.streak > 0) {
+                const streakBadge = document.createElement('div');
+                streakBadge.style.display = 'flex';
+                streakBadge.style.alignItems = 'center';
+                streakBadge.style.backgroundColor = 'rgba(255, 152, 0, 0.2)';
+                streakBadge.style.borderRadius = '12px';
+                streakBadge.style.padding = '2px 8px';
+                streakBadge.style.fontSize = '14px';
+                
+                const fireEmoji = document.createElement('span');
+                fireEmoji.textContent = '🔥';
+                fireEmoji.style.marginRight = '3px';
+                
+                const streakCount = document.createElement('span');
+                streakCount.textContent = habit.streak;
+                streakCount.style.fontWeight = 'bold';
+                
+                streakBadge.appendChild(fireEmoji);
+                streakBadge.appendChild(streakCount);
+                heading.appendChild(streakBadge);
+            }
+            
+            const progress = document.createElement('span');
+            progress.textContent = `${habit.progress}/${habit.target}`;
+            progress.style.color = habit.color;
+            
+            titleLeft.appendChild(heading);
+            titleLeft.appendChild(progress);
+            
+            // Create button container for edit and delete
+            const btnContainer = document.createElement('div');
+            btnContainer.style.display = 'flex';
+            btnContainer.style.gap = '5px';
+            
+            // Add edit button (pencil icon)
+            const editBtn = document.createElement('button');
+            editBtn.innerHTML = '✏️'; // Pencil emoji
+            editBtn.style.background = 'transparent';
+            editBtn.style.border = 'none';
+            editBtn.style.fontSize = '20px';
+            editBtn.style.cursor = 'pointer';
+            editBtn.style.padding = '0 5px';
+            editBtn.title = 'Edit habit';
+            editBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent any other event handlers
+                showEditHabitScreen(habitId, habit);
+            };
+            
+            // Add delete button (trash icon)
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️'; // Trash emoji
+            deleteBtn.style.background = 'transparent';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.fontSize = '20px';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.padding = '0 5px';
+            deleteBtn.title = 'Delete habit';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation(); // Prevent any other event handlers
+                
+                // Show confirmation dialog
+                if (confirm(`Are you sure you want to delete "${habit.name}"?`)) {
+                    // Delete the habit
+                    delete habits[habitId];
+                    
+                    // Save updated habits
+                    saveHabits();
+                    
+                    // Re-render the UI
+                    renderHabits();
+                    
+                    // Show feedback toast
+                    const toast = document.createElement('div');
+                    toast.textContent = 'Habit deleted!';
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '20px';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.backgroundColor = '#f44336';
+                    toast.style.color = 'white';
+                    toast.style.padding = '10px 20px';
+                    toast.style.borderRadius = '4px';
+                    toast.style.zIndex = '1000';
+                    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Animate toast
+                    setTimeout(() => {
+                        toast.style.opacity = '1';
+                    }, 10);
+                    
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        setTimeout(() => {
+                            document.body.removeChild(toast);
+                        }, 300);
+                    }, 3000);
+                }
+            };
+            
+            btnContainer.appendChild(editBtn);
+            btnContainer.appendChild(deleteBtn);
+            
+            title.appendChild(titleLeft);
+            title.appendChild(btnContainer);
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            
+            const progressFill = document.createElement('div');
+            progressFill.className = 'progress-fill';
+            progressFill.style.width = `${(habit.progress / habit.target) * 100}%`;
+            progressFill.style.backgroundColor = habit.color;
+            
+            progressBar.appendChild(progressFill);
+            
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+            
+            const minusBtn = document.createElement('button');
+            minusBtn.textContent = '-';
+            minusBtn.style.color = habit.color;
+            minusBtn.disabled = habit.progress <= 0;
+            minusBtn.onclick = () => updateProgress(habitId, -1);
+            
+            const plusBtn = document.createElement('button');
+            plusBtn.textContent = '+';
+            plusBtn.style.color = habit.color;
+            plusBtn.disabled = habit.progress >= habit.target;
+            plusBtn.onclick = () => updateProgress(habitId, 1);
+            
+            actions.appendChild(minusBtn);
+            actions.appendChild(plusBtn);
+            
+            card.appendChild(title);
+            card.appendChild(progressBar);
+            card.appendChild(actions);
+            
+            return card;
+        }
+        
+        // Function to show a toast message
+        function showToast(message, bgColor = '#4CAF50', duration = 3000) {
+            const toast = document.createElement('div');
+            toast.textContent = message;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = bgColor;
+            toast.style.color = 'white';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '4px';
+            toast.style.zIndex = '1000';
+            toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            
+            document.body.appendChild(toast);
+            
+            // Animate toast
+            setTimeout(() => {
+                toast.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 300);
+            }, duration);
+        }
+        
+        // Function to update streak counts
+        function updateStreak(habit, today, isCompleted) {
+            // Initialize streak properties if they don't exist
+            if (habit.streak === undefined) {
+                habit.streak = 0;
+            }
+            if (habit.lastStreakDate === undefined) {
+                habit.lastStreakDate = null;
+            }
+            
+            const prevDate = habit.lastStreakDate ? new Date(habit.lastStreakDate) : null;
+            const todayDate = new Date(today);
+            
+            // Format dates for comparison (strip time part)
+            const todayFormatted = formatDate(todayDate);
+            const yesterdayFormatted = formatDate(new Date(todayDate.getTime() - 86400000)); // 24hrs in ms
+            
+            // Handle streak updates
+            if (isCompleted) {
+                // Case 1: First completion ever
+                if (habit.lastStreakDate === null) {
+                    habit.streak = 1;
+                    habit.lastStreakDate = today;
+                    showToast("Great job! You started a streak! 🔥", "#4CAF50");
+                }
+                // Case 2: Completed today after having completed yesterday
+                else if (formatDate(prevDate) === yesterdayFormatted && todayFormatted !== formatDate(prevDate)) {
+                    habit.streak += 1;
+                    habit.lastStreakDate = today;
+                    
+                    // Show a motivational message based on streak length
+                    if (habit.streak >= 10) {
+                        showToast(`Incredible! ${habit.streak} day streak! 🔥🔥🔥`, "#4CAF50");
+                    } else if (habit.streak >= 5) {
+                        showToast(`Awesome! ${habit.streak} day streak! 🔥🔥`, "#4CAF50");
+                    } else {
+                        showToast(`Great job! ${habit.streak} day streak! 🔥`, "#4CAF50");
+                    }
+                }
+                // Case 3: Completed today but missed yesterday (or more days)
+                else if (formatDate(prevDate) !== yesterdayFormatted && todayFormatted !== formatDate(prevDate)) {
+                    // Reset streak and start a new one
+                    habit.streak = 1;
+                    habit.lastStreakDate = today;
+                    showToast("Starting fresh! New streak begins! 🔥", "#4CAF50");
+                }
+                // Case 4: Already marked complete today, no streak change needed
+                else if (formatDate(prevDate) === todayFormatted) {
+                    // No change to streak, already counted today
+                }
+            } 
+            else if (!isCompleted && habit.history[today] && habit.history[today].completed) {
+                // User uncompleted a previously completed habit
+                // We don't modify the streak here since they might complete it again today
+                // But we could show a gentle reminder
+                showToast("Remember to complete your habit to keep your streak!", "#FFC107");
+            }
+            
+            // Check if we broke a streak (this is more for streak maintenance)
+            // If today is 2+ days after the last streak date, and the habit is not completed
+            if (prevDate && !isCompleted) {
+                const daysSinceLastStreak = Math.floor((todayDate - prevDate) / 86400000);
+                
+                // If we missed 2+ days, reset the streak (only do this once when checking)
+                if (daysSinceLastStreak >= 2 && habit.streak > 0 && formatDate(prevDate) !== todayFormatted) {
+                    showToast("Don't worry, you can start fresh tomorrow! 💪", "#FF9800");
+                    habit.streak = 0;
+                }
+            }
+        }
+        
+        function updateProgress(habitId, change) {
+            const habit = habits[habitId];
+            const newProgress = habit.progress + change;
+            
+            if (newProgress >= 0 && newProgress <= habit.target) {
+                // Store current theme state before any changes
+                const currentIsDarkMode = isDarkModeEnabled();
+                document.body.dataset.themeMode = currentIsDarkMode ? 'dark' : 'light'; // Additional backup
+                
+                const oldProgress = habit.progress;
+                habit.progress = newProgress;
+                habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
+                
+                // Record habit progress in history
+                const today = getTodayFormatted();
+                
+                // Initialize history object if needed
+                if (!habit.history) {
+                    habit.history = {};
+                }
+                
+                let isCompleted = false;
+                
+                // Record current date's completion status
+                if (newProgress === habit.target) {
+                    // Habit completed for the day
+                    isCompleted = true;
+                    habit.history[today] = {
+                        completed: true,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                } else if (oldProgress === habit.target && newProgress < habit.target) {
+                    // Habit was previously completed today but now uncompleted
+                    isCompleted = false;
+                    habit.history[today] = {
+                        completed: false,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                } else {
+                    // Partial progress
+                    isCompleted = false;
+                    habit.history[today] = {
+                        completed: false,
+                        progress: newProgress,
+                        target: habit.target
+                    };
+                }
+                
+                // Update streak information
+                updateStreak(habit, today, isCompleted);
+                
+                // Save the updated state
+                saveHabits();
+                
+                // Re-render all habits
+                renderHabits();
+                
+                // Ensure theme is consistently applied after update
+                if (currentIsDarkMode !== isDarkModeEnabled()) {
+                    console.log('Theme state changed unexpectedly, fixing...');
+                    localStorage.setItem('isDarkMode', String(currentIsDarkMode));
+                } else if (document.body.dataset.themeMode === 'dark' && !isDarkModeEnabled()) {
+                    console.log('Theme state changed based on dataset check, fixing...');
+                    localStorage.setItem('isDarkMode', 'true');
+                } else if (document.body.dataset.themeMode === 'light' && isDarkModeEnabled()) {
+                    console.log('Theme state changed based on dataset check, fixing...');
+                    localStorage.setItem('isDarkMode', 'false');
+                }
+                
+                // Apply theme consistently
+                applyTheme();
+                
+                // One more check after everything to ensure dark mode styling is applied
+                const cards = document.querySelectorAll('.habit-card');
+                if (currentIsDarkMode) {
+                    cards.forEach(card => {
+                        card.style.backgroundColor = '#1e1e1e';
+                        const progressBar = card.querySelector('.progress-bar');
+                        if (progressBar) {
+                            progressBar.style.backgroundColor = '#333';
+                        }
+                    });
+                }
+            }
+        }
+        
+        // Check if habits need to be reset based on their frequency
+        function checkHabitResets() {
+            const currentDate = new Date();
+            let hasChanges = false;
+            let shouldRecordHistory = false;
+            
+            // Process each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                
+                // Make sure habit has lastUpdatedDate (backward compatibility)
+                if (!habit.lastUpdatedDate) {
+                    habit.lastUpdatedDate = new Date().toISOString();
+                    habit.resetFrequency = habit.resetFrequency || "weekly";
+                    hasChanges = true;
+                    return; // Skip this iteration
+                }
+                
+                const lastUpdated = new Date(habit.lastUpdatedDate);
+                
+                switch (habit.resetFrequency || "weekly") {
+                    case "daily":
+                        // Reset if it's a different calendar day
+                        if (currentDate.getDate() !== lastUpdated.getDate() ||
+                            currentDate.getMonth() !== lastUpdated.getMonth() ||
+                            currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: wasCompleted,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across day boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
+                            }
+                            
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                        
+                    case "weekly":
+                        // Get ISO week numbers (1-52)
+                        const getWeekNumber = (d) => {
+                            // ISO week date weeks start on Monday, so correct the day number
+                            const dayNum = d.getUTCDay() || 7;
+                            
+                            // Set the target date to the Thursday of this week
+                            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate() + (4 - dayNum)));
+                            
+                            // Get first day of year
+                            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                            
+                            // Calculate full weeks to nearest Thursday
+                            const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                            
+                            return weekNum;
+                        };
+                        
+                        const currentWeek = getWeekNumber(currentDate);
+                        const lastWeek = getWeekNumber(lastUpdated);
+                        const currentYear = currentDate.getFullYear();
+                        const lastYear = lastUpdated.getFullYear();
+                        
+                        // Reset if the week number changed
+                        if (currentWeek !== lastWeek || currentYear !== lastYear) {
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: wasCompleted,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across week boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
+                            }
+                            
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                        
+                    case "monthly":
+                        // Reset if it's a different month
+                        if (currentDate.getMonth() !== lastUpdated.getMonth() ||
+                            currentDate.getFullYear() !== lastUpdated.getFullYear()) {
+                            // Record completion status for the last updated date
+                            if (!habit.history) {
+                                habit.history = {};
+                            }
+                            
+                            const lastUpdateFormatted = formatDate(lastUpdated);
+                            const wasCompleted = habit.progress >= habit.target;
+                            
+                            if (!habit.history[lastUpdateFormatted]) {
+                                habit.history[lastUpdateFormatted] = {
+                                    completed: wasCompleted,
+                                    progress: habit.progress,
+                                    target: habit.target
+                                };
+                            }
+                            
+                            // Update streak information if habit was completed
+                            // This makes sure streaks are properly maintained across month boundaries
+                            if (wasCompleted) {
+                                // Initialize streak properties if they don't exist
+                                if (habit.streak === undefined) {
+                                    habit.streak = 0;
+                                }
+                                if (habit.lastStreakDate === undefined) {
+                                    habit.lastStreakDate = null;
+                                }
+                                
+                                // Only update if we haven't already counted this day
+                                if (!habit.lastStreakDate || habit.lastStreakDate !== lastUpdateFormatted) {
+                                    updateStreak(habit, lastUpdateFormatted, true);
+                                }
+                            }
+                            
+                            habit.progress = 0;
+                            habit.lastUpdatedDate = currentDate.toISOString();
+                            hasChanges = true;
+                        }
+                        break;
+                }
+            });
+            
+            // Save if changes were made
+            if (hasChanges) {
+                saveHabits();
+                console.log('Habits were reset based on their reset frequency');
+                
+                // Record daily habit status in history when resets occur
+                recordDailyHabitStatus();
+                
+                // Apply theme consistently after habits are reset
+                applyTheme();
+            }
+        }
+        
+        // Show Add Habit Screen (fullscreen)
+        function showAddHabitScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen form that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Add New Habit';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create form container (scrollable)
+            const formContainer = document.createElement('div');
+            formContainer.style.flex = '1';
+            formContainer.style.overflowY = 'auto';
+            formContainer.style.padding = '20px';
+            
+            // Create form content
+            const form = document.createElement('div');
+            form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            form.style.padding = '20px';
+            form.style.borderRadius = '8px';
+            form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = 'Add New Habit';
+            heading.style.textAlign = 'center';
+            heading.style.marginBottom = '20px';
+            
+            // Emoji icon selector
+            const iconLabel = document.createElement('div');
+            iconLabel.textContent = 'Choose an Icon (Optional)';
+            iconLabel.style.fontSize = '16px';
+            iconLabel.style.fontWeight = 'bold';
+            iconLabel.style.marginBottom = '10px';
+            
+            const emojiContainer = document.createElement('div');
+            emojiContainer.style.display = 'flex';
+            emojiContainer.style.flexWrap = 'wrap';
+            emojiContainer.style.gap = '10px';
+            emojiContainer.style.marginBottom = '20px';
+            emojiContainer.style.justifyContent = 'center';
+            
+            // Popular emoji choices for habits
+            const emojis = ['💧', '📚', '🏃', '🥗', '💪', '🧘', '💤', '💊', '🚫', '💻', '🎨', '🎵', '🌱', '🧹', '📝', '⏰', ''];
+            let selectedEmoji = '';
+            
+            emojis.forEach(emoji => {
+                const emojiBtn = document.createElement('div');
+                emojiBtn.textContent = emoji || 'None';
+                emojiBtn.style.width = '42px';
+                emojiBtn.style.height = '42px';
+                emojiBtn.style.display = 'flex';
+                emojiBtn.style.alignItems = 'center';
+                emojiBtn.style.justifyContent = 'center';
+                emojiBtn.style.fontSize = emoji ? '24px' : '12px';
+                emojiBtn.style.cursor = 'pointer';
+                emojiBtn.style.border = '1px solid #ccc';
+                emojiBtn.style.borderRadius = '8px';
+                emojiBtn.style.transition = 'all 0.3s ease';
+                emojiBtn.style.backgroundColor = emoji === selectedEmoji ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                
+                emojiBtn.onclick = () => {
+                    selectedEmoji = emoji;
+                    // Update all buttons to show selection
+                    emojiContainer.querySelectorAll('div').forEach(btn => {
+                        btn.style.backgroundColor = btn.textContent === (selectedEmoji || 'None') ? 
+                            '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                        btn.style.transform = btn.textContent === (selectedEmoji || 'None') ? 
+                            'scale(1.1)' : 'scale(1.0)';
+                        btn.style.boxShadow = btn.textContent === (selectedEmoji || 'None') ? 
+                            '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                    });
+                };
+                
+                emojiContainer.appendChild(emojiBtn);
+            });
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Habit Name';
+            nameInput.style.width = '100%';
+            nameInput.style.padding = '16px';
+            nameInput.style.fontSize = '16px';
+            nameInput.style.marginBottom = '16px'; 
+            nameInput.style.borderRadius = '8px';
+            nameInput.style.border = '1px solid #ccc';
+            nameInput.style.boxSizing = 'border-box';
+            
+            const targetInput = document.createElement('input');
+            targetInput.type = 'number';
+            targetInput.placeholder = 'Goal Number (weekly)';
+            targetInput.min = '1';
+            targetInput.max = '100';
+            targetInput.style.width = '100%';
+            targetInput.style.padding = '16px';
+            targetInput.style.fontSize = '16px';
+            targetInput.style.marginBottom = '16px';
+            targetInput.style.borderRadius = '8px';
+            targetInput.style.border = '1px solid #ccc';
+            targetInput.style.boxSizing = 'border-box';
+            
+            // Reminder section
+            const reminderLabel = document.createElement('div');
+            reminderLabel.textContent = 'Daily Reminder (Optional)';
+            reminderLabel.style.fontSize = '16px';
+            reminderLabel.style.fontWeight = 'bold';
+            reminderLabel.style.marginBottom = '10px';
+            
+            const reminderRow = document.createElement('div');
+            reminderRow.style.display = 'flex';
+            reminderRow.style.alignItems = 'center';
+            reminderRow.style.gap = '10px';
+            reminderRow.style.marginBottom = '24px';
+            
+            const reminderToggle = document.createElement('input');
+            reminderToggle.type = 'checkbox';
+            reminderToggle.id = 'reminder-toggle';
+            reminderToggle.style.transform = 'scale(1.5)';
+            reminderToggle.style.margin = '0 5px 0 0';
+            
+            const reminderToggleLabel = document.createElement('label');
+            reminderToggleLabel.htmlFor = 'reminder-toggle';
+            reminderToggleLabel.textContent = 'Enable Reminder';
+            reminderToggleLabel.style.flex = '1';
+            
+            const reminderTime = document.createElement('input');
+            reminderTime.type = 'time';
+            reminderTime.style.padding = '8px';
+            reminderTime.style.borderRadius = '4px';
+            reminderTime.style.border = '1px solid #ccc';
+            reminderTime.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+            reminderTime.style.color = isDarkMode ? '#fff' : '#000';
+            reminderTime.disabled = true; // Initially disabled
+            
+            // Enable/disable time input based on checkbox
+            reminderToggle.onchange = () => {
+                reminderTime.disabled = !reminderToggle.checked;
+                if (reminderToggle.checked && !reminderTime.value) {
+                    // Set default time to 8:00 PM if not set
+                    reminderTime.value = '20:00';
+                }
+            };
+            
+            reminderRow.appendChild(reminderToggle);
+            reminderRow.appendChild(reminderToggleLabel);
+            reminderRow.appendChild(reminderTime);
+            
+            const colorLabel = document.createElement('div');
+            colorLabel.textContent = 'Habit Color';
+            colorLabel.style.fontSize = '16px';
+            colorLabel.style.fontWeight = 'bold';
+            colorLabel.style.marginBottom = '10px';
+            
+            const colorsPicker = document.createElement('div');
+            colorsPicker.style.display = 'flex';
+            colorsPicker.style.justifyContent = 'center'; // Center the color picker
+            colorsPicker.style.flexWrap = 'wrap'; // Allow wrapping to prevent horizontal scroll
+            colorsPicker.style.marginBottom = '24px';
+            colorsPicker.style.paddingBottom = '10px';
+            
+            const colors = ['#673ab7', '#2196F3', '#4CAF50', '#9C27B0', '#FF5722', '#009688', '#FF9800'];
+            let selectedColor = colors[0];
+            let createButton; // Reference to the save button that will be created later
+            
+            colors.forEach(color => {
+                const colorBtn = document.createElement('div');
+                colorBtn.style.width = '36px'; // Fixed width instead of minWidth
+                colorBtn.style.height = '36px'; // Slightly smaller height
+                colorBtn.style.backgroundColor = color;
+                colorBtn.style.borderRadius = '50%';
+                colorBtn.style.cursor = 'pointer';
+                colorBtn.style.margin = '8px'; // Add margin on all sides for even spacing
+                colorBtn.style.transition = 'all 0.3s ease';
+                colorBtn.style.boxSizing = 'border-box';
+                colorBtn.style.display = 'flex';
+                colorBtn.style.alignItems = 'center';
+                colorBtn.style.justifyContent = 'center';
+                
+                if (color === selectedColor) {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                } else {
+                    colorBtn.style.border = '1px solid rgba(0,0,0,0.1)';
+                }
+                
+                colorBtn.onclick = () => {
+                    selectedColor = color;
+                    document.querySelectorAll('#color-picker > div').forEach(btn => {
+                        btn.style.transform = 'scale(1.0)';
+                        btn.style.border = '1px solid rgba(0,0,0,0.1)';
+                        btn.style.boxShadow = 'none';
+                        btn.innerHTML = '';
+                    });
+                    
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    createButton.style.backgroundColor = color;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                };
+                
+                colorsPicker.appendChild(colorBtn);
+            });
+            colorsPicker.id = 'color-picker';
+            
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.justifyContent = 'space-between';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.style.border = 'none';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.backgroundColor = '#f5f5f5';
+            cancelBtn.style.cursor = 'pointer';
+            
+            cancelBtn.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            form.appendChild(heading);
+            form.appendChild(iconLabel);
+            form.appendChild(emojiContainer);
+            form.appendChild(nameInput);
+            form.appendChild(targetInput);
+            form.appendChild(colorLabel);
+            form.appendChild(reminderLabel);
+            form.appendChild(reminderRow);
+            form.appendChild(colorsPicker);
+            
+            formContainer.appendChild(form);
+            
+            // Save button (large bottom button)
+            const saveButtonContainer = document.createElement('div');
+            saveButtonContainer.style.padding = '16px';
+            saveButtonContainer.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            saveButtonContainer.style.boxShadow = isDarkMode ? '0 -1px 3px rgba(255,255,255,0.1)' : '0 -1px 3px rgba(0,0,0,0.1)';
+            
+            createButton = document.createElement('button');
+            createButton.textContent = 'Create Habit';
+            createButton.style.width = '100%';
+            createButton.style.padding = '18px';
+            createButton.style.backgroundColor = selectedColor;
+            createButton.style.color = 'white';
+            createButton.style.border = 'none';
+            createButton.style.borderRadius = '16px';
+            createButton.style.fontSize = '18px';
+            createButton.style.fontWeight = 'bold';
+            createButton.style.cursor = 'pointer';
+            createButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            createButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            createButton.onmouseover = () => {
+                createButton.style.transform = 'translateY(-2px)';
+                createButton.style.boxShadow = '0 8px 12px rgba(0,0,0,0.25)';
+            };
+            
+            createButton.onmouseout = () => {
+                createButton.style.transform = 'translateY(0)';
+                createButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            
+            createButton.onclick = () => {
+                if (nameInput.value.trim() && targetInput.value.trim()) {
+                    const habitId = 'habit_' + Date.now();
+                    habits[habitId] = {
+                        name: nameInput.value.trim(),
+                        target: parseInt(targetInput.value, 10),
+                        progress: 0,
+                        color: selectedColor,
+                        icon: selectedEmoji, // Add the selected emoji
+                        lastUpdatedDate: new Date().toISOString(),
+                        resetFrequency: "weekly", // Default to weekly reset
+                        reminderEnabled: reminderToggle.checked,
+                        reminderTime: reminderToggle.checked ? reminderTime.value : null,
+                        streak: 0,
+                        lastStreakDate: null,
+                        history: {}
+                    };
+                    
+                    saveHabits();
+                    
+                    // Return to main screen
+                    document.body.innerHTML = mainContent;
+                    
+                    // Re-initialize event listeners
+                    document.addEventListener('DOMContentLoaded', loadHabits);
+                    loadHabits();
+                    
+                    // Ensure theme is applied correctly when returning to main screen
+                    applyTheme();
+                } else {
+                    alert('Please fill out all fields');
+                }
+            };
+            
+            saveButtonContainer.appendChild(createButton);
+            
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(formContainer);
+            appScreen.appendChild(saveButtonContainer);
+            
+            document.body.appendChild(appScreen);
+            
+            // Focus the first input for better UX
+            nameInput.focus();
+        }
+        
+        // Settings screen with dark mode toggle
+        function showSettingsScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Load current theme setting
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen settings page
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Apply theme if it was changed
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Settings';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create settings container
+            const settingsContainer = document.createElement('div');
+            settingsContainer.style.flex = '1';
+            settingsContainer.style.overflowY = 'auto';
+            settingsContainer.style.padding = '20px';
+            
+            // Settings section: Appearance
+            const appearanceSection = document.createElement('div');
+            appearanceSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            appearanceSection.style.padding = '16px';
+            appearanceSection.style.borderRadius = '8px';
+            appearanceSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            appearanceSection.style.marginBottom = '16px';
+            
+            const appearanceTitle = document.createElement('h3');
+            appearanceTitle.textContent = 'Appearance';
+            appearanceTitle.style.margin = '0 0 16px 0';
+            
+            // Dark Mode Switch
+            const darkModeRow = document.createElement('div');
+            darkModeRow.style.display = 'flex';
+            darkModeRow.style.alignItems = 'center';
+            darkModeRow.style.justifyContent = 'space-between';
+            darkModeRow.style.padding = '8px 0';
+            
+            const darkModeLabel = document.createElement('div');
+            
+            const darkModeLabelTitle = document.createElement('div');
+            darkModeLabelTitle.textContent = 'Dark Mode';
+            darkModeLabelTitle.style.fontWeight = 'bold';
+            
+            const darkModeLabelDesc = document.createElement('div');
+            darkModeLabelDesc.textContent = 'Switch between light and dark themes';
+            darkModeLabelDesc.style.fontSize = '14px';
+            darkModeLabelDesc.style.color = '#757575';
+            darkModeLabelDesc.style.marginTop = '4px';
+            
+            darkModeLabel.appendChild(darkModeLabelTitle);
+            darkModeLabel.appendChild(darkModeLabelDesc);
+            
+            // Switch component
+            const switchContainer = document.createElement('label');
+            switchContainer.style.position = 'relative';
+            switchContainer.style.display = 'inline-block';
+            switchContainer.style.width = '60px';
+            switchContainer.style.height = '34px';
+            
+            const switchInput = document.createElement('input');
+            switchInput.type = 'checkbox';
+            switchInput.checked = isDarkMode;
+            switchInput.style.opacity = '0';
+            switchInput.style.width = '0';
+            switchInput.style.height = '0';
+            
+            const switchSlider = document.createElement('span');
+            switchSlider.style.position = 'absolute';
+            switchSlider.style.cursor = 'pointer';
+            switchSlider.style.top = '0';
+            switchSlider.style.left = '0';
+            switchSlider.style.right = '0';
+            switchSlider.style.bottom = '0';
+            switchSlider.style.backgroundColor = isDarkMode ? '#673ab7' : '#ccc';
+            switchSlider.style.borderRadius = '34px';
+            switchSlider.style.transition = '.4s';
+            
+            // Slider button
+            const sliderButton = document.createElement('span');
+            sliderButton.style.position = 'absolute';
+            sliderButton.style.content = '""';
+            sliderButton.style.height = '26px';
+            sliderButton.style.width = '26px';
+            sliderButton.style.left = isDarkMode ? '30px' : '4px';
+            sliderButton.style.bottom = '4px';
+            sliderButton.style.backgroundColor = 'white';
+            sliderButton.style.borderRadius = '50%';
+            sliderButton.style.transition = '.4s';
+            
+            switchSlider.appendChild(sliderButton);
+            switchContainer.appendChild(switchInput);
+            switchContainer.appendChild(switchSlider);
+            
+            // Toggle dark mode
+            switchInput.onchange = (e) => {
+                const checked = e.target.checked;
+                switchSlider.style.backgroundColor = checked ? '#673ab7' : '#ccc';
+                sliderButton.style.left = checked ? '30px' : '4px';
+                
+                // Save the theme preference
+                localStorage.setItem('isDarkMode', checked);
+                
+                // Apply theme immediately to settings screen
+                appScreen.style.backgroundColor = checked ? '#121212' : '#f5f5f5';
+                appScreen.style.color = checked ? '#fff' : '#000';
+                appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
+                darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
+                developerSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
+                
+                // Notify all theme listeners
+                notifyThemeChange();
+            };
+            
+            darkModeRow.appendChild(darkModeLabel);
+            darkModeRow.appendChild(switchContainer);
+            
+            appearanceSection.appendChild(appearanceTitle);
+            appearanceSection.appendChild(darkModeRow);
+            
+            // Notifications Section
+            const notificationsSection = document.createElement('div');
+            notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            notificationsSection.style.padding = '16px';
+            notificationsSection.style.borderRadius = '8px';
+            notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            notificationsSection.style.marginBottom = '16px';
+            
+            const notificationsTitle = document.createElement('h3');
+            notificationsTitle.textContent = 'Notifications';
+            notificationsTitle.style.margin = '0 0 16px 0';
+            
+            // Notification Switch Row
+            const notificationRow = document.createElement('div');
+            notificationRow.style.display = 'flex';
+            notificationRow.style.alignItems = 'center';
+            notificationRow.style.justifyContent = 'space-between';
+            notificationRow.style.padding = '8px 0';
+            
+            const notificationLabel = document.createElement('div');
+            
+            const notificationLabelTitle = document.createElement('div');
+            notificationLabelTitle.textContent = 'Enable Notifications';
+            notificationLabelTitle.style.fontWeight = 'bold';
+            
+            const notificationLabelDesc = document.createElement('div');
+            notificationLabelDesc.textContent = 'Receive reminders for your habits';
+            notificationLabelDesc.style.fontSize = '14px';
+            notificationLabelDesc.style.color = isDarkMode ? '#aaa' : '#757575';
+            notificationLabelDesc.style.marginTop = '4px';
+            
+            notificationLabel.appendChild(notificationLabelTitle);
+            notificationLabel.appendChild(notificationLabelDesc);
+            
+            // Notification Switch component
+            const notifSwitchContainer = document.createElement('label');
+            notifSwitchContainer.style.position = 'relative';
+            notifSwitchContainer.style.display = 'inline-block';
+            notifSwitchContainer.style.width = '60px';
+            notifSwitchContainer.style.height = '34px';
+            
+            const notifSwitchInput = document.createElement('input');
+            notifSwitchInput.type = 'checkbox';
+            const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
+            notifSwitchInput.checked = storedNotificationsEnabled === 'true';
+            notifSwitchInput.style.opacity = '0';
+            notifSwitchInput.style.width = '0';
+            notifSwitchInput.style.height = '0';
+            
+            const notifSwitchSlider = document.createElement('span');
+            notifSwitchSlider.style.position = 'absolute';
+            notifSwitchSlider.style.cursor = 'pointer';
+            notifSwitchSlider.style.top = '0';
+            notifSwitchSlider.style.left = '0';
+            notifSwitchSlider.style.right = '0';
+            notifSwitchSlider.style.bottom = '0';
+            notifSwitchSlider.style.backgroundColor = notifSwitchInput.checked ? '#673ab7' : '#ccc';
+            notifSwitchSlider.style.borderRadius = '34px';
+            notifSwitchSlider.style.transition = '.4s';
+            
+            // Notification Slider button
+            const notifSliderButton = document.createElement('span');
+            notifSliderButton.style.position = 'absolute';
+            notifSliderButton.style.content = '""';
+            notifSliderButton.style.height = '26px';
+            notifSliderButton.style.width = '26px';
+            notifSliderButton.style.left = notifSwitchInput.checked ? '30px' : '4px';
+            notifSliderButton.style.bottom = '4px';
+            notifSliderButton.style.backgroundColor = 'white';
+            notifSliderButton.style.borderRadius = '50%';
+            notifSliderButton.style.transition = '.4s';
+            
+            notifSwitchSlider.appendChild(notifSliderButton);
+            notifSwitchContainer.appendChild(notifSwitchInput);
+            notifSwitchContainer.appendChild(notifSwitchSlider);
+            
+            // Disable toggle if notifications are not supported
+            if (!areNotificationsSupported()) {
+                notifSwitchInput.disabled = true;
+                notifSwitchInput.checked = false;
+                notifSwitchSlider.style.backgroundColor = '#ccc';
+                notifSliderButton.style.left = '4px';
+                
+                // Add a note about browser support
+                const notificationNote = document.createElement('div');
+                notificationNote.textContent = 'Notifications not supported in this browser';
+                notificationNote.style.fontSize = '12px';
+                notificationNote.style.color = '#F44336';
+                notificationNote.style.marginTop = '8px';
+                notificationNote.style.fontStyle = 'italic';
+                notificationsSection.appendChild(notificationNote);
+            } else {
+                // Check if we're in an iframe, which typically blocks notifications
+                try {
+                    if (window.self !== window.top) {
+                        notifSwitchInput.disabled = true;
+                        notifSwitchInput.checked = false;
+                        notifSwitchSlider.style.backgroundColor = '#ccc';
+                        notifSliderButton.style.left = '4px';
+                        
+                        // Add a note about iframe restrictions
+                        const notificationNote = document.createElement('div');
+                        notificationNote.textContent = 'Notifications blocked in preview mode. Try in regular browser window.';
+                        notificationNote.style.fontSize = '12px';
+                        notificationNote.style.color = '#FF9800';
+                        notificationNote.style.marginTop = '8px';
+                        notificationNote.style.fontStyle = 'italic';
+                        notificationsSection.appendChild(notificationNote);
+                    }
+                } catch (e) {
+                    // If we can't access window.top, we're in a restrictive context
+                    console.log("Running in a restrictive context, notifications may be blocked");
+                }
+            }
+            
+            // Toggle notifications
+            notifSwitchInput.onchange = (e) => {
+                const checked = e.target.checked;
+                notifSwitchSlider.style.backgroundColor = checked ? '#673ab7' : '#ccc';
+                notifSliderButton.style.left = checked ? '30px' : '4px';
+                
+                if (checked) {
+                    try {
+                        requestNotificationPermission().then(granted => {
+                            if (granted) {
+                                showToast("Notifications enabled!", "#4CAF50");
+                                startReminderCheck();
+                            } else {
+                                // If permission was denied, reset the toggle
+                                e.target.checked = false;
+                                notifSwitchSlider.style.backgroundColor = '#ccc';
+                                notifSliderButton.style.left = '4px';
+                                showToast("Notification permission was denied by the browser", "#F44336");
+                            }
+                        }).catch(error => {
+                            console.error("Error enabling notifications:", error);
+                            e.target.checked = false;
+                            notifSwitchSlider.style.backgroundColor = '#ccc';
+                            notifSliderButton.style.left = '4px';
+                            showToast("Browser blocked notification permission request", "#F44336");
+                        });
+                    } catch (error) {
+                        console.error("Exception enabling notifications:", error);
+                        e.target.checked = false;
+                        notifSwitchSlider.style.backgroundColor = '#ccc';
+                        notifSliderButton.style.left = '4px';
+                        showToast("Browser blocked notification permission request", "#F44336");
+                    }
+                } else {
+                    // Disable notifications
+                    localStorage.setItem('notificationsEnabled', 'false');
+                    isNotificationsEnabled = false;
+                    if (reminderTimer) {
+                        clearInterval(reminderTimer);
+                        reminderTimer = null;
+                    }
+                    showToast("Notifications disabled", "#FF9800");
+                }
+            };
+            
+            notificationRow.appendChild(notificationLabel);
+            notificationRow.appendChild(notifSwitchContainer);
+            
+            notificationsSection.appendChild(notificationsTitle);
+            notificationsSection.appendChild(notificationRow);
+            
+            // Add all sections to the settings container
+            settingsContainer.appendChild(appearanceSection);
+            settingsContainer.appendChild(notificationsSection);
+            
+            // Developer Testing Section
+            const developerSection = document.createElement('div');
+            developerSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            developerSection.style.padding = '16px';
+            developerSection.style.borderRadius = '8px';
+            developerSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            developerSection.style.marginBottom = '16px';
+            
+            const developerTitle = document.createElement('h3');
+            developerTitle.textContent = 'Developer Testing';
+            developerTitle.style.margin = '0 0 16px 0';
+            
+            // Developer note
+            const developerNote = document.createElement('div');
+            developerNote.textContent = '⚠️ For testing only - Will be removed before production';
+            developerNote.style.fontSize = '12px';
+            developerNote.style.color = isDarkMode ? '#ff9800' : '#e65100';
+            developerNote.style.marginBottom = '12px';
+            developerNote.style.fontWeight = 'bold';
+            
+            // Reset Test Button Row
+            const resetTestRow = document.createElement('div');
+            resetTestRow.style.display = 'flex';
+            resetTestRow.style.alignItems = 'center';
+            resetTestRow.style.justifyContent = 'space-between';
+            resetTestRow.style.padding = '8px 0';
+            
+            const resetTestLabel = document.createElement('div');
+            
+            const resetTestTitle = document.createElement('div');
+            resetTestTitle.textContent = 'Force Reset Progress';
+            resetTestTitle.style.fontWeight = 'bold';
+            
+            const resetTestDesc = document.createElement('div');
+            resetTestDesc.textContent = 'Test habit reset without waiting for time boundaries';
+            resetTestDesc.style.fontSize = '14px';
+            resetTestDesc.style.color = isDarkMode ? '#aaa' : '#757575';
+            resetTestDesc.style.marginTop = '4px';
+            
+            resetTestLabel.appendChild(resetTestTitle);
+            resetTestLabel.appendChild(resetTestDesc);
+            
+            // Reset button
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset All';
+            resetButton.style.padding = '8px 16px';
+            resetButton.style.backgroundColor = '#f44336';
+            resetButton.style.color = 'white';
+            resetButton.style.border = 'none';
+            resetButton.style.borderRadius = '4px';
+            resetButton.style.cursor = 'pointer';
+            resetButton.style.fontWeight = 'bold';
+            resetButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+            
+            // Reset button hover effect
+            resetButton.onmouseover = () => {
+                resetButton.style.backgroundColor = '#d32f2f';
+            };
+            
+            resetButton.onmouseout = () => {
+                resetButton.style.backgroundColor = '#f44336';
+            };
+            
+            // Implement reset functionality
+            resetButton.onclick = () => {
+                // Force reset all habit progress
+                Object.keys(habits).forEach(habitId => {
+                    const habit = habits[habitId];
+                    habit.progress = 0;
+                    habit.lastUpdatedDate = new Date().toISOString();
+                });
+                
+                // Save changes
+                saveHabits();
+                
+                // Record all habits' status in habit history before resetting
+                recordDailyHabitStatus();
+                
+                // Show feedback toast
+                const toast = document.createElement('div');
+                toast.textContent = 'Habit progress reset!';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '20px';
+                toast.style.left = '50%';
+                toast.style.transform = 'translateX(-50%)';
+                toast.style.backgroundColor = '#333';
+                toast.style.color = 'white';
+                toast.style.padding = '10px 20px';
+                toast.style.borderRadius = '4px';
+                toast.style.zIndex = '1000';
+                toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                
+                document.body.appendChild(toast);
+                
+                // Animate toast
+                setTimeout(() => {
+                    toast.style.opacity = '1';
+                }, 10);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            };
+            
+            resetTestRow.appendChild(resetTestLabel);
+            resetTestRow.appendChild(resetButton);
+            
+            developerSection.appendChild(developerTitle);
+            developerSection.appendChild(developerNote);
+            developerSection.appendChild(resetTestRow);
+            
+            // Add developer section to the settings container
+            settingsContainer.appendChild(developerSection);
+            
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(settingsContainer);
+            
+            document.body.appendChild(appScreen);
+            
+            // Apply current theme to settings screen consistently
+            if (isDarkMode) {
+                appScreen.style.backgroundColor = '#121212';
+                appScreen.style.color = '#fff';
+                appearanceSection.style.backgroundColor = '#1e1e1e';
+                darkModeLabelDesc.style.color = '#aaa';
+                developerSection.style.backgroundColor = '#1e1e1e';
+                resetTestDesc.style.color = '#aaa';
+                developerNote.style.color = '#ff9800';
+            } else {
+                appScreen.style.backgroundColor = '#f5f5f5';
+                appScreen.style.color = '#000';
+                appearanceSection.style.backgroundColor = '#ffffff';
+                darkModeLabelDesc.style.color = '#757575';
+                developerSection.style.backgroundColor = '#ffffff';
+                resetTestDesc.style.color = '#757575';
+                developerNote.style.color = '#e65100';
+            }
+        }
+        
+        // Apply theme based on saved preference
+        function applyTheme() {
+            const isDarkMode = isDarkModeEnabled();
+            
+            if (isDarkMode) {
+                document.body.style.backgroundColor = '#121212';
+                document.body.style.color = '#fff';
+                document.body.dataset.themeMode = 'dark'; // Set data attribute for tracking
+                
+                // Update card backgrounds
+                const cards = document.querySelectorAll('.habit-card');
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#1e1e1e';
+                });
+                
+                // Update progress bars
+                const progressBars = document.querySelectorAll('.progress-bar');
+                progressBars.forEach(bar => {
+                    bar.style.backgroundColor = '#333';
+                });
+            } else {
+                document.body.style.backgroundColor = '#f5f5f5';
+                document.body.style.color = '#000';
+                document.body.dataset.themeMode = 'light'; // Set data attribute for tracking
+                
+                // Update card backgrounds
+                const cards = document.querySelectorAll('.habit-card');
+                cards.forEach(card => {
+                    card.style.backgroundColor = '#fff';
+                });
+                
+                // Update progress bars
+                const progressBars = document.querySelectorAll('.progress-bar');
+                progressBars.forEach(bar => {
+                    bar.style.backgroundColor = '#e0e0e0';
+                });
+            }
+            
+            // Force styling update on all habit cards to ensure theme is applied
+            setTimeout(() => {
+                const isDark = isDarkModeEnabled();
+                const cards = document.querySelectorAll('.habit-card');
+                
+                cards.forEach(card => {
+                    card.style.backgroundColor = isDark ? '#1e1e1e' : '#fff';
+                    const bar = card.querySelector('.progress-bar');
+                    if (bar) {
+                        bar.style.backgroundColor = isDark ? '#333' : '#e0e0e0';
+                    }
+                });
+            }, 10);
+            
+            // Notify all registered theme listeners
+            notifyThemeChange();
+        }
+        
+        // Show Edit Habit Screen (fullscreen)
+        function showEditHabitScreen(habitId, habit) {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen form that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Edit Habit';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create form container (scrollable)
+            const formContainer = document.createElement('div');
+            formContainer.style.flex = '1';
+            formContainer.style.overflowY = 'auto';
+            formContainer.style.padding = '20px';
+            
+            // Create form content
+            const form = document.createElement('div');
+            form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            form.style.padding = '20px';
+            form.style.borderRadius = '8px';
+            form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            
+            const heading = document.createElement('h2');
+            heading.textContent = 'Edit Habit';
+            heading.style.textAlign = 'center';
+            heading.style.marginBottom = '20px';
+            
+            // Emoji icon selector
+            const iconLabel = document.createElement('div');
+            iconLabel.textContent = 'Choose an Icon (Optional)';
+            iconLabel.style.fontSize = '16px';
+            iconLabel.style.fontWeight = 'bold';
+            iconLabel.style.marginBottom = '10px';
+            
+            const emojiContainer = document.createElement('div');
+            emojiContainer.style.display = 'flex';
+            emojiContainer.style.flexWrap = 'wrap';
+            emojiContainer.style.gap = '10px';
+            emojiContainer.style.marginBottom = '20px';
+            emojiContainer.style.justifyContent = 'center';
+            
+            // Popular emoji choices for habits
+            const emojis = ['💧', '📚', '🏃', '🥗', '💪', '🧘', '💤', '💊', '🚫', '💻', '🎨', '🎵', '🌱', '🧹', '📝', '⏰', ''];
+            let selectedEmoji = habit.icon || ''; // Pre-select current icon if exists
+            
+            emojis.forEach(emoji => {
+                const emojiBtn = document.createElement('div');
+                emojiBtn.textContent = emoji || 'None';
+                emojiBtn.style.width = '42px';
+                emojiBtn.style.height = '42px';
+                emojiBtn.style.display = 'flex';
+                emojiBtn.style.alignItems = 'center';
+                emojiBtn.style.justifyContent = 'center';
+                emojiBtn.style.fontSize = emoji ? '24px' : '12px';
+                emojiBtn.style.cursor = 'pointer';
+                emojiBtn.style.border = '1px solid #ccc';
+                emojiBtn.style.borderRadius = '8px';
+                emojiBtn.style.transition = 'all 0.3s ease';
+                emojiBtn.style.backgroundColor = emoji === selectedEmoji ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                emojiBtn.style.transform = emoji === selectedEmoji ? 'scale(1.1)' : 'scale(1.0)';
+                emojiBtn.style.boxShadow = emoji === selectedEmoji ? '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                
+                emojiBtn.onclick = () => {
+                    selectedEmoji = emoji;
+                    // Update all buttons to show selection
+                    emojiContainer.querySelectorAll('div').forEach(btn => {
+                        btn.style.backgroundColor = btn.textContent === (selectedEmoji || 'None') ? 
+                            '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
+                        btn.style.transform = btn.textContent === (selectedEmoji || 'None') ? 
+                            'scale(1.1)' : 'scale(1.0)';
+                        btn.style.boxShadow = btn.textContent === (selectedEmoji || 'None') ? 
+                            '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+                    });
+                };
+                
+                emojiContainer.appendChild(emojiBtn);
+            });
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.placeholder = 'Habit Name';
+            nameInput.style.width = '100%';
+            nameInput.style.padding = '16px';
+            nameInput.style.fontSize = '16px';
+            nameInput.style.marginBottom = '16px'; 
+            nameInput.style.borderRadius = '8px';
+            nameInput.style.border = '1px solid #ccc';
+            nameInput.style.boxSizing = 'border-box';
+            nameInput.value = habit.name; // Pre-fill with habit name
+            
+            const targetInput = document.createElement('input');
+            targetInput.type = 'number';
+            targetInput.placeholder = 'Goal Number (weekly)';
+            targetInput.min = '1';
+            targetInput.max = '100';
+            targetInput.style.width = '100%';
+            targetInput.style.padding = '16px';
+            targetInput.style.fontSize = '16px';
+            targetInput.style.marginBottom = '16px';
+            targetInput.style.borderRadius = '8px';
+            targetInput.style.border = '1px solid #ccc';
+            targetInput.style.boxSizing = 'border-box';
+            targetInput.value = habit.target; // Pre-fill with habit target
+            
+            // Reminder section
+            const reminderLabel = document.createElement('div');
+            reminderLabel.textContent = 'Daily Reminder (Optional)';
+            reminderLabel.style.fontSize = '16px';
+            reminderLabel.style.fontWeight = 'bold';
+            reminderLabel.style.marginBottom = '10px';
+            
+            const reminderRow = document.createElement('div');
+            reminderRow.style.display = 'flex';
+            reminderRow.style.alignItems = 'center';
+            reminderRow.style.gap = '10px';
+            reminderRow.style.marginBottom = '24px';
+            
+            const reminderToggle = document.createElement('input');
+            reminderToggle.type = 'checkbox';
+            reminderToggle.id = 'reminder-toggle';
+            reminderToggle.style.transform = 'scale(1.5)';
+            reminderToggle.style.margin = '0 5px 0 0';
+            reminderToggle.checked = habit.reminderEnabled || false; // Pre-fill reminder enabled state
+            
+            const reminderToggleLabel = document.createElement('label');
+            reminderToggleLabel.htmlFor = 'reminder-toggle';
+            reminderToggleLabel.textContent = 'Enable Reminder';
+            reminderToggleLabel.style.flex = '1';
+            
+            const reminderTime = document.createElement('input');
+            reminderTime.type = 'time';
+            reminderTime.style.padding = '8px';
+            reminderTime.style.borderRadius = '4px';
+            reminderTime.style.border = '1px solid #ccc';
+            reminderTime.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+            reminderTime.style.color = isDarkMode ? '#fff' : '#000';
+            reminderTime.disabled = !reminderToggle.checked; // Initially disabled if toggle not checked
+            reminderTime.value = habit.reminderTime || '20:00'; // Pre-fill with existing time or default
+            
+            // Enable/disable time input based on checkbox
+            reminderToggle.onchange = () => {
+                reminderTime.disabled = !reminderToggle.checked;
+                if (reminderToggle.checked && !reminderTime.value) {
+                    // Set default time to 8:00 PM if not set
+                    reminderTime.value = '20:00';
+                }
+            };
+            
+            reminderRow.appendChild(reminderToggle);
+            reminderRow.appendChild(reminderToggleLabel);
+            reminderRow.appendChild(reminderTime);
+            
+            const colorLabel = document.createElement('div');
+            colorLabel.textContent = 'Habit Color';
+            colorLabel.style.fontSize = '16px';
+            colorLabel.style.fontWeight = 'bold';
+            colorLabel.style.marginBottom = '10px';
+            
+            const colorsPicker = document.createElement('div');
+            colorsPicker.style.display = 'flex';
+            colorsPicker.style.justifyContent = 'center'; // Center the color picker
+            colorsPicker.style.flexWrap = 'wrap'; // Allow wrapping to prevent horizontal scroll
+            colorsPicker.style.marginBottom = '24px';
+            colorsPicker.style.paddingBottom = '10px';
+            
+            const colors = ['#673ab7', '#2196F3', '#4CAF50', '#9C27B0', '#FF5722', '#009688', '#FF9800'];
+            let selectedColor = habit.color; // Pre-select current habit color
+            let saveButton; // Reference to the save button that will be created later
+            
+            colors.forEach(color => {
+                const colorBtn = document.createElement('div');
+                colorBtn.style.width = '36px'; // Fixed width instead of minWidth
+                colorBtn.style.height = '36px'; // Slightly smaller height
+                colorBtn.style.backgroundColor = color;
+                colorBtn.style.borderRadius = '50%';
+                colorBtn.style.cursor = 'pointer';
+                colorBtn.style.margin = '8px'; // Add margin on all sides for even spacing
+                colorBtn.style.transition = 'all 0.3s ease';
+                colorBtn.style.boxSizing = 'border-box';
+                colorBtn.style.display = 'flex';
+                colorBtn.style.alignItems = 'center';
+                colorBtn.style.justifyContent = 'center';
+                
+                if (color === selectedColor) {
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                } else {
+                    colorBtn.style.border = '1px solid rgba(0,0,0,0.1)';
+                }
+                
+                colorBtn.onclick = () => {
+                    selectedColor = color;
+                    document.querySelectorAll('#color-picker > div').forEach(btn => {
+                        btn.style.transform = 'scale(1.0)';
+                        btn.style.border = '1px solid rgba(0,0,0,0.1)';
+                        btn.style.boxShadow = 'none';
+                        btn.innerHTML = '';
+                    });
+                    
+                    colorBtn.style.transform = 'scale(1.1)';
+                    colorBtn.style.border = '3px solid black';
+                    colorBtn.style.boxShadow = `0 4px 8px ${color}80`;
+                    saveButton.style.backgroundColor = color;
+                    
+                    // Add check icon
+                    const checkIcon = document.createElement('div');
+                    checkIcon.innerHTML = '✓';
+                    checkIcon.style.color = 'white';
+                    checkIcon.style.fontSize = '18px';
+                    colorBtn.appendChild(checkIcon);
+                };
+                
+                colorsPicker.appendChild(colorBtn);
+            });
+            colorsPicker.id = 'color-picker';
+            
+            const buttonsContainer = document.createElement('div');
+            buttonsContainer.style.display = 'flex';
+            buttonsContainer.style.justifyContent = 'space-between';
+            
+            const cancelBtn = document.createElement('button');
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style.padding = '10px 20px';
+            cancelBtn.style.border = 'none';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.backgroundColor = '#f5f5f5';
+            cancelBtn.style.cursor = 'pointer';
+            
+            cancelBtn.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            form.appendChild(heading);
+            form.appendChild(iconLabel);
+            form.appendChild(emojiContainer);
+            form.appendChild(nameInput);
+            form.appendChild(targetInput);
+            form.appendChild(reminderLabel);
+            form.appendChild(reminderRow);
+            form.appendChild(colorLabel);
+            form.appendChild(colorsPicker);
+            
+            formContainer.appendChild(form);
+            
+            // Save button (large bottom button)
+            const saveButtonContainer = document.createElement('div');
+            saveButtonContainer.style.padding = '16px';
+            saveButtonContainer.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            saveButtonContainer.style.boxShadow = isDarkMode ? '0 -1px 3px rgba(255,255,255,0.1)' : '0 -1px 3px rgba(0,0,0,0.1)';
+            
+            // Create a container for buttons (Save and Cancel side by side)
+            const buttonRow = document.createElement('div');
+            buttonRow.style.display = 'flex';
+            buttonRow.style.gap = '10px';
+            buttonRow.style.width = '100%';
+            
+            // Cancel button
+            const cancelButton = document.createElement('button');
+            cancelButton.textContent = 'Cancel';
+            cancelButton.style.flex = '1';
+            cancelButton.style.padding = '18px';
+            cancelButton.style.backgroundColor = '#9e9e9e';
+            cancelButton.style.color = 'white';
+            cancelButton.style.border = 'none';
+            cancelButton.style.borderRadius = '16px';
+            cancelButton.style.fontSize = '18px';
+            cancelButton.style.fontWeight = 'bold';
+            cancelButton.style.cursor = 'pointer';
+            cancelButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            cancelButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            cancelButton.onmouseover = () => {
+                cancelButton.style.transform = 'translateY(-2px)';
+                cancelButton.style.boxShadow = '0 8px 12px rgba(0,0,0,0.25)';
+            };
+            
+            cancelButton.onmouseout = () => {
+                cancelButton.style.transform = 'translateY(0)';
+                cancelButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            
+            cancelButton.onclick = () => {
+                // Return to main screen without saving
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Save button
+            saveButton = document.createElement('button');
+            saveButton.textContent = 'Save Changes';
+            saveButton.style.flex = '2';
+            saveButton.style.padding = '18px';
+            saveButton.style.backgroundColor = selectedColor;
+            saveButton.style.color = 'white';
+            saveButton.style.border = 'none';
+            saveButton.style.borderRadius = '16px';
+            saveButton.style.fontSize = '18px';
+            saveButton.style.fontWeight = 'bold';
+            saveButton.style.cursor = 'pointer';
+            saveButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            saveButton.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            saveButton.onmouseover = () => {
+                saveButton.style.transform = 'translateY(-2px)';
+                saveButton.style.boxShadow = '0 8px 12px rgba(0,0,0,0.25)';
+            };
+            
+            saveButton.onmouseout = () => {
+                saveButton.style.transform = 'translateY(0)';
+                saveButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            
+            saveButton.onclick = () => {
+                if (nameInput.value.trim() && targetInput.value.trim()) {
+                    // Preserve existing progress, lastUpdatedDate and resetFrequency
+                    habits[habitId] = {
+                        ...habits[habitId], // Keep existing properties
+                        name: nameInput.value.trim(),
+                        target: parseInt(targetInput.value, 10),
+                        color: selectedColor,
+                        icon: selectedEmoji, // Save the selected emoji
+                        reminderEnabled: reminderToggle.checked,
+                        reminderTime: reminderToggle.checked ? reminderTime.value : null
+                    };
+                    
+                    saveHabits();
+                    
+                    // Show feedback toast
+                    const toast = document.createElement('div');
+                    toast.textContent = 'Habit updated!';
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '20px';
+                    toast.style.left = '50%';
+                    toast.style.transform = 'translateX(-50%)';
+                    toast.style.backgroundColor = '#4caf50';
+                    toast.style.color = 'white';
+                    toast.style.padding = '10px 20px';
+                    toast.style.borderRadius = '4px';
+                    toast.style.zIndex = '1000';
+                    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'opacity 0.3s';
+                    
+                    document.body.appendChild(toast);
+                    
+                    // Animate toast
+                    setTimeout(() => {
+                        toast.style.opacity = '1';
+                    }, 10);
+                    
+                    setTimeout(() => {
+                        // Return to main screen
+                        document.body.innerHTML = mainContent;
+                        
+                        // Re-initialize event listeners
+                        document.addEventListener('DOMContentLoaded', loadHabits);
+                        loadHabits();
+                        
+                        // Ensure theme is applied correctly when returning to main screen
+                        applyTheme();
+                    }, 1000);
+                } else {
+                    alert('Please fill out all fields');
+                }
+            };
+            
+            buttonRow.appendChild(cancelButton);
+            buttonRow.appendChild(saveButton);
+            
+            saveButtonContainer.appendChild(buttonRow);
+            
+            // Assemble the screen
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(formContainer);
+            appScreen.appendChild(saveButtonContainer);
+            
+            document.body.appendChild(appScreen);
+            
+            // Focus the first input for better UX
+            nameInput.focus();
+        }
+        
+        // Show Calendar Screen
+        function showCalendarScreen() {
+            // Save current screen content
+            const mainContent = document.body.innerHTML;
+            
+            // Get current theme
+            const isDarkMode = isDarkModeEnabled();
+            
+            // Create full-screen view that simulates a navigation to a new screen
+            document.body.innerHTML = '';
+            
+            // Create app elements
+            const appScreen = document.createElement('div');
+            appScreen.style.fontFamily = 'Arial, sans-serif';
+            appScreen.style.maxWidth = '500px';
+            appScreen.style.margin = '0 auto';
+            appScreen.style.padding = '0';
+            appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
+            appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+            appScreen.style.height = '100vh';
+            appScreen.style.display = 'flex';
+            appScreen.style.flexDirection = 'column';
+            
+            // Create AppBar
+            const appBar = document.createElement('div');
+            appBar.style.backgroundColor = '#673ab7';
+            appBar.style.color = 'white';
+            appBar.style.padding = '16px';
+            appBar.style.display = 'flex';
+            appBar.style.alignItems = 'center';
+            
+            // Back button
+            const backButton = document.createElement('div');
+            backButton.innerHTML = '&larr;';
+            backButton.style.marginRight = '16px';
+            backButton.style.fontSize = '24px';
+            backButton.style.cursor = 'pointer';
+            backButton.onclick = () => {
+                // Return to the main screen
+                document.body.innerHTML = mainContent;
+                
+                // Re-initialize event listeners and state
+                document.addEventListener('DOMContentLoaded', loadHabits);
+                loadHabits();
+                
+                // Ensure theme is applied correctly when returning to main screen
+                applyTheme();
+            };
+            
+            // Title
+            const title = document.createElement('h1');
+            title.textContent = 'Habit Calendar';
+            title.style.margin = '0';
+            title.style.fontSize = '20px';
+            
+            appBar.appendChild(backButton);
+            appBar.appendChild(title);
+            
+            // Create calendar container (scrollable)
+            const calendarContainer = document.createElement('div');
+            calendarContainer.style.flex = '1';
+            calendarContainer.style.overflowY = 'auto';
+            calendarContainer.style.padding = '20px';
+            
+            // Create calendar content
+            const calendarContent = document.createElement('div');
+            calendarContent.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            calendarContent.style.padding = '20px';
+            calendarContent.style.borderRadius = '8px';
+            calendarContent.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+            
+            const calendarHeading = document.createElement('h2');
+            calendarHeading.textContent = 'Habit History';
+            calendarHeading.style.textAlign = 'center';
+            calendarHeading.style.marginBottom = '20px';
+            
+            // Create month selector for calendar
+            const monthSelector = document.createElement('div');
+            monthSelector.style.display = 'flex';
+            monthSelector.style.justifyContent = 'space-between';
+            monthSelector.style.alignItems = 'center';
+            monthSelector.style.marginBottom = '20px';
+            
+            const prevButton = document.createElement('button');
+            prevButton.innerHTML = '&larr;';
+            prevButton.style.background = 'transparent';
+            prevButton.style.border = 'none';
+            prevButton.style.fontSize = '20px';
+            prevButton.style.cursor = 'pointer';
+            prevButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+            
+            const currentMonthDisplay = document.createElement('div');
+            const currentDate = new Date();
+            currentMonthDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+            currentMonthDisplay.style.fontSize = '18px';
+            currentMonthDisplay.style.fontWeight = 'bold';
+            
+            const nextButton = document.createElement('button');
+            nextButton.innerHTML = '&rarr;';
+            nextButton.style.background = 'transparent';
+            nextButton.style.border = 'none';
+            nextButton.style.fontSize = '20px';
+            nextButton.style.cursor = 'pointer';
+            nextButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+            
+            monthSelector.appendChild(prevButton);
+            monthSelector.appendChild(currentMonthDisplay);
+            monthSelector.appendChild(nextButton);
+            
+            // Calendar grid
+            const calendarGrid = document.createElement('div');
+            calendarGrid.style.display = 'grid';
+            calendarGrid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            calendarGrid.style.gap = '5px';
+            
+            // Add day headers (Sun-Sat)
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.textContent = day;
+                dayHeader.style.textAlign = 'center';
+                dayHeader.style.fontWeight = 'bold';
+                dayHeader.style.paddingBottom = '10px';
+                calendarGrid.appendChild(dayHeader);
+            });
+            
+            // Current month and year
+            let currentViewMonth = currentDate.getMonth();
+            let currentViewYear = currentDate.getFullYear();
+            
+            // Function to render calendar days
+            function renderCalendarDays() {
+                // Clear existing days (except headers)
+                while (calendarGrid.childElementCount > 7) {
+                    calendarGrid.removeChild(calendarGrid.lastChild);
+                }
+                
+                // Update month display
+                currentMonthDisplay.textContent = `${new Date(currentViewYear, currentViewMonth, 1).toLocaleString('default', { month: 'long' })} ${currentViewYear}`;
+                
+                // First day of the month
+                const firstDay = new Date(currentViewYear, currentViewMonth, 1);
+                // Last day of the month
+                const lastDay = new Date(currentViewYear, currentViewMonth + 1, 0);
+                
+                // Starting empty cells for days from previous month
+                const firstDayIndex = firstDay.getDay(); // 0 = Sunday, 6 = Saturday
+                
+                // Create empty cells for days before the 1st
+                for (let i = 0; i < firstDayIndex; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.style.height = '40px';
+                    emptyCell.style.padding = '5px';
+                    emptyCell.style.textAlign = 'center';
+                    calendarGrid.appendChild(emptyCell);
+                }
+                
+                // Create cells for all days in the month
+                for (let day = 1; day <= lastDay.getDate(); day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.textContent = day;
+                    dayCell.style.height = '40px';
+                    dayCell.style.padding = '5px';
+                    dayCell.style.textAlign = 'center';
+                    dayCell.style.borderRadius = '50%';
+                    dayCell.style.cursor = 'pointer';
+                    dayCell.style.display = 'flex';
+                    dayCell.style.flexDirection = 'column';
+                    dayCell.style.justifyContent = 'center';
+                    dayCell.style.alignItems = 'center';
+                    dayCell.style.position = 'relative';
+                    
+                    // Check if it's today
+                    const isToday = 
+                        day === currentDate.getDate() && 
+                        currentViewMonth === currentDate.getMonth() && 
+                        currentViewYear === currentDate.getFullYear();
+                    
+                    if (isToday) {
+                        dayCell.style.backgroundColor = '#673ab7';
+                        dayCell.style.color = 'white';
+                        dayCell.style.fontWeight = 'bold';
+                    } else {
+                        dayCell.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                    }
+                    
+                    // Format date to check for habit completion
+                    const checkDate = formatDate(new Date(currentViewYear, currentViewMonth, day));
+                    
+                    // Add habit completion indicators
+                    let totalCompleted = 0;
+                    let totalHabits = 0;
+                    
+                    // First check the global habit history structure
+                    const habitHistory = loadHabitHistory();
+                    
+                    // If a habit filter is active, only show data for that habit
+                    if (currentFilterHabit) {
+                        if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][currentFilterHabit]) {
+                            // History exists for this habit on this date
+                            totalHabits = 1;
+                            if (habitHistory[checkDate][currentFilterHabit] === "completed") {
+                                totalCompleted = 1;
+                            }
+                        } else {
+                            // Check individual habit history as fallback
+                            const habit = habits[currentFilterHabit];
+                            if (habit && habit.history && habit.history[checkDate]) {
+                                totalHabits = 1;
+                                if (habit.history[checkDate].completed) {
+                                    totalCompleted = 1;
+                                }
+                            }
+                        }
+                    } else {
+                        // No filter, show data for all habits
+                        if (habitHistory && habitHistory[checkDate]) {
+                            // Use the habit history data structure
+                            const dateHistory = habitHistory[checkDate];
+                            totalHabits = Object.keys(dateHistory).length;
+                            
+                            // Count completed habits
+                            Object.values(dateHistory).forEach(status => {
+                                if (status === "completed") {
+                                    totalCompleted++;
+                                }
+                            });
+                        } else {
+                            // Fall back to individual habit history data (backward compatibility)
+                            Object.keys(habits).forEach(habitId => {
+                                const habit = habits[habitId];
+                                if (habit.history && habit.history[checkDate]) {
+                                    totalHabits++;
+                                    if (habit.history[checkDate].completed) {
+                                        totalCompleted++;
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Only show indicator if there are habits for this day
+                    if (totalHabits > 0) {
+                        // Add completion indicator dot
+                        const indicatorContainer = document.createElement('div');
+                        indicatorContainer.style.display = 'flex';
+                        indicatorContainer.style.gap = '3px';
+                        indicatorContainer.style.marginTop = '3px';
+                        
+                        if (totalCompleted === totalHabits && totalHabits > 0) {
+                            // All habits completed - show checkmark
+                            const checkmark = document.createElement('div');
+                            checkmark.innerHTML = '✓';
+                            checkmark.style.fontSize = '12px';
+                            checkmark.style.color = '#4CAF50';
+                            checkmark.style.fontWeight = 'bold';
+                            indicatorContainer.appendChild(checkmark);
+                        } else if (totalCompleted > 0) {
+                            // Some habits completed - show partial indicator
+                            const partialIndicator = document.createElement('div');
+                            partialIndicator.style.width = '8px';
+                            partialIndicator.style.height = '8px';
+                            partialIndicator.style.borderRadius = '50%';
+                            partialIndicator.style.backgroundColor = '#FFC107'; // Yellow for partial
+                            indicatorContainer.appendChild(partialIndicator);
+                        } else {
+                            // No habits completed - show empty indicator
+                            const emptyIndicator = document.createElement('div');
+                            emptyIndicator.style.width = '8px';
+                            emptyIndicator.style.height = '8px';
+                            emptyIndicator.style.borderRadius = '50%';
+                            emptyIndicator.style.backgroundColor = '#F44336'; // Red for none
+                            indicatorContainer.appendChild(emptyIndicator);
+                        }
+                        
+                        dayCell.appendChild(indicatorContainer);
+                    }
+                    
+                    // Add click handler to show daily habit details
+                    dayCell.onclick = () => {
+                        showDailyHabitDetails(checkDate);
+                    };
+                    
+                    calendarGrid.appendChild(dayCell);
+                }
+            }
+            
+            // Function to show daily habit details
+            function showDailyHabitDetails(date) {
+                // Create details popup
+                const popup = document.createElement('div');
+                popup.style.position = 'fixed';
+                popup.style.top = '50%';
+                popup.style.left = '50%';
+                popup.style.transform = 'translate(-50%, -50%)';
+                popup.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+                popup.style.padding = '20px';
+                popup.style.borderRadius = '8px';
+                popup.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+                popup.style.zIndex = '1000';
+                popup.style.maxWidth = '90%';
+                popup.style.width = '300px';
+                popup.style.maxHeight = '80vh';
+                popup.style.overflowY = 'auto';
+                
+                // Create popup header
+                const popupHeader = document.createElement('div');
+                popupHeader.style.display = 'flex';
+                popupHeader.style.justifyContent = 'space-between';
+                popupHeader.style.alignItems = 'center';
+                popupHeader.style.marginBottom = '15px';
+                
+                const dateTitle = document.createElement('h3');
+                const dateObj = new Date(date);
+                dateTitle.textContent = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                dateTitle.style.margin = '0';
+                
+                const closeButton = document.createElement('button');
+                closeButton.innerHTML = '&times;';
+                closeButton.style.backgroundColor = 'transparent';
+                closeButton.style.border = 'none';
+                closeButton.style.fontSize = '24px';
+                closeButton.style.cursor = 'pointer';
+                closeButton.style.color = isDarkMode ? '#ffffff' : '#000000';
+                closeButton.onclick = () => {
+                    document.body.removeChild(popup);
+                    
+                    // Re-add the overlay that was added when showing popup
+                    if (document.querySelector('.overlay')) {
+                        document.body.removeChild(document.querySelector('.overlay'));
+                    }
+                };
+                
+                popupHeader.appendChild(dateTitle);
+                popupHeader.appendChild(closeButton);
+                
+                // Create list of habits for this day
+                const habitsList = document.createElement('div');
+                
+                let hasHabits = false;
+                
+                // First check the habit history global data structure
+                const habitHistory = loadHabitHistory();
+                
+                if (habitHistory && habitHistory[date]) {
+                    // Found history for this date in the habitHistory
+                    
+                    // Display header indicating this is from the history system
+                    const historyHeader = document.createElement('div');
+                    historyHeader.textContent = 'Habit History Record';
+                    historyHeader.style.fontSize = '14px';
+                    historyHeader.style.marginBottom = '15px';
+                    historyHeader.style.textAlign = 'center';
+                    historyHeader.style.color = isDarkMode ? '#aaa' : '#666';
+                    habitsList.appendChild(historyHeader);
+                    
+                    // Get history for this date
+                    const dateHistory = habitHistory[date];
+                    
+                    // Check if we have any habits to display based on filter
+                    if (currentFilterHabit) {
+                        // Only show the filtered habit
+                        if (dateHistory[currentFilterHabit]) {
+                            hasHabits = true;
+                            const status = dateHistory[currentFilterHabit]; // "completed" or "not_completed"
+                            const habit = habits[currentFilterHabit]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, currentFilterHabit, status, habit, isDarkMode);
+                        }
+                    } else {
+                        // Show all habits
+                        hasHabits = Object.keys(dateHistory).length > 0;
+                        
+                        // Iterate through habits to display them with their recorded status
+                        Object.keys(dateHistory).forEach(habitId => {
+                            const status = dateHistory[habitId]; // "completed" or "not_completed"
+                            const habit = habits[habitId]; // Get the current habit info
+                            displayHabitHistoryItem(habitsList, habitId, status, habit, isDarkMode);
+                        });
+                    }
+                }
+                
+                // Helper function to display a habit history item
+                function displayHabitHistoryItem(container, habitId, status, habit, isDarkMode) {
+                        
+                        // Create habit item even if the habit no longer exists
+                        const habitItem = document.createElement('div');
+                        habitItem.style.padding = '10px';
+                        habitItem.style.marginBottom = '10px';
+                        habitItem.style.borderRadius = '6px';
+                        habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                        
+                        // Habit name with icon
+                        const habitName = document.createElement('div');
+                        habitName.style.fontWeight = 'bold';
+                        habitName.style.marginBottom = '5px';
+                        
+                        if (habit) {
+                            // Habit still exists, use current name and icon
+                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                        } else {
+                            // Habit was deleted, show placeholder
+                            habitName.textContent = `Habit (deleted)`;
+                            habitName.style.color = isDarkMode ? '#777' : '#999';
+                        }
+                        
+                        // Status indicator
+                        const statusIndicator = document.createElement('div');
+                        statusIndicator.style.display = 'flex';
+                        statusIndicator.style.alignItems = 'center';
+                        statusIndicator.style.marginTop = '5px';
+                        
+                        const statusDot = document.createElement('div');
+                        statusDot.style.width = '10px';
+                        statusDot.style.height = '10px';
+                        statusDot.style.borderRadius = '50%';
+                        statusDot.style.marginRight = '6px';
+                        
+                        const statusText = document.createElement('div');
+                        statusText.style.fontSize = '14px';
+                        
+                        if (status === "completed") {
+                            statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                            statusText.textContent = 'Completed';
+                            statusText.style.color = '#4CAF50';
+                        } else {
+                            statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                            statusText.textContent = 'Not completed';
+                            statusText.style.color = '#F44336';
+                        }
+                        
+                        statusIndicator.appendChild(statusDot);
+                        statusIndicator.appendChild(statusText);
+                        
+                        // Add elements to habit item
+                        habitItem.appendChild(habitName);
+                        habitItem.appendChild(statusIndicator);
+                        
+                        container.appendChild(habitItem);
+                }
+                
+                // Fall back to individual habit history data (backward compatibility)
+                if (!hasHabits) {
+                    if (currentFilterHabit) {
+                        // Only check the filtered habit
+                        const habit = habits[currentFilterHabit];
+                        if (habit && habit.history && habit.history[date]) {
+                            hasHabits = true;
+                            displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
+                        }
+                    } else {
+                        // Check all habits
+                        Object.keys(habits).forEach(habitId => {
+                            const habit = habits[habitId];
+                            if (habit.history && habit.history[date]) {
+                                hasHabits = true;
+                                displayLegacyHabitItem(habitsList, habit, date, isDarkMode);
+                            }
+                        });
+                    }
+                }
+                
+                // Helper function to display legacy habit history items
+                function displayLegacyHabitItem(container, habit, date, isDarkMode) {
+                            
+                            // Create habit item
+                            const habitItem = document.createElement('div');
+                            habitItem.style.padding = '10px';
+                            habitItem.style.marginBottom = '10px';
+                            habitItem.style.borderRadius = '6px';
+                            habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f5f5f5';
+                            
+                            // Habit name with icon
+                            const habitName = document.createElement('div');
+                            habitName.style.fontWeight = 'bold';
+                            habitName.style.marginBottom = '5px';
+                            habitName.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                            
+                            // Progress info
+                            const progressInfo = document.createElement('div');
+                            progressInfo.textContent = `Progress: ${habit.history[date].progress}/${habit.history[date].target}`;
+                            
+                            // Status indicator
+                            const statusIndicator = document.createElement('div');
+                            statusIndicator.style.display = 'flex';
+                            statusIndicator.style.alignItems = 'center';
+                            statusIndicator.style.marginTop = '5px';
+                            
+                            const statusDot = document.createElement('div');
+                            statusDot.style.width = '10px';
+                            statusDot.style.height = '10px';
+                            statusDot.style.borderRadius = '50%';
+                            statusDot.style.marginRight = '6px';
+                            
+                            const statusText = document.createElement('div');
+                            statusText.style.fontSize = '14px';
+                            
+                            if (habit.history[date].completed) {
+                                statusDot.style.backgroundColor = '#4CAF50'; // Green for completed
+                                statusText.textContent = 'Completed';
+                                statusText.style.color = '#4CAF50';
+                            } else {
+                                statusDot.style.backgroundColor = '#F44336'; // Red for incomplete
+                                statusText.textContent = 'Not completed';
+                                statusText.style.color = '#F44336';
+                            }
+                            
+                            statusIndicator.appendChild(statusDot);
+                            statusIndicator.appendChild(statusText);
+                            
+                            // Add elements to habit item
+                            habitItem.appendChild(habitName);
+                            habitItem.appendChild(progressInfo);
+                            habitItem.appendChild(statusIndicator);
+                            
+                            container.appendChild(habitItem);
+                        }
+                
+                // If no habits for this day, show message
+                if (!hasHabits) {
+                    const noHabitsMsg = document.createElement('div');
+                    noHabitsMsg.textContent = 'No history recorded for this day.';
+                    noHabitsMsg.style.textAlign = 'center';
+                    noHabitsMsg.style.padding = '20px';
+                    noHabitsMsg.style.color = isDarkMode ? '#aaa' : '#666';
+                    habitsList.appendChild(noHabitsMsg);
+                }
+                
+                // Add dark overlay behind popup
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                overlay.style.zIndex = '999';
+                
+                // Close popup when clicking overlay
+                overlay.onclick = () => {
+                    document.body.removeChild(popup);
+                    document.body.removeChild(overlay);
+                };
+                
+                // Assemble popup
+                popup.appendChild(popupHeader);
+                popup.appendChild(habitsList);
+                
+                // Add to body
+                document.body.appendChild(overlay);
+                document.body.appendChild(popup);
+            }
+            
+            // Initial render
+            renderCalendarDays();
+            
+            // Month navigation handlers
+            prevButton.onclick = () => {
+                currentViewMonth--;
+                if (currentViewMonth < 0) {
+                    currentViewMonth = 11;
+                    currentViewYear--;
+                }
+                renderCalendarDays();
+            };
+            
+            nextButton.onclick = () => {
+                currentViewMonth++;
+                if (currentViewMonth > 11) {
+                    currentViewMonth = 0;
+                    currentViewYear++;
+                }
+                renderCalendarDays();
+            };
+            
+            // Add filter for specific habit (optional feature)
+            const filterContainer = document.createElement('div');
+            filterContainer.style.marginTop = '20px';
+            filterContainer.style.padding = '10px';
+            filterContainer.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+            filterContainer.style.borderRadius = '8px';
+            
+            const filterLabel = document.createElement('div');
+            filterLabel.textContent = 'Filter by Habit (Optional)';
+            filterLabel.style.marginBottom = '10px';
+            filterLabel.style.fontWeight = 'bold';
+            
+            const habitSelect = document.createElement('select');
+            habitSelect.style.width = '100%';
+            habitSelect.style.padding = '10px';
+            habitSelect.style.borderRadius = '6px';
+            habitSelect.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
+            habitSelect.style.color = isDarkMode ? '#fff' : '#000';
+            
+            // Add option for all habits
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'All Habits';
+            habitSelect.appendChild(allOption);
+            
+            // Add options for each habit
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                const option = document.createElement('option');
+                option.value = habitId;
+                option.textContent = habit.icon ? `${habit.icon} ${habit.name}` : habit.name;
+                habitSelect.appendChild(option);
+            });
+            
+            // Global variable to store the current filter
+            let currentFilterHabit = null;
+            
+            // Handle filter change
+            habitSelect.onchange = () => {
+                const selectedHabitId = habitSelect.value;
+                // Set filter to the selected habit or null if "All Habits" is selected
+                currentFilterHabit = selectedHabitId === 'all' ? null : selectedHabitId;
+                // Re-render the calendar with the filter applied
+                renderCalendarDays();
+            };
+            
+            filterContainer.appendChild(filterLabel);
+            filterContainer.appendChild(habitSelect);
+            
+            // Assemble the calendar screen
+            calendarContent.appendChild(calendarHeading);
+            calendarContent.appendChild(monthSelector);
+            calendarContent.appendChild(calendarGrid);
+            calendarContent.appendChild(filterContainer); // Add the filter section
+            
+            calendarContainer.appendChild(calendarContent);
+            
+            appScreen.appendChild(appBar);
+            appScreen.appendChild(calendarContainer);
+            
+            document.body.appendChild(appScreen);
+        }
+        
+        // Global notification permission setting
+        let isNotificationsEnabled = false;
+        
+        // Check if notifications are available in this browser
+        function areNotificationsSupported() {
+            return 'Notification' in window;
+        }
+        
+        // Request permission for notifications
+        function requestNotificationPermission() {
+            if (!areNotificationsSupported()) {
+                console.log('Notifications not supported in this browser');
+                showToast("Notifications not supported in this browser", "#FF9800");
+                return Promise.resolve(false);
+            }
+            
+            if (Notification.permission === 'granted') {
+                isNotificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+                return Promise.resolve(true);
+            }
+            
+            if (Notification.permission === 'denied') {
+                isNotificationsEnabled = false;
+                localStorage.setItem('notificationsEnabled', 'false');
+                showToast("Notification permission was denied by the browser", "#F44336");
+                return Promise.resolve(false);
+            }
+            
+            try {
+                // Need to request permission
+                return Notification.requestPermission()
+                    .then(permission => {
+                        isNotificationsEnabled = permission === 'granted';
+                        localStorage.setItem('notificationsEnabled', String(isNotificationsEnabled));
+                        
+                        if (!isNotificationsEnabled) {
+                            showToast("Notification permission was denied. Enable in browser settings.", "#F44336");
+                        }
+                        
+                        return isNotificationsEnabled;
+                    })
+                    .catch(error => {
+                        console.error('Error requesting notification permission:', error);
+                        showToast("Browser blocked notification permission request", "#F44336");
+                        return false;
+                    });
+            } catch (error) {
+                console.error('Exception requesting notification permission:', error);
+                showToast("Browser blocked notification permission request", "#F44336");
+                return Promise.resolve(false);
+            }
+        }
+        
+        // Function to show a notification
+        function showNotification(habit) {
+            if (!isNotificationsEnabled) return;
+            
+            try {
+                const icon = habit.icon || '⏰';
+                const title = `${icon} ${habit.name} Reminder`;
+                const options = {
+                    body: "Don't forget!",
+                    icon: '/favicon.ico' // Will use default icon if not found
+                };
+                
+                const notification = new Notification(title, options);
+                
+                // Close the notification after 10 seconds
+                setTimeout(() => {
+                    notification.close();
+                }, 10000);
+                
+                // Add click event to focus the window when notification is clicked
+                notification.onclick = function() {
+                    window.focus();
+                    notification.close();
+                };
+            } catch (error) {
+                console.error('Error showing notification:', error);
+            }
+        }
+        
+        // Check for habits that need reminders
+        function checkReminders() {
+            if (!isNotificationsEnabled) return;
+            
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            
+            // Format the current time in 24-hour format (HH:MM)
+            const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+            
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                
+                // Skip if reminders aren't enabled for this habit or no time is set
+                if (!habit.reminderEnabled || !habit.reminderTime) return;
+                
+                // Check if the current time matches the reminder time (checking only once per minute)
+                if (currentTime === habit.reminderTime) {
+                    showNotification(habit);
+                }
+            });
+        }
+        
+        // Set up a timer to check for reminders every minute
+        let reminderTimer = null;
+        
+        function startReminderCheck() {
+            // Clear any existing timer
+            if (reminderTimer) {
+                clearInterval(reminderTimer);
+            }
+            
+            // Only start checking if notifications are enabled
+            if (isNotificationsEnabled) {
+                // Check once immediately
+                checkReminders();
+                
+                // Set interval to check every minute (60000 ms)
+                reminderTimer = setInterval(checkReminders, 60000);
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHabits();
+            applyTheme();
+            
+            // Check if notifications were previously enabled
+            const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
+            
+            // Check if notifications are supported at all before proceeding
+            if (!areNotificationsSupported()) {
+                console.log("Browser doesn't support notifications");
+                localStorage.setItem('notificationsEnabled', 'false');
+                return;
+            }
+
+            // Check for permissions in iframe or restrictive contexts
+            try {
+                if (window.self !== window.top) {
+                    // We're in an iframe, which typically blocks notifications
+                    console.log("In iframe mode - notifications are typically blocked");
+                    return;
+                }
+            } catch (e) {
+                // If we can't access window.top, we're definitely in a restrictive context
+                console.log("Running in a restrictive context, notifications may be blocked");
+                return;
+            }
+            
+            if (storedNotificationsEnabled === 'true') {
+                // User previously enabled notifications, try to restore
+                requestNotificationPermission().then(granted => {
+                    if (granted) {
+                        startReminderCheck();
+                    } else {
+                        showToast("Notification permissions were revoked. Enable in browser settings.", "#F44336");
+                    }
+                }).catch(error => {
+                    console.error("Error restoring notification permissions:", error);
+                    showToast("Error accessing notification permissions", "#F44336");
+                });
+            } else if (storedNotificationsEnabled === null) {
+                // First time user, show permission request
+                setTimeout(() => {
+                    if (confirm("Would you like to enable notifications for habit reminders?")) {
+                        requestNotificationPermission().then(granted => {
+                            if (granted) {
+                                showToast("Notifications enabled successfully!", "#4CAF50");
+                                startReminderCheck();
+                            } else {
+                                showToast("Notifications disabled. You can enable them later in Settings.", "#FF9800");
+                            }
+                        }).catch(error => {
+                            console.error("Error requesting notification permissions:", error);
+                            showToast("Browser blocked notification request", "#F44336");
+                        });
+                    } else {
+                        localStorage.setItem('notificationsEnabled', 'false');
+                        showToast("Notifications disabled. You can enable them later in Settings.", "#FF9800");
+                    }
+                }, 2000); // Ask after 2 seconds so user can see the app first
+            }
+        });
+    </script>
+</body>
+</html>""")
+
+print("Created demo.html file")
+
+# Start the server
+httpd = HTTPServer(('0.0.0.0', 5000), AtomicMomentumApp)
+print('Server running at http://0.0.0.0:5000')
+httpd.serve_forever()
