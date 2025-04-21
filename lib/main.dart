@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -24,37 +26,22 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isDarkMode = prefs.getBool('isDarkMode') ?? false;
   
-  runApp(MomentumApp(initialDarkMode: isDarkMode));
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ThemeProvider(isDarkMode),
+      child: const MomentumApp(),
+    ),
+  );
 }
 
-class MomentumApp extends StatefulWidget {
-  final bool initialDarkMode;
-  
-  const MomentumApp({Key? key, required this.initialDarkMode}) : super(key: key);
-
-  @override
-  _MomentumAppState createState() => _MomentumAppState();
-}
-
-class _MomentumAppState extends State<MomentumApp> {
-  late ThemeMode _themeMode;
-
-  @override
-  void initState() {
-    super.initState();
-    _themeMode = widget.initialDarkMode ? ThemeMode.dark : ThemeMode.light;
-  }
-
-  void _setThemeMode(ThemeMode mode) {
-    setState(() {
-      _themeMode = mode;
-    });
-  }
-  
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
+class MomentumApp extends StatelessWidget {
+  const MomentumApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Get the current theme from the provider
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    
     return MaterialApp(
       title: 'Atomic Momentum',
       debugShowCheckedModeBanner: false,
@@ -65,6 +52,8 @@ class _MomentumAppState extends State<MomentumApp> {
           backgroundColor: Colors.deepPurple,
           foregroundColor: Colors.white,
         ),
+        scaffoldBackgroundColor: Colors.white,
+        cardColor: Colors.white,
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
@@ -74,13 +63,12 @@ class _MomentumAppState extends State<MomentumApp> {
           backgroundColor: Colors.deepPurple,
           foregroundColor: Colors.white,
         ),
+        scaffoldBackgroundColor: Colors.grey[850],
+        cardColor: Color(0xFF2C2C2C),
         canvasColor: Colors.grey[850],
       ),
-      themeMode: _themeMode,
-      home: HomeScreen(
-        onThemeChanged: _setThemeMode,
-        isDarkMode: isDarkMode,
-      ),
+      themeMode: themeProvider.themeMode,
+      home: HomeScreen(),
     );
   }
 }

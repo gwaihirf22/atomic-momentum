@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/habit.dart';
+import '../providers/theme_provider.dart';
 import '../services/habit_service.dart';
 import 'add_habit_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final Function(ThemeMode) onThemeChanged;
-  final bool isDarkMode;
-  
-  const HomeScreen({
-    Key? key, 
-    required this.onThemeChanged, 
-    required this.isDarkMode
-  }) : super(key: key);
+  const HomeScreen({Key? key}) : super(key: key);
   
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -74,10 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => SettingsScreen(
-                    onThemeChanged: widget.onThemeChanged,
-                    isDarkMode: widget.isDarkMode,
-                  ),
+                  builder: (context) => SettingsScreen(),
                 ),
               );
             },
