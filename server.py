@@ -659,7 +659,7 @@ with open('demo.html', 'w') as f:
             heading.appendChild(headingText);
             
             // Create icon element if habit has an iconId
-            if (habit.iconId) {
+            if (habit.iconId && habit.iconId !== 'none') {
                 const iconWrapper = document.createElement('div');
                 iconWrapper.className = 'habit-icon';
                 iconWrapper.style.marginRight = '8px';
@@ -1357,25 +1357,25 @@ with open('demo.html', 'w') as f:
             iconContainer.style.marginBottom = '20px';
             iconContainer.style.justifyContent = 'center';
             
-            // List of available SVG icons
+            // Habit-appropriate icon references - these reference the SVG symbols defined in the HTML
             const icons = [
-                { id: '', label: 'None' }, // Empty option
-                { id: 'icon-droplet', label: 'Water' },
+                { id: 'none', label: 'None' }, // Empty option
+                { id: 'icon-droplet', label: 'Water/Hydration' },
                 { id: 'icon-book-open', label: 'Reading' },
                 { id: 'icon-dumbbell', label: 'Exercise' },
                 { id: 'icon-salad', label: 'Nutrition' },
                 { id: 'icon-lotus', label: 'Meditation' },
                 { id: 'icon-moon', label: 'Sleep' },
                 { id: 'icon-pill', label: 'Health' },
-                { id: 'icon-x-circle', label: 'Avoid' },
+                { id: 'icon-x-circle', label: 'No/Avoid' },
                 { id: 'icon-desktop', label: 'Work' },
-                { id: 'icon-palette', label: 'Art' },
+                { id: 'icon-palette', label: 'Art/Creativity' },
                 { id: 'icon-music', label: 'Music' },
-                { id: 'icon-plant', label: 'Growth' },
-                { id: 'icon-broom', label: 'Clean' },
-                { id: 'icon-pencil', label: 'Write' },
-                { id: 'icon-clock', label: 'Time' },
-                { id: 'icon-heart', label: 'Heart' }
+                { id: 'icon-plant', label: 'Gardening' },
+                { id: 'icon-broom', label: 'Cleaning' },
+                { id: 'icon-pencil', label: 'Writing' },
+                { id: 'icon-clock', label: 'Time Management' },
+                { id: 'icon-heart', label: 'Wellness' }
             ];
             
             let selectedIconId = '';
@@ -2357,24 +2357,25 @@ with open('demo.html', 'w') as f:
             iconLabel.style.fontWeight = 'bold';
             iconLabel.style.marginBottom = '10px';
             
-            // Define SVG icons using the Heroicons set
+            // Habit-appropriate icon references - these reference the SVG symbols defined in the HTML
             const iconOptions = [
-                { id: 'heart', path: 'M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3.32.98-4.5 2.42A5.5 5.5 0 0 0 7.5 3 5.5 5.5 0 0 0 2 8.5c0 5.3 6.36 9.13 9.5 11.1.63.4 1.37.4 2 0 1.46-.92 4.2-2.88 6.5-5.6z' },
-                { id: 'book', path: 'M4 4.5A2.5 2.5 0 0 1 6.5 2H20a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H8.5A2.5 2.5 0 0 1 6 18.5v-14A2.5 2.5 0 0 1 3 2h.5a.5.5 0 0 0 .5.5Z' },
-                { id: 'running', path: 'M15 21v-3.5c0-1.1-.9-2-2-2s-2 .9-2 2V21m2 0v-6m0 6H9m6 0h4M4 7v3.859c0 .537.213 1.052.593 1.432l6.116 6.116c.373.373.587.88.587 1.408V21m0 0h2' },
-                { id: 'leaf', path: 'M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m-3-7.75-3 1m-12 .25 4.5 1.636M2.25 7.5l4.5-1.636M18.75 7.5l-3-1' },
-                { id: 'muscle', path: 'M15.182 15.182a25.58 25.58 0 0 0 4.076-12.627m-4.076 12.627-6.364 6.364m6.364-6.364a25.582 25.582 0 0 1-12.627 4.076M4.642 9.642a25.58 25.58 0 0 0 12.627-4.076M4.642 9.642l-6.364-6.364m6.364 6.364A25.582 25.582 0 0 1 8.718 3.09' },
-                { id: 'moon', path: 'M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z' },
-                { id: 'pill', path: 'M4.5 12.75l6 6 9-13.5' },
-                { id: 'ban', path: 'M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0' },
-                { id: 'code', path: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
-                { id: 'paint', path: 'M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm7.22-3.375c.399.043.801.06 1.207.06 2.488 0 4.5-2.01 4.5-4.5S19.945 4 17.457 4c-1.02 0-1.964.344-2.723.923-.246-.693-.672-1.303-1.238-1.77a5.25 5.25 0 0 0-4.238-1.034c-2.565.463-4.546 2.786-4.546 5.493 0 1.697.792 3.355 2.092 4.424l4.03 3.122c.399.31.876.468 1.363.468.563 0 1.116-.205 1.547-.596l1.86-1.477a.75.75 0 0 0 .146-1.055.751.751 0 0 0-1.056-.147l-1.86 1.478c-.174.14-.36.154-.525.154-.192 0-.38-.062-.523-.173l-4.03-3.123a4.5 4.5 0 0 1-1.547-3.396c0-2.014 1.478-3.766 3.41-4.115a3.75 3.75 0 0 1 3.027.74c.47.342.82.825 1.018 1.388.119.339.44.638.968.959.635.386 1.432.583 2.231.473.716-.1 1.306-.555 1.43-1.064a3 3 0 0 1 5.919.93c0 1.668-1.347 3-3 3-.644 0-1.28-.188-1.827-.54a.75.75 0 1 0-.833 1.248 4.502 4.502 0 0 0 2.346.758c.113.577.341 1.14.676 1.645.125.188.48.253.82.157Z' },
-                { id: 'music', path: 'M9 9l10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 19.5 11.1V7.698a2.25 2.25 0 0 0-1.6-2.142l-7.897-2.427a2.25 2.25 0 0 0-2.794 1.491L6.223 7.38A1.5 1.5 0 0 1 4.76 8.405L3.478 8.784a2.25 2.25 0 0 0-1.12 3.2 2.25 2.25 0 0 0 2.258.97l6.63-1.246a2.25 2.25 0 0 0 1.83-1.908l.17-.809' },
-                { id: 'sprout', path: 'M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z' },
-                { id: 'trash', path: 'M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0' },
-                { id: 'note', path: 'M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10' },
-                { id: 'alarm', path: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z' },
-                { id: 'none', path: '' }
+                { id: 'icon-droplet', name: 'Water/Hydration' },
+                { id: 'icon-book-open', name: 'Reading' },
+                { id: 'icon-dumbbell', name: 'Exercise' },
+                { id: 'icon-salad', name: 'Nutrition' },
+                { id: 'icon-lotus', name: 'Meditation' },
+                { id: 'icon-moon', name: 'Sleep' },
+                { id: 'icon-pill', name: 'Health' },
+                { id: 'icon-x-circle', name: 'No/Avoid' },
+                { id: 'icon-desktop', name: 'Work' },
+                { id: 'icon-palette', name: 'Art/Creativity' },
+                { id: 'icon-music', name: 'Music' },
+                { id: 'icon-plant', name: 'Gardening' },
+                { id: 'icon-broom', name: 'Cleaning' },
+                { id: 'icon-pencil', name: 'Writing' },
+                { id: 'icon-clock', name: 'Time Management' },
+                { id: 'icon-heart', name: 'Wellness' },
+                { id: 'none', name: 'None' }
             ];
             
             // Pre-select current icon if exists or use emoji fallback for backward compatibility
