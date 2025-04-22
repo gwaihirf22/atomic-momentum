@@ -674,7 +674,7 @@ with open('demo.html', 'w') as f:
                 svg.setAttribute('stroke-width', '1.5');
                 
                 const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${habit.iconId}`);
+                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${habit.iconId}`);
                 
                 svg.appendChild(use);
                 iconWrapper.appendChild(svg);
@@ -1409,7 +1409,7 @@ with open('demo.html', 'w') as f:
                     svg.style.color = isDarkMode ? '#fff' : '#000';
                     
                     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${icon.id}`);
+                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
                     
                     svg.appendChild(use);
                     iconBtn.appendChild(svg);
@@ -2419,7 +2419,7 @@ with open('demo.html', 'w') as f:
                     svg.setAttribute('stroke-width', '1.5');
                     
                     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${icon.id}`);
+                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
                     
                     svg.appendChild(use);
                     iconBtn.appendChild(svg);
