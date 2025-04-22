@@ -664,7 +664,46 @@ with open('demo.html', 'w') as f:
                 iconWrapper.className = 'habit-icon';
                 iconWrapper.style.marginRight = '8px';
                 
-                // Create SVG element properly
+                // Define SVG paths for each icon
+                const iconPaths = {
+                    'water': 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z',
+                    'book': 'M12 6.253v13h-8.5a3 3 0 0 1-3-3v-10a3 3 0 0 1 3-3h8.5zm0 0V5.753a3 3 0 0 1 3-3h8.5a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-8.5v-13z',
+                    'exercise': 'M6.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM7 13.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM5 10h14M5 7h.01M19 7h.01M5 16h.01M19 16h.01',
+                    'food': 'M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11',
+                    'meditation': 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'moon': 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z',
+                    'medicine': 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'no': 'M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'work': 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2',
+                    'art': 'M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42',
+                    'music': 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3',
+                    'plant': 'M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z',
+                    'clean': 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12v-8.25m-16.5 0v8.25',
+                    'write': 'M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10',
+                    'time': 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
+                    'heart': 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z'
+                };
+                
+                // Backward compatibility for old icon IDs
+                if (habit.iconId.startsWith('icon-')) {
+                    // Strip off the 'icon-' prefix for old icon IDs
+                    let cleanId = habit.iconId.replace('icon-', '');
+                    if (cleanId === 'droplet') cleanId = 'water';
+                    if (cleanId === 'book-open') cleanId = 'book';
+                    if (cleanId === 'dumbbell') cleanId = 'exercise';
+                    if (cleanId === 'salad') cleanId = 'food';
+                    if (cleanId === 'lotus') cleanId = 'meditation';
+                    if (cleanId === 'pill') cleanId = 'medicine';
+                    if (cleanId === 'x-circle') cleanId = 'no';
+                    if (cleanId === 'desktop') cleanId = 'work';
+                    if (cleanId === 'palette') cleanId = 'art';
+                    if (cleanId === 'pencil') cleanId = 'write';
+                    if (cleanId === 'clock') cleanId = 'time';
+                    if (cleanId === 'broom') cleanId = 'clean';
+                    habit.iconId = cleanId;
+                }
+                
+                // Create SVG element directly with the path
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 svg.setAttribute('width', '24');
                 svg.setAttribute('height', '24');
@@ -672,15 +711,16 @@ with open('demo.html', 'w') as f:
                 svg.setAttribute('fill', 'none');
                 svg.setAttribute('stroke', habit.color || '#757575');
                 svg.setAttribute('stroke-width', '1.5');
+                svg.setAttribute('stroke-linecap', 'round');
+                svg.setAttribute('stroke-linejoin', 'round');
                 
-                const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${habit.iconId}`);
-                
-                svg.appendChild(use);
-                iconWrapper.appendChild(svg);
-                
-                // Insert icon before the heading text (which is already in the DOM)
-                heading.insertBefore(iconWrapper, headingText);
+                if (iconPaths[habit.iconId]) {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', iconPaths[habit.iconId]);
+                    svg.appendChild(path);
+                    iconWrapper.appendChild(svg);
+                    heading.insertBefore(iconWrapper, headingText);
+                }
             } 
             // Backward compatibility for old emoji icons
             else if (habit.icon) {
@@ -1357,25 +1397,25 @@ with open('demo.html', 'w') as f:
             iconContainer.style.marginBottom = '20px';
             iconContainer.style.justifyContent = 'center';
             
-            // Habit-appropriate icon references - these reference the SVG symbols defined in the HTML
+            // Habit-appropriate icons with their SVG paths
             const icons = [
-                { id: 'none', label: 'None' }, // Empty option
-                { id: 'icon-droplet', label: 'Water/Hydration' },
-                { id: 'icon-book-open', label: 'Reading' },
-                { id: 'icon-dumbbell', label: 'Exercise' },
-                { id: 'icon-salad', label: 'Nutrition' },
-                { id: 'icon-lotus', label: 'Meditation' },
-                { id: 'icon-moon', label: 'Sleep' },
-                { id: 'icon-pill', label: 'Health' },
-                { id: 'icon-x-circle', label: 'No/Avoid' },
-                { id: 'icon-desktop', label: 'Work' },
-                { id: 'icon-palette', label: 'Art/Creativity' },
-                { id: 'icon-music', label: 'Music' },
-                { id: 'icon-plant', label: 'Gardening' },
-                { id: 'icon-broom', label: 'Cleaning' },
-                { id: 'icon-pencil', label: 'Writing' },
-                { id: 'icon-clock', label: 'Time Management' },
-                { id: 'icon-heart', label: 'Wellness' }
+                { id: 'none', label: 'None', path: '' }, // Empty option
+                { id: 'water', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
+                { id: 'book', label: 'Reading', path: 'M12 6.253v13h-8.5a3 3 0 0 1-3-3v-10a3 3 0 0 1 3-3h8.5zm0 0V5.753a3 3 0 0 1 3-3h8.5a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-8.5v-13z' },
+                { id: 'exercise', label: 'Exercise', path: 'M6.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM7 13.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM5 10h14M5 7h.01M19 7h.01M5 16h.01M19 16h.01' },
+                { id: 'food', label: 'Nutrition', path: 'M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11' },
+                { id: 'meditation', label: 'Meditation', path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'moon', label: 'Sleep', path: 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z' },
+                { id: 'medicine', label: 'Health', path: 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'no', label: 'No/Avoid', path: 'M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'work', label: 'Work', path: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2' },
+                { id: 'art', label: 'Art/Creativity', path: 'M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42' },
+                { id: 'music', label: 'Music', path: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3' },
+                { id: 'plant', label: 'Gardening', path: 'M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z' },
+                { id: 'clean', label: 'Cleaning', path: 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12v-8.25m-16.5 0v8.25' },
+                { id: 'write', label: 'Writing', path: 'M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10' },
+                { id: 'time', label: 'Time Management', path: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'heart', label: 'Wellness', path: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' }
             ];
             
             let selectedIconId = '';
@@ -1398,20 +1438,21 @@ with open('demo.html', 'w') as f:
                 iconBtn.style.backgroundColor = isDarkMode ? '#333' : '#fff';
                 
                 // Add SVG icon or "None" text
-                if (icon.id && icon.id !== 'none') {
+                if (icon.id !== 'none' && icon.path) {
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     svg.setAttribute('width', '24');
                     svg.setAttribute('height', '24');
-                    svg.setAttribute('fill', 'none');
                     svg.setAttribute('viewBox', '0 0 24 24');
-                    svg.setAttribute('stroke', 'currentColor');
-                    svg.setAttribute('stroke-width', '2');
-                    svg.style.color = isDarkMode ? '#fff' : '#000';
+                    svg.setAttribute('fill', 'none');
+                    svg.setAttribute('stroke', isDarkMode ? '#fff' : '#000');
+                    svg.setAttribute('stroke-width', '1.5');
+                    svg.setAttribute('stroke-linecap', 'round');
+                    svg.setAttribute('stroke-linejoin', 'round');
                     
-                    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', icon.path);
                     
-                    svg.appendChild(use);
+                    svg.appendChild(path);
                     iconBtn.appendChild(svg);
                 } else {
                     // None option
@@ -2360,25 +2401,25 @@ with open('demo.html', 'w') as f:
             iconLabel.style.fontWeight = 'bold';
             iconLabel.style.marginBottom = '10px';
             
-            // Habit-appropriate icon references - these reference the SVG symbols defined in the HTML
+            // Habit-appropriate icons with their SVG paths
             const iconOptions = [
-                { id: 'icon-droplet', name: 'Water/Hydration' },
-                { id: 'icon-book-open', name: 'Reading' },
-                { id: 'icon-dumbbell', name: 'Exercise' },
-                { id: 'icon-salad', name: 'Nutrition' },
-                { id: 'icon-lotus', name: 'Meditation' },
-                { id: 'icon-moon', name: 'Sleep' },
-                { id: 'icon-pill', name: 'Health' },
-                { id: 'icon-x-circle', name: 'No/Avoid' },
-                { id: 'icon-desktop', name: 'Work' },
-                { id: 'icon-palette', name: 'Art/Creativity' },
-                { id: 'icon-music', name: 'Music' },
-                { id: 'icon-plant', name: 'Gardening' },
-                { id: 'icon-broom', name: 'Cleaning' },
-                { id: 'icon-pencil', name: 'Writing' },
-                { id: 'icon-clock', name: 'Time Management' },
-                { id: 'icon-heart', name: 'Wellness' },
-                { id: 'none', name: 'None' }
+                { id: 'water', name: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
+                { id: 'book', name: 'Reading', path: 'M12 6.253v13h-8.5a3 3 0 0 1-3-3v-10a3 3 0 0 1 3-3h8.5zm0 0V5.753a3 3 0 0 1 3-3h8.5a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-8.5v-13z' },
+                { id: 'exercise', name: 'Exercise', path: 'M6.5 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM7 13.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm9 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM5 10h14M5 7h.01M19 7h.01M5 16h.01M19 16h.01' },
+                { id: 'food', name: 'Nutrition', path: 'M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11' },
+                { id: 'meditation', name: 'Meditation', path: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'moon', name: 'Sleep', path: 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z' },
+                { id: 'medicine', name: 'Health', path: 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'no', name: 'No/Avoid', path: 'M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'work', name: 'Work', path: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2' },
+                { id: 'art', name: 'Art/Creativity', path: 'M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.151 1.151 0 00-1.597-1.597L14.146 6.32a15.996 15.996 0 00-4.649 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42' },
+                { id: 'music', name: 'Music', path: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3' },
+                { id: 'plant', name: 'Gardening', path: 'M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z' },
+                { id: 'clean', name: 'Cleaning', path: 'M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12v-8.25m-16.5 0v8.25' },
+                { id: 'write', name: 'Writing', path: 'M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10' },
+                { id: 'time', name: 'Time Management', path: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z' },
+                { id: 'heart', name: 'Wellness', path: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' },
+                { id: 'none', name: 'None', path: '' }
             ];
             
             // Pre-select current icon if exists or use emoji fallback for backward compatibility
@@ -2413,7 +2454,7 @@ with open('demo.html', 'w') as f:
                 iconBtn.style.boxShadow = icon.id === selectedIconId ? '0 2px 5px rgba(0,0,0,0.2)' : 'none';
                 
                 // Create SVG element for icon
-                if (icon.id !== 'none') {
+                if (icon.id !== 'none' && icon.path) {
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     svg.setAttribute('width', '24');
                     svg.setAttribute('height', '24');
@@ -2421,11 +2462,13 @@ with open('demo.html', 'w') as f:
                     svg.setAttribute('fill', 'none');
                     svg.setAttribute('stroke', isDarkMode ? '#fff' : '#000');
                     svg.setAttribute('stroke-width', '1.5');
+                    svg.setAttribute('stroke-linecap', 'round');
+                    svg.setAttribute('stroke-linejoin', 'round');
                     
-                    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    path.setAttribute('d', icon.path);
                     
-                    svg.appendChild(use);
+                    svg.appendChild(path);
                     iconBtn.appendChild(svg);
                 } else {
                     // "None" option
