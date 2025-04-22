@@ -653,21 +653,33 @@ with open('demo.html', 'w') as f:
             
             const headingText = document.createElement('h2');
             headingText.style.margin = '0';
-            
-            // Check if habit has an icon and add it before the name
             headingText.textContent = habit.name;
+            
+            // First add headingText to the heading
+            heading.appendChild(headingText);
             
             // Create icon element if habit has an iconId
             if (habit.iconId) {
                 const iconWrapper = document.createElement('div');
                 iconWrapper.className = 'habit-icon';
-                iconWrapper.innerHTML = `<svg><use href="#${habit.iconId}" /></svg>`;
+                iconWrapper.style.marginRight = '8px';
                 
-                // Set icon color based on habit color
-                const iconColor = habit.color || '#757575';
-                iconWrapper.querySelector('svg').style.stroke = iconColor;
+                // Create SVG element properly
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '24');
+                svg.setAttribute('height', '24');
+                svg.setAttribute('viewBox', '0 0 24 24');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', habit.color || '#757575');
+                svg.setAttribute('stroke-width', '1.5');
                 
-                // Insert icon before the habit name
+                const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${habit.iconId}`);
+                
+                svg.appendChild(use);
+                iconWrapper.appendChild(svg);
+                
+                // Insert icon before the heading text (which is already in the DOM)
                 heading.insertBefore(iconWrapper, headingText);
             } 
             // Backward compatibility for old emoji icons
@@ -677,8 +689,6 @@ with open('demo.html', 'w') as f:
                 legacyIcon.style.marginRight = '8px';
                 heading.insertBefore(legacyIcon, headingText);
             }
-            
-            heading.appendChild(headingText);
             
             // Add streak badge if streak > 0
             if (habit.streak && habit.streak > 0) {
@@ -1399,7 +1409,7 @@ with open('demo.html', 'w') as f:
                     svg.style.color = isDarkMode ? '#fff' : '#000';
                     
                     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#${icon.id}`);
+                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${icon.id}`);
                     
                     svg.appendChild(use);
                     iconBtn.appendChild(svg);
