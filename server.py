@@ -1398,7 +1398,7 @@ with open('demo.html', 'w') as f:
                 iconBtn.style.backgroundColor = isDarkMode ? '#333' : '#fff';
                 
                 // Add SVG icon or "None" text
-                if (icon.id) {
+                if (icon.id && icon.id !== 'none') {
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                     svg.setAttribute('width', '24');
                     svg.setAttribute('height', '24');
@@ -1414,8 +1414,11 @@ with open('demo.html', 'w') as f:
                     svg.appendChild(use);
                     iconBtn.appendChild(svg);
                 } else {
-                    iconBtn.textContent = 'None';
-                    iconBtn.style.fontSize = '12px';
+                    // None option
+                    const noneText = document.createElement('div');
+                    noneText.textContent = 'None';
+                    noneText.style.fontSize = '12px';
+                    iconBtn.appendChild(noneText);
                 }
                 
                 // Set initial appearance
