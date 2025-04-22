@@ -2411,21 +2411,17 @@ with open('demo.html', 'w') as f:
                 // Create SVG element for icon
                 if (icon.id !== 'none') {
                     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('fill', 'none');
+                    svg.setAttribute('width', '24');
+                    svg.setAttribute('height', '24');
                     svg.setAttribute('viewBox', '0 0 24 24');
+                    svg.setAttribute('fill', 'none');
+                    svg.setAttribute('stroke', isDarkMode ? '#fff' : '#000');
                     svg.setAttribute('stroke-width', '1.5');
-                    svg.setAttribute('stroke', 'currentColor');
-                    svg.setAttribute('aria-hidden', 'true');
-                    svg.style.width = '24px';
-                    svg.style.height = '24px';
-                    svg.style.color = isDarkMode ? '#fff' : '#000';
                     
-                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    path.setAttribute('stroke-linecap', 'round');
-                    path.setAttribute('stroke-linejoin', 'round');
-                    path.setAttribute('d', icon.path);
+                    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+                    use.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', `#icon-${icon.id}`);
                     
-                    svg.appendChild(path);
+                    svg.appendChild(use);
                     iconBtn.appendChild(svg);
                 } else {
                     // "None" option
