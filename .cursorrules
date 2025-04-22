@@ -1,0 +1,59 @@
+# Atomic Momentum Cursor Rules
+
+# Define the primary language focus
+language:
+  - javascript
+  - python
+  - html
+  - css
+
+# Define code organization patterns for future restructuring
+patterns:
+  - name: "Component Files"
+    description: "JavaScript component files"
+    pattern: "components/*.js"
+  
+  - name: "CSS Stylesheets"
+    description: "Separate CSS stylesheets"
+    pattern: "styles/*.css"
+  
+  - name: "HTML Templates"
+    description: "HTML template files"
+    pattern: "templates/*.html"
+
+# Specific Rules for Future Development
+rules:
+  - description: "Separate concerns in monolithic server.py file"
+    priority: high
+    scope: "server.py"
+    action: "Extract CSS into separate stylesheets, move JavaScript code out of server.py, create modular components"
+
+  - description: "Improve mobile responsiveness"
+    priority: medium
+    scope: "*.css, *.html"
+    action: "Fix touch interactions on small screens, improve layout for various device sizes"
+
+  - description: "Implement error handling consistently"
+    priority: medium
+    scope: "*.js, server.py"
+    action: "Add consistent error handling throughout the application"
+
+  - description: "Add code documentation"
+    priority: medium
+    scope: "*.js, *.py, *.html"
+    action: "Add code documentation and inline comments where needed"
+
+# Ignored files/directories for AI processing
+ignore:
+  - "*.png"
+  - "*.jpg"
+  - "node_modules/"
+  - ".git/"
+  - "*.lock"
+
+# Future architecture hints
+architecture:
+  backend: "To be migrated from simple Python HTTP server to proper backend"
+  frontend: "To be restructured with proper separation of concerns"
+  database: "Currently using localStorage, plan to migrate to backend database"
+  authentication: "To be implemented in medium-term roadmap" 

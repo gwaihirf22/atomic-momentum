@@ -1,6 +1,6 @@
 # Project Status
 
-## Latest Updates (as of April 21, 2025)
+## Latest Updates (as of April 22, 2025)
 
 ### ✅ Completed Tasks
 
@@ -9,6 +9,8 @@
    - Added habit completion indicators for each day
    - Improved month navigation
    - Implemented daily detail view showing habits completed on selected days
+   - Fixed calendar view after restructuring (restored missing UI)
+   - Restored global calendar filtering functionality
 
 2. **Streak Tracking System**
    - Added consecutive completion counting for each habit
@@ -25,10 +27,15 @@
    - Fixed contrast issues in light/dark modes
    - Improved styling consistency across app sections
    - Enhanced Settings screen with proper theme switching
+   - Set up formal bug tracking system in docs/BUG_TRACKER.md
 
 ### 🐛 Bug Fixes
 
+- Restored calendar view functionality by properly extracting and modularizing calendar code
+- Reinstated global calendar filtering controls to allow filtering without having to click on a day
 - Fixed theme consistency issues in settings screen sections
+- Fixed Notifications section text color not changing immediately when toggling dark/light mode
+- Fixed home page not properly applying dark mode theme (data-theme attribute issue)
 - Improved notification styling for better contrast in both light and dark themes
 - Addressed variable scope issues in calendar filtering
 - Fixed styling inconsistencies between light and dark mode
