@@ -1,0 +1,234 @@
+/* CSS Variables for Theming */
+:root {
+    /* Light theme colors */
+    --bg-color: #f5f5f5;
+    --text-color: #000000;
+    --card-bg-color: #ffffff;
+    --card-text-color: #000000;
+    --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --progress-bg-color: #e0e0e0;
+    --primary-color: #673ab7;
+    --primary-text-color: #ffffff;
+    --disabled-color: #bdbdbd;
+    --accent-color: #673ab7;
+    --streak-bg-color: rgba(255, 69, 0, 0.15);
+    --streak-border-color: rgba(255, 69, 0, 0.3);
+    --icon-btn-bg: #ffffff;
+    --icon-btn-border: #e0e0e0;
+    --icon-btn-stroke: #757575;
+    --icon-btn-hover-bg: #f5f5f5;
+    --icon-btn-selected-bg: rgba(103, 58, 183, 0.1);
+}
+
+[data-theme="dark"] {
+    /* Dark theme colors */
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --card-bg-color: #1e1e1e;
+    --card-text-color: #ffffff;
+    --card-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    --progress-bg-color: #333333;
+    --primary-color: #673ab7;
+    --primary-text-color: #ffffff;
+    --disabled-color: #666666;
+    --accent-color: #bb86fc;
+    --streak-bg-color: rgba(255, 69, 0, 0.15);
+    --streak-border-color: rgba(255, 69, 0, 0.3);
+    --icon-btn-bg: #333;
+    --icon-btn-border: #555;
+    --icon-btn-stroke: #bbb;
+    --icon-btn-hover-bg: #444;
+    --icon-btn-selected-bg: rgba(149, 117, 205, 0.2);
+}
+
+body {
+    font-family: Arial, sans-serif;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 70px; /* Extra padding at the bottom to account for the notification banner */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+.streak-badge {
+    display: flex;
+    align-items: center;
+    background-color: var(--streak-bg-color);
+    border: 1px solid var(--streak-border-color);
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 14px;
+    margin-left: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+.streak-badge:hover {
+    transform: scale(1.05);
+}
+.notification-test-banner {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    text-align: center;
+    padding: 10px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+}
+.notification-test-banner a {
+    color: var(--primary-text-color);
+    text-decoration: underline;
+    font-weight: bold;
+}
+.notification-test-banner a:hover {
+    text-decoration: none;
+}
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    padding: 16px;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 20px;
+}
+.app-header h1 {
+    margin: 0;
+}
+.header-icons {
+    display: flex;
+    align-items: center;
+}
+.calendar-icon, .settings-icon {
+    font-size: 24px;
+    cursor: pointer;
+}
+.habit-card {
+    background-color: var(--card-bg-color);
+    color: var(--card-text-color);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--card-shadow);
+}
+.habit-title {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+.progress-bar {
+    height: 10px;
+    background-color: var(--progress-bg-color);
+    border-radius: 5px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background-color: var(--primary-color);
+}
+.actions {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 8px;
+}
+button {
+    border: none;
+    background-color: transparent;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 24px;
+}
+button:disabled {
+    color: var(--disabled-color);
+    cursor: default;
+}
+.add-button {
+    position: fixed;
+    bottom: 70px; /* Increased to avoid overlap with notification banner */
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 28px;
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+}
+
+/* Icon picker styling */
+.icon-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.icon-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 1px solid var(--icon-btn-border);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background-color: var(--icon-btn-bg);
+}
+
+.icon-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--icon-btn-stroke);
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    border-color: var(--primary-color);
+    background-color: var(--icon-btn-hover-bg);
+}
+
+.icon-btn:hover svg {
+    stroke: var(--primary-color);
+}
+
+.icon-btn.selected {
+    border-color: var(--primary-color);
+    background-color: var(--icon-btn-selected-bg);
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.icon-btn.selected svg {
+    stroke: var(--primary-color);
+}
+
+/* Habit icon styling */
+.habit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    width: 20px;
+    height: 20px;
+}
+
+.habit-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--icon-btn-stroke);
+}
+
+/* Animation for keyframes if needed */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+} 

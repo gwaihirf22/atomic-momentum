@@ -5,10 +5,10 @@ This roadmap outlines the planned development path for Atomic Momentum, prioriti
 ## Short-Term (1-2 Months)
 
 ### Architecture & Code Quality
-- [ ] **High Priority:** Restructure codebase into proper separation of concerns
-  - [ ] Extract CSS into separate stylesheets
-  - [ ] Move JavaScript code out of server.py
-  - [ ] Create modular components for better maintenance
+- [x] **High Priority:** Restructure codebase into proper separation of concerns
+  - [x] Extract CSS into separate stylesheets
+  - [x] Move JavaScript code out of server.py
+  - [x] Create modular components for better maintenance
 - [ ] Implement consistent error handling throughout the application
 - [ ] Add code documentation and inline comments
 
@@ -59,6 +59,7 @@ This roadmap outlines the planned development path for Atomic Momentum, prioriti
   - [ ] Habit challenges/competitions
   - [ ] Accountability partners
 - [ ] Implement gamification elements
+  - [x] Streak counting system
   - [ ] Achievement system
   - [ ] Level-up mechanics
   - [ ] Rewards for consistency
@@ -90,3 +91,16 @@ Throughout all development phases, address technical debt continuously:
 - [ ] Browser compatibility testing
 - [ ] Automated testing implementation
 - [ ] Regular dependency updates
+
+## Next Priority Tasks
+
+1. **Mobile Responsiveness Improvements**
+   - Fix touch interactions on small screens
+   - Improve layout for various device sizes
+   
+2. **Error Handling & Documentation**
+   - Implement consistent error handling (especially for localStorage)
+   - Add code documentation for new modular components
+   
+3. **Habit Analytics**
+   - Start implementing basic statistics and visualizations for habit tracking
