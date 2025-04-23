@@ -181,6 +181,11 @@ function recordDailyHabitStatus() {
 
 // Render all habits in the UI
 function renderHabits() {
+    // TODO: BUG-011 - This function currently re-renders ALL habit cards,
+    // causing unnecessary DOM updates and potential flickering.
+    // Refactor to support individual habit updates instead of full re-render.
+    // Consider using a component-based approach or keeping references to habit cards.
+    
     const container = document.getElementById('habits-container');
     container.innerHTML = ''; // Clear existing habits
     container.style.padding = '0 10px'; // Ensure padding applies to dynamically generated content
@@ -217,17 +222,18 @@ function renderHabits() {
 function createHabitElement(habitId, habit) {
     const card = document.createElement('div');
     card.className = 'habit-card';
-    // Add subtle shadow and increased spacing
-    card.style.boxShadow = isDarkModeEnabled() ? '0 2px 8px rgba(255,255,255,0.05)' : '0 2px 8px rgba(0,0,0,0.1)';
-    card.style.marginBottom = '15px'; // Increase vertical spacing between cards
-    card.style.padding = '15px'; // Increase internal padding
-    card.style.borderRadius = '10px'; // More rounded corners for a modern look
+    // Apply animations with slight delay based on index for staggered effect
+    const index = Object.keys(habits).indexOf(habitId);
+    card.style.animationDelay = `${index * 0.05}s`;
+    card.style.animationName = 'slideIn';
+    card.style.animationDuration = '0.3s';
+    card.style.animationFillMode = 'backwards';
+    
+    // Set background color based on theme (the rest of styling is in CSS)
+    card.style.backgroundColor = isDarkModeEnabled() ? '#1e1e1e' : '#fff';
     
     const title = document.createElement('div');
     title.className = 'habit-title';
-    title.style.display = 'flex';
-    title.style.justifyContent = 'space-between';
-    title.style.alignItems = 'center';
     
     const titleLeft = document.createElement('div');
     
@@ -266,20 +272,6 @@ function createHabitElement(habitId, habit) {
             habit.streak === 21 || habit.streak === 30 || habit.streak === 60 || 
             habit.streak === 90 || habit.streak === 100) {
             streakBadge.style.animation = 'pulse 2s infinite';
-            
-            // Create keyframes for pulse animation if they don't exist yet
-            if (!document.getElementById('streak-pulse-animation')) {
-                const styleSheet = document.createElement('style');
-                styleSheet.id = 'streak-pulse-animation';
-                styleSheet.textContent = `
-                    @keyframes pulse {
-                        0% { transform: scale(1); }
-                        50% { transform: scale(1.05); }
-                        100% { transform: scale(1); }
-                    }
-                `;
-                document.head.appendChild(styleSheet);
-            }
         }
     }
     
@@ -293,7 +285,7 @@ function createHabitElement(habitId, habit) {
     // Create button container for edit and delete
     const btnContainer = document.createElement('div');
     btnContainer.style.display = 'flex';
-    btnContainer.style.gap = '5px';
+    btnContainer.style.gap = '16px';
     
     // Add edit button (pencil icon)
     const editBtn = document.createElement('button');
@@ -302,7 +294,7 @@ function createHabitElement(habitId, habit) {
     editBtn.style.border = 'none';
     editBtn.style.fontSize = '20px';
     editBtn.style.cursor = 'pointer';
-    editBtn.style.padding = '0 5px';
+    editBtn.style.padding = '5px';
     editBtn.title = 'Edit habit';
     editBtn.addEventListener('click', () => showEditHabitScreen(habitId, habit));
     
@@ -313,7 +305,7 @@ function createHabitElement(habitId, habit) {
     deleteBtn.style.border = 'none';
     deleteBtn.style.fontSize = '20px';
     deleteBtn.style.cursor = 'pointer';
-    deleteBtn.style.padding = '0 5px';
+    deleteBtn.style.padding = '5px';
     deleteBtn.title = 'Delete habit';
     deleteBtn.addEventListener('click', () => {
         if (confirm(`Are you sure you want to delete "${habit.name}"?`)) {
@@ -467,6 +459,44 @@ function updateProgress(habitId, change) {
                 progress: newProgress,
                 target: habit.target
             };
+            
+            // Add a subtle completion animation
+            const habitCard = document.querySelector(`.habit-card:nth-child(${Object.keys(habits).indexOf(habitId) + 1})`);
+            if (habitCard) {
+                // Flash effect for completion
+                const flashOverlay = document.createElement('div');
+                flashOverlay.style.position = 'absolute';
+                flashOverlay.style.top = '0';
+                flashOverlay.style.left = '0';
+                flashOverlay.style.width = '100%';
+                flashOverlay.style.height = '100%';
+                flashOverlay.style.backgroundColor = habit.color;
+                flashOverlay.style.opacity = '0.1';
+                flashOverlay.style.borderRadius = '12px';
+                flashOverlay.style.pointerEvents = 'none';
+                flashOverlay.style.animation = 'flash 0.6s forwards';
+                
+                // Create flash keyframes if they don't exist
+                if (!document.getElementById('flash-animation')) {
+                    const styleSheet = document.createElement('style');
+                    styleSheet.id = 'flash-animation';
+                    styleSheet.textContent = `
+                        @keyframes flash {
+                            0% { opacity: 0.2; }
+                            50% { opacity: 0.3; }
+                            100% { opacity: 0; }
+                        }
+                    `;
+                    document.head.appendChild(styleSheet);
+                }
+                
+                habitCard.appendChild(flashOverlay);
+                setTimeout(() => {
+                    if (flashOverlay.parentNode === habitCard) {
+                        habitCard.removeChild(flashOverlay);
+                    }
+                }, 600);
+            }
         } else if (oldProgress === habit.target && newProgress < habit.target) {
             // Habit was previously completed today but now uncompleted
             isCompleted = false;
@@ -491,8 +521,32 @@ function updateProgress(habitId, change) {
         // Save the updated state
         saveHabits();
         
-        // Re-render all habits
-        renderHabits();
+        // Animate the progress bar before re-rendering
+        const habitCard = document.querySelector(`.habit-card:nth-child(${Object.keys(habits).indexOf(habitId) + 1})`);
+        if (habitCard) {
+            const progressFill = habitCard.querySelector('.progress-fill');
+            if (progressFill) {
+                const newWidth = Math.min((newProgress / habit.target) * 100, 100) + '%';
+                progressFill.style.transition = 'width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                progressFill.style.width = newWidth;
+                
+                // Wait for animation to complete before re-rendering
+                setTimeout(() => {
+                    // TODO: BUG-011 - Instead of calling renderHabits() which rebuilds all cards,
+                    // implement a updateHabitCard(habitId) function that only updates the changed card.
+                    // This will improve performance and UX by avoiding unnecessary DOM operations.
+                    renderHabits();
+                }, 400);
+            } else {
+                // If progress fill not found, just re-render
+                // TODO: BUG-011 - Replace with targeted updating of just this habit card
+                renderHabits();
+            }
+        } else {
+            // If card not found, just re-render
+            // TODO: BUG-011 - Implement selective rendering of individual habit cards
+            renderHabits();
+        }
         
         // Ensure theme is consistently applied after update
         if (currentIsDarkMode !== isDarkModeEnabled()) {
@@ -932,11 +986,51 @@ function showAddHabitScreen() {
     iconContainer.style.justifyContent = 'center';
     
     // Habit-appropriate icons with their SVG paths
+    // TODO: BUG-010 - Replace these generic icons with a curated set of habit-specific icons
+    // Create a more comprehensive collection of monochrome icons for common habit types:
+    // - Fitness/exercise (running, gym, yoga, etc.)
+    // - Health (medication, sleep, water, vitamins)
+    // - Learning (reading, studying, language)
+    // - Mindfulness (meditation, prayer, journaling)
+    // - Productivity (work, coding, writing)
+    // Consider using an open-source icon library or creating custom SVG icons
     const icons = [
         { id: 'none', label: 'None', path: '' }, // Empty option
-        { id: 'droplet', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
-        { id: 'book-open', label: 'Reading', path: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z' },
-        { id: 'dumbbell', label: 'Exercise', path: 'M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z' }
+        
+        // Health & Fitness Category
+        { id: 'water', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
+        { id: 'run', label: 'Running', path: 'M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.56-.89-1.68-1.25-2.65-.84L6 8.3V13h2V9.6l1.8-.7' },
+        { id: 'bike', label: 'Cycling', path: 'M5 20.5A3.5 3.5 0 0 1 1.5 17 3.5 3.5 0 0 1 5 13.5 3.5 3.5 0 0 1 8.5 17 3.5 3.5 0 0 1 5 20.5M19 20.5A3.5 3.5 0 0 1 15.5 17 3.5 3.5 0 0 1 19 13.5 3.5 3.5 0 0 1 22.5 17 3.5 3.5 0 0 1 19 20.5M12 17a2 2 0 0 1-2-2c0-1.08.87-1.96 1.95-1.97L13.5 12l-2.4-2.4c-.54.54-1.29.88-2.1.88-1.66 0-3-1.34-3-3s1.34-3 3-3c.95 0 1.8.45 2.33 1.14L13 7.25 14.75 9l-1.75 1.75L15 12.75 9 18V17z' },
+        { id: 'gym', label: 'Strength', path: 'M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z' },
+        { id: 'meditation', label: 'Meditation', path: 'M12 4c1.11 0 2 .89 2 2s-.89 2-2 2-2-.89-2-2 .9-2 2-2m9 12v-2c0-2.66-5.33-4-8-4h-.25C9.75 10 4 11.34 4 14v2h17' },
+        { id: 'yoga', label: 'Yoga', path: 'M13 2v9l3-2.94L19 11V2h-6m4 7V4h-2v5l-1-.99L13 9V4h-2v7.42l-3.07 3.88L10.6 21h2l-.6-6 3-3 1 8h2l-.5-9L21 9V7l-4 2z' },
+        { id: 'sleep', label: 'Sleep', path: 'M2 12C2 17.5 6.5 22 12 22S22 17.5 22 12 17.5 2 12 2 2 6.5 2 12z' },
+        
+        // Mind & Knowledge
+        { id: 'book', label: 'Reading', path: 'M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z' },
+        { id: 'study', label: 'Study', path: 'M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3m0 2.18L17.82 9 12 12.72 6.18 9 12 5.18M17 16l-5 2.72L7 16v-3.73L12 15l5-2.73V16z' },
+        { id: 'language', label: 'Language', path: 'M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z' },
+        { id: 'journal', label: 'Journal', path: 'M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z M12 14l-4-4h8z' },
+        { id: 'mindfulness', label: 'Mindfulness', path: 'M12 3c1.66 0 3 1.34 3 3-1.54.8-3 1.5-5 1.5-1 0-2-.67-2-1.5S10.34 3 12 3m3 7.5c2.32 0 4.5.4 6.5 1.38.34 1.12.5 2.34.5 3.62 0 2.2-.5 3.5-4 3.5v-2c2 0 2-.8 2-1.5 0-1.93-1.5-3.5-5-3.5-3.5 0-5 1.57-5 3.5 0 .7 0 1.5 2 1.5v2c-3.5 0-4-1.3-4-3.5 0-1.28.16-2.5.5-3.62C10.5 10.9 12.68 10.5 15 10.5m-.7 5.63c.7.07 1.07.3 1.23.57H17c0 .55-.47 1-1 1h-1c-.55 0-1-.45-1-1h2.3c-.17-.27-.53-.5-1.23-.57-.67-.06-1.35-.12-1.35-.62S15.3 14 16 14s1.43.38 1.5.88h.5c-.03-.83-.9-1.38-2-1.38s-1.97.55-2 1.38c0 .5.68.56 1.35.62z' },
+        
+        // Productivity & Work
+        { id: 'code', label: 'Coding', path: 'M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z' },
+        { id: 'work', label: 'Work', path: 'M10 16v-1H3.01L3 19c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2v-4h-7v1h-4zm10-9h-4.01V5l-2-2h-4l-2 2v2H4c-1.1 0-2 .9-2 2v3c0 1.11.89 2 2 2h6v-2h4v2h6c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6 0h-4V5h4v2z' },
+        { id: 'write', label: 'Writing', path: 'M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z' },
+        { id: 'music', label: 'Music', path: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' },
+        { id: 'art', label: 'Art', path: 'M17.5 12c1.93 0 3.5-1.57 3.5-3.5S19.43 5 17.5 5 14 6.57 14 8.5s1.57 3.5 3.5 3.5zm-9 0c1.93 0 3.5-1.57 3.5-3.5S10.43 5 8.5 5 5 6.57 5 8.5 6.57 12 8.5 12zM3 21h18v-2c0-3.33-6-4-9-4s-9 .67-9 4v2z' },
+        
+        // Spiritual & Social
+        { id: 'pray', label: 'Prayer', path: 'M10 3L8 5v2h2V5h2V3h-2M3 7v2h2c0 1.03.06 2.1.16 3H3v2h2.16c.24.84.7 1.62 1.38 2.26L5 18h2.13l1.73-1.73L10 17.5V21h2v-3.5l1.14-1.27L15 18h2l-1.55-1.74c.58-.54.96-1.22 1.24-1.96L19 14.5V21h2v-7.5l2-2.5V7h-7V5h-2v2H3z' },
+        { id: 'family', label: 'Family', path: 'M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z' },
+        { id: 'connect', label: 'Connect', path: 'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
+        
+        // Habits & Health
+        { id: 'pill', label: 'Medication', path: 'M4.22,11.29L11.29,4.22C13.64,1.88 17.43,1.88 19.78,4.22C22.12,6.56 22.12,10.36 19.78,12.71L12.71,19.78C10.36,22.12 6.56,22.12 4.22,19.78C1.88,17.43 1.88,13.64 4.22,11.29M5.64,12.71C4.59,13.75 4.24,15.24 4.6,16.57L10.59,10.59L14.83,14.83L18.36,11.29C19.93,9.73 19.93,7.2 18.36,5.64C16.8,4.07 14.27,4.07 12.71,5.64L5.64,12.71Z' },
+        { id: 'meal', label: 'Healthy Eating', path: 'M15.5,21L14,8H16.23L15.1,3.46L16.84,3L18.09,8H22L20.5,21H15.5M5,11H10A3,3 0 0,1 13,14H2A3,3 0 0,1 5,11M13,18A3,3 0 0,1 10,21H5A3,3 0 0,1 2,18H13M3,15H8L9.5,16.5L11,15H12A1,1 0 0,1 13,16A1,1 0 0,1 12,17H3A1,1 0 0,1 2,16A1,1 0 0,1 3,15Z' },
+        { id: 'no-smoking', label: 'Quit Smoking', path: 'M2,6V18H22V6H2M16,14V16H14V10H16V8H20V6H18V10H17.58L17,11.41V12.57L14,16H12V14L14.88,9.78L14.11,9.11L13.65,10H10.88L12.73,6H14.69L15.81,6.13L16.27,5.67L17,6.11L16.15,8.12L17.08,8.96L18.92,6H20V8H18.92L18.33,9L19.25,9.87L20,8.87L19.92,16H18V14H16Z' },
+        { id: 'no-alcohol', label: 'Quit Drinking', path: 'M20 10C20 7.33 18 5 15 5L14.5 5L14.5 3H15V1H9V3H9.5L9.5 5L9 5C6 5 4 7.33 4 10L4 11H14C15.11 11 16 11.9 16 13L16 19H8L8 21H17C18.11 21 19 20.11 19 19L19 14.89C20.24 14.07 21 12.62 21 11V10H20M9.5 7L9.5 5H14.5L14.5 7L13.5 8H10.5L9.5 7Z' },
+        { id: 'track', label: 'Habit Tracking', path: 'M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z' }
     ];
     
     let selectedIconId = '';
@@ -1034,15 +1128,138 @@ function showAddHabitScreen() {
     colorLabel.style.fontWeight = 'bold';
     colorLabel.style.marginBottom = '10px';
     
-    const colorPicker = document.createElement('input');
-    colorPicker.type = 'color';
-    colorPicker.value = '#009688'; // Default color
-    colorPicker.style.width = '100%';
-    colorPicker.style.height = '40px';
-    colorPicker.style.marginBottom = '16px';
-    colorPicker.style.borderRadius = '8px';
-    colorPicker.style.border = '1px solid #ccc';
-    colorPicker.style.boxSizing = 'border-box';
+    // Create color swatches container
+    const colorSwatchesContainer = document.createElement('div');
+    colorSwatchesContainer.style.display = 'flex';
+    colorSwatchesContainer.style.flexWrap = 'wrap';
+    colorSwatchesContainer.style.gap = '12px';
+    colorSwatchesContainer.style.marginBottom = '16px';
+    colorSwatchesContainer.style.justifyContent = 'center';
+    
+    // Define preset colors appropriate for habits
+    const presetColors = [
+        { value: '#2196F3', name: 'Blue' },
+        { value: '#4CAF50', name: 'Green' },
+        { value: '#9C27B0', name: 'Purple' },
+        { value: '#F44336', name: 'Red' },
+        { value: '#FF9800', name: 'Orange' },
+        { value: '#009688', name: 'Teal' },
+        { value: '#795548', name: 'Brown' },
+        { value: '#607D8B', name: 'Gray Blue' }
+    ];
+    
+    // Keep track of selected color
+    let selectedColor = presetColors[0].value;
+    
+    // Create a color swatch for each preset color
+    presetColors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.title = color.name;
+        swatch.style.width = '44px';
+        swatch.style.height = '44px';
+        swatch.style.backgroundColor = color.value;
+        swatch.style.borderRadius = '50%';
+        swatch.style.cursor = 'pointer';
+        swatch.style.border = color.value === selectedColor ? '3px solid white' : '3px solid transparent';
+        swatch.style.boxShadow = color.value === selectedColor ? '0 0 0 2px #673ab7' : '0 0 0 1px rgba(0,0,0,0.1)';
+        swatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+        
+        // Select this color when clicked
+        swatch.addEventListener('click', () => {
+            selectedColor = color.value;
+            
+            // Update all swatches to reflect the new selection
+            colorSwatchesContainer.querySelectorAll('.color-swatch').forEach(s => {
+                s.style.border = '3px solid transparent';
+                s.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+                s.style.transform = 'scale(1)';
+            });
+            
+            // Highlight the selected swatch
+            swatch.style.border = '3px solid white';
+            swatch.style.boxShadow = '0 0 0 2px #673ab7';
+            swatch.style.transform = 'scale(1.1)';
+        });
+        
+        // Add hover effect
+        swatch.addEventListener('mouseover', () => {
+            if (color.value !== selectedColor) {
+                swatch.style.transform = 'scale(1.1)';
+                swatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)';
+            }
+        });
+        
+        swatch.addEventListener('mouseout', () => {
+            if (color.value !== selectedColor) {
+                swatch.style.transform = 'scale(1)';
+                swatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+            }
+        });
+        
+        colorSwatchesContainer.appendChild(swatch);
+    });
+    
+    // Add a "custom color" option with rainbow indicator
+    const customColorSwatch = document.createElement('div');
+    customColorSwatch.className = 'color-swatch';
+    customColorSwatch.title = 'Custom Color';
+    customColorSwatch.style.width = '44px';
+    customColorSwatch.style.height = '44px';
+    customColorSwatch.style.borderRadius = '50%';
+    customColorSwatch.style.cursor = 'pointer';
+    customColorSwatch.style.border = '3px solid transparent';
+    customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+    customColorSwatch.style.position = 'relative';
+    customColorSwatch.style.overflow = 'hidden';
+    customColorSwatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+    
+    // Create rainbow gradient background for custom color picker
+    customColorSwatch.style.background = 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)';
+    
+    // Hidden native color picker
+    const nativeColorPicker = document.createElement('input');
+    nativeColorPicker.type = 'color';
+    nativeColorPicker.style.opacity = '0';
+    nativeColorPicker.style.position = 'absolute';
+    nativeColorPicker.style.top = '0';
+    nativeColorPicker.style.left = '0';
+    nativeColorPicker.style.width = '100%';
+    nativeColorPicker.style.height = '100%';
+    nativeColorPicker.style.cursor = 'pointer';
+    
+    // Update when native color picker changes
+    nativeColorPicker.addEventListener('input', (e) => {
+        selectedColor = e.target.value;
+        
+        // Update all swatches to reflect the new selection
+        colorSwatchesContainer.querySelectorAll('.color-swatch').forEach(s => {
+            s.style.border = '3px solid transparent';
+            s.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+            s.style.transform = 'scale(1)';
+        });
+        
+        // Highlight the custom swatch
+        customColorSwatch.style.border = '3px solid white';
+        customColorSwatch.style.boxShadow = '0 0 0 2px #673ab7';
+        customColorSwatch.style.transform = 'scale(1.1)';
+    });
+    
+    // Add hover effect for custom swatch
+    customColorSwatch.addEventListener('mouseover', () => {
+        customColorSwatch.style.transform = 'scale(1.1)';
+        customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)';
+    });
+    
+    customColorSwatch.addEventListener('mouseout', () => {
+        if (customColorSwatch !== document.activeElement) {
+            customColorSwatch.style.transform = 'scale(1)';
+            customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+        }
+    });
+    
+    customColorSwatch.appendChild(nativeColorPicker);
+    colorSwatchesContainer.appendChild(customColorSwatch);
     
     // Save button
     const saveButtonContainer = document.createElement('div');
@@ -1072,7 +1289,7 @@ function showAddHabitScreen() {
                 name: nameInput.value,
                 progress: 0,
                 target: parseInt(targetInput.value),
-                color: colorPicker.value,
+                color: selectedColor, // Use the selected color from swatches
                 icon: selectedIconId !== 'none' ? selectedIconId : '',
                 lastUpdatedDate: new Date().toISOString(),
                 resetFrequency: "weekly",
@@ -1107,7 +1324,7 @@ function showAddHabitScreen() {
     form.appendChild(nameInput);
     form.appendChild(targetInput);
     form.appendChild(colorLabel);
-    form.appendChild(colorPicker);
+    form.appendChild(colorSwatchesContainer);
     
     // Assemble the UI
     formContainer.appendChild(form);
@@ -1216,11 +1433,46 @@ function showEditHabitScreen(habitId, habit) {
     iconContainer.style.justifyContent = 'center';
     
     // Habit-appropriate icons with their SVG paths
+    // TODO: BUG-010 - Replace these generic icons with a curated set of habit-specific icons
+    // Create a more comprehensive collection of monochrome icons for common habit types
+    // Ensure the same icon set is used here as in the Add Habit screen
     const icons = [
         { id: 'none', label: 'None', path: '' }, // Empty option
-        { id: 'droplet', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
-        { id: 'book-open', label: 'Reading', path: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z' },
-        { id: 'dumbbell', label: 'Exercise', path: 'M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z' }
+        
+        // Health & Fitness Category
+        { id: 'water', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
+        { id: 'run', label: 'Running', path: 'M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.56-.89-1.68-1.25-2.65-.84L6 8.3V13h2V9.6l1.8-.7' },
+        { id: 'bike', label: 'Cycling', path: 'M5 20.5A3.5 3.5 0 0 1 1.5 17 3.5 3.5 0 0 1 5 13.5 3.5 3.5 0 0 1 8.5 17 3.5 3.5 0 0 1 5 20.5M19 20.5A3.5 3.5 0 0 1 15.5 17 3.5 3.5 0 0 1 19 13.5 3.5 3.5 0 0 1 22.5 17 3.5 3.5 0 0 1 19 20.5M12 17a2 2 0 0 1-2-2c0-1.08.87-1.96 1.95-1.97L13.5 12l-2.4-2.4c-.54.54-1.29.88-2.1.88-1.66 0-3-1.34-3-3s1.34-3 3-3c.95 0 1.8.45 2.33 1.14L13 7.25 14.75 9l-1.75 1.75L15 12.75 9 18V17z' },
+        { id: 'gym', label: 'Strength', path: 'M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z' },
+        { id: 'meditation', label: 'Meditation', path: 'M12 4c1.11 0 2 .89 2 2s-.89 2-2 2-2-.89-2-2 .9-2 2-2m9 12v-2c0-2.66-5.33-4-8-4h-.25C9.75 10 4 11.34 4 14v2h17' },
+        { id: 'yoga', label: 'Yoga', path: 'M13 2v9l3-2.94L19 11V2h-6m4 7V4h-2v5l-1-.99L13 9V4h-2v7.42l-3.07 3.88L10.6 21h2l-.6-6 3-3 1 8h2l-.5-9L21 9V7l-4 2z' },
+        { id: 'sleep', label: 'Sleep', path: 'M2 12C2 17.5 6.5 22 12 22S22 17.5 22 12 17.5 2 12 2 2 6.5 2 12z' },
+        
+        // Mind & Knowledge
+        { id: 'book', label: 'Reading', path: 'M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z' },
+        { id: 'study', label: 'Study', path: 'M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3m0 2.18L17.82 9 12 12.72 6.18 9 12 5.18M17 16l-5 2.72L7 16v-3.73L12 15l5-2.73V16z' },
+        { id: 'language', label: 'Language', path: 'M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z' },
+        { id: 'journal', label: 'Journal', path: 'M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z M12 14l-4-4h8z' },
+        { id: 'mindfulness', label: 'Mindfulness', path: 'M12 3c1.66 0 3 1.34 3 3-1.54.8-3 1.5-5 1.5-1 0-2-.67-2-1.5S10.34 3 12 3m3 7.5c2.32 0 4.5.4 6.5 1.38.34 1.12.5 2.34.5 3.62 0 2.2-.5 3.5-4 3.5v-2c2 0 2-.8 2-1.5 0-1.93-1.5-3.5-5-3.5-3.5 0-5 1.57-5 3.5 0 .7 0 1.5 2 1.5v2c-3.5 0-4-1.3-4-3.5 0-1.28.16-2.5.5-3.62C10.5 10.9 12.68 10.5 15 10.5m-.7 5.63c.7.07 1.07.3 1.23.57H17c0 .55-.47 1-1 1h-1c-.55 0-1-.45-1-1h2.3c-.17-.27-.53-.5-1.23-.57-.67-.06-1.35-.12-1.35-.62S15.3 14 16 14s1.43.38 1.5.88h.5c-.03-.83-.9-1.38-2-1.38s-1.97.55-2 1.38c0 .5.68.56 1.35.62z' },
+        
+        // Productivity & Work
+        { id: 'code', label: 'Coding', path: 'M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z' },
+        { id: 'work', label: 'Work', path: 'M10 16v-1H3.01L3 19c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2v-4h-7v1h-4zm10-9h-4.01V5l-2-2h-4l-2 2v2H4c-1.1 0-2 .9-2 2v3c0 1.11.89 2 2 2h6v-2h4v2h6c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6 0h-4V5h4v2z' },
+        { id: 'write', label: 'Writing', path: 'M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z' },
+        { id: 'music', label: 'Music', path: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' },
+        { id: 'art', label: 'Art', path: 'M17.5 12c1.93 0 3.5-1.57 3.5-3.5S19.43 5 17.5 5 14 6.57 14 8.5s1.57 3.5 3.5 3.5zm-9 0c1.93 0 3.5-1.57 3.5-3.5S10.43 5 8.5 5 5 6.57 5 8.5 6.57 12 8.5 12zM3 21h18v-2c0-3.33-6-4-9-4s-9 .67-9 4v2z' },
+        
+        // Spiritual & Social
+        { id: 'pray', label: 'Prayer', path: 'M10 3L8 5v2h2V5h2V3h-2M3 7v2h2c0 1.03.06 2.1.16 3H3v2h2.16c.24.84.7 1.62 1.38 2.26L5 18h2.13l1.73-1.73L10 17.5V21h2v-3.5l1.14-1.27L15 18h2l-1.55-1.74c.58-.54.96-1.22 1.24-1.96L19 14.5V21h2v-7.5l2-2.5V7h-7V5h-2v2H3z' },
+        { id: 'family', label: 'Family', path: 'M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z' },
+        { id: 'connect', label: 'Connect', path: 'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
+        
+        // Habits & Health
+        { id: 'pill', label: 'Medication', path: 'M4.22,11.29L11.29,4.22C13.64,1.88 17.43,1.88 19.78,4.22C22.12,6.56 22.12,10.36 19.78,12.71L12.71,19.78C10.36,22.12 6.56,22.12 4.22,19.78C1.88,17.43 1.88,13.64 4.22,11.29M5.64,12.71C4.59,13.75 4.24,15.24 4.6,16.57L10.59,10.59L14.83,14.83L18.36,11.29C19.93,9.73 19.93,7.2 18.36,5.64C16.8,4.07 14.27,4.07 12.71,5.64L5.64,12.71Z' },
+        { id: 'meal', label: 'Healthy Eating', path: 'M15.5,21L14,8H16.23L15.1,3.46L16.84,3L18.09,8H22L20.5,21H15.5M5,11H10A3,3 0 0,1 13,14H2A3,3 0 0,1 5,11M13,18A3,3 0 0,1 10,21H5A3,3 0 0,1 2,18H13M3,15H8L9.5,16.5L11,15H12A1,1 0 0,1 13,16A1,1 0 0,1 12,17H3A1,1 0 0,1 2,16A1,1 0 0,1 3,15Z' },
+        { id: 'no-smoking', label: 'Quit Smoking', path: 'M2,6V18H22V6H2M16,14V16H14V10H16V8H20V6H18V10H17.58L17,11.41V12.57L14,16H12V14L14.88,9.78L14.11,9.11L13.65,10H10.88L12.73,6H14.69L15.81,6.13L16.27,5.67L17,6.11L16.15,8.12L17.08,8.96L18.92,6H20V8H18.92L18.33,9L19.25,9.87L20,8.87L19.92,16H18V14H16Z' },
+        { id: 'no-alcohol', label: 'Quit Drinking', path: 'M20 10C20 7.33 18 5 15 5L14.5 5L14.5 3H15V1H9V3H9.5L9.5 5L9 5C6 5 4 7.33 4 10L4 11H14C15.11 11 16 11.9 16 13L16 19H8L8 21H17C18.11 21 19 20.11 19 19L19 14.89C20.24 14.07 21 12.62 21 11V10H20M9.5 7L9.5 5H14.5L14.5 7L13.5 8H10.5L9.5 7Z' },
+        { id: 'track', label: 'Habit Tracking', path: 'M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z' }
     ];
     
     let selectedIconId = habit.icon || 'none';
@@ -1321,15 +1573,154 @@ function showEditHabitScreen(habitId, habit) {
     colorLabel.style.fontWeight = 'bold';
     colorLabel.style.marginBottom = '10px';
     
-    const colorPicker = document.createElement('input');
-    colorPicker.type = 'color';
-    colorPicker.value = habit.color;
-    colorPicker.style.width = '100%';
-    colorPicker.style.height = '40px';
-    colorPicker.style.marginBottom = '16px';
-    colorPicker.style.borderRadius = '8px';
-    colorPicker.style.border = '1px solid #ccc';
-    colorPicker.style.boxSizing = 'border-box';
+    // Create color swatches container
+    const colorSwatchesContainer = document.createElement('div');
+    colorSwatchesContainer.style.display = 'flex';
+    colorSwatchesContainer.style.flexWrap = 'wrap';
+    colorSwatchesContainer.style.gap = '12px';
+    colorSwatchesContainer.style.marginBottom = '16px';
+    colorSwatchesContainer.style.justifyContent = 'center';
+    
+    // Define preset colors appropriate for habits
+    const presetColors = [
+        { value: '#2196F3', name: 'Blue' },
+        { value: '#4CAF50', name: 'Green' },
+        { value: '#9C27B0', name: 'Purple' },
+        { value: '#F44336', name: 'Red' },
+        { value: '#FF9800', name: 'Orange' },
+        { value: '#009688', name: 'Teal' },
+        { value: '#795548', name: 'Brown' },
+        { value: '#607D8B', name: 'Gray Blue' }
+    ];
+    
+    // Keep track of selected color - initialize with current habit color
+    let selectedColor = habit.color;
+    
+    // Create a color swatch for each preset color
+    presetColors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.title = color.name;
+        swatch.style.width = '44px';
+        swatch.style.height = '44px';
+        swatch.style.backgroundColor = color.value;
+        swatch.style.borderRadius = '50%';
+        swatch.style.cursor = 'pointer';
+        swatch.style.border = color.value === selectedColor ? '3px solid white' : '3px solid transparent';
+        swatch.style.boxShadow = color.value === selectedColor ? '0 0 0 2px #673ab7' : '0 0 0 1px rgba(0,0,0,0.1)';
+        swatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+        
+        // If this color is already the habit color, mark it as selected
+        if (color.value === habit.color) {
+            swatch.style.border = '3px solid white';
+            swatch.style.boxShadow = '0 0 0 2px #673ab7';
+            swatch.style.transform = 'scale(1.1)';
+        }
+        
+        // Select this color when clicked
+        swatch.addEventListener('click', () => {
+            selectedColor = color.value;
+            
+            // Update all swatches to reflect the new selection
+            colorSwatchesContainer.querySelectorAll('.color-swatch').forEach(s => {
+                s.style.border = '3px solid transparent';
+                s.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+                s.style.transform = 'scale(1)';
+            });
+            
+            // Highlight the selected swatch
+            swatch.style.border = '3px solid white';
+            swatch.style.boxShadow = '0 0 0 2px #673ab7';
+            swatch.style.transform = 'scale(1.1)';
+        });
+        
+        // Add hover effect
+        swatch.addEventListener('mouseover', () => {
+            if (color.value !== selectedColor) {
+                swatch.style.transform = 'scale(1.1)';
+                swatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)';
+            }
+        });
+        
+        swatch.addEventListener('mouseout', () => {
+            if (color.value !== selectedColor) {
+                swatch.style.transform = 'scale(1)';
+                swatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+            }
+        });
+        
+        colorSwatchesContainer.appendChild(swatch);
+    });
+    
+    // Add a "custom color" option with rainbow indicator
+    const customColorSwatch = document.createElement('div');
+    customColorSwatch.className = 'color-swatch';
+    customColorSwatch.title = 'Custom Color';
+    customColorSwatch.style.width = '44px';
+    customColorSwatch.style.height = '44px';
+    customColorSwatch.style.borderRadius = '50%';
+    customColorSwatch.style.cursor = 'pointer';
+    customColorSwatch.style.border = '3px solid transparent';
+    customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+    customColorSwatch.style.position = 'relative';
+    customColorSwatch.style.overflow = 'hidden';
+    customColorSwatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+    
+    // Create rainbow gradient background for custom color picker
+    customColorSwatch.style.background = 'linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)';
+    
+    // Hidden native color picker
+    const nativeColorPicker = document.createElement('input');
+    nativeColorPicker.type = 'color';
+    nativeColorPicker.value = habit.color; // Set to current habit color
+    nativeColorPicker.style.opacity = '0';
+    nativeColorPicker.style.position = 'absolute';
+    nativeColorPicker.style.top = '0';
+    nativeColorPicker.style.left = '0';
+    nativeColorPicker.style.width = '100%';
+    nativeColorPicker.style.height = '100%';
+    nativeColorPicker.style.cursor = 'pointer';
+    
+    // Check if current habit color is not in the presets - if so, select the custom option
+    const isCustomColor = !presetColors.some(color => color.value === habit.color);
+    if (isCustomColor) {
+        customColorSwatch.style.border = '3px solid white';
+        customColorSwatch.style.boxShadow = '0 0 0 2px #673ab7';
+        customColorSwatch.style.transform = 'scale(1.1)';
+    }
+    
+    // Update when native color picker changes
+    nativeColorPicker.addEventListener('input', (e) => {
+        selectedColor = e.target.value;
+        
+        // Update all swatches to reflect the new selection
+        colorSwatchesContainer.querySelectorAll('.color-swatch').forEach(s => {
+            s.style.border = '3px solid transparent';
+            s.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+            s.style.transform = 'scale(1)';
+        });
+        
+        // Highlight the custom swatch
+        customColorSwatch.style.border = '3px solid white';
+        customColorSwatch.style.boxShadow = '0 0 0 2px #673ab7';
+        customColorSwatch.style.transform = 'scale(1.1)';
+    });
+    
+    // Add hover effect for custom swatch
+    customColorSwatch.addEventListener('mouseover', () => {
+        customColorSwatch.style.transform = 'scale(1.1)';
+        customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.2)';
+    });
+    
+    customColorSwatch.addEventListener('mouseout', () => {
+        if (customColorSwatch !== document.activeElement) {
+            customColorSwatch.style.transform = 'scale(1)';
+            customColorSwatch.style.boxShadow = '0 0 0 1px rgba(0,0,0,0.1)';
+        }
+    });
+    
+    customColorSwatch.appendChild(nativeColorPicker);
+    colorSwatchesContainer.appendChild(customColorSwatch);
     
     // Save button container
     const saveButtonContainer = document.createElement('div');
@@ -1386,7 +1777,7 @@ function showEditHabitScreen(habitId, habit) {
             // Update the habit object
             habits[habitId].name = nameInput.value;
             habits[habitId].target = parseInt(targetInput.value);
-            habits[habitId].color = colorPicker.value;
+            habits[habitId].color = selectedColor;
             habits[habitId].icon = selectedIconId !== 'none' ? selectedIconId : '';
             
             // Save to localStorage
@@ -1418,7 +1809,7 @@ function showEditHabitScreen(habitId, habit) {
     form.appendChild(nameInput);
     form.appendChild(targetInput);
     form.appendChild(colorLabel);
-    form.appendChild(colorPicker);
+    form.appendChild(colorSwatchesContainer);
     
     // Assemble the UI
     formContainer.appendChild(form);
@@ -1501,9 +1892,15 @@ function showSettingsScreen() {
     const appearanceSection = document.createElement('div');
     appearanceSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
     appearanceSection.style.padding = '16px';
+    appearanceSection.style.boxSizing = 'border-box'; // Ensure padding is included in width calculation
     appearanceSection.style.borderRadius = '8px';
     appearanceSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
     appearanceSection.style.marginBottom = '16px';
+    
+    // Media query equivalent for small screens
+    if (window.innerWidth < 350) {
+        appearanceSection.style.padding = '12px 10px'; // Reduce padding on small screens
+    }
     
     const appearanceTitle = document.createElement('h3');
     appearanceTitle.textContent = 'Appearance';
@@ -1512,11 +1909,16 @@ function showSettingsScreen() {
     // Dark Mode Switch
     const darkModeRow = document.createElement('div');
     darkModeRow.style.display = 'flex';
+    darkModeRow.style.flexWrap = 'wrap'; // Add flex-wrap for small screens
     darkModeRow.style.alignItems = 'center';
     darkModeRow.style.justifyContent = 'space-between';
     darkModeRow.style.padding = '8px 0';
+    darkModeRow.style.gap = '12px'; // Add gap for spacing when wrapped
     
     const darkModeLabel = document.createElement('div');
+    darkModeLabel.style.flex = '1'; // Allow label to grow
+    darkModeLabel.style.minWidth = '200px'; // Ensure good readability before wrapping
+    darkModeLabel.style.marginRight = '8px'; // Add margin for spacing
     
     const darkModeLabelTitle = document.createElement('div');
     darkModeLabelTitle.textContent = 'Dark Mode';
@@ -1537,6 +1939,7 @@ function showSettingsScreen() {
     switchContainer.style.display = 'inline-block';
     switchContainer.style.width = '60px';
     switchContainer.style.height = '34px';
+    switchContainer.style.flexShrink = '0'; // Prevent the switch from shrinking
     
     const switchInput = document.createElement('input');
     switchInput.type = 'checkbox';
@@ -1603,10 +2006,16 @@ function showSettingsScreen() {
     const notificationsSection = document.createElement('div');
     notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
     notificationsSection.style.padding = '16px';
+    notificationsSection.style.boxSizing = 'border-box'; // Ensure padding is included in width calculation
     notificationsSection.style.borderRadius = '8px';
     notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
     notificationsSection.style.marginBottom = '16px';
     notificationsSection.style.color = isDarkMode ? '#fff' : '#000';
+    
+    // Media query equivalent for small screens
+    if (window.innerWidth < 350) {
+        notificationsSection.style.padding = '12px 10px'; // Reduce padding on small screens
+    }
     
     const notificationsTitle = document.createElement('h3');
     notificationsTitle.textContent = 'Notifications';
@@ -1640,6 +2049,17 @@ function showSettingsScreen() {
     appScreen.appendChild(settingsContainer);
     
     document.body.appendChild(appScreen);
+    
+    // Add resize listener to handle responsive layout changes
+    const updateResponsiveLayout = () => {
+        const isNarrow = window.innerWidth < 350;
+        appearanceSection.style.padding = isNarrow ? '12px 10px' : '16px';
+        notificationsSection.style.padding = isNarrow ? '12px 10px' : '16px';
+    };
+    
+    // Initial call and event listener
+    updateResponsiveLayout();
+    window.addEventListener('resize', updateResponsiveLayout);
 }
 
 // Show Calendar Screen
@@ -1704,36 +2124,40 @@ function showCalendarScreen() {
     const calendarContainer = document.createElement('div');
     calendarContainer.style.flex = '1';
     calendarContainer.style.overflowY = 'auto';
-    calendarContainer.style.padding = '20px';
+    calendarContainer.style.padding = '14px'; // Reduce padding to tighten spacing
     
     // Create calendar content
     const calendarContent = document.createElement('div');
+    calendarContent.className = 'calendar-content';
     calendarContent.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    calendarContent.style.padding = '20px';
     calendarContent.style.borderRadius = '8px';
     calendarContent.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
     
     const calendarHeading = document.createElement('h2');
+    calendarHeading.className = 'calendar-heading';
     calendarHeading.textContent = 'Habit History';
-    calendarHeading.style.textAlign = 'center';
-    calendarHeading.style.marginBottom = '20px';
+    calendarHeading.style.marginTop = '0';
+    calendarHeading.style.marginBottom = '8px';
     
     // Global habit filter
     const filterContainer = document.createElement('div');
-    filterContainer.style.marginBottom = '20px';
+    filterContainer.className = 'calendar-filter-container';
+    filterContainer.style.marginTop = '4px';
+    filterContainer.style.marginBottom = '8px';
     filterContainer.style.display = 'flex';
     filterContainer.style.flexDirection = 'column';
-    filterContainer.style.gap = '10px';
+    filterContainer.style.gap = '4px';
     
     const filterLabel = document.createElement('div');
     filterLabel.textContent = 'Filter Calendar By:';
     filterLabel.style.fontWeight = 'bold';
-    filterLabel.style.marginBottom = '5px';
+    filterLabel.style.marginBottom = '2px';
     
     const filterButtonsContainer = document.createElement('div');
+    filterButtonsContainer.className = 'filter-buttons-container';
     filterButtonsContainer.style.display = 'flex';
     filterButtonsContainer.style.flexWrap = 'wrap';
-    filterButtonsContainer.style.gap = '8px';
+    filterButtonsContainer.style.gap = '6px';
     
     // Add "All Habits" button
     const allHabitsButton = document.createElement('button');
@@ -1798,13 +2222,17 @@ function showCalendarScreen() {
     
     // Create month selector for calendar
     const monthSelector = document.createElement('div');
+    monthSelector.className = 'month-selector';
+    monthSelector.style.marginTop = '12px';
+    monthSelector.style.marginBottom = '15px';
     monthSelector.style.display = 'flex';
     monthSelector.style.justifyContent = 'space-between';
     monthSelector.style.alignItems = 'center';
-    monthSelector.style.marginBottom = '20px';
+    monthSelector.style.width = '100%';
     
     // Previous month button
     const prevButton = document.createElement('button');
+    prevButton.className = 'month-nav-button';
     prevButton.innerHTML = '&larr;';
     prevButton.style.backgroundColor = '#673ab7';
     prevButton.style.color = 'white';
@@ -1812,6 +2240,8 @@ function showCalendarScreen() {
     prevButton.style.borderRadius = '4px';
     prevButton.style.padding = '5px 15px';
     prevButton.style.cursor = 'pointer';
+    prevButton.style.marginRight = '8px';
+    prevButton.style.flexShrink = '0';
     
     // Current month and year display
     const currentMonthDisplay = document.createElement('div');
@@ -1819,9 +2249,14 @@ function showCalendarScreen() {
     currentMonthDisplay.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
     currentMonthDisplay.style.fontSize = '18px';
     currentMonthDisplay.style.fontWeight = 'bold';
+    currentMonthDisplay.style.textAlign = 'center';
+    currentMonthDisplay.style.flex = '1';
+    currentMonthDisplay.style.minWidth = '150px'; // Ensure month label has enough space
+    currentMonthDisplay.style.padding = '0 10px'; // Add some padding
     
     // Next month button
     const nextButton = document.createElement('button');
+    nextButton.className = 'month-nav-button';
     nextButton.innerHTML = '&rarr;';
     nextButton.style.backgroundColor = '#673ab7';
     nextButton.style.color = 'white';
@@ -1829,8 +2264,29 @@ function showCalendarScreen() {
     nextButton.style.borderRadius = '4px';
     nextButton.style.padding = '5px 15px';
     nextButton.style.cursor = 'pointer';
+    nextButton.style.marginLeft = '8px';
+    nextButton.style.flexShrink = '0';
     
-    // Add buttons to month selector
+    // Month navigation handlers
+    prevButton.onclick = () => {
+        currentViewMonth--;
+        if (currentViewMonth < 0) {
+            currentViewMonth = 11;
+            currentViewYear--;
+        }
+        renderCalendarDays();
+    };
+    
+    nextButton.onclick = () => {
+        currentViewMonth++;
+        if (currentViewMonth > 11) {
+            currentViewMonth = 0;
+            currentViewYear++;
+        }
+        renderCalendarDays();
+    };
+    
+    // Add elements to month selector in the correct order - buttons on either side of month
     monthSelector.appendChild(prevButton);
     monthSelector.appendChild(currentMonthDisplay);
     monthSelector.appendChild(nextButton);
@@ -1864,25 +2320,6 @@ function showCalendarScreen() {
     
     // Initialize calendar
     renderCalendarDays();
-    
-    // Month navigation handlers
-    prevButton.onclick = () => {
-        currentViewMonth--;
-        if (currentViewMonth < 0) {
-            currentViewMonth = 11;
-            currentViewYear--;
-        }
-        renderCalendarDays();
-    };
-    
-    nextButton.onclick = () => {
-        currentViewMonth++;
-        if (currentViewMonth > 11) {
-            currentViewMonth = 0;
-            currentViewYear++;
-        }
-        renderCalendarDays();
-    };
     
     // Assemble the calendar components
     calendarContent.appendChild(calendarHeading);

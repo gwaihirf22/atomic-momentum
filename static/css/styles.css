@@ -1,0 +1,76 @@
+/* Icon Selector Styles */
+.icon-selector {
+    margin-top: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f9f9f9;
+}
+
+.icon-preview {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.icon-preview svg {
+    width: 32px;
+    height: 32px;
+    margin-right: 10px;
+    fill: var(--primary-color);
+}
+
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.icon-item:hover {
+    background-color: #f0f0f0;
+}
+
+.icon-item.selected {
+    background-color: rgba(var(--primary-rgb), 0.1);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
+}
+
+.icon-item svg {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+    fill: #444;
+}
+
+.icon-item.selected svg {
+    fill: var(--primary-color);
+}
+
+.icon-item span {
+    font-size: 10px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+} 

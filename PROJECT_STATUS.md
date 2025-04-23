@@ -27,6 +27,9 @@
    - Fixed contrast issues in light/dark modes
    - Improved styling consistency across app sections
    - Enhanced Settings screen with proper theme switching
+   - Enhanced habit cards with modern visual styling and animations
+   - Added hover effects, transitions, and staggered load animations
+   - Improved progress bar with animated transitions and completion effects
    - Set up formal bug tracking system in docs/BUG_TRACKER.md
 
 ### 🐛 Bug Fixes
@@ -39,6 +42,8 @@
 - Improved notification styling for better contrast in both light and dark themes
 - Addressed variable scope issues in calendar filtering
 - Fixed styling inconsistencies between light and dark mode
+- Fixed spacing between edit and delete icons on habit cards for better touch targets
+- Fixed dark mode toggle layout on small screens with responsive design
 
 ## Current Focus
 

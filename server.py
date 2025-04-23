@@ -14,6 +14,16 @@ class AtomicMomentumApp(SimpleHTTPRequestHandler):
             with open('templates/notifications-test.html', 'rb') as file:
                 self.wfile.write(file.read())
             return
+            
+        if self.path == '/projects' or self.path == '/projects.html':
+            # Serve the projects page
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            with open('templates/projects.html', 'rb') as file:
+                self.wfile.write(file.read())
+            return
         
         # Handle static files
         if self.path.startswith('/styles/') or self.path.startswith('/scripts/') or self.path.startswith('/assets/'):
@@ -51,4 +61,5 @@ class AtomicMomentumApp(SimpleHTTPRequestHandler):
 # Start the server
 httpd = HTTPServer(('0.0.0.0', 5001), AtomicMomentumApp)
 print('Server running at http://0.0.0.0:5001')
+print('Project demo available at http://0.0.0.0:5001/projects')
 httpd.serve_forever()
