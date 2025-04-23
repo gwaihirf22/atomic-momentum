@@ -1,4 +1,9 @@
-import os
+#!/usr/bin/env python3
+
+# This script fixes the indentation issues in server.py
+
+with open('server.py', 'w') as f:
+    f.write('''import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import webbrowser
 
@@ -63,3 +68,4 @@ httpd = HTTPServer(('0.0.0.0', 5001), AtomicMomentumApp)
 print('Server running at http://0.0.0.0:5001')
 print('Project demo available at http://0.0.0.0:5001/projects')
 httpd.serve_forever()
+''') 

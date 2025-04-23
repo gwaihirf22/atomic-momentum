@@ -1,0 +1,202 @@
+/* Habit Form Styles */
+.habit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: var(--color-background);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.form-header {
+  margin-bottom: 10px;
+}
+
+.form-header h2 {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-transparent);
+}
+
+/* Icon selector container specific styles */
+.icon-selector-container {
+  height: 380px;
+  margin-top: 6px;
+}
+
+/* Days selector styles */
+.days-selector {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.day-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.day-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.day-checkbox span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.day-checkbox input:checked + span {
+  color: var(--color-primary);
+}
+
+.day-checkbox input:checked ~ .day-checkbox {
+  background-color: var(--color-primary-transparent);
+  border-color: var(--color-primary);
+}
+
+.day-checkbox:hover {
+  background-color: var(--color-hover);
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-background-secondary);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-hover);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .habit-form {
+    padding: 16px;
+    gap: 16px;
+  }
+  
+  .icon-selector-container {
+    height: 350px;
+  }
+}
+
+/* Custom styles for number inputs */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .day-checkbox {
+    background-color: var(--color-background-tertiary);
+  }
+  
+  .btn-secondary {
+    background-color: var(--color-background-tertiary);
+  }
+} 
