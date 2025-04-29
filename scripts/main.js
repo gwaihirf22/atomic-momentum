@@ -190,38 +190,29 @@ function renderHabits() {
     container.innerHTML = ''; // Clear existing habits
     container.style.padding = '0 10px'; // Ensure padding applies to dynamically generated content
     
-    // Get current theme state
-    const isDarkMode = isDarkModeEnabled();
-    
     Object.keys(habits).forEach(habitId => {
         const habit = habits[habitId];
         const habitElement = createHabitElement(habitId, habit);
-        
-        // Apply theme-specific styling to the card
-        if (isDarkMode) {
-            habitElement.style.backgroundColor = '#1e1e1e';
-            // Find progress bar and set its background
-            const progressBar = habitElement.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.backgroundColor = '#333';
-            }
-        } else {
-            habitElement.style.backgroundColor = '#fff';
-            // Find progress bar and set its background
-            const progressBar = habitElement.querySelector('.progress-bar');
-            if (progressBar) {
-                progressBar.style.backgroundColor = '#e0e0e0';
-            }
-        }
-        
         container.appendChild(habitElement);
     });
+    
+    // Add debug output to confirm colors
+    console.log("Rendered habits with colors:", 
+        Object.keys(habits).map(id => ({ 
+            name: habits[id].name, 
+            color: habits[id].color 
+        }))
+    );
+    
+    // Update statistics
+    updateStats();
 }
 
 // Create a habit card element
 function createHabitElement(habitId, habit) {
-    const card = document.createElement('div');
-    card.className = 'habit-card';
+    // Use the renderHabitCard function for consistency
+    const card = renderHabitCard(habitId, habit);
+    
     // Apply animations with slight delay based on index for staggered effect
     const index = Object.keys(habits).indexOf(habitId);
     card.style.animationDelay = `${index * 0.05}s`;
@@ -229,130 +220,12 @@ function createHabitElement(habitId, habit) {
     card.style.animationDuration = '0.3s';
     card.style.animationFillMode = 'backwards';
     
-    // Set background color based on theme (the rest of styling is in CSS)
-    card.style.backgroundColor = isDarkModeEnabled() ? '#1e1e1e' : '#fff';
+    // CRITICAL FIX: Always ensure the habit color is applied with highest priority
+    // This overrides any theme-based styles that might be applied later
+    card.style.setProperty('background-color', habit.color || '#4CAF50', 'important');
     
-    const title = document.createElement('div');
-    title.className = 'habit-title';
-    
-    const titleLeft = document.createElement('div');
-    
-    const heading = document.createElement('div');
-    heading.style.display = 'flex';
-    heading.style.alignItems = 'center';
-    heading.style.marginBottom = '6px';
-    
-    // Add habit icon if one is specified
-    if (habit.icon) {
-        const iconWrapper = document.createElement('div');
-        iconWrapper.className = 'habit-icon';
-        iconWrapper.innerHTML = `<svg><use href="#icon-${habit.icon}"></use></svg>`;
-        iconWrapper.querySelector('svg').style.stroke = habit.color;
-        heading.appendChild(iconWrapper);
-    }
-    
-    const habitName = document.createElement('h2');
-    habitName.textContent = habit.name;
-    habitName.style.margin = '0';
-    habitName.style.fontSize = '18px';
-    habitName.style.fontWeight = '600';
-    habitName.style.color = habit.color;
-    heading.appendChild(habitName);
-    
-    // Add streak badge if there's a streak
-    if (habit.streak && habit.streak > 0) {
-        const streakBadge = document.createElement('div');
-        streakBadge.className = 'streak-badge';
-        streakBadge.textContent = `🔥 ${habit.streak}`;
-        streakBadge.title = `${habit.streak} day streak!`;
-        heading.appendChild(streakBadge);
-        
-        // Add animation for milestone streaks
-        if (habit.streak === 1 || habit.streak === 7 || habit.streak === 14 || 
-            habit.streak === 21 || habit.streak === 30 || habit.streak === 60 || 
-            habit.streak === 90 || habit.streak === 100) {
-            streakBadge.style.animation = 'pulse 2s infinite';
-        }
-    }
-    
-    const progress = document.createElement('span');
-    progress.textContent = `${habit.progress}/${habit.target}`;
-    progress.style.color = habit.color;
-    
-    titleLeft.appendChild(heading);
-    titleLeft.appendChild(progress);
-    
-    // Create button container for edit and delete
-    const btnContainer = document.createElement('div');
-    btnContainer.style.display = 'flex';
-    btnContainer.style.gap = '16px';
-    
-    // Add edit button (pencil icon)
-    const editBtn = document.createElement('button');
-    editBtn.innerHTML = '✏️'; // Pencil emoji
-    editBtn.style.background = 'transparent';
-    editBtn.style.border = 'none';
-    editBtn.style.fontSize = '20px';
-    editBtn.style.cursor = 'pointer';
-    editBtn.style.padding = '5px';
-    editBtn.title = 'Edit habit';
-    editBtn.addEventListener('click', () => showEditHabitScreen(habitId, habit));
-    
-    // Add delete button (trash icon)
-    const deleteBtn = document.createElement('button');
-    deleteBtn.innerHTML = '🗑️'; // Trash emoji
-    deleteBtn.style.background = 'transparent';
-    deleteBtn.style.border = 'none';
-    deleteBtn.style.fontSize = '20px';
-    deleteBtn.style.cursor = 'pointer';
-    deleteBtn.style.padding = '5px';
-    deleteBtn.title = 'Delete habit';
-    deleteBtn.addEventListener('click', () => {
-        if (confirm(`Are you sure you want to delete "${habit.name}"?`)) {
-            delete habits[habitId];
-            saveHabits();
-            renderHabits();
-        }
-    });
-    
-    btnContainer.appendChild(editBtn);
-    btnContainer.appendChild(deleteBtn);
-    
-    title.appendChild(titleLeft);
-    title.appendChild(btnContainer);
-    
-    card.appendChild(title);
-    
-    const progressBar = document.createElement('div');
-    progressBar.className = 'progress-bar';
-    
-    const progressFill = document.createElement('div');
-    progressFill.className = 'progress-fill';
-    const progressPercentage = (habit.progress / habit.target) * 100;
-    progressFill.style.width = `${Math.min(progressPercentage, 100)}%`;
-    progressFill.style.backgroundColor = habit.color;
-    
-    progressBar.appendChild(progressFill);
-    
-    card.appendChild(progressBar);
-    
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-    
-    const minusBtn = document.createElement('button');
-    minusBtn.textContent = '-';
-    minusBtn.addEventListener('click', () => updateProgress(habitId, -1));
-    minusBtn.disabled = habit.progress <= 0;
-    
-    const plusBtn = document.createElement('button');
-    plusBtn.textContent = '+';
-    plusBtn.addEventListener('click', () => updateProgress(habitId, 1));
-    plusBtn.disabled = habit.progress >= habit.target;
-    
-    actions.appendChild(minusBtn);
-    actions.appendChild(plusBtn);
-    
-    card.appendChild(actions);
+    // Debug output to verify color is set correctly
+    console.log(`Created habit card: ${habit.name}, Color: ${habit.color}`);
     
     return card;
 }
@@ -397,6 +270,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load habits from localStorage
     loadHabits();
     
+    // CRITICAL FIX: Add additional check to ensure habit card colors are applied
+    // This runs after all DOM elements are loaded and styled
+    setTimeout(() => {
+        const habitCards = document.querySelectorAll('.habit-card');
+        habitCards.forEach(card => {
+            const habitId = card.id.replace('habit-card-', '');
+            if (habits[habitId] && habits[habitId].color) {
+                card.style.setProperty('background-color', habits[habitId].color, 'important');
+                console.log(`Applied color ${habits[habitId].color} to ${habits[habitId].name} after DOM load`);
+            }
+        });
+    }, 10);
+    
     // Check if notifications are enabled
     const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
     
@@ -434,25 +320,22 @@ function updateProgress(habitId, change) {
     if (newProgress >= 0 && newProgress <= habit.target) {
         // Store current theme state before any changes
         const currentIsDarkMode = isDarkModeEnabled();
-        document.body.dataset.themeMode = currentIsDarkMode ? 'dark' : 'light'; // Additional backup
+        document.body.dataset.themeMode = currentIsDarkMode ? 'dark' : 'light';
         
         const oldProgress = habit.progress;
         habit.progress = newProgress;
-        habit.lastUpdatedDate = new Date().toISOString(); // Update the last modified date
+        habit.lastUpdatedDate = new Date().toISOString();
         
         // Record habit progress in history
         const today = getTodayFormatted();
         
-        // Initialize history object if needed
         if (!habit.history) {
             habit.history = {};
         }
         
         let isCompleted = false;
         
-        // Record current date's completion status
         if (newProgress === habit.target) {
-            // Habit completed for the day
             isCompleted = true;
             habit.history[today] = {
                 completed: true,
@@ -460,108 +343,36 @@ function updateProgress(habitId, change) {
                 target: habit.target
             };
             
-            // Add a subtle completion animation
-            const habitCard = document.querySelector(`.habit-card:nth-child(${Object.keys(habits).indexOf(habitId) + 1})`);
-            if (habitCard) {
-                // Flash effect for completion
-                const flashOverlay = document.createElement('div');
-                flashOverlay.style.position = 'absolute';
-                flashOverlay.style.top = '0';
-                flashOverlay.style.left = '0';
-                flashOverlay.style.width = '100%';
-                flashOverlay.style.height = '100%';
-                flashOverlay.style.backgroundColor = habit.color;
-                flashOverlay.style.opacity = '0.1';
-                flashOverlay.style.borderRadius = '12px';
-                flashOverlay.style.pointerEvents = 'none';
-                flashOverlay.style.animation = 'flash 0.6s forwards';
-                
-                // Create flash keyframes if they don't exist
-                if (!document.getElementById('flash-animation')) {
-                    const styleSheet = document.createElement('style');
-                    styleSheet.id = 'flash-animation';
-                    styleSheet.textContent = `
-                        @keyframes flash {
-                            0% { opacity: 0.2; }
-                            50% { opacity: 0.3; }
-                            100% { opacity: 0; }
-                        }
-                    `;
-                    document.head.appendChild(styleSheet);
-                }
-                
-                habitCard.appendChild(flashOverlay);
-                setTimeout(() => {
-                    if (flashOverlay.parentNode === habitCard) {
-                        habitCard.removeChild(flashOverlay);
-                    }
-                }, 600);
+            // Show completion animation and notification
+            showToast(`🎉 Great job! You've completed "${habit.name}" for today!`, habit.color);
+            
+            // Update streak
+            updateStreak(habit, today, true);
+            
+            // Show notification if enabled
+            if (habit.reminderEnabled) {
+                showNotification(habit);
             }
         } else if (oldProgress === habit.target && newProgress < habit.target) {
-            // Habit was previously completed today but now uncompleted
             isCompleted = false;
             habit.history[today] = {
                 completed: false,
                 progress: newProgress,
                 target: habit.target
             };
-        } else {
-            // Partial progress
-            isCompleted = false;
-            habit.history[today] = {
-                completed: false,
-                progress: newProgress,
-                target: habit.target
-            };
+            
+            // Update streak on uncompletion
+            updateStreak(habit, today, false);
         }
         
-        // Update streak information
-        updateStreak(habit, today, isCompleted);
-        
-        // Save the updated state
+        // Save to localStorage
         saveHabits();
         
-        // Animate the progress bar before re-rendering
-        const habitCard = document.querySelector(`.habit-card:nth-child(${Object.keys(habits).indexOf(habitId) + 1})`);
-        if (habitCard) {
-            const progressFill = habitCard.querySelector('.progress-fill');
-            if (progressFill) {
-                const newWidth = Math.min((newProgress / habit.target) * 100, 100) + '%';
-                progressFill.style.transition = 'width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                progressFill.style.width = newWidth;
-                
-                // Wait for animation to complete before re-rendering
-                setTimeout(() => {
-                    // TODO: BUG-011 - Instead of calling renderHabits() which rebuilds all cards,
-                    // implement a updateHabitCard(habitId) function that only updates the changed card.
-                    // This will improve performance and UX by avoiding unnecessary DOM operations.
-                    renderHabits();
-                }, 400);
-            } else {
-                // If progress fill not found, just re-render
-                // TODO: BUG-011 - Replace with targeted updating of just this habit card
-                renderHabits();
-            }
-        } else {
-            // If card not found, just re-render
-            // TODO: BUG-011 - Implement selective rendering of individual habit cards
-            renderHabits();
-        }
+        // Update the UI for this specific habit card
+        updateHabitCardInDOM(habitId, habit);
         
-        // Ensure theme is consistently applied after update
-        if (currentIsDarkMode !== isDarkModeEnabled()) {
-            console.log('Theme state changed unexpectedly, fixing...');
-            localStorage.setItem('isDarkMode', String(currentIsDarkMode));
-        } else if (document.body.dataset.themeMode === 'dark' && !isDarkModeEnabled()) {
-            console.log('Theme state changed based on dataset check, fixing...');
-            localStorage.setItem('isDarkMode', 'true');
-        } else if (document.body.dataset.themeMode === 'light' && isDarkModeEnabled()) {
-            console.log('Theme state changed based on dataset check, fixing...');
-            localStorage.setItem('isDarkMode', 'false');
-        }
-        
-        // Apply theme consistently
-        applyTheme();
+        // Update the stats to reflect the new progress
+        updateStats();
     }
 }
 
@@ -894,12 +705,24 @@ function updateStreak(habit, today, isCompleted) {
 }
 
 // Show Add Habit Screen (fullscreen)
-function showAddHabitScreen() {
+function showAddHabitScreen(habit = null) {
     // Save current screen content
     const mainContent = document.body.innerHTML;
     
     // Get current theme
     const isDarkMode = isDarkModeEnabled();
+    
+    // Create default habit values for new habits
+    const defaultHabit = {
+        name: '',
+        icon: 'none',
+        color: '#2196F3', // Default blue color
+        category: '',
+        target: 7 // Default weekly goal
+    };
+    
+    // Use provided habit or default values
+    habit = habit || defaultHabit;
     
     // Create full-screen form that simulates a navigation to a new screen
     document.body.innerHTML = '';
@@ -1099,6 +922,7 @@ function showAddHabitScreen() {
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Habit Name';
+    nameInput.value = habit.name || '';
     nameInput.style.width = '100%';
     nameInput.style.padding = '16px';
     nameInput.style.fontSize = '16px';
@@ -1107,11 +931,50 @@ function showAddHabitScreen() {
     nameInput.style.border = '1px solid #ccc';
     nameInput.style.boxSizing = 'border-box';
     
+    // Add category dropdown
+    const categoryLabel = document.createElement('div');
+    categoryLabel.textContent = 'Category (Optional)';
+    categoryLabel.style.fontSize = '16px';
+    categoryLabel.style.fontWeight = 'bold';
+    categoryLabel.style.marginBottom = '10px';
+    
+    const categorySelect = document.createElement('select');
+    categorySelect.style.width = '100%';
+    categorySelect.style.padding = '16px';
+    categorySelect.style.fontSize = '16px';
+    categorySelect.style.marginBottom = '16px';
+    categorySelect.style.borderRadius = '8px';
+    categorySelect.style.border = '1px solid #ccc';
+    categorySelect.style.boxSizing = 'border-box';
+    categorySelect.style.backgroundColor = isDarkMode ? '#333' : '#fff';
+    categorySelect.style.color = isDarkMode ? '#fff' : '#000';
+    
+    // Add category options
+    const categories = [
+        { value: '', label: 'Select a category (optional)' },
+        { value: 'Mind', label: 'Mind' },
+        { value: 'Body', label: 'Body' },
+        { value: 'Spirit', label: 'Spirit' }
+    ];
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.value;
+        option.textContent = category.label;
+        categorySelect.appendChild(option);
+    });
+    
+    // Set the current category if it exists
+    if (habit.category) {
+        categorySelect.value = habit.category;
+    }
+    
     const targetInput = document.createElement('input');
     targetInput.type = 'number';
     targetInput.placeholder = 'Goal Number (weekly)';
     targetInput.min = '1';
     targetInput.max = '100';
+    targetInput.value = habit.target || '7'; // Default to 7 if not set
     targetInput.style.width = '100%';
     targetInput.style.padding = '16px';
     targetInput.style.fontSize = '16px';
@@ -1119,7 +982,6 @@ function showAddHabitScreen() {
     targetInput.style.borderRadius = '8px';
     targetInput.style.border = '1px solid #ccc';
     targetInput.style.boxSizing = 'border-box';
-    targetInput.value = '7'; // Default weekly goal
     
     // Color picker
     const colorLabel = document.createElement('div');
@@ -1148,8 +1010,8 @@ function showAddHabitScreen() {
         { value: '#607D8B', name: 'Gray Blue' }
     ];
     
-    // Keep track of selected color
-    let selectedColor = presetColors[0].value;
+    // Keep track of selected color - initialize with current habit color or default
+    let selectedColor = habit.color || '#2196F3'; // Default to blue if not set
     
     // Create a color swatch for each preset color
     presetColors.forEach(color => {
@@ -1164,6 +1026,13 @@ function showAddHabitScreen() {
         swatch.style.border = color.value === selectedColor ? '3px solid white' : '3px solid transparent';
         swatch.style.boxShadow = color.value === selectedColor ? '0 0 0 2px #673ab7' : '0 0 0 1px rgba(0,0,0,0.1)';
         swatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+        
+        // If this color is already the habit color, mark it as selected
+        if (color.value === selectedColor) {
+            swatch.style.border = '3px solid white';
+            swatch.style.boxShadow = '0 0 0 2px #673ab7';
+            swatch.style.transform = 'scale(1.1)';
+        }
         
         // Select this color when clicked
         swatch.addEventListener('click', () => {
@@ -1282,22 +1151,23 @@ function showAddHabitScreen() {
         // Validate form
         if (nameInput.value && targetInput.value && parseInt(targetInput.value) > 0) {
             // Generate unique ID for the habit
-            const habitId = 'habit_' + new Date().getTime();
+            const habitId = habit ? habit.id : 'habit_' + new Date().getTime();
             
-            // Create the habit object
+            // Create or update the habit object
             habits[habitId] = {
                 name: nameInput.value,
-                progress: 0,
+                progress: habit ? habit.progress : 0,
                 target: parseInt(targetInput.value),
-                color: selectedColor, // Use the selected color from swatches
+                color: selectedColor,
                 icon: selectedIconId !== 'none' ? selectedIconId : '',
-                lastUpdatedDate: new Date().toISOString(),
+                lastUpdatedDate: habit ? habit.lastUpdatedDate : new Date().toISOString(),
                 resetFrequency: "weekly",
-                history: {},
-                streak: 0,
-                lastStreakDate: null,
-                reminderTime: null,
-                reminderEnabled: false
+                history: habit ? habit.history : {},
+                streak: habit ? habit.streak : 0,
+                lastStreakDate: habit ? habit.lastStreakDate : null,
+                reminderTime: habit ? habit.reminderTime : null,
+                reminderEnabled: habit ? habit.reminderEnabled : false,
+                category: categorySelect.value
             };
             
             // Save to localStorage
@@ -1322,17 +1192,18 @@ function showAddHabitScreen() {
     form.appendChild(iconLabel);
     form.appendChild(iconContainer);
     form.appendChild(nameInput);
+    form.appendChild(categoryLabel);
+    form.appendChild(categorySelect);
     form.appendChild(targetInput);
     form.appendChild(colorLabel);
     form.appendChild(colorSwatchesContainer);
     
     // Assemble the UI
     formContainer.appendChild(form);
-    saveButtonContainer.appendChild(createButton);
+    formContainer.appendChild(saveButtonContainer);
     
     appScreen.appendChild(appBar);
     appScreen.appendChild(formContainer);
-    appScreen.appendChild(saveButtonContainer);
     
     document.body.appendChild(appScreen);
     
@@ -1475,6 +1346,7 @@ function showEditHabitScreen(habitId, habit) {
         { id: 'track', label: 'Habit Tracking', path: 'M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z' }
     ];
     
+    // Initialize selected icon
     let selectedIconId = habit.icon || 'none';
     
     icons.forEach(icon => {
@@ -1543,7 +1415,7 @@ function showEditHabitScreen(habitId, habit) {
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Habit Name';
-    nameInput.value = habit.name;
+    nameInput.value = habit.name || '';
     nameInput.style.width = '100%';
     nameInput.style.padding = '16px';
     nameInput.style.fontSize = '16px';
@@ -1552,12 +1424,50 @@ function showEditHabitScreen(habitId, habit) {
     nameInput.style.border = '1px solid #ccc';
     nameInput.style.boxSizing = 'border-box';
     
+    // Add category dropdown
+    const categoryLabel = document.createElement('div');
+    categoryLabel.textContent = 'Category (Optional)';
+    categoryLabel.style.fontSize = '16px';
+    categoryLabel.style.fontWeight = 'bold';
+    categoryLabel.style.marginBottom = '10px';
+    
+    const categorySelect = document.createElement('select');
+    categorySelect.style.width = '100%';
+    categorySelect.style.padding = '16px';
+    categorySelect.style.fontSize = '16px';
+    categorySelect.style.marginBottom = '16px';
+    categorySelect.style.borderRadius = '8px';
+    categorySelect.style.border = '1px solid #ccc';
+    categorySelect.style.boxSizing = 'border-box';
+    categorySelect.style.backgroundColor = isDarkMode ? '#333' : '#fff';
+    categorySelect.style.color = isDarkMode ? '#fff' : '#000';
+    
+    // Add category options
+    const categories = [
+        { value: '', label: 'Select a category (optional)' },
+        { value: 'Mind', label: 'Mind' },
+        { value: 'Body', label: 'Body' },
+        { value: 'Spirit', label: 'Spirit' }
+    ];
+    
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category.value;
+        option.textContent = category.label;
+        categorySelect.appendChild(option);
+    });
+    
+    // Set the current category if it exists
+    if (habit.category) {
+        categorySelect.value = habit.category;
+    }
+    
     const targetInput = document.createElement('input');
     targetInput.type = 'number';
     targetInput.placeholder = 'Goal Number (weekly)';
     targetInput.min = '1';
     targetInput.max = '100';
-    targetInput.value = habit.target;
+    targetInput.value = habit.target || '7'; // Default to 7 if not set
     targetInput.style.width = '100%';
     targetInput.style.padding = '16px';
     targetInput.style.fontSize = '16px';
@@ -1593,8 +1503,8 @@ function showEditHabitScreen(habitId, habit) {
         { value: '#607D8B', name: 'Gray Blue' }
     ];
     
-    // Keep track of selected color - initialize with current habit color
-    let selectedColor = habit.color;
+    // Keep track of selected color - initialize with current habit color or default
+    let selectedColor = habit.color || '#2196F3'; // Default to blue if not set
     
     // Create a color swatch for each preset color
     presetColors.forEach(color => {
@@ -1611,7 +1521,7 @@ function showEditHabitScreen(habitId, habit) {
         swatch.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
         
         // If this color is already the habit color, mark it as selected
-        if (color.value === habit.color) {
+        if (color.value === selectedColor) {
             swatch.style.border = '3px solid white';
             swatch.style.boxShadow = '0 0 0 2px #673ab7';
             swatch.style.transform = 'scale(1.1)';
@@ -1779,6 +1689,7 @@ function showEditHabitScreen(habitId, habit) {
             habits[habitId].target = parseInt(targetInput.value);
             habits[habitId].color = selectedColor;
             habits[habitId].icon = selectedIconId !== 'none' ? selectedIconId : '';
+            habits[habitId].category = categorySelect.value; // Save the category
             
             // Save to localStorage
             saveHabits();
@@ -1807,6 +1718,8 @@ function showEditHabitScreen(habitId, habit) {
     form.appendChild(iconLabel);
     form.appendChild(iconContainer);
     form.appendChild(nameInput);
+    form.appendChild(categoryLabel);
+    form.appendChild(categorySelect);
     form.appendChild(targetInput);
     form.appendChild(colorLabel);
     form.appendChild(colorSwatchesContainer);
@@ -2314,6 +2227,18 @@ function showCalendarScreen() {
     
     // Function to render calendar days, referencing the function from calendar.js
     function renderCalendarDays() {
+        // Check if required DOM elements exist
+        if (!calendarGrid || !currentMonthDisplay) {
+            console.warn('Calendar elements not found. Calendar cannot be rendered.');
+            return;
+        }
+        
+        // Check if the renderCalendarDays function from calendar.js exists
+        if (typeof window.renderCalendarDays !== 'function') {
+            console.warn('Calendar rendering function not found. Calendar cannot be rendered.');
+            return;
+        }
+        
         // Call the renderCalendarDays function from calendar.js
         window.renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, habits);
     }
@@ -2343,4 +2268,594 @@ function applyTheme() {
     
     // Notify any components that need to adjust to theme changes
     notifyThemeChange();
-} 
+}
+
+function renderHabitCard(habitId, habit) {
+    const habitCard = document.createElement('div');
+    habitCard.className = 'habit-card';
+    habitCard.id = `habit-card-${habitId}`;
+    
+    // Always apply the habit's custom color directly with high specificity
+    habitCard.style.setProperty('background-color', habit.color || '#4CAF50', 'important');
+    
+    // Set color RGB variables for animations and effects
+    const colorRGB = hexToRgb(habit.color || '#4CAF50');
+    if (colorRGB) {
+        habitCard.style.setProperty('--habit-color-rgb', `${colorRGB.r}, ${colorRGB.g}, ${colorRGB.b}`);
+    }
+    
+    // Determine if the background color is dark to set appropriate text color
+    const isDarkBackground = isColorDark(habit.color || '#4CAF50');
+    
+    // Create the habit content
+    const habitContent = document.createElement('div');
+    habitContent.className = 'habit-content';
+    habitContent.style.color = isDarkBackground ? '#FFFFFF' : '#000000';
+    habitContent.style.position = 'relative';
+    habitContent.style.zIndex = '1';
+    
+    // Add habit icon and name
+    const habitHeader = document.createElement('div');
+    habitHeader.className = 'habit-header';
+    habitHeader.innerHTML = `
+        <span class="habit-icon">${habit.icon || '⭐'}</span>
+        <span class="habit-name">${habit.name}</span>
+    `;
+    
+    // Add progress text
+    const progressText = document.createElement('div');
+    progressText.className = 'progress-text';
+    progressText.textContent = `${habit.progress}/${habit.target}`;
+    progressText.dataset.habitProgress = habit.progress;
+    progressText.dataset.habitTarget = habit.target;
+    progressText.style.color = isDarkBackground ? '#FFFFFF' : '#000000';
+    
+    // Create progress bar
+    const progressBar = document.createElement('div');
+    progressBar.className = 'progress-bar';
+    progressBar.style.backgroundColor = isDarkBackground ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)';
+    
+    const progressFill = document.createElement('div');
+    progressFill.className = 'progress-fill';
+    progressFill.style.width = Math.min((habit.progress / habit.target) * 100, 100) + '%';
+    progressFill.style.backgroundColor = isDarkBackground ? '#FFFFFF' : 'rgba(0,0,0,0.7)';
+    progressBar.appendChild(progressFill);
+    
+    // Add buttons container
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'habit-buttons';
+    buttonsContainer.style.display = 'flex';
+    buttonsContainer.style.justifyContent = 'space-between';
+    
+    // Add progress buttons container (- and +)
+    const progressButtonsContainer = document.createElement('div');
+    progressButtonsContainer.style.display = 'flex';
+    progressButtonsContainer.style.gap = '10px';
+    
+    // Add decrement button with proper event listener
+    const decrementButton = document.createElement('button');
+    decrementButton.className = 'habit-button decrement';
+    decrementButton.innerHTML = '<span>-</span>';
+    decrementButton.style.color = isDarkBackground ? '#FFFFFF' : '#000000';
+    decrementButton.disabled = habit.progress <= 0;
+    decrementButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        if (habit.progress > 0) {
+            decrementButton.classList.add('button-clicked');
+            setTimeout(() => decrementButton.classList.remove('button-clicked'), 300);
+            updateProgress(habitId, -1);
+        }
+    });
+    
+    // Add increment button with proper event listener
+    const incrementButton = document.createElement('button');
+    incrementButton.className = 'habit-button increment';
+    incrementButton.innerHTML = '<span>+</span>';
+    incrementButton.style.color = isDarkBackground ? '#FFFFFF' : '#000000';
+    incrementButton.disabled = habit.progress >= habit.target;
+    incrementButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        if (habit.progress < habit.target) {
+            incrementButton.classList.add('button-clicked');
+            setTimeout(() => incrementButton.classList.remove('button-clicked'), 300);
+            updateProgress(habitId, 1);
+        }
+    });
+    
+    // Add admin buttons container (settings and delete)
+    const adminButtonsContainer = document.createElement('div');
+    adminButtonsContainer.style.display = 'flex';
+    adminButtonsContainer.style.gap = '16px';
+    
+    // Add edit button with proper event listener
+    const editButton = document.createElement('button');
+    editButton.className = 'habit-button edit';
+    editButton.innerHTML = '⚙️';
+    editButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        showEditHabitScreen(habitId, habit);
+    });
+    
+    // Add delete button with proper event listener
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'habit-button delete';
+    deleteButton.innerHTML = '🗑️';
+    deleteButton.style.color = isDarkBackground ? '#FFFFFF' : '#000000';
+    deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        deleteHabit(habitId);
+    });
+    
+    // Assemble the buttons in their respective containers
+    progressButtonsContainer.appendChild(decrementButton);
+    progressButtonsContainer.appendChild(incrementButton);
+    
+    adminButtonsContainer.appendChild(editButton);
+    adminButtonsContainer.appendChild(deleteButton);
+    
+    // Add button containers to the main buttons container
+    buttonsContainer.appendChild(progressButtonsContainer);
+    buttonsContainer.appendChild(adminButtonsContainer);
+    
+    // Assemble all components
+    habitContent.appendChild(habitHeader);
+    habitContent.appendChild(progressText);
+    habitContent.appendChild(progressBar);
+    habitContent.appendChild(buttonsContainer);
+    
+    // Add streak information if available
+    if (habit.currentStreak > 0 || habit.bestStreak > 0) {
+        const streakInfo = document.createElement('div');
+        streakInfo.className = 'streak-info';
+        streakInfo.innerHTML = `
+            <span class="current-streak">🔥 ${habit.currentStreak || 0}</span>
+            <span class="best-streak">⭐ ${habit.bestStreak || 0}</span>
+        `;
+        habitContent.appendChild(streakInfo);
+    }
+    
+    habitCard.appendChild(habitContent);
+    return habitCard;
+}
+
+// Helper function to determine if a color is dark (for text contrast)
+function isColorDark(hexColor) {
+    const rgb = hexToRgb(hexColor);
+    if (!rgb) return false;
+    
+    // Calculate perceived brightness using YIQ formula
+    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+    return brightness < 128; // If less than 128, consider it dark
+}
+
+// Helper function to convert hex color to RGB values for CSS variables
+function hexToRgb(hex) {
+    // Remove the # if present
+    hex = hex.replace(/^#/, '');
+    
+    // Handle shorthand hex (e.g., #FFF)
+    if (hex.length === 3) {
+        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    
+    // Parse the hex values
+    const bigint = parseInt(hex, 16);
+    
+    // Only parse valid colors
+    if (isNaN(bigint)) return null;
+    
+    // Extract r, g, b components
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    
+    return { r, g, b };
+}
+
+function updateHabitCardInDOM(habitId, habit) {
+    const existingCard = document.getElementById(`habit-card-${habitId}`);
+    if (existingCard) {
+        // Create new card with updated data
+        const newCard = renderHabitCard(habitId, habit);
+        
+        // Add animation class for smooth transition
+        newCard.classList.add('card-update-animation');
+        
+        // Add completion flash animation if habit is completed
+        if (habit.progress === habit.target) {
+            newCard.classList.add('completion-flash');
+        }
+        
+        // Replace the old card with the new one
+        existingCard.replaceWith(newCard);
+        
+        // Add necessary CSS if not already present
+        if (!document.getElementById('card-animations')) {
+            const styleSheet = document.createElement('style');
+            styleSheet.id = 'card-animations';
+            styleSheet.textContent = `
+                .card-update-animation {
+                    animation: cardUpdate 0.3s ease-out;
+                }
+                
+                .completion-flash {
+                    animation: completionFlash 0.6s ease-out;
+                }
+                
+                .button-clicked {
+                    transform: scale(0.9);
+                    opacity: 0.8;
+                    transition: transform 0.3s, opacity 0.3s;
+                }
+                
+                @keyframes cardUpdate {
+                    0% { transform: scale(0.98); opacity: 0.8; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                
+                @keyframes completionFlash {
+                    0% { box-shadow: 0 0 0 0 rgba(var(--habit-color-rgb), 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(var(--habit-color-rgb), 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(var(--habit-color-rgb), 0); }
+                }
+            `;
+            document.head.appendChild(styleSheet);
+        }
+        
+        // Log update for debugging
+        console.log(`Updated habit card: ${habit.name} - Progress: ${habit.progress}/${habit.target}`);
+        
+        // Remove animation classes after they complete
+        setTimeout(() => {
+            newCard.classList.remove('card-update-animation', 'completion-flash');
+        }, 600);
+    }
+}
+
+// Delete a habit
+function deleteHabit(habitId) {
+    const habit = habits[habitId];
+    
+    // Confirm before deleting
+    if (confirm(`Are you sure you want to delete "${habit.name}"?`)) {
+        // Remove from memory
+        delete habits[habitId];
+        
+        // Save to localStorage
+        saveHabits();
+        
+        // Show toast notification
+        showToast(`Habit "${habit.name}" deleted successfully.`, '#FF5722');
+        
+        // Re-render habits list
+        renderHabits();
+    }
+}
+
+// Reset habit progress function
+function resetHabitProgress(habitId) {
+    const habit = habits[habitId];
+    
+    if (confirm(`Are you sure you want to reset progress for "${habit.name}"?`)) {
+        // Store the current progress for undo
+        const previousProgress = habit.progress;
+        
+        // Reset progress
+        habit.progress = 0;
+        
+        // Save to localStorage
+        saveHabits();
+        
+        // Update the habit card in the DOM
+        updateHabitCardInDOM(habitId, habit);
+        
+        // Show toast with undo option
+        const message = `Progress for "${habit.name}" has been reset.`;
+        const undoAction = () => {
+            habit.progress = previousProgress;
+            saveHabits();
+            updateHabitCardInDOM(habitId, habit);
+            showToast(`Progress for "${habit.name}" has been restored.`);
+        };
+        
+        showToastWithUndo(message, undoAction);
+    }
+}
+
+// Show toast message with undo option
+function showToastWithUndo(message, undoAction, bgColor = '#333', duration = 5000) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-with-undo';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.backgroundColor = bgColor;
+    toast.style.color = '#fff';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '4px';
+    toast.style.boxShadow = '0 3px 10px rgba(0, 0, 0, 0.2)';
+    toast.style.zIndex = '1000';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.justifyContent = 'space-between';
+    toast.style.minWidth = '250px';
+    toast.style.maxWidth = '90%';
+    
+    const messageText = document.createElement('span');
+    messageText.textContent = message;
+    
+    const undoButton = document.createElement('button');
+    undoButton.textContent = 'UNDO';
+    undoButton.style.marginLeft = '15px';
+    undoButton.style.backgroundColor = 'transparent';
+    undoButton.style.border = 'none';
+    undoButton.style.color = '#4CAF50';
+    undoButton.style.fontWeight = 'bold';
+    undoButton.style.cursor = 'pointer';
+    undoButton.style.padding = '5px';
+    
+    undoButton.addEventListener('click', () => {
+        if (undoAction) undoAction();
+        toast.remove();
+        clearTimeout(timeoutId);
+    });
+    
+    toast.appendChild(messageText);
+    toast.appendChild(undoButton);
+    document.body.appendChild(toast);
+    
+    // Remove the toast after the duration
+    const timeoutId = setTimeout(() => {
+        if (document.body.contains(toast)) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translate(-50%, 100%)';
+            toast.style.transition = 'opacity 0.3s, transform 0.3s';
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    toast.remove();
+                }
+            }, 300);
+        }
+    }, duration);
+}
+
+// Show reminder settings for a habit
+function showReminderSettings(habitId, habit) {
+    if (!areNotificationsSupported()) {
+        showToast('Notifications are not supported in this browser.', '#FF5722');
+        return;
+    }
+    
+    // Request notification permission if not already granted
+    if (Notification.permission !== 'granted') {
+        requestNotificationPermission().then(permission => {
+            if (permission !== 'granted') {
+                showToast('Notification permission is required for reminders.', '#FF5722');
+                return;
+            } else {
+                // Continue with reminder setup
+                setupReminderDialog();
+            }
+        });
+    } else {
+        // Permission already granted, show reminder dialog
+        setupReminderDialog();
+    }
+    
+    function setupReminderDialog() {
+        // Create a simple prompt for time input
+        const reminderTime = prompt('Enter reminder time (HH:MM):', habit.reminderTime || '09:00');
+        
+        // Validate input or cancel
+        if (!reminderTime) return;
+        
+        // Simple validation for time format
+        const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+        if (!timeRegex.test(reminderTime)) {
+            showToast('Invalid time format. Please use HH:MM format.', '#FF5722');
+            return;
+        }
+        
+        // Save the reminder settings
+        habit.reminderEnabled = true;
+        habit.reminderTime = reminderTime;
+        saveHabits();
+        
+        // Start checking reminders
+        startReminderCheck();
+        
+        showToast(`Reminder set for "${habit.name}" at ${reminderTime}`, '#4CAF50');
+    }
+}
+
+// Filter habits by category function
+function filterHabitsByCategory(categoryId) {
+    currentCategoryFilter = categoryId;
+    
+    // Update active filter button
+    const filterButtons = document.querySelectorAll('.category-filter-btn');
+    filterButtons.forEach(btn => {
+        if (btn.getAttribute('data-category') === categoryId) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    
+    // Filter habit cards directly in the DOM
+    const habitCards = document.querySelectorAll('.habit-card');
+    
+    if (categoryId === 'all') {
+        // Show all habits
+        habitCards.forEach(card => {
+            card.style.display = 'block';
+            
+            // Add staggered animation
+            setTimeout(() => {
+                card.style.animation = 'none';
+                card.offsetHeight; // Trigger reflow
+                card.style.animation = 'fadeInUp 0.3s ease forwards';
+            }, 0);
+        });
+    } else {
+        // Show only habits with matching category
+        habitCards.forEach((card, index) => {
+            const habitId = card.getAttribute('data-habit-id');
+            const habit = habits[habitId];
+            
+            if (habit.category === categoryId) {
+                card.style.display = 'block';
+                
+                // Add staggered animation for visible cards
+                setTimeout(() => {
+                    card.style.animation = 'none';
+                    card.offsetHeight; // Trigger reflow
+                    card.style.animation = 'fadeInUp 0.3s ease forwards';
+                }, index * 50); // Stagger by 50ms
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Show message if no habits are visible
+    const visibleCards = document.querySelectorAll('.habit-card[style="display: block;"]');
+    const noHabitsMessage = document.querySelector('.no-habits-message') || document.createElement('div');
+    
+    if (visibleCards.length === 0) {
+        noHabitsMessage.className = 'no-habits-message';
+        noHabitsMessage.textContent = categoryId === 'all' 
+            ? 'No habits added yet. Tap + to add one!' 
+            : 'No habits in this category. Tap + to add one!';
+        noHabitsMessage.style.textAlign = 'center';
+        noHabitsMessage.style.padding = '40px 20px';
+        noHabitsMessage.style.color = '#666';
+        
+        const habitsContainer = document.getElementById('habits-container');
+        if (!document.querySelector('.no-habits-message')) {
+            habitsContainer.appendChild(noHabitsMessage);
+        }
+    } else if (document.querySelector('.no-habits-message')) {
+        document.querySelector('.no-habits-message').remove();
+    }
+    
+    // Add fadeInUp animation if not already defined
+    if (!document.getElementById('filter-animations')) {
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'filter-animations';
+        styleSheet.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+    }
+    
+    // Update stats to reflect the currently visible habits
+    updateStats();
+}
+
+// Initialize the app
+function initApp() {
+    loadHabits();
+    renderHabits();
+    setupCategoryFilters();
+    setupEventListeners();
+    updateStats(); // Make sure stats are shown
+    checkStreaks();
+    renderCalendar();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', init);
+
+// Update the init function to include category filters
+function init() {
+    // Call the new consolidated init function
+    initApp();
+    
+    // Add app-specific initialization that's not in initApp
+    setDefaultHabits();
+    applyTheme();
+    setupNotificationPermission();
+}
+
+// Update stats and analytics
+function updateStats() {
+    // Find or create analytics container
+    let analyticsContainer = document.querySelector('.analytics-summary');
+    if (!analyticsContainer) {
+        analyticsContainer = document.createElement('div');
+        analyticsContainer.className = 'analytics-summary';
+        
+        // Insert before the habits container
+        const habitsContainer = document.getElementById('habits-container');
+        habitsContainer.parentNode.insertBefore(analyticsContainer, habitsContainer);
+    }
+    
+    // Calculate stats
+    const habitCount = Object.keys(habits).length;
+    let completedCount = 0;
+    let totalProgress = 0;
+    let totalTarget = 0;
+    let streakSum = 0;
+    
+    Object.values(habits).forEach(habit => {
+        totalProgress += habit.progress;
+        totalTarget += habit.target;
+        streakSum += habit.streak || 0;
+        if (habit.progress >= habit.target) {
+            completedCount++;
+        }
+    });
+    
+    const completionRate = habitCount > 0 ? Math.round((completedCount / habitCount) * 100) : 0;
+    const averageProgress = totalTarget > 0 ? Math.round((totalProgress / totalTarget) * 100) : 0;
+    const averageStreak = habitCount > 0 ? Math.round(streakSum / habitCount) : 0;
+    
+    // Create analytics content
+    analyticsContainer.innerHTML = `
+        <div class="analytics-header">
+            <h3>Habit Stats</h3>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${completionRate}%</div>
+                <div class="stat-label">Completion Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${averageProgress}%</div>
+                <div class="stat-label">Average Progress</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${averageStreak}</div>
+                <div class="stat-label">Avg. Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${habitCount}</div>
+                <div class="stat-label">Total Habits</div>
+            </div>
+        </div>
+    `;
+    
+    // Update analytics based on theme
+    applyThemeToAnalytics();
+}
+
+// Apply theme to analytics
+function applyThemeToAnalytics() {
+    const isDark = isDarkModeEnabled();
+    const analyticsContainer = document.querySelector('.analytics-summary');
+    if (analyticsContainer) {
+        analyticsContainer.style.backgroundColor = isDark ? '#333' : '#f8f8f8';
+        analyticsContainer.style.color = isDark ? '#fff' : '#333';
+    }
+}

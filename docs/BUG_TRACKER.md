@@ -15,7 +15,7 @@ This file tracks known bugs, issues, and small polish tasks during development a
 | BUG-008 | Excessive spacing in Habit Calendar view wastes vertical space | ✅ Fixed | Reduced margins and added responsive spacing using CSS classes |
 | BUG-009 | Color Picker UI Not Ideal for Habit Creation | ✅ Fixed | Replaced full-spectrum picker with 8 preset color swatches + "Other" rainbow option |
 | BUG-010 | Icon Picker Shows Irrelevant or Generic Icons | 🚧 To Do | Add curated set of habit-specific monochrome icons for common habit types |
-| BUG-011 | Habit Count Updates Cause Full Habit List Re-render | 🚧 To Do | Optimize updates to only re-render the modified habit card instead of the full list |
+| BUG-011 | Habit Count Updates Cause Full Habit List Re-render | ✅ Fixed | Fixed habit card update system - now properly updates only the changed habit without page reload, and maintains button functionality |
 | BUG-012 | Calendar Navigation Arrows Are Stacked Vertically | ✅ Fixed | Fixed the month navigation arrows to appear side by side with flexbox layout |
 
 ---
