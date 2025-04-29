@@ -5,8 +5,20 @@ window.calendarCurrentFilterHabit = null;
 
 // Function to render calendar days
 function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, habits) {
+    // Validate required parameters
+    if (!calendarGrid || !(calendarGrid instanceof Element)) {
+        console.warn('Calendar grid element is missing or invalid');
+        return;
+    }
+    
+    if (!currentMonthDisplay || !(currentMonthDisplay instanceof Element)) {
+        console.warn('Month display element is missing or invalid');
+        return;
+    }
+    
     // Clear existing calendar days (keep header row with day names)
-    while (calendarGrid.childElementCount > 7) {
+    const headerRowCount = 7; // Number of day headers (Sun-Sat)
+    while (calendarGrid && calendarGrid.childElementCount > headerRowCount) {
         calendarGrid.removeChild(calendarGrid.lastChild);
     }
     
