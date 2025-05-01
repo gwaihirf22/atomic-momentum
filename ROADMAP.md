@@ -2,6 +2,19 @@
 
 This roadmap outlines the planned development path for Atomic Momentum, prioritizing features and improvements for future releases.
 
+## 🔧 Sprint Goals (April 29, 2025)
+
+### Completed:
+- ✅ Implement category-based filtering in main dashboard view
+- ✅ Add visual category filter buttons styled consistently with light/dark mode
+- ✅ Ensure categories persist correctly across navigation and page reload
+- ✅ Capitalize category labels consistently (e.g., "Mind" instead of "mind")
+- ✅ Display appropriate "no habits" message when filter yields no results
+
+### In Progress:
+- 🔁 Fix state loss on navigation: category filters become inactive after returning to homepage
+- 🔍 Investigate and resolve category mismatch bug (habits not appearing under correct filters despite having valid category data)
+
 ## Short-Term (1-2 Months)
 
 ### Architecture & Code Quality
@@ -21,7 +34,11 @@ This roadmap outlines the planned development path for Atomic Momentum, prioriti
 - [ ] Create onboarding experience for new users
 
 ### Features
-- [ ] Add habit categories/tags for organization
+- [~] Add habit categories/tags for organization
+  - [x] Basic category implementation
+  - [x] Category filtering UI
+  - [ ] Fix category filter bugs
+  - [ ] Add category management UI
 - [ ] Implement basic statistics for habits (success rate, average progress)
 - [ ] Create simple data visualization for progress
 

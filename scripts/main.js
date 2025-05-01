@@ -5,6 +5,7 @@ const defaultHabits = {
         target: 8, 
         name: "Drink Water", 
         color: "#2196F3",
+        category: "Body",
         lastUpdatedDate: new Date().toISOString(),
         resetFrequency: "weekly",
         history: {}, // Store habit history by date
@@ -18,6 +19,7 @@ const defaultHabits = {
         target: 7, 
         name: "Read Bible", 
         color: "#009688",
+        category: "Spirit",
         lastUpdatedDate: new Date().toISOString(),
         resetFrequency: "weekly",
         history: {}, // Store habit history by date
@@ -31,6 +33,7 @@ const defaultHabits = {
         target: 7, 
         name: "Workout", 
         color: "#FF9800",
+        category: "Body",
         lastUpdatedDate: new Date().toISOString(),
         resetFrequency: "weekly",
         history: {}, // Store habit history by date
@@ -78,30 +81,26 @@ function loadHabits() {
     if (savedHabits) {
         try {
             habits = JSON.parse(savedHabits);
-            console.log('Loaded habits from localStorage:', habits);
             
-            // Initialize history, streak, and reminder properties for habits that don't have them yet
+            // Initialize and normalize habit properties
             Object.keys(habits).forEach(habitId => {
                 const habit = habits[habitId];
-                if (!habit.history) {
-                    habit.history = {};
+                
+                // Initialize missing properties
+                habit.history = habit.history || {};
+                habit.streak = habit.streak || 0;
+                habit.lastStreakDate = habit.lastStreakDate || null;
+                habit.reminderTime = habit.reminderTime || null;
+                habit.reminderEnabled = habit.reminderEnabled || false;
+                
+                // Ensure category is properly capitalized and defaulted
+                if (!habit.category) {
+                    habit.category = "Other";
                 }
-                if (habit.streak === undefined) {
-                    habit.streak = 0;
-                }
-                if (habit.lastStreakDate === undefined) {
-                    habit.lastStreakDate = null;
-                }
-                // Initialize reminder properties if they don't exist
-                if (habit.reminderTime === undefined) {
-                    habit.reminderTime = null;
-                }
-                if (habit.reminderEnabled === undefined) {
-                    habit.reminderEnabled = false;
-                }
+                habit.category = capitalizeCategory(habit.category);
             });
             
-            // Check for habits that need to be reset based on their frequency
+            // Check for habits that need to be reset
             checkHabitResets();
         } catch (e) {
             console.error('Error loading habits from localStorage:', e);
@@ -111,21 +110,33 @@ function loadHabits() {
     } else {
         // Use default habits if none are saved
         habits = {...defaultHabits};
+        Object.values(habits).forEach(habit => {
+            if (!habit.category) {
+                habit.category = "Other";
+            }
+            habit.category = capitalizeCategory(habit.category);
+        });
         saveHabits();
     }
     
-    // Update UI with loaded habits
+    // Update UI
     renderHabits();
-    
-    // Ensure theme is applied consistently after load
     applyTheme();
+    
+    // Setup category filters after habits are loaded
+    setupCategoryFilters();
 }
 
-// Save habits to localStorage
+// Save habits to localStorage with proper category capitalization
 function saveHabits() {
     try {
+        // Ensure all categories are properly capitalized before saving
+        Object.values(habits).forEach(habit => {
+            habit.category = capitalizeCategory(habit.category || "Other");
+        });
+        
         localStorage.setItem('atomic_momentum_habits', JSON.stringify(habits));
-        console.log('Saved habits to localStorage');
+        console.log('Saved habits to localStorage:', habits);
     } catch (e) {
         console.error('Error saving habits to localStorage:', e);
     }
@@ -181,10 +192,8 @@ function recordDailyHabitStatus() {
 
 // Render all habits in the UI
 function renderHabits() {
-    // TODO: BUG-011 - This function currently re-renders ALL habit cards,
-    // causing unnecessary DOM updates and potential flickering.
-    // Refactor to support individual habit updates instead of full re-render.
-    // Consider using a component-based approach or keeping references to habit cards.
+    // Get current category filter before clearing container
+    const currentFilter = document.querySelector('.category-filter.active')?.dataset.category || 'All';
     
     const container = document.getElementById('habits-container');
     container.innerHTML = ''; // Clear existing habits
@@ -195,6 +204,11 @@ function renderHabits() {
         const habitElement = createHabitElement(habitId, habit);
         container.appendChild(habitElement);
     });
+    
+    // Reapply current category filter if not "All"
+    if (currentFilter !== 'All') {
+        filterHabitsByCategory(currentFilter);
+    }
     
     // Add debug output to confirm colors
     console.log("Rendered habits with colors:", 
@@ -939,6 +953,7 @@ function showAddHabitScreen(habit = null) {
     categoryLabel.style.marginBottom = '10px';
     
     const categorySelect = document.createElement('select');
+    categorySelect.id = 'habit-category-select'; // Consistent ID for easy reference
     categorySelect.style.width = '100%';
     categorySelect.style.padding = '16px';
     categorySelect.style.fontSize = '16px';
@@ -1130,11 +1145,12 @@ function showAddHabitScreen(habit = null) {
     customColorSwatch.appendChild(nativeColorPicker);
     colorSwatchesContainer.appendChild(customColorSwatch);
     
-    // Save button
+    // Save button container
     const saveButtonContainer = document.createElement('div');
     saveButtonContainer.style.padding = '20px';
     saveButtonContainer.style.display = 'flex';
     saveButtonContainer.style.justifyContent = 'center';
+    saveButtonContainer.style.marginTop = '20px';
     
     const createButton = document.createElement('button');
     createButton.textContent = 'Create Habit';
@@ -1143,8 +1159,14 @@ function showAddHabitScreen(habit = null) {
     createButton.style.padding = '16px 32px';
     createButton.style.borderRadius = '8px';
     createButton.style.border = 'none';
-    createButton.style.fontSize = '16px';
+    createButton.style.fontSize = '18px';
+    createButton.style.fontWeight = 'bold';
     createButton.style.cursor = 'pointer';
+    createButton.style.width = '100%';
+    createButton.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+    
+    // Add the button to the container
+    saveButtonContainer.appendChild(createButton);
     
     // Create habit logic
     createButton.onclick = () => {
@@ -1153,21 +1175,24 @@ function showAddHabitScreen(habit = null) {
             // Generate unique ID for the habit
             const habitId = habit ? habit.id : 'habit_' + new Date().getTime();
             
+            // Get selected category value
+            const selectedCategory = categorySelect.value || 'Other';
+            
             // Create or update the habit object
             habits[habitId] = {
                 name: nameInput.value,
-                progress: habit ? habit.progress : 0,
+                progress: 0,  // Always initialize progress to 0 for new habits
                 target: parseInt(targetInput.value),
                 color: selectedColor,
                 icon: selectedIconId !== 'none' ? selectedIconId : '',
-                lastUpdatedDate: habit ? habit.lastUpdatedDate : new Date().toISOString(),
+                lastUpdatedDate: new Date().toISOString(),
                 resetFrequency: "weekly",
-                history: habit ? habit.history : {},
-                streak: habit ? habit.streak : 0,
-                lastStreakDate: habit ? habit.lastStreakDate : null,
-                reminderTime: habit ? habit.reminderTime : null,
-                reminderEnabled: habit ? habit.reminderEnabled : false,
-                category: categorySelect.value
+                history: {},
+                streak: 0,
+                lastStreakDate: null,
+                reminderTime: null,
+                reminderEnabled: false,
+                category: selectedCategory
             };
             
             // Save to localStorage
@@ -1432,6 +1457,7 @@ function showEditHabitScreen(habitId, habit) {
     categoryLabel.style.marginBottom = '10px';
     
     const categorySelect = document.createElement('select');
+    categorySelect.id = 'habit-category-select'; // Consistent ID for easy reference
     categorySelect.style.width = '100%';
     categorySelect.style.padding = '16px';
     categorySelect.style.fontSize = '16px';
@@ -1684,12 +1710,17 @@ function showEditHabitScreen(habitId, habit) {
     saveButton.onclick = () => {
         // Validate form
         if (nameInput.value && targetInput.value && parseInt(targetInput.value) > 0) {
+            // Get selected category value
+            const selectedCategory = categorySelect.value || 'Other';
+            
             // Update the habit object
             habits[habitId].name = nameInput.value;
             habits[habitId].target = parseInt(targetInput.value);
             habits[habitId].color = selectedColor;
             habits[habitId].icon = selectedIconId !== 'none' ? selectedIconId : '';
-            habits[habitId].category = categorySelect.value; // Save the category
+            habits[habitId].category = selectedCategory;
+            
+            console.log(`Saving edited habit with category: ${selectedCategory}`);
             
             // Save to localStorage
             saveHabits();
@@ -2052,86 +2083,81 @@ function showCalendarScreen() {
     calendarHeading.style.marginTop = '0';
     calendarHeading.style.marginBottom = '8px';
     
-    // Global habit filter
-    const filterContainer = document.createElement('div');
-    filterContainer.className = 'calendar-filter-container';
-    filterContainer.style.marginTop = '4px';
-    filterContainer.style.marginBottom = '8px';
-    filterContainer.style.display = 'flex';
-    filterContainer.style.flexDirection = 'column';
-    filterContainer.style.gap = '4px';
+    // Add category filter container
+    const categoryFiltersContainer = document.createElement('div');
+    categoryFiltersContainer.className = 'category-filters';
+    categoryFiltersContainer.style.display = 'flex';
+    categoryFiltersContainer.style.flexWrap = 'wrap';
+    categoryFiltersContainer.style.gap = '8px';
+    categoryFiltersContainer.style.marginBottom = '16px';
     
-    const filterLabel = document.createElement('div');
-    filterLabel.textContent = 'Filter Calendar By:';
-    filterLabel.style.fontWeight = 'bold';
-    filterLabel.style.marginBottom = '2px';
+    // Add "All Habits" filter button
+    const allButton = document.createElement('button');
+    allButton.className = 'category-filter-btn';
+    allButton.setAttribute('data-category', 'all');
+    allButton.textContent = 'All Habits';
     
-    const filterButtonsContainer = document.createElement('div');
-    filterButtonsContainer.className = 'filter-buttons-container';
-    filterButtonsContainer.style.display = 'flex';
-    filterButtonsContainer.style.flexWrap = 'wrap';
-    filterButtonsContainer.style.gap = '6px';
+    // Set initial state
+    if (!window.calendarCurrentCategory || window.calendarCurrentCategory === 'all') {
+        allButton.classList.add('active');
+        allButton.style.backgroundColor = '#673ab7';
+        allButton.style.color = 'white';
+    } else {
+        allButton.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+        allButton.style.color = isDarkMode ? '#ddd' : '#333';
+    }
     
-    // Add "All Habits" button
-    const allHabitsButton = document.createElement('button');
-    allHabitsButton.textContent = 'All Habits';
-    allHabitsButton.style.backgroundColor = window.calendarCurrentFilterHabit === null ? '#673ab7' : (isDarkMode ? '#333' : '#f0f0f0');
-    allHabitsButton.style.color = window.calendarCurrentFilterHabit === null ? 'white' : (isDarkMode ? '#ddd' : '#333');
-    allHabitsButton.style.border = 'none';
-    allHabitsButton.style.borderRadius = '4px';
-    allHabitsButton.style.padding = '8px 12px';
-    allHabitsButton.style.cursor = 'pointer';
+    allButton.style.border = 'none';
+    allButton.style.borderRadius = '4px';
+    allButton.style.padding = '8px 12px';
+    allButton.style.cursor = 'pointer';
     
-    allHabitsButton.onclick = () => {
-        window.calendarCurrentFilterHabit = null;
-        
-        // Update button styles
-        filterButtonsContainer.querySelectorAll('button').forEach(btn => {
-            btn.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-            btn.style.color = isDarkMode ? '#ddd' : '#333';
-        });
-        allHabitsButton.style.backgroundColor = '#673ab7';
-        allHabitsButton.style.color = 'white';
-        
-        // Redraw calendar with new filter
-        renderCalendarDays();
+    allButton.onclick = () => {
+        window.calendarCurrentCategory = 'all';
+        updateCalendarCategoryFilter('all');
     };
     
-    filterButtonsContainer.appendChild(allHabitsButton);
+    categoryFiltersContainer.appendChild(allButton);
     
-    // Add a button for each habit
-    Object.keys(habits).forEach(habitId => {
-        const habit = habits[habitId];
-        
-        const habitButton = document.createElement('button');
-        habitButton.textContent = habit.name;
-        habitButton.style.backgroundColor = window.calendarCurrentFilterHabit === habitId ? habit.color : (isDarkMode ? '#333' : '#f0f0f0');
-        habitButton.style.color = window.calendarCurrentFilterHabit === habitId ? 'white' : (isDarkMode ? '#ddd' : '#333');
-        habitButton.style.border = 'none';
-        habitButton.style.borderRadius = '4px';
-        habitButton.style.padding = '8px 12px';
-        habitButton.style.cursor = 'pointer';
-        
-        habitButton.onclick = () => {
-            window.calendarCurrentFilterHabit = habitId;
-            
-            // Update button styles
-            filterButtonsContainer.querySelectorAll('button').forEach(btn => {
-                btn.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-                btn.style.color = isDarkMode ? '#ddd' : '#333';
-            });
-            habitButton.style.backgroundColor = habit.color;
-            habitButton.style.color = 'white';
-            
-            // Redraw calendar with new filter
-            renderCalendarDays();
-        };
-        
-        filterButtonsContainer.appendChild(habitButton);
+    // Get unique categories from habits
+    const categories = new Set();
+    Object.values(habits).forEach(habit => {
+        if (habit.category) {
+            categories.add(capitalizeCategory(habit.category));
+        } else {
+            categories.add('Other');
+        }
     });
     
-    filterContainer.appendChild(filterLabel);
-    filterContainer.appendChild(filterButtonsContainer);
+    // Add a button for each category
+    Array.from(categories).sort().forEach(category => {
+        const categoryButton = document.createElement('button');
+        categoryButton.className = 'category-filter-btn';
+        categoryButton.setAttribute('data-category', category);
+        categoryButton.textContent = category;
+        
+        // Set initial state
+        if (window.calendarCurrentCategory === category) {
+            categoryButton.classList.add('active');
+            categoryButton.style.backgroundColor = '#673ab7';
+            categoryButton.style.color = 'white';
+        } else {
+            categoryButton.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+            categoryButton.style.color = isDarkMode ? '#ddd' : '#333';
+        }
+        
+        categoryButton.style.border = 'none';
+        categoryButton.style.borderRadius = '4px';
+        categoryButton.style.padding = '8px 12px';
+        categoryButton.style.cursor = 'pointer';
+        
+        categoryButton.onclick = () => {
+            window.calendarCurrentCategory = category;
+            updateCalendarCategoryFilter(category);
+        };
+        
+        categoryFiltersContainer.appendChild(categoryButton);
+    });
     
     // Create month selector for calendar
     const monthSelector = document.createElement('div');
@@ -2164,8 +2190,8 @@ function showCalendarScreen() {
     currentMonthDisplay.style.fontWeight = 'bold';
     currentMonthDisplay.style.textAlign = 'center';
     currentMonthDisplay.style.flex = '1';
-    currentMonthDisplay.style.minWidth = '150px'; // Ensure month label has enough space
-    currentMonthDisplay.style.padding = '0 10px'; // Add some padding
+    currentMonthDisplay.style.minWidth = '150px';
+    currentMonthDisplay.style.padding = '0 10px';
     
     // Next month button
     const nextButton = document.createElement('button');
@@ -2199,7 +2225,7 @@ function showCalendarScreen() {
         renderCalendarDays();
     };
     
-    // Add elements to month selector in the correct order - buttons on either side of month
+    // Add elements to month selector
     monthSelector.appendChild(prevButton);
     monthSelector.appendChild(currentMonthDisplay);
     monthSelector.appendChild(nextButton);
@@ -2210,7 +2236,7 @@ function showCalendarScreen() {
     calendarGrid.style.gridTemplateColumns = 'repeat(7, 1fr)';
     calendarGrid.style.gap = '5px';
     
-    // Add day headers (Sun, Mon, Tue, etc.)
+    // Add day headers
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     days.forEach(day => {
         const dayHeader = document.createElement('div');
@@ -2225,32 +2251,63 @@ function showCalendarScreen() {
     let currentViewMonth = currentDate.getMonth();
     let currentViewYear = currentDate.getFullYear();
     
-    // Function to render calendar days, referencing the function from calendar.js
+    // Function to update category filter
+    function updateCalendarCategoryFilter(selectedCategory) {
+        // Update button styles
+        categoryFiltersContainer.querySelectorAll('button').forEach(btn => {
+            const category = btn.getAttribute('data-category');
+            if (category === selectedCategory) {
+                btn.classList.add('active');
+                btn.style.backgroundColor = '#673ab7';
+                btn.style.color = 'white';
+            } else {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+                btn.style.color = isDarkMode ? '#ddd' : '#333';
+            }
+        });
+    
+        // Redraw calendar with new filter
+        renderCalendarDays();
+    }
+    
+    // Function to render calendar days with category filtering
     function renderCalendarDays() {
         // Check if required DOM elements exist
         if (!calendarGrid || !currentMonthDisplay) {
             console.warn('Calendar elements not found. Calendar cannot be rendered.');
             return;
         }
-        
-        // Check if the renderCalendarDays function from calendar.js exists
-        if (typeof window.renderCalendarDays !== 'function') {
+    
+        // Filter habits based on selected category
+        const filteredHabits = {};
+        Object.entries(habits).forEach(([habitId, habit]) => {
+            const habitCategory = capitalizeCategory(habit.category || 'Other');
+            if (window.calendarCurrentCategory === 'all' || habitCategory === window.calendarCurrentCategory) {
+                filteredHabits[habitId] = habit;
+            }
+        });
+    
+        // Call the renderCalendarDays function from calendar.js with filtered habits
+        if (typeof window.renderCalendarDays === 'function') {
+            window.renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, filteredHabits);
+        } else {
             console.warn('Calendar rendering function not found. Calendar cannot be rendered.');
-            return;
         }
-        
-        // Call the renderCalendarDays function from calendar.js
-        window.renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, habits);
     }
     
     // Initialize calendar
+    if (!window.calendarCurrentCategory) {
+        window.calendarCurrentCategory = 'all';
+    }
     renderCalendarDays();
     
     // Assemble the calendar components
     calendarContent.appendChild(calendarHeading);
-    calendarContent.appendChild(filterContainer);  // Add filter UI
+    calendarContent.appendChild(categoryFiltersContainer);
     calendarContent.appendChild(monthSelector);
     calendarContent.appendChild(calendarGrid);
+    
     calendarContainer.appendChild(calendarContent);
     
     // Assemble the screen
@@ -2274,6 +2331,8 @@ function renderHabitCard(habitId, habit) {
     const habitCard = document.createElement('div');
     habitCard.className = 'habit-card';
     habitCard.id = `habit-card-${habitId}`;
+    // Add data-category attribute for filtering
+    habitCard.dataset.category = capitalizeCategory(habit.category || 'Other');
     
     // Always apply the habit's custom color directly with high specificity
     habitCard.style.setProperty('background-color', habit.color || '#4CAF50', 'important');
@@ -2455,6 +2514,9 @@ function hexToRgb(hex) {
 function updateHabitCardInDOM(habitId, habit) {
     const existingCard = document.getElementById(`habit-card-${habitId}`);
     if (existingCard) {
+        // Get current category filter
+        const currentFilter = document.querySelector('.category-filter.active')?.dataset.category || 'All';
+        
         // Create new card with updated data
         const newCard = renderHabitCard(habitId, habit);
         
@@ -2466,8 +2528,18 @@ function updateHabitCardInDOM(habitId, habit) {
             newCard.classList.add('completion-flash');
         }
         
+        // Ensure category data attribute is properly set
+        const category = capitalizeCategory(habit.category || 'Other');
+        newCard.dataset.category = category;
+        console.log(`Updated habit card category: ${habit.name} - Category: ${category}`);
+        
         // Replace the old card with the new one
         existingCard.replaceWith(newCard);
+        
+        // Apply current category filter
+        if (currentFilter !== 'All') {
+            newCard.style.display = (category === currentFilter) ? 'block' : 'none';
+        }
         
         // Add necessary CSS if not already present
         if (!document.getElementById('card-animations')) {
@@ -2669,27 +2741,59 @@ function showReminderSettings(habitId, habit) {
     }
 }
 
-// Filter habits by category function
+// Global variables
+window.currentCategoryFilter = window.currentCategoryFilter || 'all';
+
+// Helper function to capitalize category names
+function capitalizeCategory(category) {
+    // Handle null, undefined, or empty string
+    if (!category) return 'Other';
+    
+    // Normalize whitespace and trim
+    const trimmedCategory = category.trim();
+    if (trimmedCategory === '') return 'Other';
+    
+    // Split by spaces and capitalize each word
+    return trimmedCategory
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+}
+
 function filterHabitsByCategory(categoryId) {
-    currentCategoryFilter = categoryId;
+    // Default to 'all' if no category is specified
+    categoryId = categoryId || 'all';
+    window.currentCategoryFilter = categoryId;
+    
+    console.log('Filtering by category:', categoryId); // Debug log
     
     // Update active filter button
     const filterButtons = document.querySelectorAll('.category-filter-btn');
     filterButtons.forEach(btn => {
-        if (btn.getAttribute('data-category') === categoryId) {
+        const btnCategory = btn.getAttribute('data-category');
+        if (btnCategory === categoryId) {
             btn.classList.add('active');
+            btn.style.backgroundColor = '#673ab7';
+            btn.style.color = 'white';
         } else {
             btn.classList.remove('active');
+            btn.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
+            btn.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
         }
     });
     
+    // Normalize the category filter for comparison
+    const categoryFilter = capitalizeCategory(categoryId);
+    
     // Filter habit cards directly in the DOM
     const habitCards = document.querySelectorAll('.habit-card');
+    let visibleCount = 0;
     
     if (categoryId === 'all') {
         // Show all habits
         habitCards.forEach(card => {
             card.style.display = 'block';
+            visibleCount++;
             
             // Add staggered animation
             setTimeout(() => {
@@ -2701,18 +2805,22 @@ function filterHabitsByCategory(categoryId) {
     } else {
         // Show only habits with matching category
         habitCards.forEach((card, index) => {
-            const habitId = card.getAttribute('data-habit-id');
-            const habit = habits[habitId];
+            // Get and normalize the card's category
+            const cardCategory = capitalizeCategory(card.dataset.category || 'Other');
+            const normalizedFilter = capitalizeCategory(categoryFilter);
             
-            if (habit.category === categoryId) {
+            console.log(`Checking card with category: ${cardCategory} against filter: ${normalizedFilter}`);
+            
+            if (cardCategory === normalizedFilter) {
                 card.style.display = 'block';
+                visibleCount++;
                 
                 // Add staggered animation for visible cards
                 setTimeout(() => {
                     card.style.animation = 'none';
                     card.offsetHeight; // Trigger reflow
                     card.style.animation = 'fadeInUp 0.3s ease forwards';
-                }, index * 50); // Stagger by 50ms
+                }, visibleCount * 50); // Stagger by 50ms
             } else {
                 card.style.display = 'none';
             }
@@ -2720,17 +2828,17 @@ function filterHabitsByCategory(categoryId) {
     }
     
     // Show message if no habits are visible
-    const visibleCards = document.querySelectorAll('.habit-card[style="display: block;"]');
     const noHabitsMessage = document.querySelector('.no-habits-message') || document.createElement('div');
+    noHabitsMessage.className = 'no-habits-message';
     
-    if (visibleCards.length === 0) {
-        noHabitsMessage.className = 'no-habits-message';
+    if (visibleCount === 0) {
+        const displayCategory = categoryId === 'all' ? 'habits' : capitalizeCategory(categoryId);
         noHabitsMessage.textContent = categoryId === 'all' 
             ? 'No habits added yet. Tap + to add one!' 
-            : 'No habits in this category. Tap + to add one!';
+            : `No habits in the ${displayCategory} category. Tap + to add one!`;
         noHabitsMessage.style.textAlign = 'center';
         noHabitsMessage.style.padding = '40px 20px';
-        noHabitsMessage.style.color = '#666';
+        noHabitsMessage.style.color = isDarkModeEnabled() ? '#aaa' : '#666';
         
         const habitsContainer = document.getElementById('habits-container');
         if (!document.querySelector('.no-habits-message')) {
@@ -2740,39 +2848,140 @@ function filterHabitsByCategory(categoryId) {
         document.querySelector('.no-habits-message').remove();
     }
     
-    // Add fadeInUp animation if not already defined
-    if (!document.getElementById('filter-animations')) {
-        const styleSheet = document.createElement('style');
-        styleSheet.id = 'filter-animations';
-        styleSheet.textContent = `
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `;
-        document.head.appendChild(styleSheet);
-    }
-    
     // Update stats to reflect the currently visible habits
     updateStats();
+    
+    // Save current filter to localStorage for persistence
+    localStorage.setItem('currentCategoryFilter', categoryId);
+}
+
+// Function to set up category filters
+function setupCategoryFilters() {
+    // Wait for DOM to be ready
+    if (!document.getElementById('habits-container')) {
+        console.warn('Habits container not found, deferring category filter setup');
+        return;
+    }
+    
+    // Find or create the category filters container
+    let categoryFiltersContainer = document.querySelector('.category-filters');
+    if (!categoryFiltersContainer) {
+        categoryFiltersContainer = document.createElement('div');
+        categoryFiltersContainer.className = 'category-filters';
+        categoryFiltersContainer.style.display = 'flex';
+        categoryFiltersContainer.style.flexWrap = 'wrap';
+        categoryFiltersContainer.style.gap = '8px';
+        categoryFiltersContainer.style.marginBottom = '16px';
+        
+        // Insert before the habits container
+        const habitsContainer = document.getElementById('habits-container');
+        habitsContainer.parentNode.insertBefore(categoryFiltersContainer, habitsContainer);
+    }
+    
+    // Clear existing filters
+    categoryFiltersContainer.innerHTML = '';
+    
+    // Add "All" filter button
+    const allButton = document.createElement('button');
+    allButton.className = 'category-filter-btn';
+    allButton.setAttribute('data-category', 'all');
+    allButton.textContent = 'All Habits';
+    
+    // Set initial state based on window.currentCategoryFilter
+    if (window.currentCategoryFilter === 'all') {
+        allButton.classList.add('active');
+        allButton.style.backgroundColor = '#673ab7';
+        allButton.style.color = 'white';
+    } else {
+        allButton.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
+        allButton.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
+    }
+    
+    allButton.style.border = 'none';
+    allButton.style.borderRadius = '4px';
+    allButton.style.padding = '8px 12px';
+    allButton.style.cursor = 'pointer';
+    
+    allButton.onclick = () => {
+        filterHabitsByCategory('all');
+    };
+    
+    categoryFiltersContainer.appendChild(allButton);
+    
+    // Get unique categories from habits
+    const categories = new Set();
+    Object.values(habits).forEach(habit => {
+        if (habit.category) {
+            categories.add(capitalizeCategory(habit.category));
+        } else {
+            categories.add('Other');
+        }
+    });
+    
+    // Add a button for each category
+    Array.from(categories).sort().forEach(category => {
+        const categoryButton = document.createElement('button');
+        categoryButton.className = 'category-filter-btn';
+        categoryButton.setAttribute('data-category', category);  // Use the properly capitalized category
+        categoryButton.textContent = category;
+        
+        // Set initial state based on window.currentCategoryFilter
+        const currentFilterCap = capitalizeCategory(window.currentCategoryFilter);
+        if (currentFilterCap === category) {  // Compare with capitalized category
+            categoryButton.classList.add('active');
+            categoryButton.style.backgroundColor = '#673ab7';
+            categoryButton.style.color = 'white';
+        } else {
+            categoryButton.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
+            categoryButton.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
+        }
+        
+        categoryButton.style.border = 'none';
+        categoryButton.style.borderRadius = '4px';
+        categoryButton.style.padding = '8px 12px';
+        categoryButton.style.cursor = 'pointer';
+        
+        categoryButton.onclick = () => {
+            filterHabitsByCategory(category);  // Use the properly capitalized category
+        };
+        
+        categoryFiltersContainer.appendChild(categoryButton);
+    });
+    
+    // Apply current filter
+    filterHabitsByCategory(window.currentCategoryFilter);
 }
 
 // Initialize the app
 function initApp() {
+    // Load saved category filter or default to 'all'
+    window.currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || 'all';
+    
     loadHabits();
     renderHabits();
-    setupCategoryFilters();
+    
+    // Ensure DOM is loaded before setting up filters
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setupCategoryFilters();
+            filterHabitsByCategory(window.currentCategoryFilter);
+        });
+    } else {
+        setupCategoryFilters();
+        filterHabitsByCategory(window.currentCategoryFilter);
+    }
+    
     setupEventListeners();
-    updateStats(); // Make sure stats are shown
+    updateStats();
     checkStreaks();
     renderCalendar();
 }
+
+// Add global event listener for navigation
+window.addEventListener('popstate', () => {
+    const route = window.location.hash.slice(1) || 'home';
+    handleRouteChange(route);
+});
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', init);
@@ -2782,10 +2991,14 @@ function init() {
     // Call the new consolidated init function
     initApp();
     
-    // Add app-specific initialization that's not in initApp
+    // Add app-specific initialization
     setDefaultHabits();
     applyTheme();
     setupNotificationPermission();
+    
+    // Handle initial route
+    const route = window.location.hash.slice(1) || 'home';
+    handleRouteChange(route);
 }
 
 // Update stats and analytics
