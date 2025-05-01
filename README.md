@@ -18,6 +18,8 @@ This project was initially planned as a Flutter mobile application, but is curre
 - [x] Set weekly reset frequency for habits
 - [x] View complete/incomplete habits at a glance
 - [x] Light/dark theme support
+- [x] Organize habits by categories
+- [x] Filter habits by category in main view and calendar
 
 ### 🔥 Habit Streaks & Motivation
 - [x] Track consecutive completion streaks for each habit
@@ -28,7 +30,8 @@ This project was initially planned as a Flutter mobile application, but is curre
 - [x] Monthly calendar view with habit completion indicators
 - [x] Navigate between months to review past performance
 - [x] Daily detail view showing which habits were completed on selected day
-- [x] Filter calendar to view history for specific habits
+- [x] Filter calendar by habit categories
+- [x] Category-based filtering synchronized with main view
 
 ### 🔔 Notifications & Reminders
 - [x] Set time-based reminders for individual habits
@@ -81,8 +84,9 @@ The application is configured to run on Replit with minimal setup. Simply:
 
 - `scripts/`: Contains JavaScript files like main.js, calendar.js, etc.
 - `styles/`: Contains CSS files for modular styling
-- `docs/BUG_TRACKER.md`: Tracks known bugs and fixes
-- `ROADMAP.md`: High-level vision, feature backlog, and dev priorities
+- `docs/`: Contains project documentation
+  - `BUG_TRACKER.md`: Tracks known bugs and fixes
+  - `ROADMAP.md`: High-level vision, feature backlog, and dev priorities
 
 ### 🖼️ Screenshots (To Be Updated)
 
@@ -96,7 +100,7 @@ Screenshots will be added in future updates.
 
 ## 🚣 Next Steps & Future Development
 
-See the ROADMAP.md for detailed priorities.
+See the `docs/ROADMAP.md` for detailed priorities.
 
 ### 📌 High Priority
 - [ ] Implement proper multi-file structure (separate JS, CSS, HTML)
@@ -105,9 +109,9 @@ See the ROADMAP.md for detailed priorities.
 - [ ] Improve mobile responsiveness and touch interaction
 
 ### 🌟 Feature Enhancements
+- [x] Implement habit categories and organization
 - [ ] Add statistics and insights based on habit history
 - [ ] Create data visualization for long-term habit tracking
-- [ ] Implement habit categories and organization
 - [ ] Add social sharing or accountability features
 - [ ] Create export/import functionality for habit data
 
@@ -119,10 +123,10 @@ See the ROADMAP.md for detailed priorities.
 
 ### 🐞 Bug Tracker
 
-For known issues and polish tasks, check out the BUG_TRACKER.md
+For known issues and polish tasks, check out the `docs/BUG_TRACKER.md`
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-Last updated: April 2025
+Last updated: April 2024
