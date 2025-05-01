@@ -1,7 +1,39 @@
 // Calendar functionality for Atomic Momentum
 
-// Global variable to track which habit is being filtered in calendar view
+// Global filter state
 window.calendarCurrentFilterHabit = null;
+
+// Helper function to check habit completion status
+function checkHabitCompletion(habit, dateStr, habitHistory) {
+    if (!habit || !dateStr) return null;
+    
+    // Per-habit history check
+    if (habit.history && habit.history[dateStr]) {
+        return habit.history[dateStr];
+    }
+    
+    // Global history fallback
+    if (habitHistory[dateStr] && habitHistory[dateStr][habit.id]) {
+        return habitHistory[dateStr][habit.id];
+    }
+    
+    return null;
+}
+
+// Helper function to get a consistent date string
+function getLocalDateString(year, month, day) {
+    const localDate = new Date(year, month, day);
+    const yyyy = localDate.getFullYear();
+    const mm = String(localDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(localDate.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+// Helper function to get today's date in YYYY-MM-DD format
+function getTodayFormatted() {
+    const today = new Date();
+    return getLocalDateString(today.getFullYear(), today.getMonth(), today.getDate());
+}
 
 // Function to render calendar days
 function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, habits) {
@@ -16,24 +48,22 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
         return;
     }
     
-    // Clear existing calendar days (keep header row with day names)
-    const headerRowCount = 7; // Number of day headers (Sun-Sat)
-    while (calendarGrid && calendarGrid.childElementCount > headerRowCount) {
-        calendarGrid.removeChild(calendarGrid.lastChild);
-    }
+    // Clear existing calendar days
+    calendarGrid.innerHTML = '';
     
-    // Update month display
-    currentMonthDisplay.textContent = `${new Date(currentViewYear, currentViewMonth, 1).toLocaleString('default', { month: 'long' })} ${currentViewYear}`;
+    // Update month display using local date
+    const monthDate = new Date(currentViewYear, currentViewMonth, 1);
+    currentMonthDisplay.textContent = monthDate.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric'
+    });
     
-    // First day of the month
+    // First day of the month (using local date)
     const firstDay = new Date(currentViewYear, currentViewMonth, 1);
-    // Last day of the month
     const lastDay = new Date(currentViewYear, currentViewMonth + 1, 0);
-    
-    // Get day of week for the first day (0-6, Sunday to Saturday)
     const firstDayOfWeek = firstDay.getDay();
     
-    // Create empty cells for days from previous month
+    // Create empty cells for days before the first of the month
     for (let i = 0; i < firstDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
         emptyCell.style.height = '40px';
@@ -42,15 +72,15 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
         calendarGrid.appendChild(emptyCell);
     }
     
-    // Create cells for all days in the month
+    // Load habit history
     const habitHistory = loadHabitHistory();
-    const today = new Date();
-    const isDarkMode = isDarkModeEnabled();
+    console.log('Loaded habit history:', habitHistory);
     
+    // Create cells for all days in the month
     for (let day = 1; day <= lastDay.getDate(); day++) {
         const dayCell = document.createElement('div');
         dayCell.style.height = '40px';
-        dayCell.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
+        dayCell.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
         dayCell.style.display = 'flex';
         dayCell.style.flexDirection = 'column';
         dayCell.style.alignItems = 'center';
@@ -60,10 +90,12 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
         dayCell.style.cursor = 'pointer';
         dayCell.style.position = 'relative';
         
+        // Get the date string for this day
+        const dateString = getLocalDateString(currentViewYear, currentViewMonth, day);
+        console.log('Processing date:', dateString);
+        
         // Highlight current day
-        if (currentViewYear === today.getFullYear() && 
-            currentViewMonth === today.getMonth() && 
-            day === today.getDate()) {
+        if (dateString === getTodayFormatted()) {
             dayCell.style.border = '2px solid #673ab7';
             dayCell.style.fontWeight = 'bold';
         }
@@ -78,57 +110,70 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
         completionIndicator.style.gap = '2px';
         completionIndicator.style.marginTop = '2px';
         
-        // Get habit status for this day
-        const checkDate = formatDate(new Date(currentViewYear, currentViewMonth, day));
-        
         // If we're filtering by a specific habit
         if (window.calendarCurrentFilterHabit) {
-            if (habitHistory && habitHistory[checkDate] && habitHistory[checkDate][window.calendarCurrentFilterHabit]) {
-                // Show a larger indicator if a specific habit is filtered
-                const indicator = document.createElement('div');
-                if (habitHistory[checkDate][window.calendarCurrentFilterHabit] === "completed") {
-                    indicator.style.width = '12px';
-                    indicator.style.height = '12px';
-                    indicator.style.borderRadius = '50%';
-                    const habit = habits[window.calendarCurrentFilterHabit];
-                    indicator.style.backgroundColor = habit ? habit.color : '#4CAF50';
-                } else {
-                    indicator.style.width = '10px';
-                    indicator.style.height = '10px';
-                    indicator.style.borderRadius = '50%';
-                    indicator.style.backgroundColor = '#ccc';
-                    indicator.style.opacity = '0.5';
+            const habit = habits[window.calendarCurrentFilterHabit];
+            if (habit) {
+                const status = checkHabitCompletion(habit, dateString, habitHistory);
+                if (status) {
+                    const indicator = document.createElement('div');
+                    if (status === "completed") {
+                        indicator.style.width = '12px';
+                        indicator.style.height = '12px';
+                        indicator.style.borderRadius = '50%';
+                        indicator.style.backgroundColor = habit.color;
+                    } else {
+                        indicator.style.width = '10px';
+                        indicator.style.height = '10px';
+                        indicator.style.borderRadius = '50%';
+                        indicator.style.backgroundColor = '#ccc';
+                        indicator.style.opacity = '0.5';
+                    }
+                    completionIndicator.appendChild(indicator);
                 }
-                completionIndicator.appendChild(indicator);
             }
         } else {
-            // Show all habits for this day (limited to dots)
-            if (habitHistory && habitHistory[checkDate]) {
-                Object.keys(habitHistory[checkDate]).forEach((habitId, index) => {
-                    if (index < 3) { // Limit to 3 indicators per day to avoid overflow
-                        const indicator = document.createElement('div');
-                        indicator.style.width = '6px';
-                        indicator.style.height = '6px';
-                        indicator.style.borderRadius = '50%';
-                        
-                        if (habitHistory[checkDate][habitId] === "completed") {
-                            const habit = habits[habitId];
-                            indicator.style.backgroundColor = habit ? habit.color : '#4CAF50';
-                        } else {
-                            indicator.style.backgroundColor = '#ccc';
-                            indicator.style.opacity = '0.5';
-                        }
-                        
-                        completionIndicator.appendChild(indicator);
-                    } else if (index === 3) {
-                        // Add a "more" indicator
-                        const moreIndicator = document.createElement('div');
-                        moreIndicator.textContent = '+';
-                        moreIndicator.style.fontSize = '8px';
-                        moreIndicator.style.color = isDarkMode ? '#aaa' : '#666';
-                        completionIndicator.appendChild(moreIndicator);
-                    }
-                });
+            // Show all habits for this day
+            let completedCount = 0;
+            let uncompletedCount = 0;
+            
+            Object.entries(habits).forEach(([habitId, habit]) => {
+                const status = checkHabitCompletion(habit, dateString, habitHistory);
+                if (status === "completed") {
+                    completedCount++;
+                } else if (status === "not_completed") {
+                    uncompletedCount++;
+                }
+            });
+            
+            // Show completed habits
+            if (completedCount > 0) {
+                const indicator = document.createElement('div');
+                indicator.style.width = '6px';
+                indicator.style.height = '6px';
+                indicator.style.borderRadius = '50%';
+                indicator.style.backgroundColor = '#4CAF50';
+                completionIndicator.appendChild(indicator);
+            }
+            
+            // Show uncompleted habits
+            if (uncompletedCount > 0) {
+                const indicator = document.createElement('div');
+                indicator.style.width = '6px';
+                indicator.style.height = '6px';
+                indicator.style.borderRadius = '50%';
+                indicator.style.backgroundColor = '#ccc';
+                indicator.style.opacity = '0.5';
+                completionIndicator.appendChild(indicator);
+            }
+            
+            // Show "more" indicator if needed
+            if (completedCount + uncompletedCount > 2) {
+                const moreIndicator = document.createElement('div');
+                moreIndicator.textContent = '+';
+                moreIndicator.style.fontSize = '8px';
+                moreIndicator.style.color = isDarkModeEnabled() ? '#aaa' : '#666';
+                completionIndicator.appendChild(moreIndicator);
             }
         }
         
@@ -136,7 +181,7 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
         
         // Add click handler to show daily habit details
         dayCell.onclick = () => {
-            showDayDetails(checkDate, isDarkMode, habits);
+            showDayDetails(dateString, isDarkModeEnabled(), habits);
         };
         
         calendarGrid.appendChild(dayCell);
@@ -145,49 +190,31 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
 
 // Function to show details for a selected day
 function showDayDetails(dateString, isDarkMode, habits) {
-    const formatOptions = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-    };
-    
-    // Get habit history
     const habitHistory = loadHabitHistory();
-    const dateHistory = habitHistory[dateString] || {};
+    console.log('Showing details for date:', dateString);
+    console.log('Full habit history:', habitHistory);
     
     // Create overlay for popup
     const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-    overlay.style.display = 'flex';
-    overlay.style.justifyContent = 'center';
-    overlay.style.alignItems = 'center';
-    overlay.style.zIndex = '1000';
+    overlay.className = 'dialog-overlay';
     
     // Create popup container
     const popup = document.createElement('div');
-    popup.style.width = '80%';
-    popup.style.maxWidth = '400px';
-    popup.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    popup.style.borderRadius = '8px';
-    popup.style.padding = '20px';
-    popup.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
-    popup.style.position = 'relative';
+    popup.className = 'calendar-popup';
     
     // Format date for display
-    const displayDate = new Date(dateString);
+    const [year, month, day] = dateString.split('-').map(Number);
+    const displayDate = new Date(year, month - 1, day);
     
     // Popup title
     const title = document.createElement('h3');
-    title.textContent = displayDate.toLocaleDateString(undefined, formatOptions);
-    title.style.textAlign = 'center';
-    title.style.marginTop = '0';
-    title.style.marginBottom = '20px';
+    title.className = 'calendar-popup-title';
+    title.textContent = displayDate.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
     
     // Close button
     const closeButton = document.createElement('div');
@@ -197,7 +224,7 @@ function showDayDetails(dateString, isDarkMode, habits) {
     closeButton.style.right = '15px';
     closeButton.style.fontSize = '24px';
     closeButton.style.cursor = 'pointer';
-    closeButton.style.color = isDarkMode ? '#aaa' : '#666';
+    closeButton.style.color = 'var(--muted-text-color)';
     
     closeButton.onclick = () => {
         document.body.removeChild(overlay);
@@ -205,51 +232,45 @@ function showDayDetails(dateString, isDarkMode, habits) {
     
     // Habits list
     const habitsList = document.createElement('div');
-    habitsList.style.marginTop = '10px';
+    habitsList.className = 'habit-list';
     
-    // If we have a filter active, only show that habit
+    // Show habits based on filter
+    let hasAnyData = false;
+    
     if (window.calendarCurrentFilterHabit) {
-        if (dateHistory[window.calendarCurrentFilterHabit]) {
-            const status = dateHistory[window.calendarCurrentFilterHabit]; // "completed" or "not_completed"
-            const habit = habits[window.calendarCurrentFilterHabit]; // Get the current habit info
-            displayHabitHistoryItem(habitsList, window.calendarCurrentFilterHabit, status, habit, isDarkMode);
-        } else {
-            const noDataMsg = document.createElement('div');
-            noDataMsg.textContent = 'No data recorded for this habit on this date.';
-            noDataMsg.style.textAlign = 'center';
-            noDataMsg.style.color = isDarkMode ? '#aaa' : '#666';
-            noDataMsg.style.padding = '20px 0';
-            habitsList.appendChild(noDataMsg);
+        const habit = habits[window.calendarCurrentFilterHabit];
+        if (habit) {
+            const status = checkHabitCompletion(habit, dateString, habitHistory);
+            if (status) {
+                hasAnyData = true;
+                displayHabitHistoryItem(habitsList, window.calendarCurrentFilterHabit, status, habit, isDarkMode);
+            }
         }
     } else {
-        // Show all habits for the selected date
-        if (Object.keys(dateHistory).length === 0) {
-            const noDataMsg = document.createElement('div');
-            noDataMsg.textContent = 'No habits recorded for this date.';
-            noDataMsg.style.textAlign = 'center';
-            noDataMsg.style.color = isDarkMode ? '#aaa' : '#666';
-            noDataMsg.style.padding = '20px 0';
-            habitsList.appendChild(noDataMsg);
-        } else {
-            // Sort habit entries alphabetically by habit name
-            const sortedHabitEntries = Object.entries(dateHistory).sort((a, b) => {
-                const habitA = habits[a[0]] || { name: 'Unknown' };
-                const habitB = habits[b[0]] || { name: 'Unknown' };
-                return habitA.name.localeCompare(habitB.name);
-            });
-            
-            sortedHabitEntries.forEach(([habitId, status]) => {
-                const habit = habits[habitId];
+        // Sort habits by name and show all
+        const sortedHabits = Object.entries(habits).sort(([,a], [,b]) => a.name.localeCompare(b.name));
+        
+        sortedHabits.forEach(([habitId, habit]) => {
+            const status = checkHabitCompletion(habit, dateString, habitHistory);
+            if (status) {
+                hasAnyData = true;
                 displayHabitHistoryItem(habitsList, habitId, status, habit, isDarkMode);
-            });
-        }
+            }
+        });
     }
     
-    // Habit filter section
+    if (!hasAnyData) {
+        const noDataMsg = document.createElement('div');
+        noDataMsg.className = 'no-data-message';
+        noDataMsg.textContent = window.calendarCurrentFilterHabit ? 
+            'No data recorded for this habit on this date.' :
+            'No habits recorded for this date.';
+        habitsList.appendChild(noDataMsg);
+    }
+    
+    // Add filter section
     const filterSection = document.createElement('div');
-    filterSection.style.marginTop = '20px';
-    filterSection.style.borderTop = isDarkMode ? '1px solid #444' : '1px solid #ddd';
-    filterSection.style.paddingTop = '15px';
+    filterSection.className = 'filter-section';
     
     const filterLabel = document.createElement('div');
     filterLabel.textContent = 'Filter Calendar By:';
@@ -257,27 +278,21 @@ function showDayDetails(dateString, isDarkMode, habits) {
     filterLabel.style.fontWeight = 'bold';
     
     const filterButtons = document.createElement('div');
-    filterButtons.style.display = 'flex';
-    filterButtons.style.flexWrap = 'wrap';
-    filterButtons.style.gap = '5px';
+    filterButtons.className = 'filter-buttons';
     
     // Add "Show All" button
     const allButton = document.createElement('button');
     allButton.textContent = 'All Habits';
-    allButton.style.backgroundColor = window.calendarCurrentFilterHabit === null ? '#673ab7' : (isDarkMode ? '#333' : '#f0f0f0');
-    allButton.style.color = window.calendarCurrentFilterHabit === null ? 'white' : (isDarkMode ? '#ddd' : '#333');
-    allButton.style.border = 'none';
-    allButton.style.borderRadius = '4px';
-    allButton.style.padding = '5px 10px';
-    allButton.style.cursor = 'pointer';
+    allButton.className = 'filter-button';
+    
+    if (window.calendarCurrentFilterHabit === null) {
+        allButton.classList.add('active');
+    }
     
     allButton.onclick = () => {
         window.calendarCurrentFilterHabit = null;
         document.body.removeChild(overlay);
-        // Force calendar redraw
-        if (typeof renderCalendarDays === 'function') {
-            renderCalendarDays();
-        }
+        renderCalendarDays();
     };
     
     filterButtons.appendChild(allButton);
@@ -287,20 +302,17 @@ function showDayDetails(dateString, isDarkMode, habits) {
         const habit = habits[habitId];
         const filterButton = document.createElement('button');
         filterButton.textContent = habit.name;
-        filterButton.style.backgroundColor = window.calendarCurrentFilterHabit === habitId ? habit.color : (isDarkMode ? '#333' : '#f0f0f0');
-        filterButton.style.color = window.calendarCurrentFilterHabit === habitId ? 'white' : (isDarkMode ? '#ddd' : '#333');
-        filterButton.style.border = 'none';
-        filterButton.style.borderRadius = '4px';
-        filterButton.style.padding = '5px 10px';
-        filterButton.style.cursor = 'pointer';
+        filterButton.className = 'filter-button';
+        
+        if (window.calendarCurrentFilterHabit === habitId) {
+            filterButton.classList.add('active');
+            filterButton.style.backgroundColor = habit.color;
+        }
         
         filterButton.onclick = () => {
             window.calendarCurrentFilterHabit = habitId;
             document.body.removeChild(overlay);
-            // Force calendar redraw
-            if (typeof renderCalendarDays === 'function') {
-                renderCalendarDays();
-            }
+            renderCalendarDays();
         };
         
         filterButtons.appendChild(filterButton);
@@ -328,29 +340,23 @@ function showDayDetails(dateString, isDarkMode, habits) {
 
 // Helper function to display a habit history item
 function displayHabitHistoryItem(parentElement, habitId, status, habit, isDarkMode) {
-    if (!habit) return; // Skip if habit doesn't exist anymore
+    if (!habit) return;
     
     const habitItem = document.createElement('div');
-    habitItem.style.padding = '10px';
-    habitItem.style.marginBottom = '10px';
-    habitItem.style.borderRadius = '4px';
-    habitItem.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-    habitItem.style.display = 'flex';
-    habitItem.style.justifyContent = 'space-between';
-    habitItem.style.alignItems = 'center';
+    habitItem.className = 'habit-item';
     
     const habitName = document.createElement('div');
+    habitName.className = 'habit-name';
     habitName.textContent = habit.name;
-    habitName.style.fontWeight = 'bold';
     habitName.style.color = habit.color;
     
     const habitStatus = document.createElement('div');
+    habitStatus.className = `habit-status ${status}`;
+    
     if (status === "completed") {
         habitStatus.innerHTML = '✅ Completed';
-        habitStatus.style.color = '#4CAF50';
     } else {
         habitStatus.innerHTML = '❌ Not Completed';
-        habitStatus.style.color = '#F44336';
     }
     
     habitItem.appendChild(habitName);
