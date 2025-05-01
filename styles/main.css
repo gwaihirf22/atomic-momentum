@@ -1199,4 +1199,31 @@ input:checked + .theme-switch-slider:before {
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     transition: opacity 0.3s ease-in-out;
+}
+
+/* Popup close button styling */
+.popup-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted-text-color);
+    transition: color 0.2s ease;
+}
+
+.popup-close-button:hover {
+    color: var(--text-color);
+}
+
+/* Habit item in calendar popup */
+.habit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background-color: var(--card-bg-color);
+    box-shadow: var(--card-shadow);
 } 
