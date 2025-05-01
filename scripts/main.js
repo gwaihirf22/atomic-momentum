@@ -91,54 +91,52 @@ function notifyThemeChange() {
 
 // Load habits from localStorage
 function loadHabits() {
-    const savedHabits = localStorage.getItem('atomic_momentum_habits');
+    // ... existing code ...
+    
+    // Try to load habits from localStorage
+    const savedHabits = localStorage.getItem('habits');
     if (savedHabits) {
-        try {
-            habits = JSON.parse(savedHabits);
-            
-            // Initialize and normalize habit properties
-            Object.keys(habits).forEach(habitId => {
-                const habit = habits[habitId];
-                
-                // Initialize missing properties
-                habit.history = habit.history || {};
-                habit.streak = habit.streak || 0;
-                habit.lastStreakDate = habit.lastStreakDate || null;
-                habit.reminderTime = habit.reminderTime || null;
-                habit.reminderEnabled = habit.reminderEnabled || false;
-                
-                // Ensure category is properly capitalized and defaulted
-                if (!habit.category) {
-                    habit.category = "Other";
-                }
-                habit.category = capitalizeCategory(habit.category);
-            });
-            
-            // Check for habits that need to be reset
-            checkHabitResets();
-        } catch (e) {
-            console.error('Error loading habits from localStorage:', e);
-            habits = {...defaultHabits};
-            saveHabits();
-        }
-    } else {
-        // Use default habits if none are saved
-        habits = {...defaultHabits};
+        habits = JSON.parse(savedHabits);
+        
+        // Convert datestring fields back to Date objects
         Object.values(habits).forEach(habit => {
-            if (!habit.category) {
-                habit.category = "Other";
+            if (habit.lastUpdatedDate) {
+                habit.lastUpdatedDate = new Date(habit.lastUpdatedDate);
             }
-            habit.category = capitalizeCategory(habit.category);
+            if (habit.lastStreakDate) {
+                habit.lastStreakDate = new Date(habit.lastStreakDate);
+            }
         });
-        saveHabits();
+    } else {
+        // If no habits found, use defaults
+        habits = defaultHabits;
+        console.log('No saved habits found, using defaults');
+        saveHabits(); // Save the defaults
     }
     
-    // Update UI
-    renderHabits();
-    applyTheme();
+    // Ensure habit objects have all required properties
+    Object.keys(habits).forEach(habitId => {
+        if (!habits[habitId].history) {
+            habits[habitId].history = {};
+        }
+        if (!habits[habitId].streak) {
+            habits[habitId].streak = 0;
+        }
+        if (!habits[habitId].lastStreakDate) {
+            habits[habitId].lastStreakDate = null;
+        }
+        if (habits[habitId].reminderEnabled === undefined) {
+            habits[habitId].reminderEnabled = false;
+        }
+        if (!habits[habitId].category) {
+            habits[habitId].category = 'Other';
+        }
+    });
     
-    // Setup category filters after habits are loaded
-    setupCategoryFilters();
+    // Setup event listeners after habits are loaded
+    setupEventListeners();
+    
+    return habits;
 }
 
 // Save habits to localStorage with proper category capitalization
@@ -149,7 +147,7 @@ function saveHabits() {
             habit.category = capitalizeCategory(habit.category || "Other");
         });
         
-        localStorage.setItem('atomic_momentum_habits', JSON.stringify(habits));
+        localStorage.setItem('habits', JSON.stringify(habits));
         console.log('Saved habits to localStorage:', habits);
     } catch (e) {
         console.error('Error saving habits to localStorage:', e);
@@ -158,7 +156,7 @@ function saveHabits() {
 
 // Load habit history from localStorage
 function loadHabitHistory() {
-    const savedHistory = localStorage.getItem('atomic_momentum_habit_history');
+    const savedHistory = localStorage.getItem('habit_history');
     if (savedHistory) {
         try {
             return JSON.parse(savedHistory);
@@ -173,7 +171,7 @@ function loadHabitHistory() {
 // Save habit history to localStorage
 function saveHabitHistory(history) {
     try {
-        localStorage.setItem('atomic_momentum_habit_history', JSON.stringify(history));
+        localStorage.setItem('habit_history', JSON.stringify(history));
         console.log('Saved habit history to localStorage');
     } catch (e) {
         console.error('Error saving habit history to localStorage:', e);
@@ -1926,6 +1924,9 @@ function showSettingsScreen() {
     
     // Add to body
     document.body.appendChild(appScreen);
+    
+    // Setup event listeners for the settings screen
+    setupEventListeners();
 }
 
 // Show Calendar Screen
@@ -2239,9 +2240,6 @@ function showCalendarScreen() {
     // Add to body
     document.body.appendChild(appScreen);
     
-    // Render initial calendar
-    renderCalendarDays();
-    
     // Function to update category filters
     function updateCalendarCategoryFilter(selectedCategory) {
         // Update active state on buttons
@@ -2257,6 +2255,12 @@ function showCalendarScreen() {
         // Re-render calendar with new filter
         renderCalendarDays();
     }
+    
+    // Render the calendar days initially
+    renderCalendarDays();
+    
+    // Setup event listeners for the calendar screen
+    setupEventListeners();
 }
 
 // Function to apply the current theme to the app
@@ -3016,5 +3020,55 @@ function applyThemeToAnalytics() {
     if (analyticsContainer) {
         analyticsContainer.style.backgroundColor = isDark ? '#333' : '#f8f8f8';
         analyticsContainer.style.color = isDark ? '#fff' : '#333';
+    }
+}
+
+// Function to setup all event listeners
+function setupEventListeners() {
+    console.log('Setting up event listeners');
+    
+    // Dark mode toggle in settings
+    const darkModeToggle = document.querySelector('.theme-switch input[type="checkbox"]');
+    if (darkModeToggle) {
+        darkModeToggle.onchange = (e) => {
+            const checked = e.target.checked;
+            
+            // Save the theme preference
+            localStorage.setItem('isDarkMode', checked);
+            
+            // Apply theme consistently
+            document.body.setAttribute('data-theme', checked ? 'dark' : 'light');
+            
+            // Notify all theme listeners
+            notifyThemeChange();
+        };
+    }
+    
+    // Test notification button in settings
+    const testNotificationButton = document.querySelector('.settings-section button.btn-primary');
+    if (testNotificationButton) {
+        testNotificationButton.onclick = () => {
+            showToast('This is a test notification!', '#4CAF50', 1500);
+        };
+    }
+    
+    // Back buttons on settings and calendar screens
+    const backButton = document.querySelector('.back-button');
+    if (backButton) {
+        // The onclick event is already defined in the element creation
+        // But we'll make sure the event is properly attached
+        if (!backButton.onclick) {
+            backButton.onclick = () => {
+                window.history.back();
+            };
+        }
+    }
+    
+    // Add habit button (floating action button)
+    const addButton = document.querySelector('.add-button');
+    if (addButton) {
+        addButton.onclick = () => {
+            showAddHabitScreen();
+        };
     }
 }
