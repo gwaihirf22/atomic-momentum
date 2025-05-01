@@ -1,65 +1,35 @@
 import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-import webbrowser
 
-class AtomicMomentumApp(SimpleHTTPRequestHandler):
+class HabitTrackerHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        """Serve a GET request."""
-        if self.path == '/notifications-test' or self.path == '/notifications-test.html':
-            # Serve the notification test page
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            
-            with open('templates/notifications-test.html', 'rb') as file:
-                self.wfile.write(file.read())
-            return
-            
-        if self.path == '/projects' or self.path == '/projects.html':
-            # Serve the projects page
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            
-            with open('templates/projects.html', 'rb') as file:
-                self.wfile.write(file.read())
-            return
+        # Serve index.html from templates as the main page
+        if self.path == '/' or self.path == '/index.html':
+            self.path = '/templates/index.html'
         
-        # Handle static files
-        if self.path.startswith('/styles/') or self.path.startswith('/scripts/') or self.path.startswith('/assets/'):
-            file_path = self.path[1:]  # Remove leading slash
+        # Handle static file requests
+        if self.path.startswith('/styles/') or self.path.startswith('/scripts/'):
+            # Keep the path as is to serve from the correct directories
+            pass
+        elif self.path == '/notifications-test':
+            self.path = '/templates/notifications-test.html'
             
-            if os.path.exists(file_path) and os.path.isfile(file_path):
-                self.send_response(200)
-                
-                # Set content type based on file extension
-                if file_path.endswith('.css'):
-                    self.send_header('Content-type', 'text/css')
-                elif file_path.endswith('.js'):
-                    self.send_header('Content-type', 'application/javascript')
-                elif file_path.endswith('.png'):
-                    self.send_header('Content-type', 'image/png')
-                elif file_path.endswith('.jpg') or file_path.endswith('.jpeg'):
-                    self.send_header('Content-type', 'image/jpeg')
-                else:
-                    self.send_header('Content-type', 'application/octet-stream')
-                
-                self.end_headers()
-                
-                with open(file_path, 'rb') as file:
-                    self.wfile.write(file.read())
-                return
-        
-        # For all other paths, serve the main app from templates
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        
-        with open('templates/index.html', 'rb') as file:
-            self.wfile.write(file.read())
+        return SimpleHTTPRequestHandler.do_GET(self)
 
-# Start the server
-httpd = HTTPServer(('0.0.0.0', 5001), AtomicMomentumApp)
-print('Server running at http://0.0.0.0:5001')
-print('Project demo available at http://0.0.0.0:5001/projects')
-httpd.serve_forever()
+if __name__ == '__main__':
+    # Set the working directory to the script's directory
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    
+    # Create server
+    server_address = ('', 8000)
+    httpd = HTTPServer(server_address, HabitTrackerHandler)
+    
+    print("Server running at http://localhost:8000/")
+    print("To access from your phone, use your computer's local IP address")
+    print("For example: http://192.168.1.xxx:8000")
+    
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nShutting down server...")
+        httpd.server_close()

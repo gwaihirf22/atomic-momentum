@@ -49,13 +49,27 @@ let habits = {};
 
 // Function to format date as YYYY-MM-DD for consistent history keys
 function formatDate(date) {
-    const d = new Date(date);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // Ensure we're working with a Date object
+    const d = date instanceof Date ? date : new Date(date);
+    // Get local date components
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1; // getMonth() returns 0-11
+    const day = d.getDate();
+    // Format as YYYY-MM-DD using local date components
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
 // Get today's date in YYYY-MM-DD format
 function getTodayFormatted() {
-    return formatDate(new Date());
+    const now = new Date();
+    return formatDate(now);
+}
+
+// Function to get a consistent date string for a specific year/month/day
+function getLocalDateString(year, month, day) {
+    // month is 0-based in JavaScript Date
+    const localDate = new Date(year, month, day);
+    return formatDate(localDate);
 }
 
 // Global theme management
@@ -168,7 +182,7 @@ function saveHabitHistory(history) {
 
 // Record daily habit status in habitHistory
 function recordDailyHabitStatus() {
-    const currentDate = formatDate(new Date());
+    const currentDate = getTodayFormatted();
     const habitHistory = loadHabitHistory();
     
     // Create entry for current date if it doesn't exist
@@ -183,11 +197,19 @@ function recordDailyHabitStatus() {
         
         // Store as "completed" or "not_completed"
         habitHistory[currentDate][habitId] = isCompleted ? "completed" : "not_completed";
+        
+        // Update habit's own history
+        if (!habit.history) {
+            habit.history = {};
+        }
+        habit.history[currentDate] = isCompleted ? "completed" : "not_completed";
     });
     
-    // Save the updated history
+    // Save both global history and habits
     saveHabitHistory(habitHistory);
-    console.log('Recorded habit status for', currentDate);
+    saveHabits();
+    
+    console.log('Recorded habit status for', currentDate, habitHistory[currentDate]);
 }
 
 // Render all habits in the UI
@@ -245,7 +267,7 @@ function createHabitElement(habitId, habit) {
 }
 
 // Function to show success/error notifications to the user
-function showToast(message, bgColor = '#4CAF50', duration = 3000) {
+function showToast(message, bgColor = '#4CAF50', duration = 1500) {
     const toast = document.createElement('div');
     toast.textContent = message;
     toast.style.position = 'fixed';
@@ -257,21 +279,18 @@ function showToast(message, bgColor = '#4CAF50', duration = 3000) {
     toast.style.padding = '10px 20px';
     toast.style.borderRadius = '4px';
     toast.style.zIndex = '1000';
-    toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.3)';
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
+    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    toast.style.transition = 'opacity 0.3s ease-in-out';
     
     document.body.appendChild(toast);
     
-    // Animate toast
-    setTimeout(() => {
-        toast.style.opacity = '1';
-    }, 10);
-    
+    // Fade out and remove
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => {
-            document.body.removeChild(toast);
+            if (toast.parentElement) {
+                document.body.removeChild(toast);
+            }
         }, 300);
     }, duration);
 }
@@ -342,51 +361,56 @@ function updateProgress(habitId, change) {
         
         // Record habit progress in history
         const today = getTodayFormatted();
+        const habitHistory = loadHabitHistory();
         
+        // Ensure the date entry exists
+        if (!habitHistory[today]) {
+            habitHistory[today] = {};
+        }
+        
+        // Update both global and per-habit history
+        const isCompleted = newProgress >= habit.target;
+        habitHistory[today][habitId] = isCompleted ? "completed" : "not_completed";
+        
+        // Save to global history
+        saveHabitHistory(habitHistory);
+        
+        // Update habit's own history
         if (!habit.history) {
             habit.history = {};
         }
+        habit.history[today] = isCompleted ? "completed" : "not_completed";
         
-        let isCompleted = false;
-        
-        if (newProgress === habit.target) {
-            isCompleted = true;
-            habit.history[today] = {
-                completed: true,
-                progress: newProgress,
-                target: habit.target
-            };
-            
-            // Show completion animation and notification
-            showToast(`🎉 Great job! You've completed "${habit.name}" for today!`, habit.color);
-            
-            // Update streak
-            updateStreak(habit, today, true);
-            
-            // Show notification if enabled
-            if (habit.reminderEnabled) {
-                showNotification(habit);
-            }
-        } else if (oldProgress === habit.target && newProgress < habit.target) {
-            isCompleted = false;
-            habit.history[today] = {
-                completed: false,
-                progress: newProgress,
-                target: habit.target
-            };
-            
-            // Update streak on uncompletion
-            updateStreak(habit, today, false);
-        }
-        
-        // Save to localStorage
+        // Save habits
         saveHabits();
         
-        // Update the UI for this specific habit card
+        // Update streak if needed
+        updateStreak(habit, today, isCompleted);
+        
+        // Update UI
         updateHabitCardInDOM(habitId, habit);
         
-        // Update the stats to reflect the new progress
+        // Show completion message if target reached
+        if (oldProgress < habit.target && newProgress === habit.target) {
+            showToast('Great job! 🎉', '#4CAF50');
+            
+            // Record daily status after completion
+            recordDailyHabitStatus();
+            
+            // Show notification if enabled
+            if (localStorage.getItem('notificationsEnabled') === 'true') {
+                showNotification(habit);
+            }
+        }
+        
+        // Update statistics
         updateStats();
+        
+        // Force calendar redraw if we're on the calendar screen
+        const calendarGrid = document.querySelector('.calendar-grid');
+        if (calendarGrid) {
+            renderCalendarDays();
+        }
     }
 }
 
@@ -1773,38 +1797,21 @@ function showSettingsScreen() {
     // Save current screen content
     const mainContent = document.body.innerHTML;
     
-    // Load current theme setting
-    const isDarkMode = isDarkModeEnabled();
-    
     // Create full-screen settings page
     document.body.innerHTML = '';
     
     // Create app elements
     const appScreen = document.createElement('div');
-    appScreen.style.fontFamily = 'Arial, sans-serif';
-    appScreen.style.maxWidth = '500px';
-    appScreen.style.margin = '0 auto';
-    appScreen.style.padding = '0';
-    appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
-    appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
-    appScreen.style.height = '100vh';
-    appScreen.style.display = 'flex';
-    appScreen.style.flexDirection = 'column';
+    appScreen.className = 'app-screen';
     
     // Create AppBar
     const appBar = document.createElement('div');
-    appBar.style.backgroundColor = '#673ab7';
-    appBar.style.color = 'white';
-    appBar.style.padding = '16px';
-    appBar.style.display = 'flex';
-    appBar.style.alignItems = 'center';
+    appBar.className = 'app-bar';
     
     // Back button
     const backButton = document.createElement('div');
     backButton.innerHTML = '&larr;';
-    backButton.style.marginRight = '16px';
-    backButton.style.fontSize = '24px';
-    backButton.style.cursor = 'pointer';
+    backButton.className = 'back-button';
     backButton.onclick = () => {
         // Return to the main screen
         document.body.innerHTML = mainContent;
@@ -1820,121 +1827,64 @@ function showSettingsScreen() {
     // Title
     const title = document.createElement('h1');
     title.textContent = 'Settings';
-    title.style.margin = '0';
-    title.style.fontSize = '20px';
+    title.className = 'screen-title';
     
     appBar.appendChild(backButton);
     appBar.appendChild(title);
     
     // Create settings container
     const settingsContainer = document.createElement('div');
-    settingsContainer.style.flex = '1';
-    settingsContainer.style.overflowY = 'auto';
-    settingsContainer.style.padding = '20px';
+    settingsContainer.className = 'scrollable-container';
     
     // Settings section: Appearance
     const appearanceSection = document.createElement('div');
-    appearanceSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    appearanceSection.style.padding = '16px';
-    appearanceSection.style.boxSizing = 'border-box'; // Ensure padding is included in width calculation
-    appearanceSection.style.borderRadius = '8px';
-    appearanceSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
-    appearanceSection.style.marginBottom = '16px';
-    
-    // Media query equivalent for small screens
-    if (window.innerWidth < 350) {
-        appearanceSection.style.padding = '12px 10px'; // Reduce padding on small screens
-    }
+    appearanceSection.className = 'settings-section';
     
     const appearanceTitle = document.createElement('h3');
     appearanceTitle.textContent = 'Appearance';
-    appearanceTitle.style.margin = '0 0 16px 0';
+    appearanceTitle.className = 'settings-section-title';
     
     // Dark Mode Switch
     const darkModeRow = document.createElement('div');
-    darkModeRow.style.display = 'flex';
-    darkModeRow.style.flexWrap = 'wrap'; // Add flex-wrap for small screens
-    darkModeRow.style.alignItems = 'center';
-    darkModeRow.style.justifyContent = 'space-between';
-    darkModeRow.style.padding = '8px 0';
-    darkModeRow.style.gap = '12px'; // Add gap for spacing when wrapped
+    darkModeRow.className = 'settings-row';
     
     const darkModeLabel = document.createElement('div');
-    darkModeLabel.style.flex = '1'; // Allow label to grow
-    darkModeLabel.style.minWidth = '200px'; // Ensure good readability before wrapping
-    darkModeLabel.style.marginRight = '8px'; // Add margin for spacing
+    darkModeLabel.className = 'settings-label';
     
     const darkModeLabelTitle = document.createElement('div');
     darkModeLabelTitle.textContent = 'Dark Mode';
-    darkModeLabelTitle.style.fontWeight = 'bold';
+    darkModeLabelTitle.className = 'settings-label-title';
     
     const darkModeLabelDesc = document.createElement('div');
     darkModeLabelDesc.textContent = 'Switch between light and dark themes';
-    darkModeLabelDesc.style.fontSize = '14px';
-    darkModeLabelDesc.style.color = '#757575';
-    darkModeLabelDesc.style.marginTop = '4px';
+    darkModeLabelDesc.className = 'settings-label-desc';
     
     darkModeLabel.appendChild(darkModeLabelTitle);
     darkModeLabel.appendChild(darkModeLabelDesc);
     
     // Switch component
     const switchContainer = document.createElement('label');
-    switchContainer.style.position = 'relative';
-    switchContainer.style.display = 'inline-block';
-    switchContainer.style.width = '60px';
-    switchContainer.style.height = '34px';
-    switchContainer.style.flexShrink = '0'; // Prevent the switch from shrinking
+    switchContainer.className = 'theme-switch';
     
     const switchInput = document.createElement('input');
     switchInput.type = 'checkbox';
-    switchInput.checked = isDarkMode;
-    switchInput.style.opacity = '0';
-    switchInput.style.width = '0';
-    switchInput.style.height = '0';
+    switchInput.checked = isDarkModeEnabled();
     
     const switchSlider = document.createElement('span');
-    switchSlider.style.position = 'absolute';
-    switchSlider.style.cursor = 'pointer';
-    switchSlider.style.top = '0';
-    switchSlider.style.left = '0';
-    switchSlider.style.right = '0';
-    switchSlider.style.bottom = '0';
-    switchSlider.style.backgroundColor = isDarkMode ? '#673ab7' : '#ccc';
-    switchSlider.style.borderRadius = '34px';
-    switchSlider.style.transition = '.4s';
+    switchSlider.className = 'theme-switch-slider';
     
-    // Slider button
-    const sliderButton = document.createElement('span');
-    sliderButton.style.position = 'absolute';
-    sliderButton.style.content = '""';
-    sliderButton.style.height = '26px';
-    sliderButton.style.width = '26px';
-    sliderButton.style.left = isDarkMode ? '30px' : '4px';
-    sliderButton.style.bottom = '4px';
-    sliderButton.style.backgroundColor = 'white';
-    sliderButton.style.borderRadius = '50%';
-    sliderButton.style.transition = '.4s';
-    
-    switchSlider.appendChild(sliderButton);
     switchContainer.appendChild(switchInput);
     switchContainer.appendChild(switchSlider);
     
     // Toggle dark mode
     switchInput.onchange = (e) => {
         const checked = e.target.checked;
-        switchSlider.style.backgroundColor = checked ? '#673ab7' : '#ccc';
-        sliderButton.style.left = checked ? '30px' : '4px';
         
         // Save the theme preference
         localStorage.setItem('isDarkMode', checked);
         
-        // Apply theme immediately to settings screen
-        appScreen.style.backgroundColor = checked ? '#121212' : '#f5f5f5';
-        appScreen.style.color = checked ? '#fff' : '#000';
-        appearanceSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
-        darkModeLabelDesc.style.color = checked ? '#aaa' : '#757575';
-        notificationsSection.style.backgroundColor = checked ? '#1e1e1e' : '#ffffff';
-        notificationsTitle.style.color = checked ? '#fff' : '#000';
+        // Apply theme consistently
+        document.body.setAttribute('data-theme', checked ? 'dark' : 'light');
         
         // Notify all theme listeners
         notifyThemeChange();
@@ -1948,62 +1898,34 @@ function showSettingsScreen() {
     
     // Notifications Section
     const notificationsSection = document.createElement('div');
-    notificationsSection.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    notificationsSection.style.padding = '16px';
-    notificationsSection.style.boxSizing = 'border-box'; // Ensure padding is included in width calculation
-    notificationsSection.style.borderRadius = '8px';
-    notificationsSection.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
-    notificationsSection.style.marginBottom = '16px';
-    notificationsSection.style.color = isDarkMode ? '#fff' : '#000';
-    
-    // Media query equivalent for small screens
-    if (window.innerWidth < 350) {
-        notificationsSection.style.padding = '12px 10px'; // Reduce padding on small screens
-    }
+    notificationsSection.className = 'settings-section';
     
     const notificationsTitle = document.createElement('h3');
     notificationsTitle.textContent = 'Notifications';
-    notificationsTitle.style.margin = '0 0 16px 0';
+    notificationsTitle.className = 'settings-section-title';
+    
+    // Notification test button
+    const testNotificationButton = document.createElement('button');
+    testNotificationButton.textContent = 'Test Notification';
+    testNotificationButton.className = 'btn btn-primary';
+    testNotificationButton.style.marginBottom = '10px';
+    testNotificationButton.onclick = () => {
+        showToast('This is a test notification!', '#4CAF50', 3000);
+    };
     
     notificationsSection.appendChild(notificationsTitle);
+    notificationsSection.appendChild(testNotificationButton);
     
     // Add sections to container
     settingsContainer.appendChild(appearanceSection);
     settingsContainer.appendChild(notificationsSection);
     
-    // Add button to test notifications
-    const testNotifButton = document.createElement('button');
-    testNotifButton.textContent = 'Test Notification';
-    testNotifButton.style.backgroundColor = '#673ab7';
-    testNotifButton.style.color = 'white';
-    testNotifButton.style.border = 'none';
-    testNotifButton.style.padding = '10px 15px';
-    testNotifButton.style.borderRadius = '4px';
-    testNotifButton.style.margin = '10px 0';
-    testNotifButton.style.cursor = 'pointer';
-    testNotifButton.onclick = () => {
-        // Show a test notification
-        showToast('Test notification shown!');
-    };
-    
-    notificationsSection.appendChild(testNotifButton);
-    
     // Assemble the screen
     appScreen.appendChild(appBar);
     appScreen.appendChild(settingsContainer);
     
+    // Add to body
     document.body.appendChild(appScreen);
-    
-    // Add resize listener to handle responsive layout changes
-    const updateResponsiveLayout = () => {
-        const isNarrow = window.innerWidth < 350;
-        appearanceSection.style.padding = isNarrow ? '12px 10px' : '16px';
-        notificationsSection.style.padding = isNarrow ? '12px 10px' : '16px';
-    };
-    
-    // Initial call and event listener
-    updateResponsiveLayout();
-    window.addEventListener('resize', updateResponsiveLayout);
 }
 
 // Show Calendar Screen
@@ -2011,38 +1933,21 @@ function showCalendarScreen() {
     // Save current screen content
     const mainContent = document.body.innerHTML;
     
-    // Get current theme
-    const isDarkMode = isDarkModeEnabled();
-    
     // Create full-screen view that simulates a navigation to a new screen
     document.body.innerHTML = '';
     
     // Create app elements
     const appScreen = document.createElement('div');
-    appScreen.style.fontFamily = 'Arial, sans-serif';
-    appScreen.style.maxWidth = '500px';
-    appScreen.style.margin = '0 auto';
-    appScreen.style.padding = '0';
-    appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
-    appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
-    appScreen.style.height = '100vh';
-    appScreen.style.display = 'flex';
-    appScreen.style.flexDirection = 'column';
+    appScreen.className = 'app-screen';
     
     // Create AppBar
     const appBar = document.createElement('div');
-    appBar.style.backgroundColor = '#673ab7';
-    appBar.style.color = 'white';
-    appBar.style.padding = '16px';
-    appBar.style.display = 'flex';
-    appBar.style.alignItems = 'center';
+    appBar.className = 'app-bar';
     
     // Back button
     const backButton = document.createElement('div');
     backButton.innerHTML = '&larr;';
-    backButton.style.marginRight = '16px';
-    backButton.style.fontSize = '24px';
-    backButton.style.cursor = 'pointer';
+    backButton.className = 'back-button';
     backButton.onclick = () => {
         // Return to the main screen
         document.body.innerHTML = mainContent;
@@ -2058,27 +1963,21 @@ function showCalendarScreen() {
     // Title
     const title = document.createElement('h1');
     title.textContent = 'Habit Calendar';
-    title.style.margin = '0';
-    title.style.fontSize = '20px';
+    title.className = 'screen-title';
     
     appBar.appendChild(backButton);
     appBar.appendChild(title);
     
     // Create calendar container (scrollable)
     const calendarContainer = document.createElement('div');
-    calendarContainer.style.flex = '1';
-    calendarContainer.style.overflowY = 'auto';
-    calendarContainer.style.padding = '14px'; // Reduce padding to tighten spacing
+    calendarContainer.className = 'calendar-container';
     
     // Create calendar content
     const calendarContent = document.createElement('div');
-    calendarContent.className = 'calendar-content';
-    calendarContent.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    calendarContent.style.borderRadius = '8px';
-    calendarContent.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+    calendarContent.className = 'calendar-section';
     
     const calendarHeading = document.createElement('h2');
-    calendarHeading.className = 'calendar-heading';
+    calendarHeading.className = 'settings-section-title';
     calendarHeading.textContent = 'Habit History';
     calendarHeading.style.marginTop = '0';
     calendarHeading.style.marginBottom = '8px';
@@ -2093,24 +1992,14 @@ function showCalendarScreen() {
     
     // Add "All Habits" filter button
     const allButton = document.createElement('button');
-    allButton.className = 'category-filter-btn';
+    allButton.className = 'filter-button';
     allButton.setAttribute('data-category', 'all');
     allButton.textContent = 'All Habits';
     
     // Set initial state
     if (!window.calendarCurrentCategory || window.calendarCurrentCategory === 'all') {
         allButton.classList.add('active');
-        allButton.style.backgroundColor = '#673ab7';
-        allButton.style.color = 'white';
-    } else {
-        allButton.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-        allButton.style.color = isDarkMode ? '#ddd' : '#333';
     }
-    
-    allButton.style.border = 'none';
-    allButton.style.borderRadius = '4px';
-    allButton.style.padding = '8px 12px';
-    allButton.style.cursor = 'pointer';
     
     allButton.onclick = () => {
         window.calendarCurrentCategory = 'all';
@@ -2132,24 +2021,14 @@ function showCalendarScreen() {
     // Add a button for each category
     Array.from(categories).sort().forEach(category => {
         const categoryButton = document.createElement('button');
-        categoryButton.className = 'category-filter-btn';
+        categoryButton.className = 'filter-button';
         categoryButton.setAttribute('data-category', category);
         categoryButton.textContent = category;
         
         // Set initial state
         if (window.calendarCurrentCategory === category) {
             categoryButton.classList.add('active');
-            categoryButton.style.backgroundColor = '#673ab7';
-            categoryButton.style.color = 'white';
-        } else {
-            categoryButton.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-            categoryButton.style.color = isDarkMode ? '#ddd' : '#333';
         }
-        
-        categoryButton.style.border = 'none';
-        categoryButton.style.borderRadius = '4px';
-        categoryButton.style.padding = '8px 12px';
-        categoryButton.style.cursor = 'pointer';
         
         categoryButton.onclick = () => {
             window.calendarCurrentCategory = category;
@@ -2173,14 +2052,7 @@ function showCalendarScreen() {
     const prevButton = document.createElement('button');
     prevButton.className = 'month-nav-button';
     prevButton.innerHTML = '&larr;';
-    prevButton.style.backgroundColor = '#673ab7';
-    prevButton.style.color = 'white';
-    prevButton.style.border = 'none';
-    prevButton.style.borderRadius = '4px';
-    prevButton.style.padding = '5px 15px';
-    prevButton.style.cursor = 'pointer';
     prevButton.style.marginRight = '8px';
-    prevButton.style.flexShrink = '0';
     
     // Current month and year display
     const currentMonthDisplay = document.createElement('div');
@@ -2197,48 +2069,44 @@ function showCalendarScreen() {
     const nextButton = document.createElement('button');
     nextButton.className = 'month-nav-button';
     nextButton.innerHTML = '&rarr;';
-    nextButton.style.backgroundColor = '#673ab7';
-    nextButton.style.color = 'white';
-    nextButton.style.border = 'none';
-    nextButton.style.borderRadius = '4px';
-    nextButton.style.padding = '5px 15px';
-    nextButton.style.cursor = 'pointer';
     nextButton.style.marginLeft = '8px';
-    nextButton.style.flexShrink = '0';
     
     // Month navigation handlers
+    const currentViewDate = new Date();
+    let currentViewMonth = currentViewDate.getMonth();
+    let currentViewYear = currentViewDate.getFullYear();
+    
     prevButton.onclick = () => {
-        currentViewMonth--;
-        if (currentViewMonth < 0) {
+        if (currentViewMonth === 0) {
             currentViewMonth = 11;
             currentViewYear--;
+        } else {
+            currentViewMonth--;
         }
         renderCalendarDays();
     };
     
     nextButton.onclick = () => {
-        currentViewMonth++;
-        if (currentViewMonth > 11) {
+        if (currentViewMonth === 11) {
             currentViewMonth = 0;
             currentViewYear++;
+        } else {
+            currentViewMonth++;
         }
         renderCalendarDays();
     };
     
-    // Add elements to month selector
     monthSelector.appendChild(prevButton);
     monthSelector.appendChild(currentMonthDisplay);
     monthSelector.appendChild(nextButton);
     
-    // Calendar grid
+    // Create calendar grid
     const calendarGrid = document.createElement('div');
-    calendarGrid.style.display = 'grid';
-    calendarGrid.style.gridTemplateColumns = 'repeat(7, 1fr)';
-    calendarGrid.style.gap = '5px';
+    calendarGrid.className = 'calendar-grid';
     
-    // Add day headers
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    days.forEach(day => {
+    // Add day headers (Sun-Sat)
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    daysOfWeek.forEach(day => {
         const dayHeader = document.createElement('div');
         dayHeader.textContent = day;
         dayHeader.style.textAlign = 'center';
@@ -2247,81 +2115,159 @@ function showCalendarScreen() {
         calendarGrid.appendChild(dayHeader);
     });
     
-    // Current month and year for calendar navigation
-    let currentViewMonth = currentDate.getMonth();
-    let currentViewYear = currentDate.getFullYear();
-    
-    // Function to update category filter
-    function updateCalendarCategoryFilter(selectedCategory) {
-        // Update button styles
-        categoryFiltersContainer.querySelectorAll('button').forEach(btn => {
-            const category = btn.getAttribute('data-category');
-            if (category === selectedCategory) {
-                btn.classList.add('active');
-                btn.style.backgroundColor = '#673ab7';
-                btn.style.color = 'white';
-            } else {
-                btn.classList.remove('active');
-                btn.style.backgroundColor = isDarkMode ? '#333' : '#f0f0f0';
-                btn.style.color = isDarkMode ? '#ddd' : '#333';
-            }
-        });
-    
-        // Redraw calendar with new filter
-        renderCalendarDays();
-    }
-    
-    // Function to render calendar days with category filtering
+    // Function to render calendar days for the current view
     function renderCalendarDays() {
-        // Check if required DOM elements exist
-        if (!calendarGrid || !currentMonthDisplay) {
-            console.warn('Calendar elements not found. Calendar cannot be rendered.');
-            return;
+        // Clear existing days
+        while (calendarGrid.childElementCount > 7) {
+            calendarGrid.removeChild(calendarGrid.lastChild);
         }
+        
+        // Update month display
+        currentMonthDisplay.textContent = `${new Date(currentViewYear, currentViewMonth, 1).toLocaleString('default', { month: 'long' })} ${currentViewYear}`;
+        
+        // First day of the month (0-6, where 0 is Sunday)
+        const firstDay = new Date(currentViewYear, currentViewMonth, 1).getDay();
+        
+        // Number of days in the month
+        const daysInMonth = new Date(currentViewYear, currentViewMonth + 1, 0).getDate();
+        
+        // Add empty cells for days before the start of the month
+        for (let i = 0; i < firstDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-day empty';
+            calendarGrid.appendChild(emptyCell);
+        }
+        
+        // Add days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayCell = document.createElement('div');
+            dayCell.className = 'calendar-day';
+            
+            // Check if this is today
+            const today = new Date();
+            if (today.getDate() === day && 
+                today.getMonth() === currentViewMonth && 
+                today.getFullYear() === currentViewYear) {
+                dayCell.classList.add('today');
+            }
+            
+            // Add day number
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'date-number';
+            dayNumber.textContent = day;
+            dayCell.appendChild(dayNumber);
+            
+            // Add completion indicators
+            const dateStr = getLocalDateString(currentViewYear, currentViewMonth, day);
+            addCompletionIndicators(dayCell, dateStr);
+            
+            // Add click handler to show details
+            dayCell.onclick = () => {
+                showDayDetails(dateStr);
+            };
+            
+            calendarGrid.appendChild(dayCell);
+        }
+    }
     
-        // Filter habits based on selected category
-        const filteredHabits = {};
-        Object.entries(habits).forEach(([habitId, habit]) => {
-            const habitCategory = capitalizeCategory(habit.category || 'Other');
-            if (window.calendarCurrentCategory === 'all' || habitCategory === window.calendarCurrentCategory) {
-                filteredHabits[habitId] = habit;
+    // Helper function to add completion indicators to a day cell
+    function addCompletionIndicators(cell, dateStr) {
+        const habitHistory = loadHabitHistory();
+        const dateHistory = habitHistory[dateStr] || {};
+        
+        // Add indicators container
+        const indicators = document.createElement('div');
+        indicators.className = 'habit-indicators';
+        
+        // If we have a category filter, only show habits in that category
+        const filteredHabits = Object.entries(habits).filter(([_, habit]) => {
+            return !window.calendarCurrentCategory || 
+                   window.calendarCurrentCategory === 'all' || 
+                   capitalizeCategory(habit.category || 'Other') === window.calendarCurrentCategory;
+        });
+        
+        // Count completed and not completed habits
+        let completedCount = 0;
+        let notCompletedCount = 0;
+        
+        filteredHabits.forEach(([habitId, habit]) => {
+            const status = checkHabitCompletion(habit, dateStr, habitHistory);
+            if (status === "completed") {
+                completedCount++;
+                
+                // Add an indicator for this completed habit
+                if (completedCount <= 3) { // Limit to 3 indicators to avoid overflow
+                    const indicator = document.createElement('span');
+                    indicator.className = 'habit-indicator completed';
+                    indicator.style.color = habit.color; // Use habit color
+                    indicators.appendChild(indicator);
+                }
+            } else if (status === "not_completed") {
+                notCompletedCount++;
+                
+                // Add an indicator for this not-completed habit
+                if (notCompletedCount <= 3) { // Limit to 3 indicators to avoid overflow
+                    const indicator = document.createElement('span');
+                    indicator.className = 'habit-indicator not-completed';
+                    indicators.appendChild(indicator);
+                }
             }
         });
-    
-        // Call the renderCalendarDays function from calendar.js with filtered habits
-        if (typeof window.renderCalendarDays === 'function') {
-            window.renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth, currentViewYear, filteredHabits);
-        } else {
-            console.warn('Calendar rendering function not found. Calendar cannot be rendered.');
+        
+        // Add "more" indicator if we have more than 3 habits
+        if (completedCount + notCompletedCount > 3) {
+            const moreIndicator = document.createElement('span');
+            moreIndicator.className = 'more-indicator';
+            moreIndicator.textContent = '+';
+            indicators.appendChild(moreIndicator);
         }
+        
+        cell.appendChild(indicators);
     }
-    
-    // Initialize calendar
-    if (!window.calendarCurrentCategory) {
-        window.calendarCurrentCategory = 'all';
-    }
-    renderCalendarDays();
     
     // Assemble the calendar components
     calendarContent.appendChild(calendarHeading);
     calendarContent.appendChild(categoryFiltersContainer);
     calendarContent.appendChild(monthSelector);
     calendarContent.appendChild(calendarGrid);
-    
     calendarContainer.appendChild(calendarContent);
     
     // Assemble the screen
     appScreen.appendChild(appBar);
     appScreen.appendChild(calendarContainer);
     
+    // Add to body
     document.body.appendChild(appScreen);
+    
+    // Render initial calendar
+    renderCalendarDays();
+    
+    // Function to update category filters
+    function updateCalendarCategoryFilter(selectedCategory) {
+        // Update active state on buttons
+        const filterButtons = categoryFiltersContainer.querySelectorAll('.filter-button');
+        filterButtons.forEach(btn => {
+            if (btn.getAttribute('data-category') === selectedCategory) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // Re-render calendar with new filter
+        renderCalendarDays();
+    }
 }
 
 // Function to apply the current theme to the app
 function applyTheme() {
     const isDarkMode = isDarkModeEnabled();
-    document.body.classList.toggle('dark-mode', isDarkMode);
+    
+    // Set data-theme attribute for CSS variables
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+    
+    // Keep the dark-mode class for backward compatibility
+    document.body.classList.toggle('dark-mode', isDarkMode);
     
     // Notify any components that need to adjust to theme changes
     notifyThemeChange();
