@@ -109,26 +109,29 @@
         </symbol>
     </svg>
     <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/calendar.css">
 </head>
 <body>
-    <div class="app-header">
-        <h1>Momentum</h1>
-        <div class="header-icons">
-            <div class="calendar-icon" onclick="showCalendarScreen()" style="margin-right: 15px;">📅</div>
-            <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+    <div id="app-root" class="app-container">
+        <div class="app-header">
+            <h1>Momentum</h1>
+            <div class="header-icons">
+                <div class="calendar-icon" onclick="showCalendarScreen()" style="margin-right: 15px;">📅</div>
+                <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+            </div>
         </div>
+        
+        <!-- Category filters will be added here -->
+        <div id="category-filters" class="category-filters" style="display: flex; overflow-x: auto; padding: 10px; gap: 10px; scrollbar-width: none; -ms-overflow-style: none;">
+            <!-- Category filter buttons will be added by JavaScript -->
+        </div>
+        
+        <div id="habits-container" style="padding: 0 10px;">
+            <!-- Habits will be dynamically inserted here by JavaScript -->
+        </div>
+        
+        <div class="add-button" onclick="showAddHabitScreen()">+</div>
     </div>
-    
-    <!-- Category filters will be added here -->
-    <div id="category-filters" class="category-filters" style="display: flex; overflow-x: auto; padding: 10px; gap: 10px; scrollbar-width: none; -ms-overflow-style: none;">
-        <!-- Category filter buttons will be added by JavaScript -->
-    </div>
-    
-    <div id="habits-container" style="padding: 0 10px;">
-        <!-- Habits will be dynamically inserted here by JavaScript -->
-    </div>
-    
-    <div class="add-button" onclick="showAddHabitScreen()">+</div>
     
     <div class="notification-test-banner">
         <div style="display: flex; justify-content: space-between; align-items: center; max-width: 600px; margin: 0 auto;">

@@ -265,20 +265,13 @@ function createHabitElement(habitId, habit) {
 }
 
 // Function to show success/error notifications to the user
-function showToast(message, bgColor = '#4CAF50', duration = 1500) {
+function showToast(message, bgColor = 'var(--success-color)', duration = 1500) {
     const toast = document.createElement('div');
     toast.textContent = message;
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
+    toast.className = 'toast-notification';
+    
+    // Use CSS classes instead of inline styles
     toast.style.backgroundColor = bgColor;
-    toast.style.color = 'white';
-    toast.style.padding = '10px 20px';
-    toast.style.borderRadius = '4px';
-    toast.style.zIndex = '1000';
-    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    toast.style.transition = 'opacity 0.3s ease-in-out';
     
     document.body.appendChild(toast);
     
@@ -1793,10 +1786,11 @@ function showEditHabitScreen(habitId, habit) {
 // Settings screen with dark mode toggle
 function showSettingsScreen() {
     // Save current screen content
-    const mainContent = document.body.innerHTML;
+    const appRoot = document.getElementById('app-root');
+    const mainContent = appRoot.innerHTML;
     
-    // Create full-screen settings page
-    document.body.innerHTML = '';
+    // Clear app-root instead of body
+    appRoot.innerHTML = '';
     
     // Create app elements
     const appScreen = document.createElement('div');
@@ -1812,14 +1806,16 @@ function showSettingsScreen() {
     backButton.className = 'back-button';
     backButton.onclick = () => {
         // Return to the main screen
-        document.body.innerHTML = mainContent;
+        appRoot.innerHTML = mainContent;
         
         // Re-initialize event listeners and state
-        document.addEventListener('DOMContentLoaded', loadHabits);
         loadHabits();
         
         // Apply theme if it was changed
         applyTheme();
+        
+        // Setup event listeners
+        setupEventListeners();
     };
     
     // Title
@@ -1906,10 +1902,6 @@ function showSettingsScreen() {
     const testNotificationButton = document.createElement('button');
     testNotificationButton.textContent = 'Test Notification';
     testNotificationButton.className = 'btn btn-primary';
-    testNotificationButton.style.marginBottom = '10px';
-    testNotificationButton.onclick = () => {
-        showToast('This is a test notification!', '#4CAF50', 3000);
-    };
     
     notificationsSection.appendChild(notificationsTitle);
     notificationsSection.appendChild(testNotificationButton);
@@ -1922,8 +1914,11 @@ function showSettingsScreen() {
     appScreen.appendChild(appBar);
     appScreen.appendChild(settingsContainer);
     
-    // Add to body
-    document.body.appendChild(appScreen);
+    // Add to app-root
+    appRoot.appendChild(appScreen);
+    
+    // Apply theme immediately to ensure new elements have proper styles
+    applyTheme();
     
     // Setup event listeners for the settings screen
     setupEventListeners();
@@ -1932,10 +1927,11 @@ function showSettingsScreen() {
 // Show Calendar Screen
 function showCalendarScreen() {
     // Save current screen content
-    const mainContent = document.body.innerHTML;
+    const appRoot = document.getElementById('app-root');
+    const mainContent = appRoot.innerHTML;
     
-    // Create full-screen view that simulates a navigation to a new screen
-    document.body.innerHTML = '';
+    // Clear app-root instead of body
+    appRoot.innerHTML = '';
     
     // Create app elements
     const appScreen = document.createElement('div');
@@ -1951,14 +1947,16 @@ function showCalendarScreen() {
     backButton.className = 'back-button';
     backButton.onclick = () => {
         // Return to the main screen
-        document.body.innerHTML = mainContent;
+        appRoot.innerHTML = mainContent;
         
         // Re-initialize event listeners and state
-        document.addEventListener('DOMContentLoaded', loadHabits);
         loadHabits();
         
         // Ensure theme is applied correctly when returning to main screen
         applyTheme();
+        
+        // Setup event listeners
+        setupEventListeners();
     };
     
     // Title
@@ -1980,8 +1978,6 @@ function showCalendarScreen() {
     const calendarHeading = document.createElement('h2');
     calendarHeading.className = 'settings-section-title';
     calendarHeading.textContent = 'Habit History';
-    calendarHeading.style.marginTop = '0';
-    calendarHeading.style.marginBottom = '8px';
     
     // Add category filter container
     const categoryFiltersContainer = document.createElement('div');
@@ -2267,11 +2263,35 @@ function showCalendarScreen() {
 function applyTheme() {
     const isDarkMode = isDarkModeEnabled();
     
-    // Set data-theme attribute for CSS variables
+    // Set data-theme attribute for CSS variables - critical for theme inheritance
     document.body.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
     
     // Keep the dark-mode class for backward compatibility
     document.body.classList.toggle('dark-mode', isDarkMode);
+    
+    // Process any elements with habit indicators that used inline styles
+    const habitIndicators = document.querySelectorAll('.habit-indicator.completed');
+    habitIndicators.forEach(indicator => {
+        // If the indicator has a data-color attribute, use it for the indicator's color
+        if (indicator.dataset.color) {
+            indicator.style.backgroundColor = indicator.dataset.color;
+        }
+    });
+    
+    // Process any category filter buttons to ensure they use CSS variables instead of inline styles
+    const categoryButtons = document.querySelectorAll('.category-filter-btn');
+    categoryButtons.forEach(button => {
+        // Remove any inline styles
+        button.removeAttribute('style');
+        
+        // Apply active class if it's the current filter
+        if ((button.getAttribute('data-category') === window.currentCategoryFilter) ||
+            (capitalizeCategory(window.currentCategoryFilter) === button.getAttribute('data-category'))) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
     
     // Notify any components that need to adjust to theme changes
     notifyThemeChange();
@@ -2710,91 +2730,69 @@ function capitalizeCategory(category) {
         .join(' ');
 }
 
+// Filter habits by category
 function filterHabitsByCategory(categoryId) {
-    // Default to 'all' if no category is specified
-    categoryId = categoryId || 'all';
-    window.currentCategoryFilter = categoryId;
+    console.log(`Filtering by category: ${categoryId}`);
     
-    console.log('Filtering by category:', categoryId); // Debug log
+    // Convert both the filter and habit categories to the same case for case-insensitive comparison
+    const filterCategory = categoryId ? categoryId.toLowerCase() : 'all';
+    window.currentCategoryFilter = filterCategory;
     
-    // Update active filter button
-    const filterButtons = document.querySelectorAll('.category-filter-btn');
-    filterButtons.forEach(btn => {
-        const btnCategory = btn.getAttribute('data-category');
-        if (btnCategory === categoryId) {
+    // If no habits in the DOM yet, return early
+    if (!document.querySelector('.habit-card')) {
+        console.warn('No habits found in DOM for filtering');
+        return;
+    }
+    
+    // Update active class on category buttons
+    const categoryButtons = document.querySelectorAll('.category-filter-btn');
+    categoryButtons.forEach(btn => {
+        const buttonCategory = btn.getAttribute('data-category').toLowerCase();
+        if (buttonCategory === filterCategory) {
             btn.classList.add('active');
-            btn.style.backgroundColor = '#673ab7';
-            btn.style.color = 'white';
         } else {
             btn.classList.remove('active');
-            btn.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
-            btn.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
         }
     });
     
-    // Normalize the category filter for comparison
-    const categoryFilter = capitalizeCategory(categoryId);
-    
-    // Filter habit cards directly in the DOM
+    // Get all habit cards
     const habitCards = document.querySelectorAll('.habit-card');
     let visibleCount = 0;
     
-    if (categoryId === 'all') {
-        // Show all habits
-        habitCards.forEach(card => {
-            card.style.display = 'block';
+    // Loop through each habit card
+    habitCards.forEach(card => {
+        // Get the category of this habit card
+        const cardCategory = card.dataset.category ? card.dataset.category.toLowerCase() : 'other';
+        
+        // For debugging
+        console.log(`Checking card with category: ${cardCategory} against filter: ${filterCategory}`);
+        
+        // Show all if filter is 'all', otherwise show only matching categories
+        if (filterCategory === 'all' || cardCategory === filterCategory) {
+            card.style.display = '';
             visibleCount++;
             
-            // Add staggered animation
-            setTimeout(() => {
-                card.style.animation = 'none';
-                card.offsetHeight; // Trigger reflow
-                card.style.animation = 'fadeInUp 0.3s ease forwards';
-            }, 0);
-        });
-    } else {
-        // Show only habits with matching category
-        habitCards.forEach((card, index) => {
-            // Get and normalize the card's category
-            const cardCategory = capitalizeCategory(card.dataset.category || 'Other');
-            const normalizedFilter = capitalizeCategory(categoryFilter);
-            
-            console.log(`Checking card with category: ${cardCategory} against filter: ${normalizedFilter}`);
-            
-            if (cardCategory === normalizedFilter) {
-                card.style.display = 'block';
-                visibleCount++;
-                
-                // Add staggered animation for visible cards
-                setTimeout(() => {
-                    card.style.animation = 'none';
-                    card.offsetHeight; // Trigger reflow
-                    card.style.animation = 'fadeInUp 0.3s ease forwards';
-                }, visibleCount * 50); // Stagger by 50ms
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
+            // Add a nice animation
+            card.style.animation = 'fadeInUp 0.3s forwards';
+        } else {
+            card.style.display = 'none';
+        }
+    });
     
-    // Show message if no habits are visible
-    const noHabitsMessage = document.querySelector('.no-habits-message') || document.createElement('div');
-    noHabitsMessage.className = 'no-habits-message';
-    
+    // Show message if no habits match the filter
+    let noHabitsMessage = document.querySelector('.no-habits-message');
     if (visibleCount === 0) {
-        const displayCategory = categoryId === 'all' ? 'habits' : capitalizeCategory(categoryId);
-        noHabitsMessage.textContent = categoryId === 'all' 
-            ? 'No habits added yet. Tap + to add one!' 
-            : `No habits in the ${displayCategory} category. Tap + to add one!`;
-        noHabitsMessage.style.textAlign = 'center';
-        noHabitsMessage.style.padding = '40px 20px';
-        noHabitsMessage.style.color = isDarkModeEnabled() ? '#aaa' : '#666';
-        
-        const habitsContainer = document.getElementById('habits-container');
-        if (!document.querySelector('.no-habits-message')) {
+        if (!noHabitsMessage) {
+            noHabitsMessage = document.createElement('div');
+            noHabitsMessage.className = 'no-habits-message';
+            noHabitsMessage.textContent = filterCategory === 'all' 
+                ? 'You have no habits yet. Add one with the + button below.' 
+                : `No habits found in the "${capitalizeCategory(filterCategory)}" category.`;
+            
+            const habitsContainer = document.getElementById('habits-container');
             habitsContainer.appendChild(noHabitsMessage);
         }
-    } else if (document.querySelector('.no-habits-message')) {
+    } else if (noHabitsMessage) {
         document.querySelector('.no-habits-message').remove();
     }
     
@@ -2802,7 +2800,7 @@ function filterHabitsByCategory(categoryId) {
     updateStats();
     
     // Save current filter to localStorage for persistence
-    localStorage.setItem('currentCategoryFilter', categoryId);
+    localStorage.setItem('currentCategoryFilter', filterCategory);
 }
 
 // Function to set up category filters
@@ -2818,10 +2816,6 @@ function setupCategoryFilters() {
     if (!categoryFiltersContainer) {
         categoryFiltersContainer = document.createElement('div');
         categoryFiltersContainer.className = 'category-filters';
-        categoryFiltersContainer.style.display = 'flex';
-        categoryFiltersContainer.style.flexWrap = 'wrap';
-        categoryFiltersContainer.style.gap = '8px';
-        categoryFiltersContainer.style.marginBottom = '16px';
         
         // Insert before the habits container
         const habitsContainer = document.getElementById('habits-container');
@@ -2840,17 +2834,7 @@ function setupCategoryFilters() {
     // Set initial state based on window.currentCategoryFilter
     if (window.currentCategoryFilter === 'all') {
         allButton.classList.add('active');
-        allButton.style.backgroundColor = '#673ab7';
-        allButton.style.color = 'white';
-    } else {
-        allButton.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
-        allButton.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
     }
-    
-    allButton.style.border = 'none';
-    allButton.style.borderRadius = '4px';
-    allButton.style.padding = '8px 12px';
-    allButton.style.cursor = 'pointer';
     
     allButton.onclick = () => {
         filterHabitsByCategory('all');
@@ -2879,17 +2863,7 @@ function setupCategoryFilters() {
         const currentFilterCap = capitalizeCategory(window.currentCategoryFilter);
         if (currentFilterCap === category) {  // Compare with capitalized category
             categoryButton.classList.add('active');
-            categoryButton.style.backgroundColor = '#673ab7';
-            categoryButton.style.color = 'white';
-        } else {
-            categoryButton.style.backgroundColor = isDarkModeEnabled() ? '#333' : '#f0f0f0';
-            categoryButton.style.color = isDarkModeEnabled() ? '#ddd' : '#333';
         }
-        
-        categoryButton.style.border = 'none';
-        categoryButton.style.borderRadius = '4px';
-        categoryButton.style.padding = '8px 12px';
-        categoryButton.style.cursor = 'pointer';
         
         categoryButton.onclick = () => {
             filterHabitsByCategory(category);  // Use the properly capitalized category
