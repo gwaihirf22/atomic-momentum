@@ -1142,4 +1142,61 @@ input:checked + .theme-switch-slider:before {
     padding: 5px 15px;
     cursor: pointer;
     flex-shrink: 0;
+}
+
+/* Calendar day headers */
+.calendar-day-header {
+    text-align: center;
+    font-weight: bold;
+    padding: 5px;
+    color: var(--text-color);
+}
+
+/* Category filter buttons with proper theming */
+.category-filter-btn {
+    background-color: var(--filter-btn-bg);
+    color: var(--filter-btn-text);
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.category-filter-btn.active {
+    background-color: var(--filter-btn-active-bg);
+    color: var(--filter-btn-active-text);
+}
+
+/* Make habit indicators use CSS variables */
+.habit-indicator.completed {
+    background-color: var(--success-color);
+}
+
+/* App container for proper content replacement */
+.app-container {
+    font-family: Arial, sans-serif;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 70px; /* Extra padding at the bottom to account for the notification banner */
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Toast notification styling */
+.toast-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: opacity 0.3s ease-in-out;
 } 
