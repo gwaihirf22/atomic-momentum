@@ -1805,17 +1805,23 @@ function showSettingsScreen() {
     backButton.innerHTML = '&larr;';
     backButton.className = 'back-button';
     backButton.onclick = () => {
+        // Clear app-root completely
+        appRoot.innerHTML = '';
+        
         // Return to the main screen
         appRoot.innerHTML = mainContent;
         
         // Re-initialize event listeners and state
         loadHabits();
         
-        // Apply theme if it was changed
+        // Ensure theme is applied correctly when returning to main screen
         applyTheme();
         
         // Setup event listeners
         setupEventListeners();
+        
+        // Scroll to top
+        window.scrollTo(0, 0);
     };
     
     // Title
@@ -1916,6 +1922,9 @@ function showSettingsScreen() {
     
     // Add to app-root
     appRoot.appendChild(appScreen);
+    
+    // Scroll to top of the page
+    window.scrollTo(0, 0);
     
     // Apply theme immediately to ensure new elements have proper styles
     applyTheme();
@@ -2158,6 +2167,9 @@ function showCalendarScreen() {
             const dateStr = getLocalDateString(currentViewYear, currentViewMonth, day);
             addCompletionIndicators(dayCell, dateStr);
             
+            // Store the date string as a data attribute
+            dayCell.dataset.date = dateStr;
+            
             // Add click handler to show details
             dayCell.onclick = () => {
                 showDayDetails(dateStr);
@@ -2235,6 +2247,9 @@ function showCalendarScreen() {
     
     // Add to body
     document.body.appendChild(appScreen);
+    
+    // Scroll to top of the page
+    window.scrollTo(0, 0);
     
     // Function to update category filters
     function updateCalendarCategoryFilter(selectedCategory) {
@@ -3045,4 +3060,116 @@ function setupEventListeners() {
             showAddHabitScreen();
         };
     }
+}
+
+// Function to show details for a selected calendar day
+function showDayDetails(dateString) {
+    const habitHistory = loadHabitHistory();
+    console.log('Showing details for date:', dateString);
+    
+    // Create overlay for popup
+    const overlay = document.createElement('div');
+    overlay.className = 'dialog-overlay';
+    
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'calendar-popup';
+    
+    // Format date for display
+    const [year, month, day] = dateString.split('-').map(Number);
+    const displayDate = new Date(year, month - 1, day);
+    
+    // Popup title
+    const title = document.createElement('h3');
+    title.className = 'calendar-popup-title';
+    title.textContent = displayDate.toLocaleDateString(undefined, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    // Close button
+    const closeButton = document.createElement('div');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'popup-close-button';
+    
+    closeButton.onclick = () => {
+        document.body.removeChild(overlay);
+    };
+    
+    // Habits list
+    const habitsList = document.createElement('div');
+    habitsList.className = 'habit-list';
+    
+    // Show habits
+    let hasAnyData = false;
+    
+    // Sort habits by name and show all
+    const sortedHabits = Object.entries(habits).sort(([,a], [,b]) => a.name.localeCompare(b.name));
+    
+    sortedHabits.forEach(([habitId, habit]) => {
+        // Check if this habit has data for this date
+        const status = checkHabitCompletion(habit, dateString, habitHistory);
+        if (status) {
+            hasAnyData = true;
+            
+            // Create habit item
+            const habitItem = document.createElement('div');
+            habitItem.className = 'habit-item';
+            
+            // Habit name
+            const habitName = document.createElement('div');
+            habitName.className = 'habit-name';
+            habitName.textContent = habit.name;
+            
+            // Habit status
+            const habitStatus = document.createElement('div');
+            habitStatus.className = `habit-status ${status}`;
+            habitStatus.textContent = status === 'completed' ? '✓ Completed' : '✗ Not Completed';
+            
+            habitItem.appendChild(habitName);
+            habitItem.appendChild(habitStatus);
+            habitsList.appendChild(habitItem);
+        }
+    });
+    
+    if (!hasAnyData) {
+        const noDataMsg = document.createElement('div');
+        noDataMsg.className = 'no-data-message';
+        noDataMsg.textContent = 'No habits recorded for this date.';
+        habitsList.appendChild(noDataMsg);
+    }
+    
+    // Assemble popup
+    popup.appendChild(closeButton);
+    popup.appendChild(title);
+    popup.appendChild(habitsList);
+    overlay.appendChild(popup);
+    
+    // Close popup when clicking overlay
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    };
+    
+    document.body.appendChild(overlay);
+}
+
+// Helper function to check habit completion status
+function checkHabitCompletion(habit, dateStr, habitHistory) {
+    if (!habit || !dateStr) return null;
+    
+    // Per-habit history check
+    if (habit.history && habit.history[dateStr]) {
+        return habit.history[dateStr];
+    }
+    
+    // Global history fallback
+    if (habitHistory[dateStr] && habitHistory[dateStr][habit.id]) {
+        return habitHistory[dateStr][habit.id];
+    }
+    
+    return null;
 }
