@@ -120,9 +120,9 @@ function loadHabits() {
         habits = savedHabits;
         
         // Convert datestring fields back to Date objects
-        Object.keys(habits).forEach(habitId => {
-            const habit = habits[habitId];
-            
+            Object.keys(habits).forEach(habitId => {
+                const habit = habits[habitId];
+                
             // Ensure that the ID is stored in the habit object for consistency
             if (!habit.id) {
                 habit.id = habitId;
