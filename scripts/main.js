@@ -1,6 +1,6 @@
 // Default habits to use if none are saved
 const defaultHabits = {
-    water: { 
+    habit_water_default: { 
         progress: 5, 
         target: 8, 
         name: "Drink Water", 
@@ -14,7 +14,7 @@ const defaultHabits = {
         reminderTime: null, // Optional time for daily reminder
         reminderEnabled: false // Whether notifications are enabled for this habit
     },
-    bible: { 
+    habit_bible_default: { 
         progress: 3, 
         target: 7, 
         name: "Read Bible", 
@@ -28,7 +28,7 @@ const defaultHabits = {
         reminderTime: null, // Optional time for daily reminder
         reminderEnabled: false // Whether notifications are enabled for this habit
     },
-    workout: { 
+    habit_workout_default: { 
         progress: 7, 
         target: 7, 
         name: "Workout", 
@@ -44,8 +44,29 @@ const defaultHabits = {
     }
 };
 
+// Import the storage service
+import { getHabits, saveHabits as saveHabitsToStorage } from './services/storageService.js';
+
+// Initialize the app when this module is loaded
+document.addEventListener('DOMContentLoaded', init);
+
 // Our in-memory habits
 let habits = {};
+
+// Function to generate a unique ID for habits
+function generateHabitId() {
+    // Check if a counter exists in localStorage
+    let habitCounter = parseInt(localStorage.getItem('habitCounter') || '0');
+    
+    // Increment the counter
+    habitCounter++;
+    
+    // Store the updated counter
+    localStorage.setItem('habitCounter', habitCounter.toString());
+    
+    // Return a unique ID with the counter
+    return `habit_${habitCounter}_${Date.now()}`;
+}
 
 // Function to format date as YYYY-MM-DD for consistent history keys
 function formatDate(date) {
@@ -94,12 +115,19 @@ function loadHabits() {
     // ... existing code ...
     
     // Try to load habits from localStorage
-    const savedHabits = localStorage.getItem('habits');
-    if (savedHabits) {
-        habits = JSON.parse(savedHabits);
+    const savedHabits = getHabits();
+    if (Object.keys(savedHabits).length > 0) {
+        habits = savedHabits;
         
         // Convert datestring fields back to Date objects
-        Object.values(habits).forEach(habit => {
+        Object.keys(habits).forEach(habitId => {
+            const habit = habits[habitId];
+            
+            // Ensure that the ID is stored in the habit object for consistency
+            if (!habit.id) {
+                habit.id = habitId;
+            }
+            
             if (habit.lastUpdatedDate) {
                 habit.lastUpdatedDate = new Date(habit.lastUpdatedDate);
             }
@@ -111,7 +139,15 @@ function loadHabits() {
         // If no habits found, use defaults
         habits = defaultHabits;
         console.log('No saved habits found, using defaults');
-        saveHabits(); // Save the defaults
+        
+        // Ensure default habits have their ids set
+        Object.keys(habits).forEach(habitId => {
+            if (!habits[habitId].id) {
+                habits[habitId].id = habitId;
+            }
+        });
+        
+        saveHabitsToStorage(habits); // Save the defaults
     }
     
     // Ensure habit objects have all required properties
@@ -147,10 +183,9 @@ function saveHabits() {
             habit.category = capitalizeCategory(habit.category || "Other");
         });
         
-        localStorage.setItem('habits', JSON.stringify(habits));
-        console.log('Saved habits to localStorage:', habits);
+        saveHabitsToStorage(habits);
     } catch (e) {
-        console.error('Error saving habits to localStorage:', e);
+        console.error('Error saving habits:', e);
     }
 }
 
@@ -178,22 +213,22 @@ function saveHabitHistory(history) {
     }
 }
 
-// Record daily habit status in habitHistory
+// Record daily habit status (for history tracking)
 function recordDailyHabitStatus() {
     const currentDate = getTodayFormatted();
     const habitHistory = loadHabitHistory();
     
-    // Create entry for current date if it doesn't exist
+    // Ensure the date entry exists
     if (!habitHistory[currentDate]) {
         habitHistory[currentDate] = {};
     }
     
-    // Record status for each habit
+    // Loop through all habits and record their status
     Object.keys(habits).forEach(habitId => {
         const habit = habits[habitId];
         const isCompleted = habit.progress >= habit.target;
         
-        // Store as "completed" or "not_completed"
+        // Update global history
         habitHistory[currentDate][habitId] = isCompleted ? "completed" : "not_completed";
         
         // Update habit's own history
@@ -205,7 +240,7 @@ function recordDailyHabitStatus() {
     
     // Save both global history and habits
     saveHabitHistory(habitHistory);
-    saveHabits();
+    saveHabitsToStorage(habits);
     
     console.log('Recorded habit status for', currentDate, habitHistory[currentDate]);
 }
@@ -266,23 +301,29 @@ function createHabitElement(habitId, habit) {
 
 // Function to show success/error notifications to the user
 function showToast(message, bgColor = 'var(--success-color)', duration = 1500) {
-    const toast = document.createElement('div');
-    toast.textContent = message;
-    toast.className = 'toast-notification';
+    // Check if it's a completed message and reduce the duration
+    if (message.includes('Great job') || message.includes('Completed')) {
+        duration = 800; // Shorter duration for completion notifications
+    }
     
-    // Use CSS classes instead of inline styles
+    const toast = document.createElement('div');
+    toast.className = 'toast';
     toast.style.backgroundColor = bgColor;
+    toast.textContent = message;
     
     document.body.appendChild(toast);
     
-    // Fade out and remove
+    // Make toast visible
     setTimeout(() => {
-        toast.style.opacity = '0';
+        toast.classList.add('visible');
+    }, 10);
+    
+    // Remove toast after duration
+    setTimeout(() => {
+        toast.classList.remove('visible');
         setTimeout(() => {
-            if (toast.parentElement) {
-                document.body.removeChild(toast);
-            }
-        }, 300);
+            document.body.removeChild(toast);
+        }, 300); // Wait for fade-out transition before removing
     }, duration);
 }
 
@@ -373,7 +414,7 @@ function updateProgress(habitId, change) {
         habit.history[today] = isCompleted ? "completed" : "not_completed";
         
         // Save habits
-        saveHabits();
+        saveHabitsToStorage(habits);
         
         // Update streak if needed
         updateStreak(habit, today, isCompleted);
@@ -705,7 +746,7 @@ function checkHabitResets() {
     
     // Save if changes were made
     if (hasChanges) {
-        saveHabits();
+        saveHabitsToStorage(habits);
         console.log('Habits were reset based on their reset frequency');
         
         // Record daily habit status in history when resets occur
@@ -735,8 +776,11 @@ function updateStreak(habit, today, isCompleted) {
 
 // Show Add Habit Screen (fullscreen)
 function showAddHabitScreen(habit = null) {
-    // Save current screen content
-    const mainContent = document.body.innerHTML;
+    // Get the app root element
+    const appRoot = document.getElementById('app-root');
+    
+    // Clear app-root completely 
+    appRoot.innerHTML = '';
     
     // Get current theme
     const isDarkMode = isDarkModeEnabled();
@@ -753,52 +797,30 @@ function showAddHabitScreen(habit = null) {
     // Use provided habit or default values
     habit = habit || defaultHabit;
     
-    // Create full-screen form that simulates a navigation to a new screen
-    document.body.innerHTML = '';
-    
     // Create app elements
     const appScreen = document.createElement('div');
-    appScreen.style.fontFamily = 'Arial, sans-serif';
-    appScreen.style.maxWidth = '500px';
-    appScreen.style.margin = '0 auto';
-    appScreen.style.padding = '0';
-    appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
-    appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
+    appScreen.className = 'app-screen';
     appScreen.style.height = '100vh';
     appScreen.style.display = 'flex';
     appScreen.style.flexDirection = 'column';
     
     // Create AppBar
     const appBar = document.createElement('div');
-    appBar.style.backgroundColor = '#673ab7';
-    appBar.style.color = 'white';
-    appBar.style.padding = '16px';
-    appBar.style.display = 'flex';
-    appBar.style.alignItems = 'center';
+    appBar.className = 'app-bar';
     
     // Back button
     const backButton = document.createElement('div');
     backButton.innerHTML = '&larr;';
-    backButton.style.marginRight = '16px';
-    backButton.style.fontSize = '24px';
-    backButton.style.cursor = 'pointer';
+    backButton.className = 'back-button';
     backButton.onclick = () => {
-        // Return to the main screen
-        document.body.innerHTML = mainContent;
-        
-        // Re-initialize event listeners and state
-        document.addEventListener('DOMContentLoaded', loadHabits);
-        loadHabits();
-        
-        // Ensure theme is applied correctly when returning to main screen
-        applyTheme();
+        // Use the showMainScreen function to return to the main screen
+        showMainScreen();
     };
     
     // Title
     const title = document.createElement('h1');
     title.textContent = 'Add New Habit';
-    title.style.margin = '0';
-    title.style.fontSize = '20px';
+    title.className = 'screen-title';
     
     appBar.appendChild(backButton);
     appBar.appendChild(title);
@@ -811,10 +833,7 @@ function showAddHabitScreen(habit = null) {
     
     // Create form content
     const form = document.createElement('div');
-    form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    form.style.padding = '20px';
-    form.style.borderRadius = '8px';
-    form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+    form.className = 'form-container';
     
     const heading = document.createElement('h2');
     heading.textContent = 'Add New Habit';
@@ -1187,14 +1206,15 @@ function showAddHabitScreen(habit = null) {
     createButton.onclick = () => {
         // Validate form
         if (nameInput.value && targetInput.value && parseInt(targetInput.value) > 0) {
-            // Generate unique ID for the habit
-            const habitId = habit ? habit.id : 'habit_' + new Date().getTime();
+            // Generate unique ID for the habit - use existing ID if editing, otherwise create new one
+            const habitId = habit && habit.id ? habit.id : generateHabitId();
             
             // Get selected category value
             const selectedCategory = categorySelect.value || 'Other';
             
             // Create or update the habit object
             habits[habitId] = {
+                id: habitId, // Store ID within the habit object for reference
                 name: nameInput.value,
                 progress: 0,  // Always initialize progress to 0 for new habits
                 target: parseInt(targetInput.value),
@@ -1211,17 +1231,10 @@ function showAddHabitScreen(habit = null) {
             };
             
             // Save to localStorage
-            saveHabits();
+            saveHabitsToStorage(habits);
             
-            // Return to the main screen
-            document.body.innerHTML = mainContent;
-            
-            // Re-initialize event listeners and state
-            document.addEventListener('DOMContentLoaded', loadHabits);
-            loadHabits();
-            
-            // Ensure theme is applied correctly when returning to main screen
-            applyTheme();
+            // Use the showMainScreen function instead of directly manipulating DOM
+            showMainScreen();
         } else {
             alert('Please fill out all fields');
         }
@@ -1245,7 +1258,11 @@ function showAddHabitScreen(habit = null) {
     appScreen.appendChild(appBar);
     appScreen.appendChild(formContainer);
     
-    document.body.appendChild(appScreen);
+    // Add to app-root instead of document.body
+    appRoot.appendChild(appScreen);
+    
+    // Reset scroll position
+    window.scrollTo(0, 0);
     
     // Focus the first input for better UX
     nameInput.focus();
@@ -1253,205 +1270,206 @@ function showAddHabitScreen(habit = null) {
 
 // Show Edit Habit Screen
 function showEditHabitScreen(habitId, habit) {
-    // Save current screen content
-    const mainContent = document.body.innerHTML;
+    // Get the app root element
+    const appRoot = document.getElementById('app-root');
     
-    // Get current theme
-    const isDarkMode = isDarkModeEnabled();
-    
-    // Create full-screen form that simulates a navigation to a new screen
-    document.body.innerHTML = '';
+    // Clear app-root completely
+    appRoot.innerHTML = '';
     
     // Create app elements
     const appScreen = document.createElement('div');
-    appScreen.style.fontFamily = 'Arial, sans-serif';
-    appScreen.style.maxWidth = '500px';
-    appScreen.style.margin = '0 auto';
-    appScreen.style.padding = '0';
-    appScreen.style.backgroundColor = isDarkMode ? '#121212' : '#f5f5f5';
-    appScreen.style.color = isDarkMode ? '#ffffff' : '#000000';
-    appScreen.style.height = '100vh';
-    appScreen.style.display = 'flex';
-    appScreen.style.flexDirection = 'column';
+    appScreen.className = 'app-screen';
     
     // Create AppBar
     const appBar = document.createElement('div');
+    appBar.className = 'app-bar';
+    
+    // Back button
+    const backButton = document.createElement('div');
+    backButton.innerHTML = '&larr;';
+    backButton.className = 'app-bar-button';
+    
+    // Back button styling
+    backButton.style.fontSize = '24px';
+    backButton.style.marginRight = '10px';
+    backButton.style.cursor = 'pointer';
+    
+    // Go back to main screen when clicked
+    backButton.onclick = () => {
+        showMainScreen();
+    };
+    
+    // Title
+    const title = document.createElement('div');
+    title.textContent = 'Edit Habit';
+    title.className = 'app-bar-title';
+    title.style.color = 'white';
+    title.style.fontSize = '20px';
+    title.style.flex = '1';
+    
+    // AppBar styling
     appBar.style.backgroundColor = '#673ab7';
     appBar.style.color = 'white';
     appBar.style.padding = '16px';
     appBar.style.display = 'flex';
     appBar.style.alignItems = 'center';
+    appBar.style.position = 'sticky';
+    appBar.style.top = '0';
+    appBar.style.zIndex = '1000';
+    appBar.style.width = '100%';
+    appBar.style.boxSizing = 'border-box';
     
-    // Back button
-    const backButton = document.createElement('div');
-    backButton.innerHTML = '&larr;';
-    backButton.style.marginRight = '16px';
-    backButton.style.fontSize = '24px';
-    backButton.style.cursor = 'pointer';
-    backButton.onclick = () => {
-        // Return to the main screen
-        document.body.innerHTML = mainContent;
-        
-        // Re-initialize event listeners and state
-        document.addEventListener('DOMContentLoaded', loadHabits);
-        loadHabits();
-        
-        // Ensure theme is applied correctly when returning to main screen
-        applyTheme();
-    };
-    
-    // Title
-    const title = document.createElement('h1');
-    title.textContent = 'Edit Habit';
-    title.style.margin = '0';
-    title.style.fontSize = '20px';
-    
+    // Add elements to AppBar
     appBar.appendChild(backButton);
     appBar.appendChild(title);
     
-    // Create form container (scrollable)
+    // Form container
     const formContainer = document.createElement('div');
-    formContainer.style.flex = '1';
-    formContainer.style.overflowY = 'auto';
     formContainer.style.padding = '20px';
+    formContainer.style.backgroundColor = 'var(--section-bg-color)';
+    formContainer.style.borderRadius = '12px';
+    formContainer.style.margin = '20px';
+    formContainer.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
     
-    // Create form content
-    const form = document.createElement('div');
-    form.style.backgroundColor = isDarkMode ? '#1e1e1e' : 'white';
-    form.style.padding = '20px';
-    form.style.borderRadius = '8px';
-    form.style.boxShadow = isDarkMode ? '0 1px 3px rgba(255,255,255,0.1)' : '0 1px 3px rgba(0,0,0,0.1)';
+    // Create form
+    const form = document.createElement('form');
+    form.style.display = 'flex';
+    form.style.flexDirection = 'column';
+    form.style.gap = '16px';
     
+    // Prevent form submission
+    form.onsubmit = (e) => {
+        e.preventDefault();
+    };
+    
+    // Create heading
     const heading = document.createElement('h2');
-    heading.textContent = 'Edit Habit';
-    heading.style.textAlign = 'center';
-    heading.style.marginBottom = '20px';
+    heading.textContent = 'Edit ' + habit.name;
+    heading.style.margin = '0 0 10px 0';
+    heading.style.color = 'var(--text-color)';
     
-    // Icon selector
+    // Icon selection
     const iconLabel = document.createElement('div');
-    iconLabel.textContent = 'Choose an Icon (Optional)';
+    iconLabel.textContent = 'Choose an Icon';
     iconLabel.style.fontSize = '16px';
     iconLabel.style.fontWeight = 'bold';
     iconLabel.style.marginBottom = '10px';
     
-    // Create icon options
+    // Icon container
     const iconContainer = document.createElement('div');
-    iconContainer.className = 'icon-container';
     iconContainer.style.display = 'grid';
     iconContainer.style.gridTemplateColumns = 'repeat(4, 1fr)';
-    iconContainer.style.gap = '10px';
-    iconContainer.style.marginBottom = '20px';
-    iconContainer.style.justifyContent = 'center';
+    iconContainer.style.gap = '12px';
+    iconContainer.style.marginBottom = '16px';
     
-    // Habit-appropriate icons with their SVG paths
-    // TODO: BUG-010 - Replace these generic icons with a curated set of habit-specific icons
-    // Create a more comprehensive collection of monochrome icons for common habit types
-    // Ensure the same icon set is used here as in the Add Habit screen
+    // Define icons for various habit categories
     const icons = [
-        { id: 'none', label: 'None', path: '' }, // Empty option
+        // Reading/Learning
+        { id: 'book', emoji: '📚', category: 'mind' },
+        { id: 'graduation', emoji: '🎓', category: 'mind' },
+        { id: 'writing', emoji: '✍️', category: 'mind' },
+        { id: 'laptop', emoji: '💻', category: 'mind' },
         
-        // Health & Fitness Category
-        { id: 'water', label: 'Water/Hydration', path: 'M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z' },
-        { id: 'run', label: 'Running', path: 'M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.56-.89-1.68-1.25-2.65-.84L6 8.3V13h2V9.6l1.8-.7' },
-        { id: 'bike', label: 'Cycling', path: 'M5 20.5A3.5 3.5 0 0 1 1.5 17 3.5 3.5 0 0 1 5 13.5 3.5 3.5 0 0 1 8.5 17 3.5 3.5 0 0 1 5 20.5M19 20.5A3.5 3.5 0 0 1 15.5 17 3.5 3.5 0 0 1 19 13.5 3.5 3.5 0 0 1 22.5 17 3.5 3.5 0 0 1 19 20.5M12 17a2 2 0 0 1-2-2c0-1.08.87-1.96 1.95-1.97L13.5 12l-2.4-2.4c-.54.54-1.29.88-2.1.88-1.66 0-3-1.34-3-3s1.34-3 3-3c.95 0 1.8.45 2.33 1.14L13 7.25 14.75 9l-1.75 1.75L15 12.75 9 18V17z' },
-        { id: 'gym', label: 'Strength', path: 'M20.57 14.86L22 13.43 20.57 12 17 15.57 8.43 7 12 3.43 10.57 2 9.14 3.43 7.71 2 5.57 4.14 4.14 2.71 2.71 4.14l1.43 1.43L2 7.71l1.43 1.43L2 10.57 3.43 12 7 8.43 15.57 17 12 20.57 13.43 22l1.43-1.43L16.29 22l2.14-2.14 1.43 1.43 1.43-1.43-1.43-1.43L22 16.29l-1.43-1.43z' },
-        { id: 'meditation', label: 'Meditation', path: 'M12 4c1.11 0 2 .89 2 2s-.89 2-2 2-2-.89-2-2 .9-2 2-2m9 12v-2c0-2.66-5.33-4-8-4h-.25C9.75 10 4 11.34 4 14v2h17' },
-        { id: 'yoga', label: 'Yoga', path: 'M13 2v9l3-2.94L19 11V2h-6m4 7V4h-2v5l-1-.99L13 9V4h-2v7.42l-3.07 3.88L10.6 21h2l-.6-6 3-3 1 8h2l-.5-9L21 9V7l-4 2z' },
-        { id: 'sleep', label: 'Sleep', path: 'M2 12C2 17.5 6.5 22 12 22S22 17.5 22 12 17.5 2 12 2 2 6.5 2 12z' },
+        // Fitness/Health
+        { id: 'running', emoji: '🏃', category: 'body' },
+        { id: 'dumbbell', emoji: '🏋️', category: 'body' },
+        { id: 'bicycle', emoji: '🚴', category: 'body' },
+        { id: 'yoga', emoji: '🧘', category: 'body' },
         
-        // Mind & Knowledge
-        { id: 'book', label: 'Reading', path: 'M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1m0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z' },
-        { id: 'study', label: 'Study', path: 'M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3m0 2.18L17.82 9 12 12.72 6.18 9 12 5.18M17 16l-5 2.72L7 16v-3.73L12 15l5-2.73V16z' },
-        { id: 'language', label: 'Language', path: 'M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z' },
-        { id: 'journal', label: 'Journal', path: 'M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z M12 14l-4-4h8z' },
-        { id: 'mindfulness', label: 'Mindfulness', path: 'M12 3c1.66 0 3 1.34 3 3-1.54.8-3 1.5-5 1.5-1 0-2-.67-2-1.5S10.34 3 12 3m3 7.5c2.32 0 4.5.4 6.5 1.38.34 1.12.5 2.34.5 3.62 0 2.2-.5 3.5-4 3.5v-2c2 0 2-.8 2-1.5 0-1.93-1.5-3.5-5-3.5-3.5 0-5 1.57-5 3.5 0 .7 0 1.5 2 1.5v2c-3.5 0-4-1.3-4-3.5 0-1.28.16-2.5.5-3.62C10.5 10.9 12.68 10.5 15 10.5m-.7 5.63c.7.07 1.07.3 1.23.57H17c0 .55-.47 1-1 1h-1c-.55 0-1-.45-1-1h2.3c-.17-.27-.53-.5-1.23-.57-.67-.06-1.35-.12-1.35-.62S15.3 14 16 14s1.43.38 1.5.88h.5c-.03-.83-.9-1.38-2-1.38s-1.97.55-2 1.38c0 .5.68.56 1.35.62z' },
+        // Nutrition
+        { id: 'water', emoji: '💧', category: 'body' },
+        { id: 'salad', emoji: '🥗', category: 'body' },
+        { id: 'fruit', emoji: '🍎', category: 'body' },
+        { id: 'cooking', emoji: '👨‍🍳', category: 'body' },
         
-        // Productivity & Work
-        { id: 'code', label: 'Coding', path: 'M8,3A2,2 0 0,0 6,5V9A2,2 0 0,1 4,11H3V13H4A2,2 0 0,1 6,15V19A2,2 0 0,0 8,21H10V19H8V14A2,2 0 0,0 6,12A2,2 0 0,0 8,10V5H10V3M16,3A2,2 0 0,1 18,5V9A2,2 0 0,0 20,11H21V13H20A2,2 0 0,0 18,15V19A2,2 0 0,1 16,21H14V19H16V14A2,2 0 0,1 18,12A2,2 0 0,1 16,10V5H14V3H16Z' },
-        { id: 'work', label: 'Work', path: 'M10 16v-1H3.01L3 19c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2v-4h-7v1h-4zm10-9h-4.01V5l-2-2h-4l-2 2v2H4c-1.1 0-2 .9-2 2v3c0 1.11.89 2 2 2h6v-2h4v2h6c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-6 0h-4V5h4v2z' },
-        { id: 'write', label: 'Writing', path: 'M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z' },
-        { id: 'music', label: 'Music', path: 'M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z' },
-        { id: 'art', label: 'Art', path: 'M17.5 12c1.93 0 3.5-1.57 3.5-3.5S19.43 5 17.5 5 14 6.57 14 8.5s1.57 3.5 3.5 3.5zm-9 0c1.93 0 3.5-1.57 3.5-3.5S10.43 5 8.5 5 5 6.57 5 8.5 6.57 12 8.5 12zM3 21h18v-2c0-3.33-6-4-9-4s-9 .67-9 4v2z' },
+        // Productivity
+        { id: 'clock', emoji: '⏰', category: 'other' },
+        { id: 'chart', emoji: '📊', category: 'other' },
+        { id: 'briefcase', emoji: '💼', category: 'other' },
+        { id: 'pencil', emoji: '✏️', category: 'other' },
         
-        // Spiritual & Social
-        { id: 'pray', label: 'Prayer', path: 'M10 3L8 5v2h2V5h2V3h-2M3 7v2h2c0 1.03.06 2.1.16 3H3v2h2.16c.24.84.7 1.62 1.38 2.26L5 18h2.13l1.73-1.73L10 17.5V21h2v-3.5l1.14-1.27L15 18h2l-1.55-1.74c.58-.54.96-1.22 1.24-1.96L19 14.5V21h2v-7.5l2-2.5V7h-7V5h-2v2H3z' },
-        { id: 'family', label: 'Family', path: 'M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z' },
-        { id: 'connect', label: 'Connect', path: 'M16,13C15.71,13 15.38,13 15.03,13.05C16.19,13.89 17,15 17,16.5V19H23V16.5C23,14.17 18.33,13 16,13M8,13C5.67,13 1,14.17 1,16.5V19H15V16.5C15,14.17 10.33,13 8,13M8,11A3,3 0 0,0 11,8A3,3 0 0,0 8,5A3,3 0 0,0 5,8A3,3 0 0,0 8,11M16,11A3,3 0 0,0 19,8A3,3 0 0,0 16,5A3,3 0 0,0 13,8A3,3 0 0,0 16,11Z' },
+        // Mindfulness
+        { id: 'meditation', emoji: '🧠', category: 'spirit' },
+        { id: 'heart', emoji: '❤️', category: 'spirit' },
+        { id: 'music', emoji: '🎵', category: 'spirit' },
+        { id: 'nature', emoji: '🌿', category: 'spirit' },
         
-        // Habits & Health
-        { id: 'pill', label: 'Medication', path: 'M4.22,11.29L11.29,4.22C13.64,1.88 17.43,1.88 19.78,4.22C22.12,6.56 22.12,10.36 19.78,12.71L12.71,19.78C10.36,22.12 6.56,22.12 4.22,19.78C1.88,17.43 1.88,13.64 4.22,11.29M5.64,12.71C4.59,13.75 4.24,15.24 4.6,16.57L10.59,10.59L14.83,14.83L18.36,11.29C19.93,9.73 19.93,7.2 18.36,5.64C16.8,4.07 14.27,4.07 12.71,5.64L5.64,12.71Z' },
-        { id: 'meal', label: 'Healthy Eating', path: 'M15.5,21L14,8H16.23L15.1,3.46L16.84,3L18.09,8H22L20.5,21H15.5M5,11H10A3,3 0 0,1 13,14H2A3,3 0 0,1 5,11M13,18A3,3 0 0,1 10,21H5A3,3 0 0,1 2,18H13M3,15H8L9.5,16.5L11,15H12A1,1 0 0,1 13,16A1,1 0 0,1 12,17H3A1,1 0 0,1 2,16A1,1 0 0,1 3,15Z' },
-        { id: 'no-smoking', label: 'Quit Smoking', path: 'M2,6V18H22V6H2M16,14V16H14V10H16V8H20V6H18V10H17.58L17,11.41V12.57L14,16H12V14L14.88,9.78L14.11,9.11L13.65,10H10.88L12.73,6H14.69L15.81,6.13L16.27,5.67L17,6.11L16.15,8.12L17.08,8.96L18.92,6H20V8H18.92L18.33,9L19.25,9.87L20,8.87L19.92,16H18V14H16Z' },
-        { id: 'no-alcohol', label: 'Quit Drinking', path: 'M20 10C20 7.33 18 5 15 5L14.5 5L14.5 3H15V1H9V3H9.5L9.5 5L9 5C6 5 4 7.33 4 10L4 11H14C15.11 11 16 11.9 16 13L16 19H8L8 21H17C18.11 21 19 20.11 19 19L19 14.89C20.24 14.07 21 12.62 21 11V10H20M9.5 7L9.5 5H14.5L14.5 7L13.5 8H10.5L9.5 7Z' },
-        { id: 'track', label: 'Habit Tracking', path: 'M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z' }
+        // Finance
+        { id: 'money', emoji: '💰', category: 'other' },
+        { id: 'chart_up', emoji: '📈', category: 'other' },
+        { id: 'bank', emoji: '🏦', category: 'other' },
+        { id: 'calculator', emoji: '🧮', category: 'other' },
+        
+        // Social
+        { id: 'friends', emoji: '👥', category: 'spirit' },
+        { id: 'phone', emoji: '📱', category: 'spirit' },
+        { id: 'handshake', emoji: '🤝', category: 'spirit' },
+        { id: 'gift', emoji: '🎁', category: 'spirit' },
+        
+        // Misc/Other
+        { id: 'star', emoji: '⭐', category: 'other' },
+        { id: 'check', emoji: '✅', category: 'other' }
     ];
     
-    // Initialize selected icon
+    // Keep track of selected icon ID - initialize with current habit icon or default to none
     let selectedIconId = habit.icon || 'none';
     
+    // Create and append icon options
     icons.forEach(icon => {
-        const iconBtn = document.createElement('div');
-        iconBtn.className = 'icon-btn';
-        iconBtn.title = icon.label;
-        iconBtn.style.width = '42px';
-        iconBtn.style.height = '42px';
-        iconBtn.style.display = 'flex';
-        iconBtn.style.alignItems = 'center';
-        iconBtn.style.justifyContent = 'center';
-        iconBtn.style.cursor = 'pointer';
-        iconBtn.style.border = '1px solid #ccc';
-        iconBtn.style.borderRadius = '8px';
-        iconBtn.style.transition = 'all 0.3s ease';
-        iconBtn.style.backgroundColor = icon.id === selectedIconId ? '#e0e0e0' : (isDarkMode ? '#333' : '#fff');
-        iconBtn.style.transform = icon.id === selectedIconId ? 'scale(1.1)' : 'scale(1.0)';
-        iconBtn.style.boxShadow = icon.id === selectedIconId ? '0 2px 5px rgba(0,0,0,0.2)' : 'none';
+        const iconButton = document.createElement('div');
+        iconButton.className = 'icon-button';
+        iconButton.setAttribute('data-icon-id', icon.id);
+        iconButton.style.display = 'flex';
+        iconButton.style.justifyContent = 'center';
+        iconButton.style.alignItems = 'center';
+        iconButton.style.width = '100%';
+        iconButton.style.aspectRatio = '1/1';
+        iconButton.style.backgroundColor = 'var(--section-bg-color)';
+        iconButton.style.borderRadius = '12px';
+        iconButton.style.border = icon.id === selectedIconId ? '2px solid #673ab7' : '1px solid #e0e0e0';
+        iconButton.style.fontSize = '24px';
+        iconButton.style.cursor = 'pointer';
+        iconButton.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
         
-        // Add SVG icon or "None" text
-        if (icon.id !== 'none' && icon.path) {
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '24');
-            svg.setAttribute('height', '24');
-            svg.setAttribute('viewBox', '0 0 24 24');
-            svg.setAttribute('fill', 'none');
-            svg.setAttribute('stroke', isDarkMode ? '#fff' : '#000');
-            svg.setAttribute('stroke-width', '2');
-            svg.setAttribute('stroke-linecap', 'round');
-            svg.setAttribute('stroke-linejoin', 'round');
-            
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', icon.path);
-            
-            svg.appendChild(path);
-            iconBtn.appendChild(svg);
-        } else {
-            // None option
-            const noneText = document.createElement('div');
-            noneText.textContent = 'None';
-            noneText.style.fontSize = '12px';
-            iconBtn.appendChild(noneText);
-        }
+        // Set the emoji as content
+        iconButton.textContent = icon.emoji;
         
-        // Handle selection click
-        iconBtn.onclick = () => {
+        // Select this icon when clicked
+        iconButton.addEventListener('click', () => {
             selectedIconId = icon.id;
             
-            // Update all buttons to reflect new selection
-            iconContainer.querySelectorAll('.icon-btn').forEach(btn => {
-                btn.style.backgroundColor = isDarkMode ? '#333' : '#fff';
-                btn.style.transform = 'scale(1.0)';
+            // Update all icon buttons to reflect the new selection
+            iconContainer.querySelectorAll('.icon-button').forEach(btn => {
+                btn.style.border = '1px solid #e0e0e0';
+                btn.style.transform = 'scale(1)';
                 btn.style.boxShadow = 'none';
             });
             
-            // Highlight selected icon
-            iconBtn.style.backgroundColor = '#e0e0e0';
-            iconBtn.style.transform = 'scale(1.1)';
-            iconBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-        };
+            // Highlight the selected icon
+            iconButton.style.border = '2px solid #673ab7';
+            iconButton.style.transform = 'scale(1.05)';
+            iconButton.style.boxShadow = '0 0 3px rgba(103, 58, 183, 0.5)';
+        });
         
-        iconContainer.appendChild(iconBtn);
+        // Add hover effect
+        iconButton.addEventListener('mouseover', () => {
+            if (icon.id !== selectedIconId) {
+                iconButton.style.transform = 'scale(1.05)';
+                iconButton.style.boxShadow = '0 0 5px rgba(0,0,0,0.1)';
+            }
+        });
+        
+        iconButton.addEventListener('mouseout', () => {
+            if (icon.id !== selectedIconId) {
+                iconButton.style.transform = 'scale(1)';
+                iconButton.style.boxShadow = 'none';
+            }
+        });
+        
+        iconContainer.appendChild(iconButton);
     });
     
-    // Form inputs
+    // Habit name input
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Habit Name';
@@ -1464,15 +1482,15 @@ function showEditHabitScreen(habitId, habit) {
     nameInput.style.border = '1px solid #ccc';
     nameInput.style.boxSizing = 'border-box';
     
-    // Add category dropdown
+    // Category selection
     const categoryLabel = document.createElement('div');
     categoryLabel.textContent = 'Category (Optional)';
     categoryLabel.style.fontSize = '16px';
     categoryLabel.style.fontWeight = 'bold';
     categoryLabel.style.marginBottom = '10px';
     
+    // Create dropdown for categories
     const categorySelect = document.createElement('select');
-    categorySelect.id = 'habit-category-select'; // Consistent ID for easy reference
     categorySelect.style.width = '100%';
     categorySelect.style.padding = '16px';
     categorySelect.style.fontSize = '16px';
@@ -1480,35 +1498,43 @@ function showEditHabitScreen(habitId, habit) {
     categorySelect.style.borderRadius = '8px';
     categorySelect.style.border = '1px solid #ccc';
     categorySelect.style.boxSizing = 'border-box';
-    categorySelect.style.backgroundColor = isDarkMode ? '#333' : '#fff';
-    categorySelect.style.color = isDarkMode ? '#fff' : '#000';
+    categorySelect.style.backgroundColor = 'var(--section-bg-color)';
+    categorySelect.style.color = 'var(--text-color)';
+    categorySelect.style.appearance = 'none';
+    categorySelect.style.backgroundImage = 'url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")';
+    categorySelect.style.backgroundRepeat = 'no-repeat';
+    categorySelect.style.backgroundPosition = 'right 16px center';
     
-    // Add category options
+    // Add default option
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.text = 'Select a category (optional)';
+    categorySelect.appendChild(defaultOption);
+    
+    // Category options
     const categories = [
-        { value: '', label: 'Select a category (optional)' },
-        { value: 'Mind', label: 'Mind' },
-        { value: 'Body', label: 'Body' },
-        { value: 'Spirit', label: 'Spirit' }
+        { id: 'mind', name: 'Mind' },
+        { id: 'body', name: 'Body' },
+        { id: 'spirit', name: 'Spirit' },
+        { id: 'other', name: 'Other' }
     ];
     
+    // Add category options
     categories.forEach(category => {
         const option = document.createElement('option');
-        option.value = category.value;
-        option.textContent = category.label;
+        option.value = category.id;
+        option.text = category.name;
+        option.selected = habit.category === category.id;
         categorySelect.appendChild(option);
     });
     
-    // Set the current category if it exists
-    if (habit.category) {
-        categorySelect.value = habit.category;
-    }
-    
+    // Number input for target/frequency
     const targetInput = document.createElement('input');
     targetInput.type = 'number';
-    targetInput.placeholder = 'Goal Number (weekly)';
     targetInput.min = '1';
-    targetInput.max = '100';
-    targetInput.value = habit.target || '7'; // Default to 7 if not set
+    targetInput.max = '99';
+    targetInput.value = habit.target || '7';
+    targetInput.placeholder = 'Days to track';
     targetInput.style.width = '100%';
     targetInput.style.padding = '16px';
     targetInput.style.fontSize = '16px';
@@ -1545,7 +1571,7 @@ function showEditHabitScreen(habitId, habit) {
     ];
     
     // Keep track of selected color - initialize with current habit color or default
-    let selectedColor = habit.color || '#2196F3'; // Default to blue if not set
+    let selectedColor = habit.color || '#2196F3';
     
     // Create a color swatch for each preset color
     presetColors.forEach(color => {
@@ -1623,7 +1649,6 @@ function showEditHabitScreen(habitId, habit) {
     // Hidden native color picker
     const nativeColorPicker = document.createElement('input');
     nativeColorPicker.type = 'color';
-    nativeColorPicker.value = habit.color; // Set to current habit color
     nativeColorPicker.style.opacity = '0';
     nativeColorPicker.style.position = 'absolute';
     nativeColorPicker.style.top = '0';
@@ -1631,14 +1656,6 @@ function showEditHabitScreen(habitId, habit) {
     nativeColorPicker.style.width = '100%';
     nativeColorPicker.style.height = '100%';
     nativeColorPicker.style.cursor = 'pointer';
-    
-    // Check if current habit color is not in the presets - if so, select the custom option
-    const isCustomColor = !presetColors.some(color => color.value === habit.color);
-    if (isCustomColor) {
-        customColorSwatch.style.border = '3px solid white';
-        customColorSwatch.style.boxShadow = '0 0 0 2px #673ab7';
-        customColorSwatch.style.transform = 'scale(1.1)';
-    }
     
     // Update when native color picker changes
     nativeColorPicker.addEventListener('input', (e) => {
@@ -1698,15 +1715,8 @@ function showEditHabitScreen(habitId, habit) {
     cancelButton.style.flex = '1';
     
     cancelButton.onclick = () => {
-        // Just go back without saving
-        document.body.innerHTML = mainContent;
-        
-        // Re-initialize event listeners and state
-        document.addEventListener('DOMContentLoaded', loadHabits);
-        loadHabits();
-        
-        // Ensure theme is applied correctly when returning to main screen
-        applyTheme();
+        // Use the showMainScreen function instead of directly manipulating DOM
+        showMainScreen();
     };
     
     // Save button
@@ -1735,20 +1745,16 @@ function showEditHabitScreen(habitId, habit) {
             habits[habitId].icon = selectedIconId !== 'none' ? selectedIconId : '';
             habits[habitId].category = selectedCategory;
             
-            console.log(`Saving edited habit with category: ${selectedCategory}`);
+            // Ensure the ID is stored in the habit object as well
+            if (!habits[habitId].id) {
+                habits[habitId].id = habitId;
+            }
             
             // Save to localStorage
-            saveHabits();
+            saveHabitsToStorage(habits);
             
-            // Return to the main screen
-            document.body.innerHTML = mainContent;
-            
-            // Re-initialize event listeners and state
-            document.addEventListener('DOMContentLoaded', loadHabits);
-            loadHabits();
-            
-            // Ensure theme is applied correctly when returning to main screen
-            applyTheme();
+            // Use the showMainScreen function instead of directly manipulating DOM
+            showMainScreen();
         } else {
             alert('Please fill out all fields');
         }
@@ -1772,12 +1778,16 @@ function showEditHabitScreen(habitId, habit) {
     
     // Assemble the UI
     formContainer.appendChild(form);
+    formContainer.appendChild(saveButtonContainer);
     
     appScreen.appendChild(appBar);
     appScreen.appendChild(formContainer);
-    appScreen.appendChild(saveButtonContainer);
     
-    document.body.appendChild(appScreen);
+    // Add to app-root instead of document.body
+    appRoot.appendChild(appScreen);
+    
+    // Reset scroll position
+    window.scrollTo(0, 0);
     
     // Focus the first input for better UX
     nameInput.focus();
@@ -1785,11 +1795,10 @@ function showEditHabitScreen(habitId, habit) {
 
 // Settings screen with dark mode toggle
 function showSettingsScreen() {
-    // Save current screen content
+    // Get the app root element
     const appRoot = document.getElementById('app-root');
-    const mainContent = appRoot.innerHTML;
     
-    // Clear app-root instead of body
+    // Clear app-root completely
     appRoot.innerHTML = '';
     
     // Create app elements
@@ -1805,23 +1814,8 @@ function showSettingsScreen() {
     backButton.innerHTML = '&larr;';
     backButton.className = 'back-button';
     backButton.onclick = () => {
-        // Clear app-root completely
-        appRoot.innerHTML = '';
-        
-        // Return to the main screen
-        appRoot.innerHTML = mainContent;
-        
-        // Re-initialize event listeners and state
-        loadHabits();
-        
-        // Ensure theme is applied correctly when returning to main screen
-        applyTheme();
-        
-        // Setup event listeners
-        setupEventListeners();
-        
-        // Scroll to top
-        window.scrollTo(0, 0);
+        // Return to the main screen using the consistent pattern
+        showMainScreen();
     };
     
     // Title
@@ -1933,13 +1927,67 @@ function showSettingsScreen() {
     setupEventListeners();
 }
 
+// Function to show the main screen
+function showMainScreen() {
+    // Get the app root element
+    const appRoot = document.getElementById('app-root');
+    
+    // Clear app-root completely 
+    appRoot.innerHTML = '';
+    
+    // Rebuild the main UI from scratch based on the index.html template
+    appRoot.innerHTML = `
+        <div class="app-header">
+            <h1>Momentum</h1>
+            <div class="header-icons">
+                <div class="calendar-icon" onclick="showCalendarScreen()" style="margin-right: 15px;">📅</div>
+                <div class="settings-icon" onclick="showSettingsScreen()">⚙️</div>
+            </div>
+        </div>
+        
+        <!-- Category filters -->
+        <div id="category-filters" class="category-filters" style="display: flex; overflow-x: auto; padding: 10px; gap: 10px; scrollbar-width: none; -ms-overflow-style: none;">
+            <!-- Category filter buttons will be added by JavaScript -->
+        </div>
+        
+        <div id="habits-container" style="padding: 0 10px;">
+            <!-- Habits will be dynamically inserted here by JavaScript -->
+        </div>
+        
+        <div class="add-button" onclick="showAddHabitScreen()">+</div>
+    `;
+    
+    // Reset scroll position
+    window.scrollTo(0, 0);
+    
+    // Use requestAnimationFrame to ensure DOM is ready before manipulating it
+    requestAnimationFrame(() => {
+        // Load habits from storage
+        loadHabits();
+        
+        // Render habits to the DOM
+        renderHabits();
+        
+        // Set up category filters
+        setupCategoryFilters();
+        
+        // Apply the current theme
+        applyTheme();
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        // Update statistics
+        updateStats();
+    });
+}
+
 // Show Calendar Screen
 function showCalendarScreen() {
-    // Save current screen content
+    // Get the app root
     const appRoot = document.getElementById('app-root');
-    const mainContent = appRoot.innerHTML;
     
-    // Clear app-root instead of body
+    // Clear app-root completely
     appRoot.innerHTML = '';
     
     // Create app elements
@@ -1955,17 +2003,8 @@ function showCalendarScreen() {
     backButton.innerHTML = '&larr;';
     backButton.className = 'back-button';
     backButton.onclick = () => {
-        // Return to the main screen
-        appRoot.innerHTML = mainContent;
-        
-        // Re-initialize event listeners and state
-        loadHabits();
-        
-        // Ensure theme is applied correctly when returning to main screen
-        applyTheme();
-        
-        // Setup event listeners
-        setupEventListeners();
+        // Show the main screen instead of restoring from mainContent
+        showMainScreen();
     };
     
     // Title
@@ -2172,7 +2211,14 @@ function showCalendarScreen() {
             
             // Add click handler to show details
             dayCell.onclick = () => {
-                showDayDetails(dateStr);
+                // Call calendar.js showDayDetails with the habits object
+                if (typeof window.showDayDetails === 'function') {
+                    // Call the function from calendar.js
+                    window.showDayDetails(dateStr, isDarkModeEnabled(), habits);
+                } else {
+                    // Fallback to local function
+                    showDayDetails(dateStr);
+                }
             };
             
             calendarGrid.appendChild(dayCell);
@@ -2245,8 +2291,8 @@ function showCalendarScreen() {
     appScreen.appendChild(appBar);
     appScreen.appendChild(calendarContainer);
     
-    // Add to body
-    document.body.appendChild(appScreen);
+    // Add to app-root instead of body
+    appRoot.appendChild(appScreen);
     
     // Scroll to top of the page
     window.scrollTo(0, 0);
@@ -2579,7 +2625,7 @@ function deleteHabit(habitId) {
         delete habits[habitId];
         
         // Save to localStorage
-        saveHabits();
+        saveHabitsToStorage(habits);
         
         // Show toast notification
         showToast(`Habit "${habit.name}" deleted successfully.`, '#FF5722');
@@ -2601,7 +2647,7 @@ function resetHabitProgress(habitId) {
         habit.progress = 0;
         
         // Save to localStorage
-        saveHabits();
+        saveHabitsToStorage(habits);
         
         // Update the habit card in the DOM
         updateHabitCardInDOM(habitId, habit);
@@ -2610,7 +2656,7 @@ function resetHabitProgress(habitId) {
         const message = `Progress for "${habit.name}" has been reset.`;
         const undoAction = () => {
             habit.progress = previousProgress;
-            saveHabits();
+            saveHabitsToStorage(habits);
             updateHabitCardInDOM(habitId, habit);
             showToast(`Progress for "${habit.name}" has been restored.`);
         };
@@ -2717,7 +2763,7 @@ function showReminderSettings(habitId, habit) {
         // Save the reminder settings
         habit.reminderEnabled = true;
         habit.reminderTime = reminderTime;
-        saveHabits();
+        saveHabitsToStorage(habits);
         
         // Start checking reminders
         startReminderCheck();
@@ -2775,7 +2821,7 @@ function filterHabitsByCategory(categoryId) {
     let visibleCount = 0;
     
     // Loop through each habit card
-    habitCards.forEach(card => {
+        habitCards.forEach(card => {
         // Get the category of this habit card
         const cardCategory = card.dataset.category ? card.dataset.category.toLowerCase() : 'other';
         
@@ -2785,26 +2831,26 @@ function filterHabitsByCategory(categoryId) {
         // Show all if filter is 'all', otherwise show only matching categories
         if (filterCategory === 'all' || cardCategory === filterCategory) {
             card.style.display = '';
-            visibleCount++;
-            
+                visibleCount++;
+                
             // Add a nice animation
             card.style.animation = 'fadeInUp 0.3s forwards';
-        } else {
-            card.style.display = 'none';
-        }
-    });
+            } else {
+                card.style.display = 'none';
+            }
+        });
     
     // Show message if no habits match the filter
     let noHabitsMessage = document.querySelector('.no-habits-message');
     if (visibleCount === 0) {
         if (!noHabitsMessage) {
             noHabitsMessage = document.createElement('div');
-            noHabitsMessage.className = 'no-habits-message';
+    noHabitsMessage.className = 'no-habits-message';
             noHabitsMessage.textContent = filterCategory === 'all' 
                 ? 'You have no habits yet. Add one with the + button below.' 
                 : `No habits found in the "${capitalizeCategory(filterCategory)}" category.`;
-            
-            const habitsContainer = document.getElementById('habits-container');
+        
+        const habitsContainer = document.getElementById('habits-container');
             habitsContainer.appendChild(noHabitsMessage);
         }
     } else if (noHabitsMessage) {
@@ -2896,24 +2942,23 @@ function initApp() {
     // Load saved category filter or default to 'all'
     window.currentCategoryFilter = localStorage.getItem('currentCategoryFilter') || 'all';
     
+    // Use requestAnimationFrame to ensure DOM is ready
+    requestAnimationFrame(() => {
     loadHabits();
     renderHabits();
     
     // Ensure DOM is loaded before setting up filters
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
             setupCategoryFilters();
             filterHabitsByCategory(window.currentCategoryFilter);
-        });
-    } else {
-        setupCategoryFilters();
-        filterHabitsByCategory(window.currentCategoryFilter);
-    }
     
     setupEventListeners();
     updateStats();
+        
+        // Only call checkStreaks if it exists
+        if (typeof checkStreaks === 'function') {
     checkStreaks();
-    renderCalendar();
+        }
+    });
 }
 
 // Add global event listener for navigation
@@ -2925,19 +2970,23 @@ window.addEventListener('popstate', () => {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', init);
 
-// Update the init function to include category filters
+// Update the init function to include category filters and button handlers
 function init() {
     // Call the new consolidated init function
     initApp();
     
-    // Add app-specific initialization
-    setDefaultHabits();
+    // Apply theme
     applyTheme();
-    setupNotificationPermission();
+    
+    // Set up all event listeners, including the calendar and settings icons
+    setupEventListeners();
     
     // Handle initial route
     const route = window.location.hash.slice(1) || 'home';
     handleRouteChange(route);
+    
+    // Show main screen as default
+    showMainScreen();
 }
 
 // Update stats and analytics
@@ -3015,6 +3064,21 @@ function applyThemeToAnalytics() {
 // Function to setup all event listeners
 function setupEventListeners() {
     console.log('Setting up event listeners');
+    
+    // Calendar and Settings icon navigation
+    const calendarIcon = document.querySelector('.calendar-icon');
+    if (calendarIcon) {
+        calendarIcon.onclick = () => {
+            showCalendarScreen();
+        };
+    }
+    
+    const settingsIcon = document.querySelector('.settings-icon');
+    if (settingsIcon) {
+        settingsIcon.onclick = () => {
+            showSettingsScreen();
+        };
+    }
     
     // Dark mode toggle in settings
     const darkModeToggle = document.querySelector('.theme-switch input[type="checkbox"]');
@@ -3173,3 +3237,16 @@ function checkHabitCompletion(habit, dateStr, habitHistory) {
     
     return null;
 }
+
+// When a new habit is added
+function saveNewHabit(habitName, target, color, category, reminderTime, reminderEnabled) {
+    // ... existing code ...
+    
+    // Save to localStorage
+    saveHabitsToStorage(habits);
+    
+    // ... existing code ...
+}
+
+// Export important functions for global access
+export { showCalendarScreen, showSettingsScreen, showMainScreen, showAddHabitScreen };

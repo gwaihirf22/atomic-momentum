@@ -5,6 +5,8 @@
 - ✅ Fixed: Category filtering in calendar view implementation and integration
 - ✅ Fixed: Calendar grid initialization and rendering issues
 - ✅ Fixed: Progress initialization for new habits
+- ✅ Fixed: Custom color picker (rainbow gradient) added to Edit Habit screen
+- ✅ Fixed: Filter buttons in calendar day popup no longer cause popup to disappear
 
 ## Known Issues
 - ⚠️ BUG-001: Touch interactions need improvement on mobile devices
@@ -103,4 +105,4 @@ This file tracks known bugs, issues, and small polish tasks during development a
 
 # 🛡️ Bug Tracker Last Updated:
 
-`April 29, 2024`
+`May 6, 2024`

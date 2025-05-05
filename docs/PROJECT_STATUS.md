@@ -1,6 +1,6 @@
 # Project Status
 
-## Latest Updates (as of April 22, 2025)
+## Latest Updates (as of May 6, 2024)
 
 ### ✅ Completed Tasks
 
@@ -32,6 +32,12 @@
    - Improved progress bar with animated transitions and completion effects
    - Set up formal bug tracking system in docs/BUG_TRACKER.md
 
+5. **UI Consistency & Usability**
+   - Standardized Edit and Add screens with consistent UI elements
+   - Implemented emoji-based icon picker across all screens (still needs work)
+   - Added custom color picker (rainbow gradient) to both Add and Edit screens
+   - Enhanced form UI with consistent styling and interaction patterns
+
 ### 🐛 Bug Fixes
 
 - Restored calendar view functionality by properly extracting and modularizing calendar code
@@ -44,6 +50,8 @@
 - Fixed styling inconsistencies between light and dark mode
 - Fixed spacing between edit and delete icons on habit cards for better touch targets
 - Fixed dark mode toggle layout on small screens with responsive design
+- Replaced SVG icons with emoji icons for better visual consistency and categorization (still need to do at the add screen)
+- Added custom color picker to Edit Habit screen to match Add Habit screen functionality
 
 ## Current Focus
 

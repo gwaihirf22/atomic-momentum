@@ -19,7 +19,7 @@ class HabitTrackerHandler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     # Set the working directory to the script's directory
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    
+
     # Create server
     server_address = ('', 8000)
     httpd = HTTPServer(server_address, HabitTrackerHandler)

@@ -615,6 +615,27 @@ button:disabled {
     background: #ccc;
 }
 
+  /* At widths above mobile phones, wrap your filters in a card */
+@media (min-width: 481px) {
+  .category-filters {
+    background-color: var(--section-bg-color);
+    box-shadow: var(--section-shadow);
+    border-radius: var(--section-border-radius);
+    padding: 12px;
+    margin: 0 20px 20px; /* give it some breathing room */
+  }
+}
+
+/* Make each filter button a minimum 44×44px tap target */
+.category-filter-btn {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px; /* horizontal padding only */
+  font-size: 16px;  /* easier to read/tap */
+}
 /* Mobile responsive adjustments */
 @media (max-width: 480px) {
     .category-icons {
@@ -641,28 +662,35 @@ button:disabled {
 }
 
 .calendar-popup {
-    width: 80%;
-    max-width: 400px;
-    background-color: var(--section-bg-color);
-    border-radius: var(--section-border-radius);
-    padding: 20px;
-    box-shadow: var(--section-shadow);
     position: relative;
+    background-color: var(--section-bg-color);
+    color: var(--text-color);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 90%;
+    width: 380px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .calendar-popup-title {
-    text-align: center;
-    margin: 0 0 20px 0;
+    font-size: 18px;
+    margin: 0 0 10px 0;
+    color: var(--text-color);
 }
 
 .habit-list {
-    margin-top: 10px;
+    margin-bottom: 15px;
 }
 
 .no-data-message {
     text-align: center;
     color: var(--muted-text-color);
-    padding: 20px 0;
+    padding: 15px 0;
 }
 
 .habit-status.completed {
@@ -673,27 +701,41 @@ button:disabled {
     color: var(--error-color);
 }
 
-@media (max-width: 480px) {
-    .calendar-popup {
-        width: 90%;
-        padding: 15px;
-    }
+.popup-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--muted-text-color);
+}
+
+.popup-close-button:hover {
+    color: var(--text-color);
+}
+
+.habit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+    background-color: var(--card-bg-color);
+    box-shadow: var(--card-shadow);
+}
+
+.filter-section {
+    margin-top: 10px;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 /* Dialog Styles */
-.dialog-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
 .dialog {
     background-color: white;
     border-radius: 8px;
@@ -886,7 +928,7 @@ button:disabled {
 }
 
 .stat-value {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     transition: all 0.3s ease;
 }
@@ -907,70 +949,173 @@ button:disabled {
 }
 
 /* Mobile responsive adjustments */
-@media (max-width: 375px) {
+@media (max-width: 480px) {
     .stats-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
+        grid-template-columns: 1fr 1fr;
+        padding: 10px;
+        gap: 10px;
     }
     
     .stat-item {
-        padding: 10px;
+        padding: 8px;
     }
     
     .stat-value {
+        font-size: 20px;
+    }
+    
+    /* wrap filters on narrower viewports */
+    .category-filters {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 0;
+    }
+    .category-filter-btn {
+      flex: 1 1 45%;
+      min-width: 70px;
+      padding: 6px 12px;
+      font-size: 13px;
+      text-align: center;
+    }
+    
+    /* Habit cards on small screens */
+    .habit-card {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+    
+    .habit-content {
+        gap: 5px;
+    }
+    
+    .habit-header {
+        font-size: 14px;
+    }
+    
+    .progress-text {
+        font-size: 14px;
+    }
+    
+    .habit-buttons {
+        margin-top: 5px;
+    }
+    
+    .habit-button {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+    
+    /* Analytics panel on small screens */
+    .analytics-summary {
+        padding: 10px;
+        margin: 5px 0;
+    }
+    
+    .analytics-header h3 {
         font-size: 16px;
+        margin-bottom: 5px;
+    }
+    
+    /* App header on small screens */
+    .app-header {
+        padding: 10px;
+    }
+    
+    .app-header h1 {
+        font-size: 20px;
     }
 }
 
 /* Category filter styles */
 .category-filters {
     display: flex;
-    overflow-x: auto;
     padding: 10px;
     gap: 10px;
+    -webkit-overflow-scrolling: touch; /* iOS */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
-    -webkit-overflow-scrolling: touch; /* iOS */
 }
 
 .category-filters::-webkit-scrollbar {
     display: none; /* Chrome/Safari/Opera */
 }
 
+/* Base button styles - consistent across all screen sizes */
 .category-filter-btn {
     padding: 8px 15px;
     border-radius: 20px;
-    background-color: #f1f1f1;
-    color: #333;
+    background-color: var(--filter-btn-bg);
+    color: var(--filter-btn-text);
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     font-size: 14px;
     white-space: nowrap;
     transition: all 0.2s ease;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .category-filter-btn.active {
-    background-color: #333;
-    color: white;
+    background-color: var(--filter-btn-active-bg);
+    color: var(--filter-btn-active-text);
 }
 
-.filter-icon {
-    margin-right: 6px;
+/* Large screens: container has card style, horizontal scrolling */
+@media (min-width: 481px) {
+    .category-filters {
+        background-color: var(--section-bg-color);
+        box-shadow: var(--section-shadow);
+        border-radius: var(--section-border-radius);
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        margin: 0 0 20px 0;
+    }
 }
 
+/* Small screens: container has no background, buttons wrap */
+@media (max-width: 480px) {
+    .category-filters {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        background-color: transparent;
+        box-shadow: none;
+        padding: 8px 4px;
+        overflow-x: visible;
+    }
+    
+    .category-filter-btn {
+        flex: 0 1 auto;
+        min-width: 70px;
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 2px;
+        background-color: var(--filter-btn-bg);
+    }
+    
+    .category-filter-btn.active {
+        background-color: var(--filter-btn-active-bg);
+        color: var(--filter-btn-active-text);
+    }
+}
+
+/* Dark mode compatibility */
 [data-theme="dark"] .category-filter-btn {
-    background-color: #333;
-    color: #f1f1f1;
+    background-color: var(--filter-btn-bg);
+    color: var(--filter-btn-text);
 }
 
 [data-theme="dark"] .category-filter-btn.active {
-    background-color: #f1f1f1;
-    color: #333;
+    background-color: var(--filter-btn-active-bg);
+    color: var(--filter-btn-active-text);
 }
 
-/* Animation for filtered elements */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -1186,19 +1331,27 @@ input:checked + .theme-switch-slider:before {
     box-sizing: border-box;
 }
 
-/* Toast notification styling */
-.toast-notification {
+/* Toast notifications */
+.toast {
     position: fixed;
-    bottom: 20px;
+    bottom: 80px;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateY(20px);
     background-color: var(--success-color);
     color: white;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    transition: opacity 0.3s ease-in-out;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 90%;
+    text-align: center;
+}
+
+.toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
 
 /* Popup close button styling */
@@ -1226,4 +1379,91 @@ input:checked + .theme-switch-slider:before {
     border-radius: 4px;
     background-color: var(--card-bg-color);
     box-shadow: var(--card-shadow);
-} 
+}
+
+/* Fixed Category Filter Styles - These override any previous definitions */
+.category-filters {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch; /* iOS */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.category-filters::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera */
+}
+
+/* Base button styles - consistent across all screen sizes */
+.category-filter-btn {
+    padding: 8px 15px;
+    border-radius: 20px;
+    background-color: var(--filter-btn-bg);
+    color: var(--filter-btn-text);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.category-filter-btn.active {
+    background-color: var(--filter-btn-active-bg);
+    color: var(--filter-btn-active-text);
+}
+
+/* Large screens: container has card style, horizontal scrolling */
+@media (min-width: 481px) {
+    .category-filters {
+        background-color: var(--section-bg-color);
+        box-shadow: var(--section-shadow);
+        border-radius: var(--section-border-radius);
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        margin: 0 0 20px 0;
+    }
+}
+
+/* Small screens: container has no background, buttons wrap */
+@media (max-width: 480px) {
+    .category-filters {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        background-color: transparent;
+        box-shadow: none;
+        padding: 8px 4px;
+        overflow-x: visible;
+    }
+    
+    .category-filter-btn {
+        flex: 0 1 auto;
+        min-width: 70px;
+        padding: 6px 12px;
+        font-size: 14px;
+        margin: 2px;
+        background-color: var(--filter-btn-bg);
+    }
+    
+    .category-filter-btn.active {
+        background-color: var(--filter-btn-active-bg);
+        color: var(--filter-btn-active-text);
+    }
+}
+
+/* Dark mode compatibility */
+[data-theme="dark"] .category-filter-btn {
+    background-color: var(--filter-btn-bg);
+    color: var(--filter-btn-text);
+}
+
+[data-theme="dark"] .category-filter-btn.active {
+    background-color: var(--filter-btn-active-bg);
+    color: var(--filter-btn-active-text);
+}
