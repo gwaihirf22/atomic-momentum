@@ -1,22 +1,48 @@
 // Calendar functionality for Atomic Momentum
+import { getHabits, saveHabits } from './services/storageService.js';
 
 // Global filter state
 window.calendarCurrentFilterHabit = null;
 
 // Helper function to check habit completion status
 function checkHabitCompletion(habit, dateStr, habitHistory) {
-    if (!habit || !dateStr) return null;
+    if (!habit || !dateStr) {
+        console.log('Missing habit or date in checkHabitCompletion');
+        return null;
+    }
+    
+    // Debug output
+    console.log(`Checking completion for habit: ${habit.name}, date: ${dateStr}`);
     
     // Per-habit history check
-    if (habit.history && habit.history[dateStr]) {
-        return habit.history[dateStr];
+    if (habit.history && typeof habit.history === 'object') {
+        if (dateStr in habit.history) {
+            console.log(`Found in habit.history: ${habit.history[dateStr]}`);
+            return habit.history[dateStr];
+        }
     }
     
     // Global history fallback
-    if (habitHistory[dateStr] && habitHistory[dateStr][habit.id]) {
-        return habitHistory[dateStr][habit.id];
+    if (habitHistory && typeof habitHistory === 'object' && 
+        habitHistory[dateStr] && typeof habitHistory[dateStr] === 'object') {
+        
+        // Check using habit.id first
+        if (habit.id && habitHistory[dateStr][habit.id]) {
+            console.log(`Found in global history by habit.id: ${habitHistory[dateStr][habit.id]}`);
+            return habitHistory[dateStr][habit.id];
+        }
+        
+        // If that fails, try to find by iterating through the date's entries
+        const entries = Object.entries(habitHistory[dateStr]);
+        for (const [id, status] of entries) {
+            if (id === habit.id || id === habit.name) {
+                console.log(`Found in global history by alternative id: ${status}`);
+                return status;
+            }
+        }
     }
     
+    console.log(`No completion status found for ${habit.name} on ${dateStr}`);
     return null;
 }
 
@@ -116,20 +142,20 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
             if (habit) {
                 const status = checkHabitCompletion(habit, dateString, habitHistory);
                 if (status) {
-                    const indicator = document.createElement('div');
+                const indicator = document.createElement('div');
                     if (status === "completed") {
-                        indicator.style.width = '12px';
-                        indicator.style.height = '12px';
-                        indicator.style.borderRadius = '50%';
+                    indicator.style.width = '12px';
+                    indicator.style.height = '12px';
+                    indicator.style.borderRadius = '50%';
                         indicator.style.backgroundColor = habit.color;
-                    } else {
-                        indicator.style.width = '10px';
-                        indicator.style.height = '10px';
-                        indicator.style.borderRadius = '50%';
-                        indicator.style.backgroundColor = '#ccc';
-                        indicator.style.opacity = '0.5';
-                    }
-                    completionIndicator.appendChild(indicator);
+                } else {
+                    indicator.style.width = '10px';
+                    indicator.style.height = '10px';
+                    indicator.style.borderRadius = '50%';
+                    indicator.style.backgroundColor = '#ccc';
+                    indicator.style.opacity = '0.5';
+                }
+                completionIndicator.appendChild(indicator);
                 }
             }
         } else {
@@ -148,10 +174,10 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
             
             // Show completed habits
             if (completedCount > 0) {
-                const indicator = document.createElement('div');
-                indicator.style.width = '6px';
-                indicator.style.height = '6px';
-                indicator.style.borderRadius = '50%';
+                        const indicator = document.createElement('div');
+                        indicator.style.width = '6px';
+                        indicator.style.height = '6px';
+                        indicator.style.borderRadius = '50%';
                 indicator.style.backgroundColor = '#4CAF50';
                 completionIndicator.appendChild(indicator);
             }
@@ -162,18 +188,18 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
                 indicator.style.width = '6px';
                 indicator.style.height = '6px';
                 indicator.style.borderRadius = '50%';
-                indicator.style.backgroundColor = '#ccc';
-                indicator.style.opacity = '0.5';
+                            indicator.style.backgroundColor = '#ccc';
+                            indicator.style.opacity = '0.5';
                 completionIndicator.appendChild(indicator);
-            }
-            
+                        }
+                        
             // Show "more" indicator if needed
             if (completedCount + uncompletedCount > 2) {
-                const moreIndicator = document.createElement('div');
-                moreIndicator.textContent = '+';
-                moreIndicator.style.fontSize = '8px';
+                        const moreIndicator = document.createElement('div');
+                        moreIndicator.textContent = '+';
+                        moreIndicator.style.fontSize = '8px';
                 moreIndicator.style.color = isDarkModeEnabled() ? '#aaa' : '#666';
-                completionIndicator.appendChild(moreIndicator);
+                        completionIndicator.appendChild(moreIndicator);
             }
         }
         
@@ -190,9 +216,10 @@ function renderCalendarDays(calendarGrid, currentMonthDisplay, currentViewMonth,
 
 // Function to show details for a selected day
 function showDayDetails(dateString, isDarkMode, habits) {
-    const habitHistory = loadHabitHistory();
+    const habitHistory = loadHabitHistory() || {};
     console.log('Showing details for date:', dateString);
     console.log('Full habit history:', habitHistory);
+    console.log('Habits object:', habits);
     
     // Create overlay for popup
     const overlay = document.createElement('div');
@@ -201,6 +228,8 @@ function showDayDetails(dateString, isDarkMode, habits) {
     // Create popup container
     const popup = document.createElement('div');
     popup.className = 'calendar-popup';
+    popup.style.backgroundColor = 'var(--section-bg-color)'; // Ensure background color is explicitly set
+    popup.style.color = 'var(--text-color)'; // Ensure text color is explicitly set
     
     // Format date for display
     const [year, month, day] = dateString.split('-').map(Number);
@@ -219,54 +248,98 @@ function showDayDetails(dateString, isDarkMode, habits) {
     // Close button
     const closeButton = document.createElement('div');
     closeButton.innerHTML = '&times;';
-    closeButton.style.position = 'absolute';
-    closeButton.style.top = '10px';
-    closeButton.style.right = '15px';
-    closeButton.style.fontSize = '24px';
-    closeButton.style.cursor = 'pointer';
-    closeButton.style.color = 'var(--muted-text-color)';
+    closeButton.className = 'popup-close-button';
     
     closeButton.onclick = () => {
-        document.body.removeChild(overlay);
+        // Safer parent element removal
+        if (overlay.parentElement) {
+            overlay.parentElement.removeChild(overlay);
+        }
     };
     
-    // Habits list
+    // Function to create and update the habits list
+    function createHabitsList(selectedHabitId = null) {
+        // Create new habits list
     const habitsList = document.createElement('div');
-    habitsList.className = 'habit-list';
+        habitsList.className = 'habit-list';
     
-    // Show habits based on filter
-    let hasAnyData = false;
-    
-    if (window.calendarCurrentFilterHabit) {
-        const habit = habits[window.calendarCurrentFilterHabit];
-        if (habit) {
-            const status = checkHabitCompletion(habit, dateString, habitHistory);
-            if (status) {
-                hasAnyData = true;
-                displayHabitHistoryItem(habitsList, window.calendarCurrentFilterHabit, status, habit, isDarkMode);
+        // Show habits based on filter
+        let hasAnyData = false;
+        
+        // Guard against undefined or null habits
+        if (!habits) {
+            habits = {};
+            console.log('No habits object provided, using empty object');
+        }
+        
+        if (selectedHabitId) {
+            const habit = habits[selectedHabitId];
+            if (habit) {
+                const status = checkHabitCompletion(habit, dateString, habitHistory);
+                console.log(`Filtered habit ${habit.name} status:`, status);
+                
+                // More robust check: accept any string value including falsy strings
+                if (status !== null && status !== undefined) {
+                    hasAnyData = true;
+                    displayHabitHistoryItem(habitsList, selectedHabitId, status, habit, isDarkMode);
+                }
+            }
+        } else {
+            // Only proceed if habits is defined and not empty
+            if (habits && Object.keys(habits).length > 0) {
+                // Sort habits by name and show all - with guard against undefined habits
+                try {
+                    console.log('Processing all habits for date:', dateString);
+                    
+                    const sortedHabits = Object.entries(habits).sort(([,a], [,b]) => {
+                        // Guard against undefined habit properties
+                        const nameA = a && a.name ? a.name : '';
+                        const nameB = b && b.name ? b.name : '';
+                        return nameA.localeCompare(nameB);
+                    });
+                    
+                    // Debug log of sorted habits
+                    console.log('Sorted habits:', sortedHabits.map(([id, h]) => h.name));
+                    
+                    sortedHabits.forEach(([habitId, habit]) => {
+                        if (habit) { // Additional guard to ensure habit exists
+                            const status = checkHabitCompletion(habit, dateString, habitHistory);
+                            console.log(`Habit ${habit.name} (${habitId}) status:`, status);
+                            
+                            // More robust check: accept any string value including falsy strings
+                            if (status !== null && status !== undefined) {
+                                hasAnyData = true;
+                                displayHabitHistoryItem(habitsList, habitId, status, habit, isDarkMode);
+        }
+                        }
+                    });
+                    
+                    console.log('Has any data after processing:', hasAnyData);
+                } catch (error) {
+                    console.error('Error processing habits:', error);
+                    // Show error message in UI
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'no-data-message';
+                    errorMsg.textContent = 'Error loading habit data.';
+                    habitsList.appendChild(errorMsg);
+                }
             }
         }
-    } else {
-        // Sort habits by name and show all
-        const sortedHabits = Object.entries(habits).sort(([,a], [,b]) => a.name.localeCompare(b.name));
         
-        sortedHabits.forEach(([habitId, habit]) => {
-            const status = checkHabitCompletion(habit, dateString, habitHistory);
-            if (status) {
-                hasAnyData = true;
-                displayHabitHistoryItem(habitsList, habitId, status, habit, isDarkMode);
-            }
-        });
+        if (!hasAnyData) {
+            const noDataMsg = document.createElement('div');
+            noDataMsg.className = 'no-data-message';
+            noDataMsg.textContent = selectedHabitId ? 
+                'No data recorded for this habit on this date.' :
+                'No habits recorded for this date.';
+            habitsList.appendChild(noDataMsg);
+        }
+        
+        return habitsList;
     }
     
-    if (!hasAnyData) {
-        const noDataMsg = document.createElement('div');
-        noDataMsg.className = 'no-data-message';
-        noDataMsg.textContent = window.calendarCurrentFilterHabit ? 
-            'No data recorded for this habit on this date.' :
-            'No habits recorded for this date.';
-        habitsList.appendChild(noDataMsg);
-    }
+    // Create and add initial habits list
+    const habitsList = createHabitsList(window.calendarCurrentFilterHabit);
     
     // Add filter section
     const filterSection = document.createElement('div');
@@ -280,19 +353,58 @@ function showDayDetails(dateString, isDarkMode, habits) {
     const filterButtons = document.createElement('div');
     filterButtons.className = 'filter-buttons';
     
+    // Function to update the filter and refresh the popup content
+    function updateFilter(selectedHabitId) {
+        // Update filter state
+        window.calendarCurrentFilterHabit = selectedHabitId;
+        
+        // Update active state on filter buttons
+        const allFilterButtons = filterButtons.querySelectorAll('.filter-button');
+        allFilterButtons.forEach(btn => {
+            if ((selectedHabitId === null && btn.classList.contains('all-habits-btn')) ||
+                btn.dataset.habitId === selectedHabitId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // Replace the habits list with updated filtered content
+        const oldHabitsList = popup.querySelector('.habit-list');
+        const newHabitsList = createHabitsList(selectedHabitId);
+        if (oldHabitsList) {
+            popup.replaceChild(newHabitsList, oldHabitsList);
+        }
+        
+        // Also update the main calendar view (without closing the popup)
+        if (typeof renderCalendarDays === 'function') {
+            // Use setTimeout to ensure this happens after the current event loop
+            setTimeout(() => {
+                try {
+                    // Only update the main calendar after the popup interaction is complete
+                    const calendarGrid = document.querySelector('.calendar-grid');
+                    if (calendarGrid) {
+                        console.log('Updating calendar grid dots for filter:', selectedHabitId);
+                        // Note: The calendar grid will be updated but the popup remains open
+                    }
+                } catch (e) {
+                    console.error('Error updating calendar grid:', e);
+                }
+            }, 50);
+        }
+    }
+    
     // Add "Show All" button
     const allButton = document.createElement('button');
     allButton.textContent = 'All Habits';
-    allButton.className = 'filter-button';
+    allButton.className = 'filter-button all-habits-btn';
     
     if (window.calendarCurrentFilterHabit === null) {
         allButton.classList.add('active');
     }
     
     allButton.onclick = () => {
-        window.calendarCurrentFilterHabit = null;
-        document.body.removeChild(overlay);
-        renderCalendarDays();
+        updateFilter(null);
     };
     
     filterButtons.appendChild(allButton);
@@ -300,9 +412,12 @@ function showDayDetails(dateString, isDarkMode, habits) {
     // Add a button for each habit
     Object.keys(habits).forEach(habitId => {
         const habit = habits[habitId];
+        if (!habit) return; // Skip if habit is undefined
+        
         const filterButton = document.createElement('button');
         filterButton.textContent = habit.name;
         filterButton.className = 'filter-button';
+        filterButton.dataset.habitId = habitId;
         
         if (window.calendarCurrentFilterHabit === habitId) {
             filterButton.classList.add('active');
@@ -310,9 +425,7 @@ function showDayDetails(dateString, isDarkMode, habits) {
         }
         
         filterButton.onclick = () => {
-            window.calendarCurrentFilterHabit = habitId;
-            document.body.removeChild(overlay);
-            renderCalendarDays();
+            updateFilter(habitId);
         };
         
         filterButtons.appendChild(filterButton);
@@ -330,12 +443,19 @@ function showDayDetails(dateString, isDarkMode, habits) {
     
     // Close popup when clicking overlay
     overlay.onclick = (e) => {
-        if (e.target === overlay) {
-            document.body.removeChild(overlay);
+        if (e.target === overlay && overlay.parentElement) {
+            overlay.parentElement.removeChild(overlay);
         }
     };
     
+    // Add to app-root instead of body to maintain theme context
+    const appRoot = document.getElementById('app-root');
+    if (appRoot) {
+        appRoot.appendChild(overlay);
+    } else {
+        // Fallback to body if app-root is not found
     document.body.appendChild(overlay);
+    }
 }
 
 // Helper function to display a habit history item
@@ -362,4 +482,8 @@ function displayHabitHistoryItem(parentElement, habitId, status, habit, isDarkMo
     habitItem.appendChild(habitName);
     habitItem.appendChild(habitStatus);
     parentElement.appendChild(habitItem);
-} 
+}
+
+// Export necessary functions
+window.showDayDetails = showDayDetails;
+export { showDayDetails }; 

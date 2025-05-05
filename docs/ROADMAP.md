@@ -1,6 +1,6 @@
 # 🗺️ Atomic Momentum - Development Roadmap
 
-## Current Status (April 2024)
+## Current Status (May 2024)
 
 ### ✅ Recently Completed
 - Category filtering system implemented in main view and calendar
@@ -8,6 +8,8 @@
 - Improved calendar view stability and functionality
 - Added proper progress tracking for new habits
 - Basic dark/light mode implementation
+- Enhanced Edit Habit screen with emoji icons and custom color picker
+- Standardized form fields and interaction patterns across screens
 
 ## 🎯 Immediate Priorities (Next 2-4 Weeks)
 
@@ -31,10 +33,10 @@
    - Implement proper error states
 
 4. **Polish & UX**
-   - Improve dark mode transitions
+   - Improve dark mode transitions ✓ (Partially completed)
    - Add loading states for actions
-   - Enhance notification system
-   - Standardize spacing and margins
+   - Enhance notification system ✓ (Implemented initial version)
+   - Standardize spacing and margins ✓ (Improved in Edit/Add screens)
 
 ## 🌟 Short-term Goals (1-2 Months)
 
@@ -54,8 +56,8 @@
 3. **User Experience**
    - Add onboarding flow
    - Improve category management UI
-   - Enhanced calendar interactions
-   - More customization options
+   - Enhanced calendar interactions ✓ (Implemented filtering and popup details)
+   - More customization options ✓ (Added emoji icons and color customization)
 
 ## 🚀 Medium-term Goals (2-3 Months)
 
@@ -81,7 +83,7 @@
 
 2. **Platform Features**
    - Offline support
-   - Push notifications
+   - Push notifications ✓ (Implemented basic browser notifications)
    - Progressive Web App capabilities
    - Multi-device sync preparation
 

@@ -13,6 +13,9 @@
 - [x] Notifications and reminders
 - [x] Settings screen with theme controls
 - [x] Visual progress indicators and completion tracking
+- [x] Enhanced Edit/Add screens with standardized UI
+- [ ] Emoji-based icon selection system
+- [X] Custom color picker with preset and rainbow options
 
 ## Version 3 Features (Planned)
 - [ ] Multi-file architecture (proper separation of concerns)
@@ -21,10 +24,11 @@
 - [ ] Advanced analytics and insights
 - [ ] Mobile app implementation with Flutter
 
-## Current Bugs / Issues
+## Current Bugs / Issues (May 2024)
 - Browser compatibility variations with notifications
 - Performance considerations with long-term localStorage use
-- Some edge cases in theme switching components
+- Mobile responsiveness needs improvement for smaller screens
+- Some edge cases in streak calculation
 
 ## Implementation Notes
 - Originally planned as Flutter app, currently web-based
