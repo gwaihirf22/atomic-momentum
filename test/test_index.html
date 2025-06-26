@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index.html Test Suite</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .test-pass { color: green; }
+        .test-fail { color: red; }
+        .test-result { margin: 5px 0; }
+        .summary { font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Index.html Test Suite</h1>
+    <div id="test-results"></div>
+    
+    <iframe id="test-frame" src="/templates/index.html" style="width: 100%; height: 600px; border: 1px solid #ccc; margin-top: 20px;"></iframe>
+
+    <script>
+        class HTMLTester {
+            constructor() {
+                this.results = [];
+                this.testFrame = document.getElementById('test-frame');
+                this.resultsDiv = document.getElementById('test-results');
+            }
+
+            async runTests() {
+                await this.waitForFrame();
+                const doc = this.testFrame.contentDocument;
+                
+                this.testBasicStructure(doc);
+                this.testMetaTags(doc);
+                this.testSVGIcons(doc);
+                this.testCSSLinks(doc);
+                this.testMainElements(doc);
+                this.testScriptTags(doc);
+                this.testAccessibility(doc);
+                
+                this.displayResults();
+            }
+
+            waitForFrame() {
+                return new Promise((resolve) => {
+                    this.testFrame.onload = () => {
+                        setTimeout(resolve, 100); // Small delay to ensure content is loaded
+                    };
+                });
+            }
+
+            testBasicStructure(doc) {
+                this.addTest('HTML5 DOCTYPE', doc.doctype && doc.doctype.name === 'html');
+                this.addTest('HTML lang attribute', doc.documentElement.getAttribute('lang') === 'en');
+                this.addTest('Head element exists', !!doc.head);
+                this.addTest('Body element exists', !!doc.body);
+                this.addTest('Title element exists', !!doc.title);
+                this.addTest('Title content correct', doc.title === 'Atomic Momentum');
+            }
+
+            testMetaTags(doc) {
+                const charset = doc.querySelector('meta[charset]');
+                const viewport = doc.querySelector('meta[name="viewport"]');
+                
+                this.addTest('Charset meta tag exists', !!charset);
+                this.addTest('Charset is UTF-8', charset && charset.getAttribute('charset') === 'UTF-8');
+                this.addTest('Viewport meta tag exists', !!viewport);
+                this.addTest('Viewport includes user-scalable=no', 
+                    viewport && viewport.getAttribute('content').includes('user-scalable=no'));
+            }
+
+            testSVGIcons(doc) {
+                const svg = doc.querySelector('svg');
+                const symbols = doc.querySelectorAll('symbol');
+                
+                this.addTest('SVG element exists', !!svg);
+                this.addTest('SVG is hidden', svg && svg.style.display === 'none');
+                this.addTest('SVG symbols exist', symbols.length > 0);
+                this.addTest('Expected number of icons (15+)', symbols.length >= 15);
+                
+                // Test specific icons
+                const iconIds = ['icon-droplet', 'icon-book-open', 'icon-dumbbell', 'icon-moon', 'icon-heart'];
+                iconIds.forEach(id => {
+                    this.addTest(`Icon ${id} exists`, !!doc.querySelector(`#${id}`));
+                });
+            }
+
+            testCSSLinks(doc) {
+                const mainCSS = doc.querySelector('link[href="/styles/main.css"]');
+                const calendarCSS = doc.querySelector('link[href="/styles/calendar.css"]');
+                
+                this.addTest('Main CSS link exists', !!mainCSS);
+                this.addTest('Calendar CSS link exists', !!calendarCSS);
+                this.addTest('CSS links are stylesheets', 
+                    mainCSS && mainCSS.getAttribute('rel') === 'stylesheet' &&
+                    calendarCSS && calendarCSS.getAttribute('rel') === 'stylesheet');
+            }
+
+            testMainElements(doc) {
+                const appRoot = doc.getElementById('app-root');
+                const header = doc.querySelector('.app-header');
+                const title = doc.querySelector('.app-header h1');
+                const categoryFilters = doc.getElementById('category-filters');
+                const habitsContainer = doc.getElementById('habits-container');
+                const addButton = doc.querySelector('.add-button');
+                const notification = doc.querySelector('.notification-test-banner');
+                
+                this.addTest('App root container exists', !!appRoot);
+                this.addTest('App header exists', !!header);
+                this.addTest('App title exists and correct', title && title.textContent === 'Momentum');
+                this.addTest('Category filters container exists', !!categoryFilters);
+                this.addTest('Habits container exists', !!habitsContainer);
+                this.addTest('Add button exists', !!addButton);
+                this.addTest('Notification banner exists', !!notification);
+                
+                // Test header icons
+                const calendarIcon = doc.querySelector('.calendar-icon');
+                const settingsIcon = doc.querySelector('.settings-icon');
+                this.addTest('Calendar icon exists', !!calendarIcon);
+                this.addTest('Settings icon exists', !!settingsIcon);
+            }
+
+            testScriptTags(doc) {
+                const scripts = doc.querySelectorAll('script[src]');
+                const expectedScripts = [
+                    '/scripts/services/storageService.js',
+                    '/scripts/utils.js',
+                    '/scripts/theme.js',
+                    '/scripts/main.js',
+                    '/scripts/calendar.js'
+                ];
+                
+                this.addTest('Script tags exist', scripts.length > 0);
+                this.addTest('Expected number of scripts', scripts.length >= expectedScripts.length);
+                
+                expectedScripts.forEach(script => {
+                    const exists = Array.from(scripts).some(s => s.getAttribute('src') === script);
+                    this.addTest(`Script ${script} exists`, exists);
+                });
+                
+                // Test module type
+                const moduleScripts = Array.from(scripts).filter(s => s.getAttribute('type') === 'module');
+                this.addTest('Scripts use ES6 modules', moduleScripts.length === scripts.length);
+            }
+
+            testAccessibility(doc) {
+                const header = doc.querySelector('h1');
+                const addButton = doc.querySelector('.add-button');
+                
+                this.addTest('Page has main heading', !!header);
+                this.addTest('Add button is keyboard accessible', 
+                    addButton && (addButton.tagName === 'BUTTON' || addButton.getAttribute('tabindex') === '0'));
+            }
+
+            addTest(name, passed) {
+                this.results.push({ name, passed });
+            }
+
+            displayResults() {
+                const passed = this.results.filter(r => r.passed).length;
+                const total = this.results.length;
+                
+                let html = `<div class="summary">Test Results: ${passed}/${total} passed</div>`;
+                
+                this.results.forEach(result => {
+                    const className = result.passed ? 'test-pass' : 'test-fail';
+                    const symbol = result.passed ? '✓' : '✗';
+                    html += `<div class="test-result ${className}">${symbol} ${result.name}</div>`;
+                });
+                
+                this.resultsDiv.innerHTML = html;
+                
+                // Log summary to console
+                console.log(`HTML Test Results: ${passed}/${total} tests passed`);
+                if (passed !== total) {
+                    console.log('Failed tests:', this.results.filter(r => !r.passed));
+                }
+            }
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            const tester = new HTMLTester();
+            tester.runTests();
+        });
+    </script>
+</body>
+</html>

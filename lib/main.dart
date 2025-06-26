@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'providers/theme_provider.dart';
+import 'core/injection/injection_container.dart';
+import 'presentation/providers/theme_provider.dart';
+import 'presentation/providers/habit_provider.dart';
+import 'presentation/providers/category_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize dependency injection
+  await initializeDependencies();
   
   // Set preferred orientations and viewport settings to prevent unwanted zoom
   SystemChrome.setPreferredOrientations([
@@ -22,16 +27,7 @@ void main() async {
     ),
   );
 
-  // Load theme preference
-  final prefs = await SharedPreferences.getInstance();
-  final isDarkMode = prefs.getBool('isDarkMode') ?? false;
-  
-  runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeProvider(isDarkMode),
-      child: const MomentumApp(),
-    ),
-  );
+  runApp(const MomentumApp());
 }
 
 class MomentumApp extends StatelessWidget {
@@ -39,36 +35,50 @@ class MomentumApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the current theme from the provider
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    
-    return MaterialApp(
-      title: 'Atomic Momentum',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        brightness: Brightness.light,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => get<ThemeProvider>(),
         ),
-        scaffoldBackgroundColor: Colors.white,
-        cardColor: Colors.white,
-      ),
-      darkTheme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.deepPurple,
-        primaryColor: Colors.deepPurple,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
+        ChangeNotifierProvider<HabitProvider>(
+          create: (_) => get<HabitProvider>(),
         ),
-        scaffoldBackgroundColor: Colors.grey[850],
-        cardColor: Color(0xFF2C2C2C),
-        canvasColor: Colors.grey[850],
+        ChangeNotifierProvider<CategoryProvider>(
+          create: (_) => get<CategoryProvider>(),
+        ),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Atomic Momentum',
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.deepPurple,
+              brightness: Brightness.light,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+              ),
+              scaffoldBackgroundColor: Colors.white,
+              cardColor: Colors.white,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              primarySwatch: Colors.deepPurple,
+              primaryColor: Colors.deepPurple,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+              ),
+              scaffoldBackgroundColor: Colors.grey[850],
+              cardColor: const Color(0xFF2C2C2C),
+              canvasColor: Colors.grey[850],
+            ),
+            themeMode: themeProvider.themeMode,
+            home: const HomeScreen(),
+          );
+        },
       ),
-      themeMode: themeProvider.themeMode,
-      home: HomeScreen(),
     );
   }
 }
