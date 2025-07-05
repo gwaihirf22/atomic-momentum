@@ -38,7 +38,12 @@ class TestData {
       history: history ?? {},
       streak: streak ?? StreakData.empty(),
       reminder: reminder,
-      metadata: metadata ?? HabitMetadata.create(),
+      metadata: metadata ?? HabitMetadata(
+        createdDate: testDate,
+        lastModifiedDate: testDate,
+        version: 1,
+        customFields: {},
+      ),
     );
   }
 

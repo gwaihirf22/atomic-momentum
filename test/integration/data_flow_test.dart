@@ -96,10 +96,17 @@ void main() {
       test('should handle multiple habits correctly', () async {
         final getHabitsUseCase = get<GetHabitsUseCase>();
         final createHabitUseCase = get<CreateHabitUseCase>();
+        final deleteHabitUseCase = get<DeleteHabitUseCase>();
+
+        // Ensure clean state - delete any existing habits
+        final existingHabits = await getHabitsUseCase();
+        for (final habit in existingHabits) {
+          await deleteHabitUseCase(habit.id);
+        }
 
         // Create multiple habits
         final habits = <Habit>[];
-        for (int i = 0; i < 5; i++) {
+        for (int i = 1; i <= 5; i++) {  // Start from 1 to avoid any issues with 0
           final params = CreateHabitParams(
             name: 'Habit $i',
             target: i + 1,

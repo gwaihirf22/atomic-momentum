@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
+import '../core/theme/ios_colors.dart';
+import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
@@ -28,124 +31,122 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Momentum'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            tooltip: 'Calendar',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CalendarScreen(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: 'Settings',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Consumer2<HabitProvider, CategoryProvider>(
-        builder: (context, habitProvider, categoryProvider, child) {
-          if (habitProvider.isLoading) {
-            return _buildLoadingState();
-          }
-          
-          if (habitProvider.hasError) {
-            return _buildErrorState(habitProvider.error!);
-          }
-          
-          final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
-          
-          if (filteredHabits.isEmpty) {
-            return _buildEmptyState();
-          }
-          
-          return Column(
-            children: [
-              _buildCategoryFilters(categoryProvider),
-              Expanded(child: _buildHabitList(filteredHabits, habitProvider)),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddHabitScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        final isDark = themeProvider.themeMode == ThemeMode.dark ||
+            (themeProvider.themeMode == ThemeMode.system &&
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        
+        return CupertinoPageScaffold(
+          backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+          navigationBar: CupertinoNavigationBar(
+            backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+            border: Border(
+              bottom: BorderSide(
+                color: isDark ? IOSColors.separatorDark : IOSColors.separator,
+                width: 0.5,
+              ),
             ),
-          ).then((_) {
-            // Refresh habits when returning from add screen
-            context.read<HabitProvider>().refreshHabits();
-          });
-        },
-        child: const Icon(Icons.add),
-        tooltip: 'Add a new habit',
-      ),
+            middle: Text(
+              'Habits',
+              style: IOSTypography.getHabitTitle(isDark),
+            ),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => AddHabitScreen(),
+                  ),
+                ).then((_) {
+                  // Refresh habits when returning from add screen
+                  context.read<HabitProvider>().refreshHabits();
+                });
+              },
+              child: Icon(
+                CupertinoIcons.add,
+                color: IOSColors.systemBlue,
+                size: 24,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: Consumer2<HabitProvider, CategoryProvider>(
+              builder: (context, habitProvider, categoryProvider, child) {
+                if (habitProvider.isLoading) {
+                  return _buildLoadingState(isDark);
+                }
+                
+                if (habitProvider.hasError) {
+                  return _buildErrorState(habitProvider.error!, isDark);
+                }
+                
+                final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
+                
+                if (filteredHabits.isEmpty) {
+                  return _buildEmptyState(isDark);
+                }
+                
+                return Column(
+                  children: [
+                    _buildCategoryFilters(categoryProvider, isDark),
+                    Expanded(child: _buildHabitList(filteredHabits, habitProvider, isDark)),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
   
-  Widget _buildLoadingState() {
-    return const Center(
+  Widget _buildLoadingState(bool isDark) {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
+          CupertinoActivityIndicator(
+            color: isDark ? IOSColors.labelDark : IOSColors.label,
+            radius: 20.0,
+          ),
+          const SizedBox(height: 16),
           Text(
             'Loading your habits...',
-            style: TextStyle(fontSize: 16),
+            style: IOSTypography.getHabitSubtitle(isDark),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(String error) {
+  Widget _buildErrorState(String error, bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.error_outline,
+            CupertinoIcons.exclamationmark_triangle,
             size: 80,
-            color: Theme.of(context).colorScheme.error,
+            color: IOSColors.systemRed,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Something went wrong',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: IOSTypography.getHabitTitle(isDark),
           ),
           const SizedBox(height: 8),
-          Text(
-            error,
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodySmall?.color,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Text(
+              error,
+              style: IOSTypography.getHabitSubtitle(isDark),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
+          CupertinoButton.filled(
             onPressed: () {
               context.read<HabitProvider>().clearError();
               context.read<HabitProvider>().loadHabits();
@@ -157,30 +158,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.track_changes,
+            CupertinoIcons.checkmark_circle,
             size: 80,
-            color: Theme.of(context).primaryColor.withOpacity(0.5),
+            color: IOSColors.systemBlue.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No habits yet',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: IOSTypography.getHabitTitle(isDark),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Tap the + button to add your first habit',
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodySmall?.color,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Text(
+              'Tap the + button to add your first habit',
+              style: IOSTypography.getHabitSubtitle(isDark),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -188,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCategoryFilters(CategoryProvider categoryProvider) {
+  Widget _buildCategoryFilters(CategoryProvider categoryProvider, bool isDark) {
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -196,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          _buildCategoryChip(null, 'All', Icons.apps, categoryProvider),
+          _buildCategoryChip(null, 'All', CupertinoIcons.square_grid_2x2, categoryProvider, isDark),
           const SizedBox(width: 8),
           ...HabitCategory.values.map((category) {
             return Padding(
@@ -206,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 category.displayName,
                 _getCategoryIcon(category),
                 categoryProvider,
+                isDark,
               ),
             );
           }).toList(),
@@ -219,51 +219,77 @@ class _HomeScreenState extends State<HomeScreen> {
     String label,
     IconData icon,
     CategoryProvider categoryProvider,
+    bool isDark,
   ) {
     final isSelected = categoryProvider.selectedCategory == category;
+    final chipColor = category?.defaultColor ?? IOSColors.systemBlue;
     
-    return FilterChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 4),
-          Text(label),
-        ],
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          categoryProvider.setSelectedCategory(category);
-        } else {
+    return GestureDetector(
+      onTap: () {
+        if (isSelected) {
           categoryProvider.clearSelectedCategory();
+        } else {
+          categoryProvider.setSelectedCategory(category);
         }
       },
-      backgroundColor: category?.defaultColor.withOpacity(0.1),
-      selectedColor: category?.defaultColor.withOpacity(0.3) ?? 
-                    Theme.of(context).primaryColor.withOpacity(0.3),
-      checkmarkColor: category?.defaultColor ?? Theme.of(context).primaryColor,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected 
+            ? chipColor.withOpacity(0.2)
+            : (isDark ? IOSColors.tertiarySystemFill : IOSColors.secondarySystemFill),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+              ? chipColor 
+              : (isDark ? IOSColors.separatorDark : IOSColors.separator),
+            width: isSelected ? 1.5 : 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon, 
+              size: 16,
+              color: isSelected 
+                ? chipColor 
+                : (isDark ? IOSColors.labelDark : IOSColors.label),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: IOSTypography.getCategoryText(isDark).copyWith(
+                color: isSelected 
+                  ? chipColor 
+                  : (isDark ? IOSColors.labelDark : IOSColors.label),
+                fontWeight: isSelected ? IOSTypography.semibold : IOSTypography.regular,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   IconData _getCategoryIcon(HabitCategory category) {
     switch (category) {
       case HabitCategory.body:
-        return Icons.fitness_center;
+        return CupertinoIcons.heart_fill;
       case HabitCategory.spirit:
-        return Icons.self_improvement;
+        return CupertinoIcons.leaf_arrow_circlepath;
       case HabitCategory.mind:
-        return Icons.psychology;
+        return CupertinoIcons.book_fill;
       case HabitCategory.social:
-        return Icons.people;
+        return CupertinoIcons.person_2_fill;
       case HabitCategory.career:
-        return Icons.work;
+        return CupertinoIcons.briefcase_fill;
       case HabitCategory.creative:
-        return Icons.palette;
+        return CupertinoIcons.paintbrush_fill;
     }
   }
 
-  Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider) {
+  Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {
     return ListView.builder(
       itemCount: habits.length,
       padding: const EdgeInsets.all(16),

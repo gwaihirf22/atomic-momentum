@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/injection/injection_container.dart';
+import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/ios_main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,33 +52,20 @@ class MomentumApp extends StatelessWidget {
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
-          return MaterialApp(
+          final isDark = themeProvider.themeMode == ThemeMode.dark ||
+              (themeProvider.themeMode == ThemeMode.system &&
+                  MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+          
+          return CupertinoApp(
             title: 'Atomic Momentum',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              primarySwatch: Colors.deepPurple,
-              brightness: Brightness.light,
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-              ),
-              scaffoldBackgroundColor: Colors.white,
-              cardColor: Colors.white,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              primarySwatch: Colors.deepPurple,
-              primaryColor: Colors.deepPurple,
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-              ),
-              scaffoldBackgroundColor: Colors.grey[850],
-              cardColor: const Color(0xFF2C2C2C),
-              canvasColor: Colors.grey[850],
-            ),
-            themeMode: themeProvider.themeMode,
-            home: const HomeScreen(),
+            theme: IOSTheme.getTheme(isDark ? Brightness.dark : Brightness.light),
+            home: const IOSMainNavigation(),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
           );
         },
       ),

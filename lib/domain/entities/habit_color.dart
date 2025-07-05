@@ -53,7 +53,7 @@ class HabitColor extends Equatable {
     
     return HabitColor(
       value: value,
-      hex: hex.startsWith('#') ? hex : '#$hex',
+      hex: hex, // Keep the hex format exactly as provided
       name: _getColorName(value),
     );
   }

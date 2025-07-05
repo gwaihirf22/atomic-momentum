@@ -98,7 +98,7 @@ class StreakData extends Equatable {
     return StreakData(
       current: newCurrent,
       longest: newLongest,
-      lastUpdateDate: targetDate,
+      lastUpdateDate: targetDate.isAfter(today) ? lastUpdateDate : targetDate,
       history: newHistory,
     );
   }

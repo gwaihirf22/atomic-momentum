@@ -3,7 +3,8 @@ import '../../../../lib/domain/entities/streak_data.dart';
 
 void main() {
   group('StreakData', () {
-    final testDate = DateTime(2024, 1, 15);
+    final now = DateTime.now();
+    final testDate = DateTime(now.year, now.month, now.day);
     final yesterday = testDate.subtract(const Duration(days: 1));
     final twoDaysAgo = testDate.subtract(const Duration(days: 2));
     final tomorrow = testDate.add(const Duration(days: 1));
