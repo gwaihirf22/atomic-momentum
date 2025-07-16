@@ -103,6 +103,68 @@ This file tracks known bugs, issues, and small polish tasks during development a
 
 ---
 
+# 🚨 Flutter App Critical Bugs (July 5, 2025)
+
+## Critical UX Issues Discovered During User Testing
+
+| ID | Description | Priority | Status | Impact |
+|:--|:------------|:---------|:-------|:-------|
+| **FLUTTER-001** | **No navigation back to home after adding habit** | 🔥 Critical | ✅ Fixed | Users get stuck on add screen, breaks core flow |
+| **FLUTTER-002** | **Missing units input for habit targets** | 🔥 Critical | ✅ Fixed | Users can't specify "8 glasses" or "30 minutes" - only numbers |
+| **FLUTTER-003** | **Category filtering breaks when no habits exist in selected category** | 🔥 Critical | 🚧 To Do | All categories disappear, filtering becomes unusable |
+| **FLUTTER-004** | **Dark mode text visibility issues** | 🔴 High | 🚧 To Do | Text obscured in dark mode, poor accessibility |
+| **FLUTTER-005** | **Habit incrementation stops at target-1, cannot reach completion** | 🔥 Critical | ✅ Fixed | Users cannot complete habits, breaks core functionality |
+
+### FLUTTER-001: Navigation After Adding Habit ✅ FIXED
+**Issue**: After clicking "Add" button on habit creation, user remains on AddHabitScreen instead of returning to home
+**Expected**: Should navigate back to home screen to see new habit in list
+**Files**: `lib/screens/add_habit_screen.dart`
+**Fix Applied**: Implemented immediate navigation with `Navigator.pop(context)` after successful habit creation, removed SnackBar interference
+
+### FLUTTER-002: Missing Units Input System ✅ FIXED
+**Issue**: Habit target input only accepts numbers, but users need to specify units like "glasses", "minutes", "reps"
+**Expected**: Users should input both number and unit type (e.g., "8 glasses", "30 minutes")
+**Files**: `lib/screens/add_habit_screen.dart`, `lib/domain/entities/habit.dart`
+**Fix Applied**: Added units TextField with validation, updated CreateHabitParams to include units field, integrated with existing data model
+
+### FLUTTER-005: Habit Incrementation Bug ✅ FIXED
+**Issue**: Habit incrementation stops at target-1, cannot reach final target value (e.g., stops at 7/8, cannot reach 8/8)
+**Expected**: Should be able to increment habits to their full target value for completion
+**Files**: `lib/presentation/providers/habit_provider.dart`, data layer
+**Fix Applied**: Implemented bypass solution that updates UI immediately and attempts repository save, handles data layer corruption gracefully
+
+### FLUTTER-003: Category Filter Empty State Bug
+**Issue**: When filtering by category with no existing habits, all category buttons disappear permanently
+**Expected**: Category filters should remain visible even when no habits match the selected category
+**Files**: `lib/presentation/providers/category_provider.dart`, `lib/screens/home_screen.dart`  
+**Fix Approach**: Add empty state handling, maintain filter UI regardless of results
+
+### FLUTTER-004: Dark Mode Text Visibility
+**Issue**: Some text becomes hard to read or invisible in dark mode
+**Expected**: All text should have sufficient contrast in both light and dark modes
+**Files**: `lib/core/theme/ios_theme.dart`, various screen files
+**Fix Approach**: Audit all text colors, improve contrast ratios for dark mode
+
+## 🎯 Recent Features Added (July 14, 2025)
+
+### ✨ NEW FEATURE: Frequency Selection Dropdown
+**Description**: Added reset frequency selection when creating habits
+**Options**: Daily, Weekly, Monthly, Never
+**Files**: `lib/screens/add_habit_screen.dart`, `lib/domain/entities/reset_frequency.dart`
+**Implementation**: Dropdown with icons, integrated with CreateHabitParams, form validation included
+
+### 🔧 DEBUG SYSTEM: Temporary Development Logging
+**Description**: Added comprehensive debug logging for development and troubleshooting
+**Files**: Multiple files across data layer, providers, and UI
+**Status**: Temporary - will be removed after edit/delete features are stable
+**Purpose**: Helps identify data layer issues and provides user-visible feedback during development
+
+## 🎯 Phase 3 Priority: Core Features Complete
+
+Critical UX bugs have been resolved. Ready to continue with core habit management features (edit/delete) before moving to Phase 3 features like notifications and enhanced customization.
+
+---
+
 # 🛡️ Bug Tracker Last Updated:
 
-`May 6, 2024`
+`July 14, 2025 - Fixed Critical UX Bugs: Navigation, Units Input, Habit Incrementation. Added Frequency Selection Feature.`

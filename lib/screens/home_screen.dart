@@ -84,14 +84,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
                 
-                if (filteredHabits.isEmpty) {
-                  return _buildEmptyState(isDark);
-                }
-                
                 return Column(
                   children: [
                     _buildCategoryFilters(categoryProvider, isDark),
-                    Expanded(child: _buildHabitList(filteredHabits, habitProvider, isDark)),
+                    Expanded(
+                      child: filteredHabits.isEmpty 
+                        ? _buildEmptyState(isDark, categoryProvider.selectedCategory)
+                        : _buildHabitList(filteredHabits, habitProvider, isDark),
+                    ),
                   ],
                 );
               },
@@ -158,26 +158,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, HabitCategory? selectedCategory) {
+    final isFiltered = selectedCategory != null;
+    final title = isFiltered 
+        ? 'No ${selectedCategory.displayName.toLowerCase()} habits yet'
+        : 'No habits yet';
+    final subtitle = isFiltered
+        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or select "All" to see all habits'
+        : 'Tap the + button to add your first habit';
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            CupertinoIcons.checkmark_circle,
+            isFiltered ? _getCategoryIcon(selectedCategory) : CupertinoIcons.checkmark_circle,
             size: 80,
-            color: IOSColors.systemBlue.withOpacity(0.5),
+            color: isFiltered 
+                ? selectedCategory.defaultColor.withOpacity(0.5)
+                : IOSColors.systemBlue.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
-            'No habits yet',
+            title,
             style: IOSTypography.getHabitTitle(isDark),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
-              'Tap the + button to add your first habit',
+              subtitle,
               style: IOSTypography.getHabitSubtitle(isDark),
               textAlign: TextAlign.center,
             ),
@@ -334,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${habit.progress}/${habit.target}',
+                          _formatProgressTarget(habit),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: habit.color.color,
@@ -371,12 +382,25 @@ class _HomeScreenState extends State<HomeScreen> {
                           : null,
                       color: habit.color.color,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: habit.progress < habit.target && !habitProvider.isPerformingOperation
-                          ? () => _updateHabitProgress(habitProvider, habit, habit.progress + 1)
-                          : null,
-                      color: habit.color.color,
+                    Column(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: habit.progress < habit.target && !habitProvider.isPerformingOperation
+                              ? () {
+                                  print('DEBUG: Increment button pressed for ${habit.name}: ${habit.progress} < ${habit.target} = ${habit.progress < habit.target}');
+                                  _updateHabitProgress(habitProvider, habit, habit.progress + 1);
+                                }
+                              : null,
+                          color: habit.color.color,
+                        ),
+                        // UI-visible debug info
+                        Text(
+                          'DEBUG: ${habit.progress}/${habit.target}\nBtn: ${habit.progress < habit.target ? 'ON' : 'OFF'}\nOp: ${habitProvider.isPerformingOperation ? 'BUSY' : 'READY'}',
+                          style: TextStyle(fontSize: 8, color: Colors.grey),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                     if (habit.isCompleted)
                       const Icon(
@@ -394,12 +418,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   Future<void> _updateHabitProgress(HabitProvider habitProvider, Habit habit, int newProgress) async {
+    print('DEBUG: Updating habit progress: ${habit.name} from ${habit.progress} to $newProgress (target: ${habit.target})');
+    print('DEBUG: Current isCompleted: ${habit.isCompleted}');
+    print('DEBUG: Will be completed: ${newProgress >= habit.target}');
+    
     final success = await habitProvider.updateHabitProgress(habit.id, newProgress);
+    print('DEBUG: Update success: $success');
+    
+    // FORCE STATE REFRESH - ensure UI updates immediately
+    if (mounted) {
+      print('DEBUG: Forcing state refresh');
+      setState(() {});
+      habitProvider.notifyListeners();
+    }
     
     if (!success && mounted) {
+      print('DEBUG: Habit update failed, showing error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update ${habit.name}'),
+          content: Text('Failed to update ${habit.name} - Error: ${habitProvider.error}'),
           backgroundColor: Colors.red,
           action: SnackBarAction(
             label: 'Retry',
@@ -407,6 +444,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       );
+    } else {
+      print('DEBUG: Habit update succeeded - new state should be visible');
+    }
+  }
+
+  String _formatProgressTarget(Habit habit) {
+    if (habit.units.isEmpty) {
+      return '${habit.progress}/${habit.target}';
+    } else {
+      return '${habit.progress}/${habit.target} ${habit.units}';
     }
   }
 }

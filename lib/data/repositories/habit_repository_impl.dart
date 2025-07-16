@@ -14,9 +14,26 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<Habit>> getHabits() async {
     try {
+      print('DEBUG: HabitRepository.getHabits() - Starting to fetch habits from data source');
       final habitModels = await _localDataSource.getHabits();
-      return habitModels.map((model) => model.toDomain()).toList();
+      print('DEBUG: HabitRepository.getHabits() - Got ${habitModels.length} habit models from data source');
+      
+      final habits = <Habit>[];
+      for (int i = 0; i < habitModels.length; i++) {
+        try {
+          final habit = habitModels[i].toDomain();
+          habits.add(habit);
+          print('DEBUG: HabitRepository.getHabits() - Successfully converted habit ${i + 1}: ${habit.name} (${habit.progress}/${habit.target})');
+        } catch (e) {
+          print('DEBUG: HabitRepository.getHabits() - Failed to convert habit model ${i + 1}: $e');
+          throw StorageException('Failed to convert habit model ${i + 1} to domain: $e');
+        }
+      }
+      
+      print('DEBUG: HabitRepository.getHabits() - Successfully returned ${habits.length} habits');
+      return habits;
     } catch (e) {
+      print('DEBUG: HabitRepository.getHabits() - ERROR: $e');
       throw StorageException('Failed to get habits: $e');
     }
   }
@@ -34,12 +51,24 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<Habit?> getHabitById(String id) async {
     try {
+      print('DEBUG: HabitRepository.getHabitById() - Looking for habit with ID: $id');
       final habits = await getHabits();
-      return habits.cast<Habit?>().firstWhere(
+      print('DEBUG: HabitRepository.getHabitById() - Got ${habits.length} habits, searching for ID: $id');
+      
+      final foundHabit = habits.cast<Habit?>().firstWhere(
         (habit) => habit?.id == id,
         orElse: () => null,
       );
+      
+      if (foundHabit != null) {
+        print('DEBUG: HabitRepository.getHabitById() - Found habit: ${foundHabit.name} (${foundHabit.progress}/${foundHabit.target})');
+      } else {
+        print('DEBUG: HabitRepository.getHabitById() - Habit not found with ID: $id');
+      }
+      
+      return foundHabit;
     } catch (e) {
+      print('DEBUG: HabitRepository.getHabitById() - ERROR: $e');
       throw StorageException('Failed to get habit by ID: $e');
     }
   }
@@ -47,15 +76,24 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<void> saveHabit(Habit habit) async {
     try {
+      print('DEBUG: HabitRepository.saveHabit() - Saving habit: ${habit.name} (${habit.progress}/${habit.target}) isCompleted: ${habit.isCompleted}');
+      
       // Validate habit before saving
       final validationResult = HabitValidator.validate(habit);
       if (!validationResult.isValid) {
+        print('DEBUG: HabitRepository.saveHabit() - Validation failed: ${validationResult.errors}');
         throw ValidationException('Invalid habit data: ${validationResult.errors.join(', ')}');
       }
+      print('DEBUG: HabitRepository.saveHabit() - Validation passed');
 
+      print('DEBUG: HabitRepository.saveHabit() - Converting to HabitModel');
       final habitModel = HabitModel.fromDomain(habit);
+      print('DEBUG: HabitRepository.saveHabit() - Converted to model, saving to data source');
+      
       await _localDataSource.saveHabit(habitModel);
+      print('DEBUG: HabitRepository.saveHabit() - Successfully saved habit to data source');
     } catch (e) {
+      print('DEBUG: HabitRepository.saveHabit() - ERROR: $e');
       if (e is ValidationException) rethrow;
       throw StorageException('Failed to save habit: $e');
     }

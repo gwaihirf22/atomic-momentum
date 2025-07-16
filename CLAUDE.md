@@ -14,11 +14,17 @@ The project focuses on helping users build and maintain positive daily habits wi
 
 ### Flutter Application (Primary - Active Development)
 ```bash
-# Install Flutter dependencies
-flutter pub get
+# IMPORTANT: Flutter is installed locally in ./flutter/bin/flutter
+# Use the full path for all Flutter commands
 
-# Run Flutter app (development)
-flutter run
+# Install Flutter dependencies
+./flutter/bin/flutter pub get
+
+# Run Flutter app (development) - requires specifying device
+./flutter/bin/flutter run -d chrome --web-port=8080 --web-hostname=localhost
+
+# Build for web (faster for testing)
+./flutter/bin/flutter build web
 
 # Run tests (recommended for Phase 3)
 ./flutter/bin/flutter test test/unit/ test/integration/
@@ -27,12 +33,15 @@ flutter run
 ./flutter/bin/flutter test --coverage test/unit/ test/integration/
 
 # Build for production
-flutter build apk          # Android
-flutter build ios          # iOS
-flutter build web          # Web
+./flutter/bin/flutter build apk          # Android
+./flutter/bin/flutter build ios          # iOS
+./flutter/bin/flutter build web          # Web
 
 # Run Flutter linting
-flutter analyze
+./flutter/bin/flutter analyze
+
+# Common debugging: Check available devices
+./flutter/bin/flutter devices
 ```
 
 ### Web Application (Legacy - Complete)
@@ -103,10 +112,12 @@ Based on completed Phase 2 testing and validation:
 - **Integration**: All 9 integration tests passing - end-to-end validation complete
 - **Unit Tests**: 103/105 passing - domain logic verified
 
-### Current Development Status (July 5, 2025)
-- **Phase 2 Complete**: Testing and validation finished with excellent results
-- **Architecture Validated**: Clean architecture patterns working correctly
-- **Ready for Phase 3**: Notification system, enhanced customization, data migration
+### Current Development Status (July 14, 2025)
+- **Critical Bugs Fixed**: Navigation, units input, habit incrementation issues resolved
+- **New Features Added**: Frequency selection dropdown (Daily/Weekly/Monthly/Never)
+- **Debug System**: Temporary comprehensive logging for development stability
+- **Architecture Validated**: Clean architecture patterns working correctly with bypass solutions
+- **Ready for Core Features**: Edit/Delete habit functionality, then Phase 3 features
 - **Testing Framework**: Robust and reliable for continued development
 
 ## Key Implementation Details

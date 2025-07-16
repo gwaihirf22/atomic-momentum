@@ -23,9 +23,41 @@ Phase 2 has been successfully completed with comprehensive testing validation. T
 - **Widget Tests**: Deferred (require complex provider mocking setup)
 - **Coverage**: Exceeds 90% target requirement from Phase 2 strategy
 
-## 🚀 Phase 3 Priority Tasks
+## 🚨 URGENT: Critical UX Bug Fixes (Start Here!)
 
-### High Priority (Recommended Start)
+### **MUST FIX FIRST - Critical UX Bugs Discovered in User Testing**
+
+**Priority**: These bugs break core user experience and must be fixed before continuing Phase 3
+
+1. **FLUTTER-001: No Navigation After Adding Habit** 🔥 Critical
+   - **Issue**: Users get stuck on add screen after creating habit
+   - **File**: `lib/screens/add_habit_screen.dart`
+   - **Fix**: Add `Navigator.pop(context)` after successful habit creation
+   - **Time**: 30 minutes
+
+2. **FLUTTER-003: Category Filter Empty State Bug** 🔥 Critical  
+   - **Issue**: All category buttons disappear when filtering empty category
+   - **Files**: `lib/presentation/providers/category_provider.dart`, `lib/screens/home_screen.dart`
+   - **Fix**: Maintain filter UI regardless of results, add empty state handling
+   - **Time**: 1-2 hours
+
+3. **FLUTTER-004: Dark Mode Text Visibility** 🔴 High
+   - **Issue**: Text invisible/hard to read in dark mode
+   - **Files**: `lib/core/theme/ios_theme.dart`, various screens  
+   - **Fix**: Improve contrast ratios for all text in dark theme
+   - **Time**: 1-2 hours
+
+4. **FLUTTER-002: Missing Units Input** 🔥 Critical
+   - **Issue**: Can't specify "8 glasses" or "30 minutes" - only numbers
+   - **Files**: `lib/domain/entities/habit.dart`, `lib/screens/add_habit_screen.dart`
+   - **Fix**: Add units field to data model and UI
+   - **Time**: 2-3 hours
+
+**📋 Detailed Fix Guide**: See `docs/PHASE3_CRITICAL_FIXES.md` for complete implementation steps
+
+## 🚀 Phase 3 Feature Development (After Bug Fixes)
+
+### High Priority (After Critical Bugs Fixed)
 1. **Notification System Implementation**
    - File: `lib/domain/entities/reminder_settings.dart` (already exists)
    - Need: Implement flutter_local_notifications integration
@@ -109,10 +141,23 @@ Current branch: `Claude-code-refactor-experimental`
 - Ready for Phase 3 development
 
 ### For Next Agent:
-1. Start with notification system implementation (high value, clear scope)
-2. Use existing ReminderSettings entity as foundation
-3. Follow clean architecture patterns established
-4. Run integration tests to validate changes
-5. Update tests as needed for new features
 
-**The architecture is solid and ready for Phase 3 development!** 🎉
+**🚨 CRITICAL: Start with UX Bug Fixes First!**
+1. **Fix FLUTTER-001** (Navigation) - Quick 30min fix, unblocks user testing
+2. **Fix FLUTTER-003** (Category Filter) - Core functionality broken 
+3. **Fix FLUTTER-004** (Dark Mode) - Accessibility issue
+4. **Fix FLUTTER-002** (Units Input) - Major UX improvement, requires data model changes
+
+**📋 Complete Fix Guide**: Follow `docs/PHASE3_CRITICAL_FIXES.md` for detailed implementation steps
+
+**After Critical Bugs Fixed:**
+5. Continue with notification system implementation (high value, clear scope)
+6. Use existing ReminderSettings entity as foundation
+7. Follow clean architecture patterns established
+8. Run integration tests to validate changes
+9. Update tests as needed for new features
+
+**✅ Phase 2 Complete - Architecture Solid!**
+**🚨 Phase 3 Blocked - Must Fix Critical UX Bugs First!**
+
+**User Testing Results**: 4 critical UX bugs discovered that break core functionality. These must be fixed before users can properly evaluate the app or continue development.

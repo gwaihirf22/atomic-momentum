@@ -11,6 +11,7 @@ class Habit extends Equatable {
   final String name;
   final int progress;
   final int target;
+  final String units; // Units for the target (e.g., "glasses", "minutes", "reps")
   final HabitColor color;
   final HabitCategory category;
   final DateTime lastUpdatedDate;
@@ -25,6 +26,7 @@ class Habit extends Equatable {
     required this.name,
     required this.progress,
     required this.target,
+    this.units = '', // Default to empty string for backward compatibility
     required this.color,
     required this.category,
     required this.lastUpdatedDate,
@@ -38,6 +40,7 @@ class Habit extends Equatable {
   factory Habit.create({
     required String name,
     required int target,
+    String units = '', // Add units parameter with default empty string
     required HabitColor color,
     required HabitCategory category,
     ResetFrequency resetFrequency = ResetFrequency.daily,
@@ -52,6 +55,7 @@ class Habit extends Equatable {
       name: name,
       progress: 0,
       target: target,
+      units: units,
       color: color,
       category: category,
       lastUpdatedDate: now,
@@ -122,6 +126,7 @@ class Habit extends Equatable {
   Habit updateDetails({
     String? name,
     int? target,
+    String? units,
     HabitColor? color,
     HabitCategory? category,
     ResetFrequency? resetFrequency,
@@ -131,6 +136,7 @@ class Habit extends Equatable {
     return copyWith(
       name: name ?? this.name,
       target: target ?? this.target,
+      units: units ?? this.units,
       color: color ?? this.color,
       category: category ?? this.category,
       resetFrequency: resetFrequency ?? this.resetFrequency,
@@ -174,6 +180,7 @@ class Habit extends Equatable {
     String? name,
     int? progress,
     int? target,
+    String? units,
     HabitColor? color,
     HabitCategory? category,
     DateTime? lastUpdatedDate,
@@ -188,6 +195,7 @@ class Habit extends Equatable {
       name: name ?? this.name,
       progress: progress ?? this.progress,
       target: target ?? this.target,
+      units: units ?? this.units,
       color: color ?? this.color,
       category: category ?? this.category,
       lastUpdatedDate: lastUpdatedDate ?? this.lastUpdatedDate,
@@ -205,6 +213,7 @@ class Habit extends Equatable {
       'name': name,
       'progress': progress,
       'target': target,
+      'units': units,
       'color': color.toJson(),
       'category': category.name,
       'lastUpdatedDate': lastUpdatedDate.toIso8601String(),
@@ -227,6 +236,7 @@ class Habit extends Equatable {
       name: json['name'] as String,
       progress: json['progress'] as int,
       target: json['target'] as int,
+      units: json['units'] as String? ?? '', // Default to empty string for backward compatibility
       color: HabitColor.fromJson(json['color'] as Map<String, dynamic>),
       category: HabitCategory.fromString(json['category'] as String),
       lastUpdatedDate: DateTime.parse(json['lastUpdatedDate'] as String),
@@ -246,6 +256,7 @@ class Habit extends Equatable {
         name,
         progress,
         target,
+        units,
         color,
         category,
         lastUpdatedDate,

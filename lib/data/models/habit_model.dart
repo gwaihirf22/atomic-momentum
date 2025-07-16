@@ -25,38 +25,55 @@ class HabitModel extends Habit {
 
   /// Create HabitModel from domain Habit entity
   factory HabitModel.fromDomain(Habit habit) {
-    return HabitModel(
-      id: habit.id,
-      name: habit.name,
-      progress: habit.progress,
-      target: habit.target,
-      color: habit.color,
-      category: habit.category,
-      lastUpdatedDate: habit.lastUpdatedDate,
-      resetFrequency: habit.resetFrequency,
-      history: habit.history,
-      streak: habit.streak,
-      reminder: habit.reminder,
-      metadata: habit.metadata,
-    );
+    try {
+      print('DEBUG: HabitModel.fromDomain() - Converting habit: ${habit.name} (${habit.progress}/${habit.target}) isCompleted: ${habit.isCompleted}');
+      
+      return HabitModel(
+        id: habit.id,
+        name: habit.name,
+        progress: habit.progress,
+        target: habit.target,
+        color: habit.color,
+        category: habit.category,
+        lastUpdatedDate: habit.lastUpdatedDate,
+        resetFrequency: habit.resetFrequency,
+        history: habit.history,
+        streak: habit.streak,
+        reminder: habit.reminder,
+        metadata: habit.metadata,
+      );
+    } catch (e) {
+      print('DEBUG: HabitModel.fromDomain() - ERROR: $e');
+      rethrow;
+    }
   }
 
   /// Convert to domain Habit entity
   Habit toDomain() {
-    return Habit(
-      id: id,
-      name: name,
-      progress: progress,
-      target: target,
-      color: color,
-      category: category,
-      lastUpdatedDate: lastUpdatedDate,
-      resetFrequency: resetFrequency,
-      history: history,
-      streak: streak,
-      reminder: reminder,
-      metadata: metadata,
-    );
+    try {
+      print('DEBUG: HabitModel.toDomain() - Converting model: $name ($progress/$target)');
+      
+      final habitDomain = Habit(
+        id: id,
+        name: name,
+        progress: progress,
+        target: target,
+        color: color,
+        category: category,
+        lastUpdatedDate: lastUpdatedDate,
+        resetFrequency: resetFrequency,
+        history: history,
+        streak: streak,
+        reminder: reminder,
+        metadata: metadata,
+      );
+      
+      print('DEBUG: HabitModel.toDomain() - Successfully converted: ${habitDomain.name} isCompleted: ${habitDomain.isCompleted}');
+      return habitDomain;
+    } catch (e) {
+      print('DEBUG: HabitModel.toDomain() - ERROR: $e');
+      rethrow;
+    }
   }
 
   /// Create from JSON with enhanced error handling

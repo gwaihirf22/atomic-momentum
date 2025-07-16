@@ -25,6 +25,7 @@ class CreateHabitUseCase {
       final habit = Habit.create(
         name: params.name.trim(),
         target: params.target,
+        units: params.units,
         color: params.color,
         category: params.category,
         resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
@@ -70,6 +71,7 @@ class CreateHabitUseCase {
         final habit = Habit.create(
           name: params.name.trim(),
           target: params.target,
+          units: params.units,
           color: params.color,
           category: params.category,
           resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
@@ -133,6 +135,7 @@ class CreateHabitUseCase {
 class CreateHabitParams {
   final String name;
   final int target;
+  final String units;
   final HabitColor color;
   final HabitCategory category;
   final ResetFrequency? resetFrequency;
@@ -142,6 +145,7 @@ class CreateHabitParams {
   const CreateHabitParams({
     required this.name,
     required this.target,
+    this.units = '',
     required this.color,
     required this.category,
     this.resetFrequency,
@@ -191,6 +195,7 @@ class CreateHabitParams {
     return CreateHabitParams(
       name: name,
       target: defaultTarget,
+      units: '', // Default to empty units
       color: color,
       category: category,
       resetFrequency: ResetFrequency.daily,
@@ -201,6 +206,7 @@ class CreateHabitParams {
   CreateHabitParams copyWith({
     String? name,
     int? target,
+    String? units,
     HabitColor? color,
     HabitCategory? category,
     ResetFrequency? resetFrequency,
@@ -210,6 +216,7 @@ class CreateHabitParams {
     return CreateHabitParams(
       name: name ?? this.name,
       target: target ?? this.target,
+      units: units ?? this.units,
       color: color ?? this.color,
       category: category ?? this.category,
       resetFrequency: resetFrequency ?? this.resetFrequency,

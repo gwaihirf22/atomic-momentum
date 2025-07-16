@@ -14,16 +14,18 @@ class IOSColors {
 
   // Label Colors
   static const Color label = CupertinoColors.label;
-  static const Color labelDark = CupertinoColors.label;
+  static const Color labelDark = Color(0xFFFFFFFF); // White text for dark mode
   static const Color secondaryLabel = CupertinoColors.secondaryLabel;
+  static const Color secondaryLabelDark = Color(0xFFBBBBBB); // Light gray for secondary text
   static const Color tertiaryLabel = CupertinoColors.tertiaryLabel;
+  static const Color tertiaryLabelDark = Color(0xFF888888); // Medium gray for tertiary text
   static const Color quaternaryLabel = CupertinoColors.quaternaryLabel;
 
   // Background Colors
   static const Color systemBackground = CupertinoColors.systemBackground;
-  static const Color systemBackgroundDark = CupertinoColors.systemBackground;
+  static const Color systemBackgroundDark = Color(0xFF000000); // True black for dark mode
   static const Color secondarySystemBackground = CupertinoColors.secondarySystemBackground;
-  static const Color secondarySystemBackgroundDark = CupertinoColors.secondarySystemBackground;
+  static const Color secondarySystemBackgroundDark = Color(0xFF1C1C1E); // Dark gray for secondary backgrounds
   static const Color tertiarySystemBackground = CupertinoColors.tertiarySystemBackground;
 
   // Grouped Background Colors
@@ -33,7 +35,7 @@ class IOSColors {
 
   // Separator Colors
   static const Color separator = CupertinoColors.separator;
-  static const Color separatorDark = CupertinoColors.separator;
+  static const Color separatorDark = Color(0xFF3A3A3C); // Visible separator for dark mode
   static const Color opaqueSeparator = CupertinoColors.opaqueSeparator;
 
   // Fill Colors

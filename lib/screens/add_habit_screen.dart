@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
+import '../domain/entities/reset_frequency.dart';
 import '../domain/usecases/create_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
@@ -17,17 +18,20 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
+  final TextEditingController _unitsController = TextEditingController();
   
   bool _isSubmitting = false;
   
   // Selected values
   HabitColor _selectedColor = HabitColor.blue;
   HabitCategory _selectedCategory = HabitCategory.body;
+  ResetFrequency _selectedFrequency = ResetFrequency.daily;
 
   @override
   void dispose() {
     _nameController.dispose();
     _targetController.dispose();
+    _unitsController.dispose();
     super.dispose();
   }
 
@@ -72,14 +76,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               TextFormField(
                 controller: _targetController,
                 decoration: const InputDecoration(
-                  labelText: 'Target',
-                  hintText: 'e.g., 8 glasses, 30 minutes',
+                  labelText: 'Target Number',
+                  hintText: 'e.g., 8, 30, 5',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a target';
+                    return 'Please enter a target number';
                   }
                   final target = int.tryParse(value.trim());
                   if (target == null || target <= 0) {
@@ -87,6 +91,24 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   }
                   if (target > 1000) {
                     return 'Target cannot exceed 1000';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              
+              // Units Field
+              TextFormField(
+                controller: _unitsController,
+                decoration: const InputDecoration(
+                  labelText: 'Units (Optional)',
+                  hintText: 'e.g., glasses, minutes, reps, pages',
+                  border: OutlineInputBorder(),
+                ),
+                maxLength: 20,
+                validator: (value) {
+                  if (value != null && value.trim().length > 20) {
+                    return 'Units cannot exceed 20 characters';
                   }
                   return null;
                 },
@@ -170,6 +192,43 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   );
                 }).toList(),
               ),
+              const SizedBox(height: 24),
+              
+              // Frequency Selection
+              const Text(
+                'Reset Frequency',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<ResetFrequency>(
+                value: _selectedFrequency,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'How often should this habit reset?',
+                ),
+                items: ResetFrequency.values.map((frequency) {
+                  return DropdownMenuItem<ResetFrequency>(
+                    value: frequency,
+                    child: Row(
+                      children: [
+                        Icon(_getFrequencyIcon(frequency), size: 20),
+                        const SizedBox(width: 8),
+                        Text(frequency.displayName),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (ResetFrequency? newFrequency) {
+                  if (newFrequency != null) {
+                    setState(() {
+                      _selectedFrequency = newFrequency;
+                    });
+                  }
+                },
+              ),
               const SizedBox(height: 32),
               
               // Submit Button
@@ -182,6 +241,27 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Add Habit'),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Debug info panel
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('DEBUG INFO:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    Text('Submitting: $_isSubmitting', style: TextStyle(fontSize: 10)),
+                    Text('Mounted: $mounted', style: TextStyle(fontSize: 10)),
+                    Text('Form valid: ${_formKey.currentState?.validate() ?? false}', style: TextStyle(fontSize: 10)),
+                    Text('Frequency: ${_selectedFrequency.displayName}', style: TextStyle(fontSize: 10)),
+                  ],
+                ),
               ),
             ],
           ),
@@ -202,40 +282,50 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     try {
       final habitProvider = context.read<HabitProvider>();
       
+      // Store initial habit count to detect if habit was actually added
+      final initialHabitCount = habitProvider.habits.length;
+      
       final params = CreateHabitParams(
         name: _nameController.text.trim(),
         target: int.parse(_targetController.text.trim()),
+        units: _unitsController.text.trim(),
         color: _selectedColor,
         category: _selectedCategory,
+        resetFrequency: _selectedFrequency,
       );
 
+      print('DEBUG: Creating habit with params: ${params.name}, target: ${params.target}, units: "${params.units}"');
+      print('DEBUG: Initial habit count: $initialHabitCount');
+      print('DEBUG: About to call habitProvider.createHabit');
+      
       final success = await habitProvider.createHabit(params);
+      final finalHabitCount = habitProvider.habits.length;
+      final habitWasAdded = finalHabitCount > initialHabitCount;
+      
+      print('DEBUG: Habit creation result: $success');
+      print('DEBUG: HabitProvider error: ${habitProvider.error}');
+      print('DEBUG: Final habit count: $finalHabitCount');
+      print('DEBUG: Habit was actually added: $habitWasAdded');
+      print('DEBUG: mounted: $mounted');
 
-      if (success && mounted) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${_nameController.text.trim()} added successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      // FORCE NAVIGATION - Simple approach without complex conditions
+      if (mounted) {
+        print('DEBUG: Forcing navigation back to home screen');
         
-        // Go back to previous screen
+        // Clear form first
+        _nameController.clear();
+        _targetController.clear();
+        _unitsController.clear();
+        _selectedColor = HabitColor.blue;
+        _selectedCategory = HabitCategory.body;
+        _selectedFrequency = ResetFrequency.daily;
+        
+        // Navigate back immediately - no SnackBar interference
         Navigator.of(context).pop();
-      } else if (mounted) {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(habitProvider.error ?? 'Failed to create habit'),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Retry',
-              onPressed: _submitForm,
-            ),
-          ),
-        );
+        print('DEBUG: Navigator.pop() executed - should be back on home screen');
       }
     } catch (e) {
+      print('DEBUG: Exception during habit creation: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -250,6 +340,19 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           _isSubmitting = false;
         });
       }
+    }
+  }
+
+  IconData _getFrequencyIcon(ResetFrequency frequency) {
+    switch (frequency) {
+      case ResetFrequency.daily:
+        return Icons.today;
+      case ResetFrequency.weekly:
+        return Icons.view_week;
+      case ResetFrequency.monthly:
+        return Icons.calendar_month;
+      case ResetFrequency.never:
+        return Icons.all_inclusive;
     }
   }
 }
