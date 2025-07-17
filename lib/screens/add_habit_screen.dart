@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/usecases/create_habit_usecase.dart';
+import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 
 class AddHabitScreen extends StatefulWidget {
-  const AddHabitScreen({Key? key}) : super(key: key);
+  final Habit? editHabit;
+  
+  const AddHabitScreen({Key? key, this.editHabit}) : super(key: key);
 
   @override
   _AddHabitScreenState createState() => _AddHabitScreenState();
@@ -28,6 +32,24 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
 
   @override
+  void initState() {
+    super.initState();
+    
+    // If editing an existing habit, populate the form
+    if (widget.editHabit != null) {
+      final habit = widget.editHabit!;
+      _nameController.text = habit.name;
+      _targetController.text = habit.target.toString();
+      _unitsController.text = habit.units;
+      _selectedColor = habit.color;
+      _selectedCategory = habit.category;
+      _selectedFrequency = habit.resetFrequency;
+      
+      print('DEBUG: Initialized edit form for habit: ${habit.name}');
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _targetController.dispose();
@@ -39,7 +61,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add New Habit'),
+        title: Text(widget.editHabit != null ? 'Edit Habit' : 'Add New Habit'),
         centerTitle: true,
       ),
       body: Form(
@@ -240,7 +262,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Add Habit'),
+                    : Text(widget.editHabit != null ? 'Update Habit' : 'Add Habit'),
               ),
               
               const SizedBox(height: 16),
@@ -294,18 +316,35 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         resetFrequency: _selectedFrequency,
       );
 
-      print('DEBUG: Creating habit with params: ${params.name}, target: ${params.target}, units: "${params.units}"');
-      print('DEBUG: Initial habit count: $initialHabitCount');
-      print('DEBUG: About to call habitProvider.createHabit');
+      final bool success;
+      if (widget.editHabit != null) {
+        // Update existing habit
+        print('DEBUG: Updating existing habit: ${widget.editHabit!.name} -> ${params.name}');
+        success = await habitProvider.updateHabitDetails(widget.editHabit!.id, UpdateHabitParams(
+          name: params.name,
+          target: params.target,
+          units: params.units,
+          color: params.color,
+          category: params.category,
+          resetFrequency: params.resetFrequency,
+        ));
+        print('DEBUG: Habit update result: $success');
+      } else {
+        // Create new habit
+        print('DEBUG: Creating habit with params: ${params.name}, target: ${params.target}, units: "${params.units}"');
+        print('DEBUG: Initial habit count: $initialHabitCount');
+        print('DEBUG: About to call habitProvider.createHabit');
+        
+        success = await habitProvider.createHabit(params);
+        final finalHabitCount = habitProvider.habits.length;
+        final habitWasAdded = finalHabitCount > initialHabitCount;
+        
+        print('DEBUG: Habit creation result: $success');
+        print('DEBUG: Final habit count: $finalHabitCount');
+        print('DEBUG: Habit was actually added: $habitWasAdded');
+      }
       
-      final success = await habitProvider.createHabit(params);
-      final finalHabitCount = habitProvider.habits.length;
-      final habitWasAdded = finalHabitCount > initialHabitCount;
-      
-      print('DEBUG: Habit creation result: $success');
       print('DEBUG: HabitProvider error: ${habitProvider.error}');
-      print('DEBUG: Final habit count: $finalHabitCount');
-      print('DEBUG: Habit was actually added: $habitWasAdded');
       print('DEBUG: mounted: $mounted');
 
       // FORCE NAVIGATION - Simple approach without complex conditions

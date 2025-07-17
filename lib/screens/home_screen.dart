@@ -331,12 +331,24 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Text(
-                            habit.category.displayName,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(context).textTheme.bodySmall?.color,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                habit.category.displayName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).textTheme.bodySmall?.color,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '• ${habit.resetFrequency.displayName}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).textTheme.bodySmall?.color,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -344,6 +356,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
+                        Row(
+                          children: [
+                            // Edit button
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 20),
+                              onPressed: () => _editHabit(habit),
+                              color: Colors.grey[600],
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                            ),
+                            // Delete button
+                            IconButton(
+                              icon: const Icon(Icons.delete, size: 20),
+                              onPressed: () => _deleteHabit(habit),
+                              color: Colors.red[600],
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(
+                                minWidth: 32,
+                                minHeight: 32,
+                              ),
+                            ),
+                          ],
+                        ),
                         Text(
                           _formatProgressTarget(habit),
                           style: TextStyle(
@@ -455,5 +493,71 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       return '${habit.progress}/${habit.target} ${habit.units}';
     }
+  }
+
+  void _editHabit(Habit habit) {
+    print('DEBUG: Edit button pressed for habit: ${habit.name}');
+    
+    // Navigate to AddHabitScreen in edit mode
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddHabitScreen(editHabit: habit),
+      ),
+    ).then((_) {
+      // Refresh habits when returning from edit screen
+      context.read<HabitProvider>().refreshHabits();
+    });
+  }
+
+  void _deleteHabit(Habit habit) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Habit'),
+          content: Text('Are you sure you want to delete "${habit.name}"?\n\nThis action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final habitProvider = context.read<HabitProvider>();
+                
+                print('DEBUG: Deleting habit: ${habit.name} (${habit.id})');
+                final success = await habitProvider.deleteHabit(habit.id);
+                
+                if (mounted) {
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${habit.name} deleted successfully'),
+                        backgroundColor: Colors.green,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to delete ${habit.name}'),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

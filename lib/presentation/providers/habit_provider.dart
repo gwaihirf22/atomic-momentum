@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_category.dart';
+import '../../domain/entities/habit_color.dart';
+import '../../domain/entities/reset_frequency.dart';
 import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
@@ -84,6 +86,12 @@ class HabitProvider extends ChangeNotifier {
 
       final habits = await _getHabitsUseCase();
       _habits = habits;
+      
+      // Add default habit if no habits exist (for easy testing)
+      if (_habits.isEmpty) {
+        print('DEBUG: No habits found, adding default habit for testing');
+        await _addDefaultHabit();
+      }
       
       _setState(HabitProviderState.loaded);
     } catch (e) {
@@ -363,6 +371,29 @@ class HabitProvider extends ChangeNotifier {
       'categoryBreakdown': categoryStats,
       'lastUpdated': DateTime.now().toIso8601String(),
     };
+  }
+
+  // Add default habit for easy testing
+  Future<void> _addDefaultHabit() async {
+    try {
+      final defaultParams = CreateHabitParams(
+        name: 'Drink Water',
+        target: 8,
+        units: 'glasses',
+        color: HabitColor.blue,
+        category: HabitCategory.body,
+        resetFrequency: ResetFrequency.daily,
+      );
+      
+      final success = await createHabit(defaultParams);
+      if (success) {
+        print('DEBUG: Default habit "Drink Water" added successfully');
+      } else {
+        print('DEBUG: Failed to add default habit');
+      }
+    } catch (e) {
+      print('DEBUG: Error adding default habit: $e');
+    }
   }
 
   @override

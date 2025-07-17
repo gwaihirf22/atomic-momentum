@@ -77,6 +77,7 @@ class UpdateHabitUseCase {
       final updatedHabit = habit.updateDetails(
         name: params.name,
         target: params.target,
+        units: params.units,
         color: params.color,
         category: params.category,
         resetFrequency: params.resetFrequency,
@@ -205,6 +206,7 @@ class UpdateHabitUseCase {
 class UpdateHabitParams {
   final String? name;
   final int? target;
+  final String? units;
   final HabitColor? color;
   final HabitCategory? category;
   final ResetFrequency? resetFrequency;
@@ -214,6 +216,7 @@ class UpdateHabitParams {
   const UpdateHabitParams({
     this.name,
     this.target,
+    this.units,
     this.color,
     this.category,
     this.resetFrequency,
@@ -224,6 +227,7 @@ class UpdateHabitParams {
   bool get hasChanges => 
     name != null || 
     target != null || 
+    units != null ||
     color != null || 
     category != null || 
     resetFrequency != null || 
