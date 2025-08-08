@@ -52,9 +52,10 @@ class CategoryProvider extends ChangeNotifier {
     }
   }
 
-  // Filter habits by selected category
+  // Filter habits by selected category (without triggering updates during build)
   List<Habit> filterHabits(List<Habit> habits) {
-    updateAvailableCategories(habits);
+    // Don't update available categories during filtering to avoid setState during build
+    // This will be handled separately by the calling widget
     
     if (_selectedCategory == null) {
       return habits;

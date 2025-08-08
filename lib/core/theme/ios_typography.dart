@@ -216,7 +216,7 @@ class IOSTypography {
       isDark ? headlineDark : headlineLight;
 
   static TextStyle getStreakText(bool isDark) => 
-      (isDark ? footnoteLight : footnoteLight).copyWith(
+      (isDark ? footnoteDark : footnoteLight).copyWith(
         color: IOSColors.systemOrange,
         fontWeight: semibold,
       );

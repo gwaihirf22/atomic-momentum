@@ -25,7 +25,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Load habits when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HabitProvider>().loadHabits();
+      final habitProvider = context.read<HabitProvider>();
+      final categoryProvider = context.read<CategoryProvider>();
+      
+      habitProvider.loadHabits().then((_) {
+        // Update available categories after habits are loaded
+        categoryProvider.updateAvailableCategories(habitProvider.habits);
+      });
     });
   }
 
@@ -61,7 +67,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ).then((_) {
                   // Refresh habits when returning from add screen
-                  context.read<HabitProvider>().refreshHabits();
+                  final habitProvider = context.read<HabitProvider>();
+                  final categoryProvider = context.read<CategoryProvider>();
+                  
+                  habitProvider.refreshHabits().then((_) {
+                    // Update available categories after refresh
+                    categoryProvider.updateAvailableCategories(habitProvider.habits);
+                  });
                 });
               },
               child: Icon(

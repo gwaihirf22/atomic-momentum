@@ -4,10 +4,12 @@ import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/reset_frequency.dart';
+import '../domain/entities/reminder_settings.dart';
 import '../domain/usecases/create_habit_usecase.dart';
 import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
+import '../core/theme/ios_colors.dart';
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
@@ -30,6 +32,39 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   HabitColor _selectedColor = HabitColor.blue;
   HabitCategory _selectedCategory = HabitCategory.body;
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
+  
+  // Reminder settings
+  bool _reminderEnabled = false;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
+  List<int> _selectedDays = [1, 2, 3, 4, 5, 6, 7]; // All days by default
+  String _customMessage = '';
+  
+  // Icon selection
+  String? _selectedIcon;
+  
+  // Available habit icons
+  static const Map<String, IconData> habitIcons = {
+    'water': Icons.local_drink,
+    'exercise': Icons.fitness_center,
+    'book': Icons.menu_book,
+    'meditation': Icons.self_improvement,
+    'sleep': Icons.bedtime,
+    'food': Icons.restaurant,
+    'pill': Icons.medication,
+    'run': Icons.directions_run,
+    'bike': Icons.directions_bike,
+    'music': Icons.music_note,
+    'phone': Icons.phone,
+    'heart': Icons.favorite,
+    'work': Icons.work,
+    'study': Icons.school,
+    'clean': Icons.cleaning_services,
+    'walk': Icons.directions_walk,
+    'write': Icons.edit,
+    'money': Icons.attach_money,
+    'check': Icons.check_circle,
+    'star': Icons.star,
+  };
 
   @override
   void initState() {
@@ -45,6 +80,17 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _selectedCategory = habit.category;
       _selectedFrequency = habit.resetFrequency;
       
+      // Initialize reminder settings
+      if (habit.reminder != null) {
+        _reminderEnabled = habit.reminder!.enabled;
+        _reminderTime = habit.reminder!.time;
+        _selectedDays = List.from(habit.reminder!.daysOfWeek);
+        _customMessage = habit.reminder!.customMessage ?? '';
+      }
+      
+      // Initialize icon
+      _selectedIcon = habit.metadata.icon;
+      
       print('DEBUG: Initialized edit form for habit: ${habit.name}');
     }
   }
@@ -59,7 +105,13 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        final isDark = themeProvider.themeMode == ThemeMode.dark ||
+            (themeProvider.themeMode == ThemeMode.system &&
+                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+                
+        return Scaffold(
       appBar: AppBar(
         title: Text(widget.editHabit != null ? 'Edit Habit' : 'Add New Habit'),
         centerTitle: true,
@@ -204,15 +256,95 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                             : null,
                       ),
                       child: isSelected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check,
-                              color: Colors.white,
+                              color: isDark ? IOSColors.black : IOSColors.white,
                               size: 20,
                             )
                           : null,
                     ),
                   );
                 }).toList(),
+              ),
+              const SizedBox(height: 24),
+              
+              // Icon Selection
+              const Text(
+                'Icon (Optional)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // No icon option
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedIcon = null;
+                      });
+                    },
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark ? IOSColors.tertiarySystemFill : Colors.grey.shade200,
+                        shape: BoxShape.circle,
+                        border: _selectedIcon == null
+                            ? Border.all(
+                                color: Theme.of(context).primaryColor,
+                                width: 3,
+                              )
+                            : null,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: isDark ? IOSColors.labelDark : Colors.grey,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  // Icon options
+                  ...habitIcons.entries.map((entry) {
+                    final iconKey = entry.key;
+                    final iconData = entry.value;
+                    final isSelected = _selectedIcon == iconKey;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedIcon = iconKey;
+                        });
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isSelected 
+                              ? _selectedColor.color.withOpacity(0.2)
+                              : (isDark ? IOSColors.secondarySystemFill : Colors.grey.shade100),
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(
+                                  color: _selectedColor.color,
+                                  width: 2,
+                                )
+                              : null,
+                        ),
+                        child: Icon(
+                          iconData,
+                          color: isSelected 
+                              ? _selectedColor.color 
+                              : (isDark ? IOSColors.labelDark : Colors.grey.shade600),
+                          size: 20,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ],
               ),
               const SizedBox(height: 24),
               
@@ -251,6 +383,99 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   }
                 },
               ),
+              const SizedBox(height: 24),
+              
+              // Reminder Settings Section
+              const Text(
+                'Reminder Settings',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Enable Reminder Switch
+              Row(
+                children: [
+                  Switch(
+                    value: _reminderEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _reminderEnabled = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Enable reminders for this habit',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              
+              if (_reminderEnabled) ...[
+                const SizedBox(height: 16),
+                
+                // Time Picker
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Reminder time: ${_reminderTime.format(context)}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: _reminderTime,
+                        );
+                        if (time != null) {
+                          setState(() {
+                            _reminderTime = time;
+                          });
+                        }
+                      },
+                      child: const Text('Change Time'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Days of Week Selection
+                const Text('Days to remind:', style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    _buildDayChip(1, 'Mon'),
+                    _buildDayChip(2, 'Tue'), 
+                    _buildDayChip(3, 'Wed'),
+                    _buildDayChip(4, 'Thu'),
+                    _buildDayChip(5, 'Fri'),
+                    _buildDayChip(6, 'Sat'),
+                    _buildDayChip(7, 'Sun'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Custom Message (Optional)
+                TextFormField(
+                  initialValue: _customMessage,
+                  decoration: const InputDecoration(
+                    labelText: 'Custom reminder message (optional)',
+                    hintText: 'e.g., "Time for your daily walk!"',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLength: 100,
+                  onChanged: (value) {
+                    _customMessage = value;
+                  },
+                ),
+              ],
+              
               const SizedBox(height: 32),
               
               // Submit Button
@@ -271,7 +496,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(
+                    color: isDark ? IOSColors.separatorDark : IOSColors.separator,
+                  ),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Column(
@@ -290,6 +517,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         ),
       ),
     );
+      },
+    );
   }
 
   Future<void> _submitForm() async {
@@ -307,6 +536,17 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       // Store initial habit count to detect if habit was actually added
       final initialHabitCount = habitProvider.habits.length;
       
+      // Create reminder settings if enabled
+      ReminderSettings? reminder;
+      if (_reminderEnabled && _selectedDays.isNotEmpty) {
+        reminder = ReminderSettings(
+          time: _reminderTime,
+          enabled: true,
+          daysOfWeek: List.from(_selectedDays),
+          customMessage: _customMessage.isNotEmpty ? _customMessage : null,
+        );
+      }
+      
       final params = CreateHabitParams(
         name: _nameController.text.trim(),
         target: int.parse(_targetController.text.trim()),
@@ -314,6 +554,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         color: _selectedColor,
         category: _selectedCategory,
         resetFrequency: _selectedFrequency,
+        reminder: reminder,
+        icon: _selectedIcon,
       );
 
       final bool success;
@@ -327,6 +569,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           color: params.color,
           category: params.category,
           resetFrequency: params.resetFrequency,
+          reminder: reminder,
+          icon: _selectedIcon,
         ));
         print('DEBUG: Habit update result: $success');
       } else {
@@ -393,5 +637,22 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       case ResetFrequency.never:
         return Icons.all_inclusive;
     }
+  }
+  
+  Widget _buildDayChip(int dayOfWeek, String label) {
+    final isSelected = _selectedDays.contains(dayOfWeek);
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          if (selected) {
+            _selectedDays.add(dayOfWeek);
+          } else {
+            _selectedDays.remove(dayOfWeek);
+          }
+        });
+      },
+    );
   }
 }

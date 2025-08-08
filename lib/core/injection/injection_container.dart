@@ -20,12 +20,18 @@ import '../../presentation/providers/habit_provider.dart';
 import '../../presentation/providers/category_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
 
+// Services
+import '../services/notification_service.dart';
+
 final GetIt sl = GetIt.instance;
 
 Future<void> initializeDependencies() async {
   // External dependencies
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+  
+  // Initialize notification service
+  await NotificationService.initialize();
 
   // Data sources
   sl.registerLazySingleton<LocalHabitDataSource>(

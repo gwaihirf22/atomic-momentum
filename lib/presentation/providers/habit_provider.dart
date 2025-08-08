@@ -8,6 +8,7 @@ import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../core/exceptions/storage_exceptions.dart';
+import '../../core/services/notification_service.dart';
 
 enum HabitProviderState {
   initial,
@@ -113,6 +114,13 @@ class HabitProvider extends ChangeNotifier {
       print('DEBUG: Habit created successfully: ${habit.id}');
       _habits.add(habit);
       
+      // Schedule notification if habit has reminder settings
+      if (habit.hasReminder) {
+        print('DEBUG: Scheduling notifications for habit: ${habit.name}');
+        final notificationScheduled = await NotificationService.scheduleHabitReminder(habit);
+        print('DEBUG: Notification scheduled: $notificationScheduled');
+      }
+      
       _sortHabits();
       notifyListeners();
       
@@ -213,6 +221,11 @@ class HabitProvider extends ChangeNotifier {
       final updatedHabit = await _updateHabitUseCase.updateDetails(habitId, params);
       _updateHabitInList(updatedHabit);
       
+      // Update notification schedule for the updated habit
+      print('DEBUG: Updating notifications for habit: ${updatedHabit.name}');
+      final notificationUpdated = await NotificationService.updateHabitReminder(updatedHabit);
+      print('DEBUG: Notification updated: $notificationUpdated');
+      
       return true;
     } catch (e) {
       _error = e.toString();
@@ -261,6 +274,10 @@ class HabitProvider extends ChangeNotifier {
     try {
       _setOperationInProgress(true);
       
+      // Cancel notifications for this habit before deleting
+      print('DEBUG: Cancelling notifications for habit: $habitId');
+      await NotificationService.cancelHabitReminder(habitId);
+      
       await _deleteHabitUseCase(habitId);
       _habits.removeWhere((habit) => habit.id == habitId);
       
@@ -278,6 +295,13 @@ class HabitProvider extends ChangeNotifier {
   Future<List<Habit>> deleteHabitsInCategory(HabitCategory category) async {
     try {
       _setOperationInProgress(true);
+      
+      // Cancel notifications for all habits in this category
+      final habitsToDelete = _habits.where((habit) => habit.category == category);
+      for (final habit in habitsToDelete) {
+        print('DEBUG: Cancelling notifications for category habit: ${habit.id}');
+        await NotificationService.cancelHabitReminder(habit.id);
+      }
       
       final deletedHabits = await _deleteHabitUseCase.deleteByCategory(category);
       _habits.removeWhere((habit) => habit.category == category);
