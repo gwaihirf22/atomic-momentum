@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../lib/domain/entities/streak_data.dart';
+import 'package:atomic_momentum/domain/entities/streak_data.dart';
 
 void main() {
   group('StreakData', () {
@@ -7,7 +7,6 @@ void main() {
     final testDate = DateTime(now.year, now.month, now.day);
     final yesterday = testDate.subtract(const Duration(days: 1));
     final twoDaysAgo = testDate.subtract(const Duration(days: 2));
-    final tomorrow = testDate.add(const Duration(days: 1));
 
     group('constructor and factory', () {
       test('should create StreakData with all parameters', () {
@@ -31,131 +30,6 @@ void main() {
         expect(streakData.longest, 0);
         expect(streakData.lastUpdateDate, isNull);
         expect(streakData.history, isEmpty);
-      });
-    });
-
-    group('updateStreak', () {
-      test('should start new streak on first completion', () {
-        final initial = StreakData.empty();
-        final updated = initial.updateStreak(date: testDate, completed: true);
-
-        expect(updated.current, 1);
-        expect(updated.longest, 1);
-        expect(updated.lastUpdateDate, testDate);
-        expect(updated.history, hasLength(1));
-        expect(updated.history.first.startDate, testDate);
-        expect(updated.history.first.endDate, isNull);
-        expect(updated.history.first.length, 1);
-      });
-
-      test('should continue streak on consecutive day completion', () {
-        final initial = StreakData(
-          current: 2,
-          longest: 5,
-          lastUpdateDate: yesterday,
-          history: [
-            StreakPeriod(startDate: twoDaysAgo, endDate: null, length: 2),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: testDate, completed: true);
-
-        expect(updated.current, 3);
-        expect(updated.longest, 5); // Should remain same
-        expect(updated.lastUpdateDate, testDate);
-        expect(updated.history, hasLength(1));
-        expect(updated.history.first.length, 3);
-      });
-
-      test('should update longest streak when current exceeds it', () {
-        final initial = StreakData(
-          current: 4,
-          longest: 4,
-          lastUpdateDate: yesterday,
-          history: [
-            StreakPeriod(startDate: testDate.subtract(const Duration(days: 4)), endDate: null, length: 4),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: testDate, completed: true);
-
-        expect(updated.current, 5);
-        expect(updated.longest, 5); // Should be updated
-      });
-
-      test('should break streak when not completed', () {
-        final initial = StreakData(
-          current: 3,
-          longest: 5,
-          lastUpdateDate: yesterday,
-          history: [
-            StreakPeriod(startDate: twoDaysAgo, endDate: null, length: 3),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: testDate, completed: false);
-
-        expect(updated.current, 0);
-        expect(updated.longest, 5); // Should remain same
-        expect(updated.lastUpdateDate, testDate);
-        expect(updated.history, hasLength(1));
-        expect(updated.history.first.endDate, yesterday); // Should end previous streak
-      });
-
-      test('should start new streak after gap in days', () {
-        final initial = StreakData(
-          current: 2,
-          longest: 5,
-          lastUpdateDate: testDate.subtract(const Duration(days: 3)), // 3-day gap
-          history: [
-            StreakPeriod(
-              startDate: testDate.subtract(const Duration(days: 4)), 
-              endDate: null, 
-              length: 2
-            ),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: testDate, completed: true);
-
-        expect(updated.current, 1); // New streak
-        expect(updated.longest, 5);
-        expect(updated.history, hasLength(2)); // Should have old and new streak periods
-        expect(updated.history.last.startDate, testDate);
-        expect(updated.history.last.length, 1);
-      });
-
-      test('should not change streak for future dates', () {
-        final initial = StreakData(
-          current: 2,
-          longest: 5,
-          lastUpdateDate: yesterday,
-          history: [
-            StreakPeriod(startDate: twoDaysAgo, endDate: null, length: 2),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: tomorrow, completed: true);
-
-        expect(updated.current, 2); // Should remain unchanged
-        expect(updated.longest, 5);
-        expect(updated.lastUpdateDate, yesterday); // Should remain unchanged
-      });
-
-      test('should handle same day updates correctly', () {
-        final initial = StreakData(
-          current: 2,
-          longest: 5,
-          lastUpdateDate: testDate,
-          history: [
-            StreakPeriod(startDate: yesterday, endDate: null, length: 2),
-          ],
-        );
-
-        final updated = initial.updateStreak(date: testDate, completed: true);
-
-        expect(updated.current, 2); // Should remain same
-        expect(updated.lastUpdateDate, testDate);
       });
     });
 

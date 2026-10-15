@@ -31,6 +31,7 @@ class CreateHabitUseCase {
         resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
         reminder: params.reminder,
         icon: params.icon,
+        resetAnchor: params.resetAnchor,
       );
 
       // Validate the created habit
@@ -77,6 +78,7 @@ class CreateHabitUseCase {
           resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
           reminder: params.reminder,
           icon: params.icon,
+          resetAnchor: params.resetAnchor,
         );
         habits.add(habit);
       }
@@ -141,6 +143,8 @@ class CreateHabitParams {
   final ResetFrequency? resetFrequency;
   final ReminderSettings? reminder;
   final String? icon;
+  /// Weekday/day-of-month that weekly/monthly habits reset on. Defaults to today.
+  final DateTime? resetAnchor;
 
   const CreateHabitParams({
     required this.name,
@@ -151,6 +155,7 @@ class CreateHabitParams {
     this.resetFrequency,
     this.reminder,
     this.icon,
+    this.resetAnchor,
   });
 
   /// Create parameters with category-specific defaults

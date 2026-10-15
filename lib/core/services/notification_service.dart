@@ -4,7 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/reminder_settings.dart';
+import '../../domain/services/streak_warning_planner.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -148,6 +148,45 @@ class NotificationService {
     } catch (e) {
       debugPrint('NotificationService: Failed to cancel reminders for $habitId: $e');
     }
+  }
+
+  // Schedule the one-off warning that a habit's streak is about to expire
+  static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning) async {
+    if (!_initialized) return;
+
+    try {
+      final id = _getStreakWarningId(habitId);
+      await _notificationsPlugin.cancel(id);
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        warning.title,
+        warning.body,
+        // An absolute instant, so it fires at the right moment whatever tz.local is
+        tz.TZDateTime.from(warning.at, tz.UTC),
+        _getNotificationDetails(),
+        payload: habitId,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      debugPrint('NotificationService: Scheduled streak warning for $habitId at ${warning.at}');
+    } catch (e) {
+      debugPrint('NotificationService: Failed to schedule streak warning for $habitId: $e');
+    }
+  }
+
+  static Future<void> cancelStreakWarning(String habitId) async {
+    if (!_initialized) return;
+
+    try {
+      await _notificationsPlugin.cancel(_getStreakWarningId(habitId));
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel streak warning for $habitId: $e');
+    }
+  }
+
+  static int _getStreakWarningId(String habitId) {
+    return '$habitId-streak-warning'.hashCode.abs() % 2147483647;
   }
 
   // Update habit reminders (cancel old, schedule new)

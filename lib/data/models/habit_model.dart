@@ -13,6 +13,7 @@ class HabitModel extends Habit {
     required super.name,
     required super.progress,
     required super.target,
+    super.units,
     required super.color,
     required super.category,
     required super.lastUpdatedDate,
@@ -21,6 +22,7 @@ class HabitModel extends Habit {
     required super.streak,
     super.reminder,
     required super.metadata,
+    super.resetAnchorDate,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -33,6 +35,7 @@ class HabitModel extends Habit {
         name: habit.name,
         progress: habit.progress,
         target: habit.target,
+        units: habit.units,
         color: habit.color,
         category: habit.category,
         lastUpdatedDate: habit.lastUpdatedDate,
@@ -41,6 +44,7 @@ class HabitModel extends Habit {
         streak: habit.streak,
         reminder: habit.reminder,
         metadata: habit.metadata,
+        resetAnchorDate: habit.resetAnchorDate,
       );
     } catch (e) {
       print('DEBUG: HabitModel.fromDomain() - ERROR: $e');
@@ -58,6 +62,7 @@ class HabitModel extends Habit {
         name: name,
         progress: progress,
         target: target,
+        units: units,
         color: color,
         category: category,
         lastUpdatedDate: lastUpdatedDate,
@@ -66,6 +71,7 @@ class HabitModel extends Habit {
         streak: streak,
         reminder: reminder,
         metadata: metadata,
+        resetAnchorDate: resetAnchorDate,
       );
       
       print('DEBUG: HabitModel.toDomain() - Successfully converted: ${habitDomain.name} isCompleted: ${habitDomain.isCompleted}');
@@ -109,6 +115,7 @@ class HabitModel extends Habit {
       name: json['name'] as String,
       progress: (json['progress'] as num).toInt(),
       target: (json['target'] as num).toInt(),
+      units: json['units'] as String? ?? '',
       color: HabitColor.fromJson(json['color'] as Map<String, dynamic>),
       category: HabitCategory.fromString(json['category'] as String),
       lastUpdatedDate: DateTime.parse(json['lastUpdatedDate'] as String),
@@ -119,6 +126,9 @@ class HabitModel extends Habit {
           ? ReminderSettings.fromJson(json['reminder'] as Map<String, dynamic>)
           : null,
       metadata: HabitMetadata.fromJson(json['metadata'] as Map<String, dynamic>),
+      resetAnchorDate: json['resetAnchor'] != null
+          ? DateTime.parse(json['resetAnchor'] as String)
+          : null,
     );
   }
 
@@ -144,6 +154,7 @@ class HabitModel extends Habit {
         'name': name,
         'progress': progress,
         'target': target,
+        'units': units,
         'color': color.toJson(),
         'category': category.name,
         'lastUpdatedDate': lastUpdatedDate.toIso8601String(),
@@ -152,6 +163,7 @@ class HabitModel extends Habit {
         'streak': streak.toJson(),
         'reminder': reminder?.toJson(),
         'metadata': metadata.toJson(),
+        'resetAnchor': resetAnchorDate?.toIso8601String(),
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': DateTime.now().toIso8601String(),
       };
@@ -167,25 +179,13 @@ class HabitModel extends Habit {
     // Remove optional null fields
     json.removeWhere((key, value) => value == null);
     
-    // Compress history for storage efficiency
-    if (history.isNotEmpty) {
-      json['history'] = _compressHistory(history);
-    } else {
+    // Keep the full history: streaks are derived from it, so trimming old
+    // days would silently shorten long streaks
+    if (history.isEmpty) {
       json.remove('history');
     }
     
     return json;
-  }
-
-  Map<String, dynamic> _compressHistory(Map<DateTime, int> history) {
-    // Only keep last 90 days of history for storage efficiency
-    final cutoffDate = DateTime.now().subtract(const Duration(days: 90));
-    
-    return Map.fromEntries(
-      history.entries
-          .where((entry) => entry.key.isAfter(cutoffDate))
-          .map((entry) => MapEntry(entry.key.toIso8601String(), entry.value)),
-    );
   }
 
   /// Create from legacy JSON format (for migration)
@@ -229,6 +229,7 @@ class HabitModel extends Habit {
     String? name,
     int? progress,
     int? target,
+    String? units,
     HabitColor? color,
     HabitCategory? category,
     DateTime? lastUpdatedDate,
@@ -237,12 +238,14 @@ class HabitModel extends Habit {
     StreakData? streak,
     ReminderSettings? reminder,
     HabitMetadata? metadata,
+    DateTime? resetAnchorDate,
   }) {
     return HabitModel(
       id: id ?? this.id,
       name: name ?? this.name,
       progress: progress ?? this.progress,
       target: target ?? this.target,
+      units: units ?? this.units,
       color: color ?? this.color,
       category: category ?? this.category,
       lastUpdatedDate: lastUpdatedDate ?? this.lastUpdatedDate,
@@ -251,6 +254,7 @@ class HabitModel extends Habit {
       streak: streak ?? this.streak,
       reminder: reminder ?? this.reminder,
       metadata: metadata ?? this.metadata,
+      resetAnchorDate: resetAnchorDate ?? this.resetAnchorDate,
     );
   }
 

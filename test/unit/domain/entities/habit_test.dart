@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../lib/domain/entities/habit.dart';
-import '../../../../lib/domain/entities/habit_category.dart';
-import '../../../../lib/domain/entities/habit_color.dart';
-import '../../../../lib/domain/entities/reset_frequency.dart';
-import '../../../../lib/domain/entities/streak_data.dart';
-import '../../../../lib/domain/entities/reminder_settings.dart';
-import '../../../../lib/domain/entities/habit_metadata.dart';
+import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/domain/entities/habit_category.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/streak_data.dart';
+import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
+import 'package:atomic_momentum/domain/entities/habit_metadata.dart';
 import '../../../helpers/test_data.dart';
 
 void main() {
@@ -409,6 +409,173 @@ void main() {
         
         expect(habit.progressPercentage, 0.0);
         expect(habit.isCompleted, isTrue); // 0 >= 0
+      });
+    });
+
+    // These use real "now" because updateProgress and friends stamp today's date
+    group('periods, history and streaks', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      DateTime daysAgo(int n) => DateTime(today.year, today.month, today.day - n);
+
+      test('weekly progress adds up the days of the current week', () {
+        // Anchor on today's weekday so the period runs today .. today+6
+        final habit = TestData.createTestHabit(
+          target: 5,
+          progress: 0,
+          resetFrequency: ResetFrequency.weekly,
+          resetAnchorDate: today,
+        ).updateProgress(2);
+
+        expect(habit.progress, 2);
+        expect(habit.history[today], 2);
+        // Entries before the anchor weekday belong to last week
+        expect(habit.setProgressForDate(daysAgo(1), 3).progress, 2);
+      });
+
+      test('updateProgress only logs the difference not covered by earlier days', () {
+        final anchor = daysAgo(1);
+        final habit = TestData.createTestHabit(
+          target: 5,
+          progress: 0,
+          resetFrequency: ResetFrequency.weekly,
+          resetAnchorDate: anchor,
+          history: {anchor: 2},
+        ).refresh();
+
+        expect(habit.progress, 2);
+
+        final updated = habit.updateProgress(3);
+        expect(updated.history[today], 1);
+        expect(updated.history[anchor], 2);
+        expect(updated.progress, 3);
+      });
+
+      test('setProgressForDate repairs a broken streak retroactively', () {
+        final habit = TestData.createTestHabit(
+          target: 1,
+          history: {daysAgo(3): 1, daysAgo(1): 1},
+        ).refresh();
+        expect(habit.streak.current, 1);
+
+        final repaired = habit.setProgressForDate(daysAgo(2), 1);
+        expect(repaired.streak.current, 3);
+        expect(repaired.streak.longest, 3);
+      });
+
+      test('setProgressForDate with 0 removes the entry and can break the streak', () {
+        final habit = TestData.createTestHabit(
+          target: 1,
+          history: {daysAgo(2): 1, daysAgo(1): 1},
+        ).refresh();
+        expect(habit.streak.current, 2);
+
+        final edited = habit.setProgressForDate(daysAgo(1), 0);
+        expect(edited.history.containsKey(daysAgo(1)), isFalse);
+        expect(edited.streak.current, 0);
+      });
+
+      test('setProgressForDate rejects future dates, negatives and over-target totals', () {
+        final habit = TestData.createTestHabit(target: 3);
+
+        expect(() => habit.setProgressForDate(today.add(const Duration(days: 1)), 1), throwsArgumentError);
+        expect(() => habit.setProgressForDate(daysAgo(1), -1), throwsArgumentError);
+        expect(() => habit.setProgressForDate(daysAgo(1), 4), throwsArgumentError);
+      });
+
+      test('setProgressForDate for today updates current progress', () {
+        final habit = TestData.createTestHabit(target: 5, progress: 0);
+        expect(habit.setProgressForDate(today, 4).progress, 4);
+      });
+
+      test('refresh drops progress to the new period and expires a missed streak', () {
+        final habit = TestData.createTestHabit(
+          target: 1,
+          progress: 1,
+          history: {daysAgo(3): 1, daysAgo(2): 1},
+          streak: const StreakData(current: 2, longest: 2, history: []),
+        );
+
+        final refreshed = habit.refresh();
+        expect(refreshed.progress, 0);
+        expect(refreshed.streak.current, 0);
+        expect(refreshed.streak.longest, 2);
+        expect(refreshed.history, hasLength(2));
+      });
+
+      test('resetProgress clears only the current period', () {
+        final habit = TestData.createTestHabit(
+          target: 5,
+          history: {daysAgo(1): 5},
+        ).updateProgress(3);
+
+        final reset = habit.resetProgress();
+        expect(reset.progress, 0);
+        expect(reset.history.containsKey(today), isFalse);
+        expect(reset.history[daysAgo(1)], 5);
+      });
+
+      test('streakDeadline is the end of today while today is unfinished', () {
+        final habit = TestData.createTestHabit(target: 1, history: {daysAgo(1): 1}).refresh();
+        expect(habit.streakDeadline(), today.add(const Duration(days: 1)));
+      });
+
+      test('changing the target recomputes progress and streak', () {
+        final habit = TestData.createTestHabit(
+          target: 2,
+          history: {daysAgo(1): 2, today: 2},
+        ).refresh();
+        expect(habit.streak.current, 2);
+
+        final harder = habit.updateDetails(target: 3);
+        expect(harder.streak.current, 0);
+        expect(harder.isCompleted, isFalse);
+      });
+    });
+
+    group('reset anchor', () {
+      test('create defaults the anchor to today', () {
+        final habit = Habit.create(
+          name: 'Weekly',
+          target: 1,
+          color: HabitColor.blue,
+          category: HabitCategory.body,
+          resetFrequency: ResetFrequency.weekly,
+        );
+        final now = DateTime.now();
+
+        expect(habit.resetAnchor, DateTime(now.year, now.month, now.day));
+      });
+
+      test('create keeps a chosen anchor as a date only', () {
+        final habit = Habit.create(
+          name: 'Monthly',
+          target: 1,
+          color: HabitColor.blue,
+          category: HabitCategory.body,
+          resetFrequency: ResetFrequency.monthly,
+          resetAnchor: DateTime(2024, 3, 20, 17, 45),
+        );
+
+        expect(habit.resetAnchor, DateTime(2024, 3, 20));
+      });
+
+      test('habits saved without an anchor fall back to their creation date', () {
+        final habit = TestData.createTestHabit();
+        expect(habit.resetAnchorDate, isNull);
+        expect(habit.resetAnchor, habit.metadata.createdDate);
+      });
+
+      test('updateDetails can move the anchor', () {
+        final habit = TestData.createTestHabit(resetFrequency: ResetFrequency.weekly);
+        final moved = habit.updateDetails(resetAnchor: DateTime(2024, 1, 18, 9));
+
+        expect(moved.resetAnchor, DateTime(2024, 1, 18));
+      });
+
+      test('the anchor survives a JSON round-trip', () {
+        final habit = TestData.createTestHabit(resetAnchorDate: DateTime(2024, 1, 18));
+        expect(Habit.fromJson(habit.toJson()).resetAnchorDate, DateTime(2024, 1, 18));
       });
     });
   });

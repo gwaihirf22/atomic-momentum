@@ -8,6 +8,7 @@ import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
+import 'presentation/providers/settings_provider.dart';
 import 'screens/ios_main_navigation.dart';
 
 void main() async {
@@ -48,6 +49,10 @@ class MomentumApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<CategoryProvider>(
           create: (_) => get<CategoryProvider>(),
+        ),
+        // Shared singleton (the streak warning service reads it), so not owned here
+        ChangeNotifierProvider<SettingsProvider>.value(
+          value: get<SettingsProvider>(),
         ),
       ],
       child: Consumer<ThemeProvider>(

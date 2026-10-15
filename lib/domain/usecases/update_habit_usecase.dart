@@ -83,6 +83,7 @@ class UpdateHabitUseCase {
         resetFrequency: params.resetFrequency,
         reminder: params.reminder,
         icon: params.icon,
+        resetAnchor: params.resetAnchor,
       );
 
       // Validate the updated habit
@@ -113,19 +114,17 @@ class UpdateHabitUseCase {
     }
   }
 
-  /// Update habit history for a specific date
+  /// Set what was logged on a past [date] (or today). Progress and streak
+  /// are recomputed, so filling in a missed day restores the streak.
   Future<Habit> updateHistoryForDate(String habitId, DateTime date, int progress) async {
     try {
       final habit = await _getHabitById(habitId);
-      
-      if (progress < 0 || progress > habit.target) {
-        throw ValidationException('Progress must be between 0 and ${habit.target}');
-      }
+      final updatedHabit = habit.setProgressForDate(date, progress);
 
-      await _repository.saveHabitHistory(habitId, date, progress);
-      
-      // Return updated habit
-      return await _getHabitById(habitId);
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } on ArgumentError catch (e) {
+      throw ValidationException(e.message.toString());
     } catch (e) {
       if (e is ValidationException || e is StorageException) rethrow;
       throw StorageException('Failed to update habit history: $e');
@@ -139,9 +138,11 @@ class UpdateHabitUseCase {
       final resetHabits = <Habit>[];
 
       for (final habit in habitsNeedingReset) {
-        final resetHabit = habit.resetProgress();
-        await _repository.saveHabit(resetHabit);
-        resetHabits.add(resetHabit);
+        // Recompute instead of zeroing: progress becomes the new period's
+        // total and an expired streak drops to 0
+        final refreshedHabit = habit.refresh();
+        await _repository.saveHabit(refreshedHabit);
+        resetHabits.add(refreshedHabit);
       }
 
       return resetHabits;
@@ -212,6 +213,7 @@ class UpdateHabitParams {
   final ResetFrequency? resetFrequency;
   final ReminderSettings? reminder;
   final String? icon;
+  final DateTime? resetAnchor;
 
   const UpdateHabitParams({
     this.name,
@@ -222,6 +224,7 @@ class UpdateHabitParams {
     this.resetFrequency,
     this.reminder,
     this.icon,
+    this.resetAnchor,
   });
 
   bool get hasChanges => 
@@ -232,5 +235,6 @@ class UpdateHabitParams {
     category != null || 
     resetFrequency != null || 
     reminder != null || 
-    icon != null;
+    icon != null ||
+    resetAnchor != null;
 }

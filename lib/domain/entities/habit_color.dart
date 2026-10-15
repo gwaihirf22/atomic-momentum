@@ -65,7 +65,7 @@ class HabitColor extends Equatable {
   ];
 
   factory HabitColor.fromColor(Color color) {
-    final hex = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}';
+    final hex = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
     return HabitColor(
       value: color.value,
       hex: hex,

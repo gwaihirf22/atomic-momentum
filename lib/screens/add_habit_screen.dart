@@ -32,6 +32,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   HabitColor _selectedColor = HabitColor.blue;
   HabitCategory _selectedCategory = HabitCategory.body;
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
+  // Weekly habits reset on this date's weekday, monthly on its day of month
+  DateTime _resetAnchor = DateUtils.dateOnly(DateTime.now());
   
   // Reminder settings
   bool _reminderEnabled = false;
@@ -79,6 +81,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _selectedColor = habit.color;
       _selectedCategory = habit.category;
       _selectedFrequency = habit.resetFrequency;
+      _resetAnchor = habit.resetAnchor;
       
       // Initialize reminder settings
       if (habit.reminder != null) {
@@ -118,7 +121,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -383,6 +386,21 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   }
                 },
               ),
+              if (_selectedFrequency.describeResetDay(_resetAnchor) != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: ListTile(
+                    key: const Key('resetDayTile'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_repeat),
+                    title: Text(_selectedFrequency.describeResetDay(_resetAnchor)!),
+                    trailing: TextButton(
+                      onPressed: _pickResetDay,
+                      child: const Text('Change'),
+                    ),
+                    onTap: _pickResetDay,
+                  ),
+                ),
               const SizedBox(height: 24),
               
               // Reminder Settings Section
@@ -489,29 +507,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       )
                     : Text(widget.editHabit != null ? 'Update Habit' : 'Add Habit'),
               ),
-              
-              const SizedBox(height: 16),
-              
-              // Debug info panel
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isDark ? IOSColors.separatorDark : IOSColors.separator,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('DEBUG INFO:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    Text('Submitting: $_isSubmitting', style: TextStyle(fontSize: 10)),
-                    Text('Mounted: $mounted', style: TextStyle(fontSize: 10)),
-                    Text('Form valid: ${_formKey.currentState?.validate() ?? false}', style: TextStyle(fontSize: 10)),
-                    Text('Frequency: ${_selectedFrequency.displayName}', style: TextStyle(fontSize: 10)),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -556,6 +551,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         resetFrequency: _selectedFrequency,
         reminder: reminder,
         icon: _selectedIcon,
+        resetAnchor: _resetAnchor,
       );
 
       final bool success;
@@ -571,6 +567,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           resetFrequency: params.resetFrequency,
           reminder: reminder,
           icon: _selectedIcon,
+          resetAnchor: _resetAnchor,
         ));
         print('DEBUG: Habit update result: $success');
       } else {
@@ -623,6 +620,23 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           _isSubmitting = false;
         });
       }
+    }
+  }
+
+  Future<void> _pickResetDay() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _resetAnchor,
+      firstDate: _resetAnchor.isBefore(DateTime(2020)) ? _resetAnchor : DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 366)),
+      helpText: _selectedFrequency == ResetFrequency.weekly
+          ? 'Pick a day: the habit resets on that weekday'
+          : 'Pick a day: the habit resets on that day each month',
+    );
+    if (picked != null) {
+      setState(() {
+        _resetAnchor = DateUtils.dateOnly(picked);
+      });
     }
   }
 

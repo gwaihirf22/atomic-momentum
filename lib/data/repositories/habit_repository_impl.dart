@@ -338,8 +338,7 @@ class HabitRepositoryImpl implements HabitRepository {
       final habitsNeedingReset = await getHabitsNeedingReset();
       
       for (final habit in habitsNeedingReset) {
-        final resetHabit = habit.resetProgress();
-        await saveHabit(resetHabit);
+        await saveHabit(habit.refresh());
       }
     } catch (e) {
       throw StorageException('Failed to reset habits: $e');

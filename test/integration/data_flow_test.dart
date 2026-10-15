@@ -1,16 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../lib/core/injection/injection_container.dart';
-import '../../lib/domain/entities/habit.dart';
-import '../../lib/domain/entities/habit_category.dart';
-import '../../lib/domain/entities/habit_color.dart';
-import '../../lib/domain/usecases/get_habits_usecase.dart';
-import '../../lib/domain/usecases/create_habit_usecase.dart';
-import '../../lib/domain/usecases/update_habit_usecase.dart';
-import '../../lib/domain/usecases/delete_habit_usecase.dart';
-import '../../lib/presentation/providers/habit_provider.dart';
-import '../../lib/presentation/providers/category_provider.dart';
+import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/core/services/streak_warning_service.dart';
+import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
+import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/domain/entities/habit_category.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/repositories/habit_repository.dart';
+import 'package:atomic_momentum/domain/usecases/get_habits_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/update_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/delete_habit_usecase.dart';
+import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/providers/category_provider.dart';
+
+import '../helpers/fake_streak_warning_scheduler.dart';
 
 void main() {
   group('Data Flow Integration Tests', () {
@@ -22,7 +28,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       
       // Initialize dependencies with real implementations
-      await initializeDependencies();
+      await initializeDependencies(seedDefaultHabit: false);
     });
 
     tearDown(() async {
@@ -279,6 +285,148 @@ void main() {
         final success = await habitProvider.updateHabitProgress('non_existent_id', 5);
         expect(success, isFalse);
         expect(habitProvider.error, isNotNull);
+      });
+    });
+
+    group('Period Reset', () {
+      test('should reset stale habit progress on load and keep its history', () async {
+        final createHabitUseCase = get<CreateHabitUseCase>();
+        final updateHabitUseCase = get<UpdateHabitUseCase>();
+        final repository = get<HabitRepository>();
+
+        final habit = await createHabitUseCase(CreateHabitParams(
+          name: 'Daily Water',
+          target: 8,
+          color: HabitColor.blue,
+          category: HabitCategory.body,
+          resetFrequency: ResetFrequency.daily,
+        ));
+        final progressed = await updateHabitUseCase.updateProgress(habit.id, 5);
+
+        // Simulate the progress having been logged yesterday
+        final now = DateTime.now();
+        final yesterday = DateTime(now.year, now.month, now.day - 1);
+        await repository.saveHabit(progressed.copyWith(
+          lastUpdatedDate: yesterday,
+          history: {yesterday: 5},
+        ));
+
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.loadHabits();
+
+        final reloaded = habitProvider.getHabitById(habit.id)!;
+        expect(reloaded.progress, 0);
+        expect(reloaded.history, isNotEmpty);
+      });
+
+      test('should keep progress for a weekly habit within the same week', () async {
+        final createHabitUseCase = get<CreateHabitUseCase>();
+        final updateHabitUseCase = get<UpdateHabitUseCase>();
+
+        final habit = await createHabitUseCase(CreateHabitParams(
+          name: 'Weekly Run',
+          target: 3,
+          color: HabitColor.green,
+          category: HabitCategory.body,
+          resetFrequency: ResetFrequency.weekly,
+        ));
+        await updateHabitUseCase.updateProgress(habit.id, 2);
+
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.loadHabits();
+
+        expect(habitProvider.getHabitById(habit.id)!.progress, 2);
+      });
+    });
+
+    group('Retroactive edits and streak warnings', () {
+      test('filling in past days rebuilds the streak and schedules a warning', () async {
+        final scheduler = FakeStreakWarningScheduler();
+        final habitProvider = HabitProvider(
+          getHabitsUseCase: get<GetHabitsUseCase>(),
+          createHabitUseCase: get<CreateHabitUseCase>(),
+          updateHabitUseCase: get<UpdateHabitUseCase>(),
+          deleteHabitUseCase: get<DeleteHabitUseCase>(),
+          streakWarningService: StreakWarningService(
+            scheduler: scheduler,
+            readSettings: () => StreakWarningSettings.defaults,
+          ),
+        );
+        await habitProvider.loadHabits();
+
+        await habitProvider.createHabit(CreateHabitParams(
+          name: 'Meditate',
+          target: 1,
+          color: HabitColor.purple,
+          category: HabitCategory.spirit,
+        ));
+        final id = habitProvider.habits.single.id;
+
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        DateTime daysAgo(int n) => DateTime(today.year, today.month, today.day - n);
+
+        // Days 3 and 1 ago logged, day 2 forgotten
+        expect(await habitProvider.updateProgressForDate(id, daysAgo(3), 1), isTrue);
+        expect(await habitProvider.updateProgressForDate(id, daysAgo(1), 1), isTrue);
+        expect(habitProvider.getHabitById(id)!.streak.current, 1);
+
+        // Retroactively fill the gap
+        await habitProvider.updateProgressForDate(id, daysAgo(2), 1);
+        expect(habitProvider.getHabitById(id)!.streak.current, 3);
+
+        // Completing today means the next deadline is the end of tomorrow
+        await habitProvider.updateHabitProgress(id, 1);
+        expect(habitProvider.getHabitById(id)!.streak.current, 4);
+        expect(
+          scheduler.scheduled[id]!.at,
+          DateTime(today.year, today.month, today.day + 2).subtract(const Duration(hours: 4)),
+        );
+
+        // The streak survives a reload from storage
+        await habitProvider.loadHabits();
+        expect(habitProvider.getHabitById(id)!.streak.current, 4);
+
+        await habitProvider.deleteHabit(id);
+        expect(scheduler.scheduled, isEmpty);
+      });
+
+      test('rejects editing a future day', () async {
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.createHabit(CreateHabitParams(
+          name: 'Stretch',
+          target: 1,
+          color: HabitColor.teal,
+          category: HabitCategory.body,
+        ));
+        final id = habitProvider.habits.single.id;
+
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        expect(await habitProvider.updateProgressForDate(id, tomorrow, 1), isFalse);
+        expect(habitProvider.error, contains('future'));
+      });
+
+      test('a chosen reset day is saved and drives weekly resets', () async {
+        final createHabitUseCase = get<CreateHabitUseCase>();
+        final getHabitsUseCase = get<GetHabitsUseCase>();
+        final thursday = DateTime(2024, 1, 18);
+
+        final created = await createHabitUseCase(CreateHabitParams(
+          name: 'Long run',
+          target: 1,
+          color: HabitColor.red,
+          category: HabitCategory.body,
+          resetFrequency: ResetFrequency.weekly,
+          resetAnchor: thursday,
+        ));
+
+        final saved = (await getHabitsUseCase()).single;
+        expect(saved.id, created.id);
+        expect(saved.resetAnchor, thursday);
+        expect(
+          saved.resetFrequency.periodStart(DateTime.now(), anchor: saved.resetAnchor).weekday,
+          DateTime.thursday,
+        );
       });
     });
 

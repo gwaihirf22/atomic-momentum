@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../lib/core/validation/habit_validator.dart';
-import '../../../../lib/core/validation/validation_result.dart';
+import 'package:atomic_momentum/core/validation/habit_validator.dart';
+import 'package:atomic_momentum/core/validation/validation_result.dart';
 import '../../../helpers/test_data.dart';
 
 void main() {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -19,19 +20,52 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  Timer? _midnightTimer;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scheduleMidnightReset();
+
     // Load habits when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final habitProvider = context.read<HabitProvider>();
       final categoryProvider = context.read<CategoryProvider>();
-      
+
       habitProvider.loadHabits().then((_) {
         // Update available categories after habits are loaded
         categoryProvider.updateAvailableCategories(habitProvider.habits);
       });
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _midnightTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The day may have rolled over while the app was in the background
+    if (state == AppLifecycleState.resumed) {
+      context.read<HabitProvider>().resetHabitsIfNeeded();
+      _scheduleMidnightReset();
+    }
+  }
+
+  // Every reset boundary (day, week, month) falls on a local midnight
+  void _scheduleMidnightReset() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    _midnightTimer = Timer(nextMidnight.difference(now) + const Duration(seconds: 1), () {
+      if (!mounted) return;
+      context.read<HabitProvider>().resetHabitsIfNeeded();
+      _scheduleMidnightReset();
     });
   }
 
@@ -403,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         if (habit.streak.current > 0)
                           Text(
-                            '🔥 ${habit.streak.current} day streak',
+                            '🔥 ${habit.streak.current} ${habit.resetFrequency.periodUnit} streak',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -432,25 +466,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           : null,
                       color: habit.color.color,
                     ),
-                    Column(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          onPressed: habit.progress < habit.target && !habitProvider.isPerformingOperation
-                              ? () {
-                                  print('DEBUG: Increment button pressed for ${habit.name}: ${habit.progress} < ${habit.target} = ${habit.progress < habit.target}');
-                                  _updateHabitProgress(habitProvider, habit, habit.progress + 1);
-                                }
-                              : null,
-                          color: habit.color.color,
-                        ),
-                        // UI-visible debug info
-                        Text(
-                          'DEBUG: ${habit.progress}/${habit.target}\nBtn: ${habit.progress < habit.target ? 'ON' : 'OFF'}\nOp: ${habitProvider.isPerformingOperation ? 'BUSY' : 'READY'}',
-                          style: TextStyle(fontSize: 8, color: Colors.grey),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: habit.progress < habit.target && !habitProvider.isPerformingOperation
+                          ? () => _updateHabitProgress(habitProvider, habit, habit.progress + 1)
+                          : null,
+                      color: habit.color.color,
                     ),
                     if (habit.isCompleted)
                       const Icon(

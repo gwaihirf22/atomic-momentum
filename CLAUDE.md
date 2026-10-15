@@ -26,11 +26,11 @@ The project focuses on helping users build and maintain positive daily habits wi
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web
 
-# Run tests (recommended for Phase 3)
-./flutter/bin/flutter test test/unit/ test/integration/
+# Run ALL tests (unit, integration and widget) - do this before calling any change done
+./flutter/bin/flutter test
 
 # Generate test coverage
-./flutter/bin/flutter test --coverage test/unit/ test/integration/
+./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
 
 # Build for production
 ./flutter/bin/flutter build apk          # Android
@@ -79,9 +79,11 @@ python server.py
   - ✅ **Delete**: Safe deletion with confirmation dialogs and user feedback
 - **Calendar View**: Monthly calendar with habit completion visualization and category filtering
 - **Category System**: 6 professional categories with visual filtering
-- **Streak Tracking**: Comprehensive streak calculation with history
+- **Streak Tracking**: Streaks are derived from per-day history (`StreakCalculator`), counted in days/weeks/months; editing a past day on the Calendar repairs or breaks a streak
+- **Reset Days**: Weekly/monthly habits reset on a user-chosen weekday/day-of-month (`Habit.resetAnchor`); progress rolls over at local midnight
+- **Streak Warnings**: One notification per habit before its streak deadline (default 4 hours, configurable in Settings) via `StreakWarningService`
 - **Theme Support**: iOS-native light/dark mode with proper styling
-- **Testing Framework**: 96.5% test coverage with unit and integration tests
+- **Testing Framework**: Unit, integration and widget tests; see Testing Strategy
 - **Development Tools**: Default habit system, comprehensive debug logging, bypass solutions
 
 ### Data Flow (Clean Architecture)
@@ -111,11 +113,13 @@ Based on completed Phase 2 testing and validation:
 - **UI Enhancements**: Improve `lib/screens/` for better iOS experience
 - **Data Migration**: Create utilities in `lib/core/migration/`
 
-### Testing Strategy (Validated in Phase 2)
-- **Flutter**: Use `./flutter/bin/flutter test test/unit/ test/integration/` 
-- **Coverage**: 96.5% test success rate achieved (112/116 tests passing)
-- **Integration**: All 9 integration tests passing - end-to-end validation complete
-- **Unit Tests**: 103/105 passing - domain logic verified
+### Testing Strategy
+- **Every feature or fix ships with tests.** Run the whole suite with `./flutter/bin/flutter test`; it must pass.
+- **Layout**: `test/unit/` (pure logic, mirrors `lib/`), `test/integration/` (real use cases + SharedPreferences mock), `test/widget/` and `test/widget_test.dart` (screens)
+- **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
+- **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
+- **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
+- **Status (2026-10-15)**: 193 tests passing; 58.5% line coverage (use cases, data layer and `habit_provider.dart` are the weakest areas)
 
 ### Current Development Status (July 14, 2025)
 - **Critical Bugs Fixed**: Navigation, units input, habit incrementation issues resolved

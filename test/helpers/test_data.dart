@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../lib/domain/entities/habit.dart';
-import '../../lib/domain/entities/habit_category.dart';
-import '../../lib/domain/entities/habit_color.dart';
-import '../../lib/domain/entities/reset_frequency.dart';
-import '../../lib/domain/entities/streak_data.dart';
-import '../../lib/domain/entities/reminder_settings.dart';
-import '../../lib/domain/entities/habit_metadata.dart';
+import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/domain/entities/habit_category.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/streak_data.dart';
+import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
+import 'package:atomic_momentum/domain/entities/habit_metadata.dart';
 
 class TestData {
   static DateTime get testDate => DateTime(2024, 1, 15, 10, 30);
@@ -25,12 +25,15 @@ class TestData {
     StreakData? streak,
     ReminderSettings? reminder,
     HabitMetadata? metadata,
+    String units = '',
+    DateTime? resetAnchorDate,
   }) {
     return Habit(
       id: id ?? 'test_habit_1',
       name: name ?? 'Test Habit',
       progress: progress ?? 5,
       target: target ?? 10,
+      units: units,
       color: color ?? HabitColor.blue,
       category: category ?? HabitCategory.body,
       lastUpdatedDate: lastUpdatedDate ?? testDate,
@@ -44,6 +47,7 @@ class TestData {
         version: 1,
         customFields: {},
       ),
+      resetAnchorDate: resetAnchorDate,
     );
   }
 

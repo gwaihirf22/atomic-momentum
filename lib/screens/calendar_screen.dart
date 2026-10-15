@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
+import '../domain/entities/reset_frequency.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
 
@@ -156,16 +157,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
       );
     }
 
+    final isEditable = !DateUtils.dateOnly(day).isAfter(DateUtils.dateOnly(DateTime.now()));
+
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: habits.length,
       itemBuilder: (context, index) {
         final habit = habits[index];
-        final progress = habit.getProgressForDate(day);
+        final loggedThatDay = habit.getProgressForDate(day);
+        final periodTotal = habit.progressForPeriodContaining(day);
         final isCompleted = habit.wasCompletedOnDate(day);
+        final units = habit.units.isEmpty ? '' : ' ${habit.units}';
+        final isDaily = habit.resetFrequency == ResetFrequency.daily;
         
         return Card(
+          key: Key('dayHabit_${habit.id}'),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
             leading: Container(
@@ -190,25 +197,62 @@ class _CalendarScreenState extends State<CalendarScreen> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Progress: $progress/${habit.target}'),
+                Text(isDaily
+                    ? 'Logged: $loggedThatDay/${habit.target}$units'
+                    : 'Logged this day: $loggedThatDay$units · '
+                      '${habit.resetFrequency.displayName} total: $periodTotal/${habit.target}'),
                 LinearProgressIndicator(
-                  value: habit.target > 0 ? progress / habit.target : 0,
+                  value: habit.target > 0 ? (periodTotal / habit.target).clamp(0.0, 1.0) : 0,
                   backgroundColor: Colors.grey[300],
                   valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
                 ),
+                Text(
+                  habit.category.displayName,
+                  style: TextStyle(
+                    color: habit.category.defaultColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
-            trailing: Text(
-              habit.category.displayName,
-              style: TextStyle(
-                color: habit.category.defaultColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            // Editing past days is how missed logs are fixed and streaks repaired
+            trailing: isEditable
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: Key('decrementDay_${habit.id}'),
+                        icon: const Icon(Icons.remove_circle_outline),
+                        tooltip: 'Remove one from this day',
+                        onPressed: loggedThatDay > 0
+                            ? () => _setLoggedForDay(habit, day, loggedThatDay - 1)
+                            : null,
+                      ),
+                      IconButton(
+                        key: Key('incrementDay_${habit.id}'),
+                        icon: const Icon(Icons.add_circle_outline),
+                        tooltip: 'Add one to this day',
+                        onPressed: periodTotal < habit.target
+                            ? () => _setLoggedForDay(habit, day, loggedThatDay + 1)
+                            : null,
+                      ),
+                    ],
+                  )
+                : null,
           ),
         );
       },
     );
+  }
+
+  Future<void> _setLoggedForDay(Habit habit, DateTime day, int amount) async {
+    final habitProvider = context.read<HabitProvider>();
+    final success = await habitProvider.updateProgressForDate(habit.id, day, amount);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(habitProvider.error ?? 'Could not update that day')),
+      );
+    }
   }
 
   @override

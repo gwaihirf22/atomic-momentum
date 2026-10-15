@@ -9,6 +9,7 @@ import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/streak_warning_service.dart';
 
 enum HabitProviderState {
   initial,
@@ -23,12 +24,21 @@ class HabitProvider extends ChangeNotifier {
   final UpdateHabitUseCase _updateHabitUseCase;
   final DeleteHabitUseCase _deleteHabitUseCase;
 
+  // When true, a "Drink Water" habit is added if storage is empty (dev convenience)
+  final bool seedDefaultHabit;
+
+  // Null disables streak warnings (e.g. in tests that don't exercise them)
+  final StreakWarningService? _streakWarnings;
+
   HabitProvider({
     required GetHabitsUseCase getHabitsUseCase,
     required CreateHabitUseCase createHabitUseCase,
     required UpdateHabitUseCase updateHabitUseCase,
     required DeleteHabitUseCase deleteHabitUseCase,
-  })  : _getHabitsUseCase = getHabitsUseCase,
+    this.seedDefaultHabit = false,
+    StreakWarningService? streakWarningService,
+  })  : _streakWarnings = streakWarningService,
+        _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
         _updateHabitUseCase = updateHabitUseCase,
         _deleteHabitUseCase = deleteHabitUseCase;
@@ -85,16 +95,24 @@ class HabitProvider extends ChangeNotifier {
       _setState(HabitProviderState.loading);
       _error = null;
 
+      // Zero out progress for habits whose day/week/month has rolled over
+      try {
+        await _updateHabitUseCase.resetHabitsIfNeeded();
+      } catch (e) {
+        print('DEBUG: Period reset failed, loading habits anyway: $e');
+      }
+
       final habits = await _getHabitsUseCase();
       _habits = habits;
       
       // Add default habit if no habits exist (for easy testing)
-      if (_habits.isEmpty) {
+      if (seedDefaultHabit && _habits.isEmpty) {
         print('DEBUG: No habits found, adding default habit for testing');
         await _addDefaultHabit();
       }
       
       _setState(HabitProviderState.loaded);
+      await _streakWarnings?.syncAll(_habits);
     } catch (e) {
       _error = e.toString();
       _setState(HabitProviderState.error);
@@ -113,6 +131,7 @@ class HabitProvider extends ChangeNotifier {
       final habit = await _createHabitUseCase(params);
       print('DEBUG: Habit created successfully: ${habit.id}');
       _habits.add(habit);
+      await _streakWarnings?.sync(habit);
       
       // Schedule notification if habit has reminder settings
       if (habit.hasReminder) {
@@ -154,6 +173,7 @@ class HabitProvider extends ChangeNotifier {
         // Update local list immediately
         _habits[habitIndex] = updatedHabit;
         notifyListeners();
+        await _streakWarnings?.sync(updatedHabit);
         print('DEBUG: Updated local list and notified listeners');
         
         // Try to save to repository, but don't fail if it doesn't work
@@ -168,6 +188,8 @@ class HabitProvider extends ChangeNotifier {
         return true;
       } else {
         print('DEBUG: Habit not found in local list');
+        _error = 'Habit not found: $habitId';
+        notifyListeners();
         return false;
       }
     } catch (e) {
@@ -277,6 +299,7 @@ class HabitProvider extends ChangeNotifier {
       // Cancel notifications for this habit before deleting
       print('DEBUG: Cancelling notifications for habit: $habitId');
       await NotificationService.cancelHabitReminder(habitId);
+      await _streakWarnings?.cancel(habitId);
       
       await _deleteHabitUseCase(habitId);
       _habits.removeWhere((habit) => habit.id == habitId);
@@ -301,6 +324,7 @@ class HabitProvider extends ChangeNotifier {
       for (final habit in habitsToDelete) {
         print('DEBUG: Cancelling notifications for category habit: ${habit.id}');
         await NotificationService.cancelHabitReminder(habit.id);
+        await _streakWarnings?.cancel(habit.id);
       }
       
       final deletedHabits = await _deleteHabitUseCase.deleteByCategory(category);
@@ -333,6 +357,29 @@ class HabitProvider extends ChangeNotifier {
     } finally {
       _setOperationInProgress(false);
     }
+  }
+
+  /// Retroactively set what was logged on [date]; recomputes the streak.
+  Future<bool> updateProgressForDate(String habitId, DateTime date, int amount) async {
+    try {
+      _setOperationInProgress(true);
+
+      final updatedHabit = await _updateHabitUseCase.updateHistoryForDate(habitId, date, amount);
+      _updateHabitInList(updatedHabit);
+
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    } finally {
+      _setOperationInProgress(false);
+    }
+  }
+
+  /// Re-plan every streak warning, e.g. after the warning settings change.
+  Future<void> resyncStreakWarnings() async {
+    await _streakWarnings?.syncAll(_habits);
   }
 
   // Search functionality
@@ -368,6 +415,7 @@ class HabitProvider extends ChangeNotifier {
       _habits[index] = updatedHabit;
       notifyListeners();
     }
+    _streakWarnings?.sync(updatedHabit);
   }
 
   void _sortHabits() {

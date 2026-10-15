@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import '../../../../lib/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
 
 void main() {
   group('HabitColor', () {
@@ -36,8 +36,8 @@ void main() {
         expect(HabitColor.green.name, 'Green');
       });
 
-      test('should have 8 predefined colors', () {
-        expect(HabitColor.predefinedColors.length, 8);
+      test('should have 20 predefined colors', () {
+        expect(HabitColor.predefinedColors.length, 20);
       });
 
       test('predefined colors should be unique', () {

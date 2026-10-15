@@ -19,13 +19,15 @@ import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../presentation/providers/habit_provider.dart';
 import '../../presentation/providers/category_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
+import '../../presentation/providers/settings_provider.dart';
 
 // Services
 import '../services/notification_service.dart';
+import '../services/streak_warning_service.dart';
 
 final GetIt sl = GetIt.instance;
 
-Future<void> initializeDependencies() async {
+Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   // External dependencies
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
@@ -49,12 +51,21 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => UpdateHabitUseCase(sl()));
   sl.registerLazySingleton(() => DeleteHabitUseCase(sl()));
 
+  // Settings and streak warnings
+  sl.registerLazySingleton(() => SettingsProvider(sl()));
+  sl.registerLazySingleton(() => StreakWarningService(
+    scheduler: const LocalNotificationStreakWarningScheduler(),
+    readSettings: () => sl<SettingsProvider>().streakWarnings,
+  ));
+
   // Providers
   sl.registerFactory(() => HabitProvider(
     getHabitsUseCase: sl(),
     createHabitUseCase: sl(),
     updateHabitUseCase: sl(),
     deleteHabitUseCase: sl(),
+    seedDefaultHabit: seedDefaultHabit,
+    streakWarningService: sl(),
   ));
   sl.registerFactory(() => CategoryProvider());
   

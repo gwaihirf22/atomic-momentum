@@ -234,11 +234,11 @@ class HabitValidator {
       final result = validate(habit);
       
       if (!result.isValid) {
-        errors.add("Habit ${i + 1} (${habit.name}): ${result.errors.join(', ')}");
+        errors.add("Habit ${i + 1} [${habit.id}] (${habit.name}): ${result.errors.join(', ')}");
       }
       
       if (result.hasWarnings) {
-        warnings.add("Habit ${i + 1} (${habit.name}): ${result.warnings.join(', ')}");
+        warnings.add("Habit ${i + 1} [${habit.id}] (${habit.name}): ${result.warnings.join(', ')}");
       }
     }
 
