@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/release
 flutter.zip
 flutter/
+
+# Generated test coverage
+coverage/
+
+# Xcode per-user state
+**/xcuserdata/
