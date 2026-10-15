@@ -9,6 +9,7 @@ import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/widgets/category_rings_bar.dart';
 import 'add_habit_screen.dart';
 import 'settings_screen.dart';
 import 'calendar_screen.dart';
@@ -132,7 +133,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 
                 return Column(
                   children: [
-                    _buildCategoryFilters(categoryProvider, isDark),
+                    CategoryRingsBar(
+                      stats: categoryProvider.getCategoryStats(habitProvider.habits),
+                      selected: categoryProvider.selectedCategory,
+                      onTap: categoryProvider.toggleCategory,
+                      isDark: isDark,
+                    ),
                     Expanded(
                       child: filteredHabits.isEmpty 
                         ? _buildEmptyState(isDark, categoryProvider.selectedCategory)
@@ -210,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ? 'No ${selectedCategory.displayName.toLowerCase()} habits yet'
         : 'No habits yet';
     final subtitle = isFiltered
-        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or select "All" to see all habits'
+        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or tap the ring again to see all habits'
         : 'Tap the + button to add your first habit';
     
     return Center(
@@ -240,91 +246,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryFilters(CategoryProvider categoryProvider, bool isDark) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _buildCategoryChip(null, 'All', CupertinoIcons.square_grid_2x2, categoryProvider, isDark),
-          const SizedBox(width: 8),
-          ...HabitCategory.values.map((category) {
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: _buildCategoryChip(
-                category,
-                category.displayName,
-                _getCategoryIcon(category),
-                categoryProvider,
-                isDark,
-              ),
-            );
-          }).toList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(
-    HabitCategory? category,
-    String label,
-    IconData icon,
-    CategoryProvider categoryProvider,
-    bool isDark,
-  ) {
-    final isSelected = categoryProvider.selectedCategory == category;
-    final chipColor = category?.defaultColor ?? IOSColors.systemBlue;
-    
-    return GestureDetector(
-      onTap: () {
-        if (isSelected) {
-          categoryProvider.clearSelectedCategory();
-        } else {
-          categoryProvider.setSelectedCategory(category);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected 
-            ? chipColor.withOpacity(0.2)
-            : (isDark ? IOSColors.tertiarySystemFill : IOSColors.secondarySystemFill),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected 
-              ? chipColor 
-              : (isDark ? IOSColors.separatorDark : IOSColors.separator),
-            width: isSelected ? 1.5 : 0.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon, 
-              size: 16,
-              color: isSelected 
-                ? chipColor 
-                : (isDark ? IOSColors.labelDark : IOSColors.label),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: IOSTypography.getCategoryText(isDark).copyWith(
-                color: isSelected 
-                  ? chipColor 
-                  : (isDark ? IOSColors.labelDark : IOSColors.label),
-                fontWeight: isSelected ? IOSTypography.semibold : IOSTypography.regular,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -377,24 +298,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Row(
-                            children: [
-                              Text(
-                                habit.category.displayName,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context).textTheme.bodySmall?.color,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                '• ${habit.resetFrequency.displayName}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Theme.of(context).textTheme.bodySmall?.color,
-                                ),
-                              ),
-                            ],
+                          // One line that truncates, so narrow screens / large text can't overflow
+                          Text(
+                            '${habit.category.displayName}  •  ${habit.resetFrequency.displayName}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Theme.of(context).textTheme.bodySmall?.color,
+                            ),
                           ),
                         ],
                       ),
