@@ -44,6 +44,11 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   // Icon selection
   String? _selectedIcon;
   
+  // Apple's Human Interface Guidelines: tap targets at least 44x44 pt
+  static const double _swatchSize = 44;
+  static const double _swatchSpacing = 12;
+  static const double _chipSpacing = 8;
+
   // Available habit icons
   static const Map<String, IconData> habitIcons = {
     'water': Icons.local_drink,
@@ -202,7 +207,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
+                spacing: _chipSpacing,
+                runSpacing: _chipSpacing,
                 children: HabitCategory.values.map((category) {
                   final isSelected = _selectedCategory == category;
                   return FilterChip(
@@ -236,36 +242,25 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
+                spacing: _swatchSpacing,
+                runSpacing: _swatchSpacing,
                 children: HabitColor.predefinedColors.map((color) {
                   final isSelected = _selectedColor == color;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedColor = color;
-                      });
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: color.color,
-                        shape: BoxShape.circle,
-                        border: isSelected
-                            ? Border.all(
-                                color: Theme.of(context).primaryColor,
-                                width: 3,
-                              )
-                            : null,
-                      ),
-                      child: isSelected
-                          ? Icon(
-                              Icons.check,
-                              color: isDark ? IOSColors.black : IOSColors.white,
-                              size: 20,
-                            )
-                          : null,
-                    ),
+                  return _buildSwatch(
+                    key: Key('colorSwatch_${color.name}'),
+                    semanticLabel: '${color.name} color',
+                    isSelected: isSelected,
+                    onTap: () => setState(() => _selectedColor = color),
+                    fill: color.color,
+                    borderColor: isSelected ? Theme.of(context).primaryColor : null,
+                    borderWidth: 3,
+                    child: isSelected
+                        ? Icon(
+                            Icons.check,
+                            color: isDark ? IOSColors.black : IOSColors.white,
+                            size: 22,
+                          )
+                        : null,
                   );
                 }).toList(),
               ),
@@ -281,69 +276,42 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: _swatchSpacing,
+                runSpacing: _swatchSpacing,
                 children: [
-                  // No icon option
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedIcon = null;
-                      });
-                    },
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: isDark ? IOSColors.tertiarySystemFill : Colors.grey.shade200,
-                        shape: BoxShape.circle,
-                        border: _selectedIcon == null
-                            ? Border.all(
-                                color: Theme.of(context).primaryColor,
-                                width: 3,
-                              )
-                            : null,
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        color: isDark ? IOSColors.labelDark : Colors.grey,
-                        size: 20,
-                      ),
+                  _buildSwatch(
+                    key: const Key('iconSwatch_none'),
+                    semanticLabel: 'No icon',
+                    isSelected: _selectedIcon == null,
+                    onTap: () => setState(() => _selectedIcon = null),
+                    fill: isDark ? IOSColors.tertiarySystemFill : Colors.grey.shade200,
+                    borderColor: _selectedIcon == null ? Theme.of(context).primaryColor : null,
+                    borderWidth: 3,
+                    child: Icon(
+                      Icons.close,
+                      color: isDark ? IOSColors.labelDark : Colors.grey,
+                      size: 22,
                     ),
                   ),
-                  // Icon options
                   ...habitIcons.entries.map((entry) {
                     final iconKey = entry.key;
-                    final iconData = entry.value;
                     final isSelected = _selectedIcon == iconKey;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIcon = iconKey;
-                        });
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isSelected 
-                              ? _selectedColor.color.withOpacity(0.2)
-                              : (isDark ? IOSColors.secondarySystemFill : Colors.grey.shade100),
-                          shape: BoxShape.circle,
-                          border: isSelected
-                              ? Border.all(
-                                  color: _selectedColor.color,
-                                  width: 2,
-                                )
-                              : null,
-                        ),
-                        child: Icon(
-                          iconData,
-                          color: isSelected 
-                              ? _selectedColor.color 
-                              : (isDark ? IOSColors.labelDark : Colors.grey.shade600),
-                          size: 20,
-                        ),
+                    return _buildSwatch(
+                      key: Key('iconSwatch_$iconKey'),
+                      semanticLabel: '$iconKey icon',
+                      isSelected: isSelected,
+                      onTap: () => setState(() => _selectedIcon = iconKey),
+                      fill: isSelected
+                          ? _selectedColor.color.withOpacity(0.2)
+                          : (isDark ? IOSColors.secondarySystemFill : Colors.grey.shade100),
+                      borderColor: isSelected ? _selectedColor.color : null,
+                      borderWidth: 2,
+                      child: Icon(
+                        entry.value,
+                        color: isSelected
+                            ? _selectedColor.color
+                            : (isDark ? IOSColors.labelDark : Colors.grey.shade600),
+                        size: 22,
                       ),
                     );
                   }).toList(),
@@ -362,6 +330,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 8),
               DropdownButtonFormField<ResetFrequency>(
                 value: _selectedFrequency,
+                // Fill the width so long hints/labels truncate instead of overflowing
+                isExpanded: true,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   hintText: 'How often should this habit reset?',
@@ -370,10 +340,13 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   return DropdownMenuItem<ResetFrequency>(
                     value: frequency,
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(_getFrequencyIcon(frequency), size: 20),
                         const SizedBox(width: 8),
-                        Text(frequency.displayName),
+                        Flexible(
+                          child: Text(frequency.displayName, overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
                   );
@@ -425,9 +398,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     },
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Enable reminders for this habit',
-                    style: TextStyle(fontSize: 16),
+                  // Expanded so the label wraps on narrow screens / large text
+                  const Expanded(
+                    child: Text(
+                      'Enable reminders for this habit',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                 ],
               ),
@@ -466,7 +442,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 const Text('Days to remind:', style: TextStyle(fontWeight: FontWeight.w500)),
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing: 8,
+                  spacing: _chipSpacing,
+                  runSpacing: _chipSpacing,
                   children: [
                     _buildDayChip(1, 'Mon'),
                     _buildDayChip(2, 'Tue'), 
@@ -621,6 +598,39 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         });
       }
     }
+  }
+
+  /// A circular, 44pt selectable swatch with a VoiceOver label.
+  Widget _buildSwatch({
+    required Key key,
+    required String semanticLabel,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required Color fill,
+    required Color? borderColor,
+    required double borderWidth,
+    Widget? child,
+  }) {
+    return Semantics(
+      key: key,
+      label: semanticLabel,
+      button: true,
+      selected: isSelected,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: _swatchSize,
+          height: _swatchSize,
+          decoration: BoxDecoration(
+            color: fill,
+            shape: BoxShape.circle,
+            border: borderColor != null ? Border.all(color: borderColor, width: borderWidth) : null,
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 
   Future<void> _pickResetDay() async {

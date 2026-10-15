@@ -1,3 +1,4 @@
+import 'dart:ui' show SemanticsFlag;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -93,6 +94,57 @@ void main() {
       final saved = habitProvider.habits.single;
       expect(saved.resetFrequency, ResetFrequency.monthly);
       expect(saved.resetAnchor.day, pickDay);
+    });
+  });
+
+  group('Add habit: Apple HIG layout', () {
+    testWidgets('color and icon swatches are at least 44pt tap targets', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+
+      for (final key in [const Key('colorSwatch_Blue'), const Key('iconSwatch_water')]) {
+        final size = tester.getSize(find.byKey(key));
+        expect(size.width, greaterThanOrEqualTo(44), reason: '$key width');
+        expect(size.height, greaterThanOrEqualTo(44), reason: '$key height');
+      }
+    });
+
+    testWidgets('wrapped swatch rows do not touch', (tester) async {
+      // Phone-width screen so the 20 colors wrap onto several rows
+      tester.view.physicalSize = const Size(390, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
+          ChangeNotifierProvider<HabitProvider>.value(value: habitProvider),
+        ],
+        child: const MaterialApp(home: AddHabitScreen()),
+      ));
+      await tester.pumpAndSettle();
+
+      final swatches = HabitColor.predefinedColors
+          .map((c) => tester.getRect(find.byKey(Key('colorSwatch_${c.name}'))))
+          .toList();
+      final rowTops = swatches.map((r) => r.top).toSet().toList()..sort();
+      expect(rowTops.length, greaterThan(1), reason: 'expected the palette to wrap');
+
+      final rowHeight = swatches.first.height;
+      for (var i = 1; i < rowTops.length; i++) {
+        expect(rowTops[i] - rowTops[i - 1] - rowHeight, greaterThanOrEqualTo(8),
+            reason: 'gap between swatch rows');
+      }
+    });
+
+    testWidgets('swatches are labelled for VoiceOver and selectable', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+
+      expect(find.bySemanticsLabel('Green color'), findsOneWidget);
+      expect(find.bySemanticsLabel('No icon'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('colorSwatch_Green')));
+      await tester.pumpAndSettle();
+      expect(tester.getSemantics(find.byKey(const Key('colorSwatch_Green'))).hasFlag(SemanticsFlag.isSelected),
+          isTrue);
     });
   });
 
