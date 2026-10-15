@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/reset_frequency.dart';
+import '../presentation/widgets/category_icons.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
 
@@ -87,7 +88,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   child: _buildCategoryChip(
                     category,
                     category.displayName,
-                    _getCategoryIcon(category),
+                    category.icon,
                   ),
                 );
               }).toList(),
@@ -120,23 +121,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       backgroundColor: category?.defaultColor.withOpacity(0.1),
       selectedColor: category?.defaultColor.withOpacity(0.3) ?? Theme.of(context).primaryColor.withOpacity(0.3),
     );
-  }
-
-  IconData _getCategoryIcon(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.body:
-        return Icons.fitness_center;
-      case HabitCategory.spirit:
-        return Icons.self_improvement;
-      case HabitCategory.mind:
-        return Icons.psychology;
-      case HabitCategory.social:
-        return Icons.people;
-      case HabitCategory.career:
-        return Icons.work;
-      case HabitCategory.creative:
-        return Icons.palette;
-    }
   }
 
   Widget _buildDayHabits(DateTime day) {

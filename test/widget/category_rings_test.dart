@@ -11,6 +11,8 @@ import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
+import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
+import 'package:atomic_momentum/presentation/widgets/category_rings_bar.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 
 void main() {
@@ -75,9 +77,29 @@ void main() {
   testWidgets('rings announce each category\'s progress to VoiceOver', (tester) async {
     await pumpHome(tester);
 
-    expect(find.bySemanticsLabel('Body, 1 of 2 done'), findsOneWidget);
-    expect(find.bySemanticsLabel('Mind, 0 of 1 done'), findsOneWidget);
+    expect(find.bySemanticsLabel('Body, 50 percent, 1 of 2 habits complete'), findsOneWidget);
+    expect(find.bySemanticsLabel('Mind, 0 percent, 0 of 1 habits complete'), findsOneWidget);
     expect(find.bySemanticsLabel('Creative, no habits'), findsOneWidget);
+  });
+
+  testWidgets('a ring fills with partial progress, not just completed habits', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Water', target: 8, color: HabitColor.blue, category: HabitCategory.social));
+    final water = habitProvider.habits.firstWhere((h) => h.name == 'Water');
+    await pumpHome(tester);
+    expect(find.bySemanticsLabel('Social, 0 percent, 0 of 1 habits complete'), findsOneWidget);
+
+    await habitProvider.updateHabitProgress(water.id, 4);
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Social, 50 percent, 0 of 1 habits complete'), findsOneWidget);
+  });
+
+  testWidgets('rings use the flat category icons, not emoji', (tester) async {
+    await pumpHome(tester);
+    for (final c in HabitCategory.values) {
+      expect(find.descendant(of: find.byType(CategoryRingsBar), matching: find.byIcon(c.icon)), findsOneWidget);
+      expect(find.text(c.emoji), findsNothing);
+    }
   });
 
   testWidgets('tapping a ring filters; tapping it again shows all', (tester) async {

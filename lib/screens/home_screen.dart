@@ -9,6 +9,7 @@ import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import 'add_habit_screen.dart';
 import 'settings_screen.dart';
@@ -224,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isFiltered ? _getCategoryIcon(selectedCategory) : CupertinoIcons.checkmark_circle,
+            isFiltered ? selectedCategory.icon : CupertinoIcons.checkmark_circle,
             size: 80,
             color: isFiltered 
                 ? selectedCategory.defaultColor.withOpacity(0.5)
@@ -248,23 +249,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ],
       ),
     );
-  }
-
-  IconData _getCategoryIcon(HabitCategory category) {
-    switch (category) {
-      case HabitCategory.body:
-        return CupertinoIcons.heart_fill;
-      case HabitCategory.spirit:
-        return CupertinoIcons.leaf_arrow_circlepath;
-      case HabitCategory.mind:
-        return CupertinoIcons.book_fill;
-      case HabitCategory.social:
-        return CupertinoIcons.person_2_fill;
-      case HabitCategory.career:
-        return CupertinoIcons.briefcase_fill;
-      case HabitCategory.creative:
-        return CupertinoIcons.paintbrush_fill;
-    }
   }
 
   Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {

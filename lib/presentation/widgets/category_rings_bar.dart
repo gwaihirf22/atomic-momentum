@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/theme/ios_colors.dart';
 import '../../domain/entities/habit_category.dart';
 import '../providers/category_provider.dart';
+import 'category_icons.dart';
 
 /// One row of progress rings, one per category, that doubles as the filter.
 ///
-/// Each ring fills with the share of that category's habits completed in
-/// their current period. Tapping a ring filters to it; tapping the selected
+/// Each ring fills with the category's average progress toward its habits'
+/// targets in the current period, so it moves with every tick. Tapping a ring filters to it; tapping the selected
 /// ring again shows all habits. Sized to fit a 375pt-wide iPhone without
 /// scrolling, with 44pt tap targets.
 class CategoryRingsBar extends StatelessWidget {
@@ -69,7 +70,8 @@ class _CategoryRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = stats?.totalHabits ?? 0;
     final completed = stats?.completedHabits ?? 0;
-    final fraction = total == 0 ? 0.0 : completed / total;
+    final fraction = total == 0 ? 0.0 : stats!.averageProgress.clamp(0.0, 1.0);
+    final percent = (fraction * 100).round();
     final color = category.defaultColor;
     final labelColor = isDark ? IOSColors.labelDark : IOSColors.label;
 
@@ -79,7 +81,7 @@ class _CategoryRing extends StatelessWidget {
       selected: isSelected,
       label: total == 0
           ? '${category.displayName}, no habits'
-          : '${category.displayName}, $completed of $total done',
+          : '${category.displayName}, $percent percent, $completed of $total habits complete',
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -101,14 +103,14 @@ class _CategoryRing extends StatelessWidget {
                     painter: _RingPainter(
                       fraction: animatedFraction,
                       color: color,
-                      trackColor: color.withOpacity(isDark ? 0.25 : 0.18),
+                      trackColor: color.withOpacity(isDark ? 0.35 : 0.25),
                       fillColor: isSelected ? color.withOpacity(0.18) : Colors.transparent,
                       strokeWidth: _strokeWidth,
                     ),
                     child: child,
                   ),
                   child: Center(
-                    child: Text(category.emoji, style: const TextStyle(fontSize: 20)),
+                    child: Icon(category.icon, size: 20, color: color),
                   ),
                 ),
               ),
