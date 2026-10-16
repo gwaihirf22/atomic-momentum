@@ -254,10 +254,11 @@ class Habit extends Equatable {
       resetFrequency: resetFrequency ?? this.resetFrequency,
       reminder: reminder ?? this.reminder,
       lastUpdatedDate: DateTime.now(),
-      metadata: metadata.copyWith(
-        icon: icon ?? metadata.icon,
-        lastModifiedDate: DateTime.now(),
-      ).incrementVersion(),
+      // null keeps the icon; '' removes it
+      metadata: metadata
+          .withIcon(icon == null ? metadata.icon : (icon.isEmpty ? null : icon))
+          .copyWith(lastModifiedDate: DateTime.now())
+          .incrementVersion(),
       resetAnchorDate: resetAnchor != null ? _dateOnly(resetAnchor) : null,
       resetInterval: newInterval < 1 ? 1 : newInterval,
     );

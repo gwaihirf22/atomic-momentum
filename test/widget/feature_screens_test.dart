@@ -327,6 +327,45 @@ void main() {
     expect(find.byKey(Key('dayHabit_$id')), findsNothing);
   });
 
+  testWidgets('Calendar rows show the habit icon, with a check badge once completed', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Water',
+      target: 1,
+      color: HabitColor.blue,
+      categoryId: BuiltInCategoryIds.body,
+      icon: 'water',
+    ));
+    final id = habitProvider.habits.single.id;
+    await pumpScreen(tester, const CalendarScreen());
+
+    Finder inIcon(Finder f) => find.descendant(of: find.byKey(Key('dayHabitIcon_$id')), matching: f);
+    expect(inIcon(find.byIcon(Icons.local_drink)), findsOneWidget);
+    expect(inIcon(find.byKey(const Key('completedBadge'))), findsNothing);
+
+    await tester.tap(find.byKey(Key('incrementDay_$id')));
+    await tester.pumpAndSettle();
+    expect(inIcon(find.byKey(const Key('completedBadge'))), findsOneWidget);
+    expect(inIcon(find.byIcon(Icons.local_drink)), findsOneWidget);
+  });
+
+  testWidgets('editing a habit and choosing No icon removes its icon', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Water',
+      target: 1,
+      color: HabitColor.blue,
+      categoryId: BuiltInCategoryIds.body,
+      icon: 'water',
+    ));
+    await pumpScreen(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
+
+    await tester.tap(find.byKey(const Key('iconSwatch_none')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Update Habit'));
+    await tester.pumpAndSettle();
+
+    expect(habitProvider.habits.single.metadata.icon, isNull);
+  });
+
   group('Calendar: editing a past day', () {
     testWidgets('+ counts up each tap, completes the day, and − undoes it', (tester) async {
       await habitProvider.createHabit(const CreateHabitParams(

@@ -622,6 +622,24 @@ void main() {
       });
     });
 
+    group('habit icon', () {
+      final withIcon = TestData.createTestHabit().updateDetails(icon: 'water');
+
+      test('an empty icon removes it', () {
+        expect(withIcon.metadata.icon, 'water');
+        expect(withIcon.updateDetails(icon: '').metadata.icon, isNull);
+      });
+
+      test('no icon argument keeps the current one', () {
+        expect(withIcon.updateDetails(name: 'Hydrate').metadata.icon, 'water');
+      });
+
+      test('a habit without an icon round-trips through JSON', () {
+        final none = withIcon.updateDetails(icon: '');
+        expect(Habit.fromJson(none.toJson()).metadata.icon, isNull);
+      });
+    });
+
     group('category ids', () {
       test('an unknown category id is kept, not turned into Body', () {
         final habit = TestData.createTestHabit(categoryId: 'hobbies');

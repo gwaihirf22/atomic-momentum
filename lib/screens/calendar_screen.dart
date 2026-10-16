@@ -5,6 +5,7 @@ import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../presentation/widgets/category_icons.dart';
+import '../presentation/widgets/habit_icons.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
 
@@ -171,17 +172,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
           key: Key('dayHabit_${habit.id}'),
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: ListTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: habit.color.color,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isCompleted ? Icons.check : Icons.circle_outlined,
-                color: Colors.white,
-              ),
+            leading: _HabitDayIcon(
+              key: Key('dayHabitIcon_${habit.id}'),
+              icon: habitIcon(habit, context.read<CategoryProvider>().resolve(habit.categoryId)),
+              color: habit.color.color,
+              isCompleted: isCompleted,
             ),
             title: Text(
               habit.name,
@@ -402,6 +397,58 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// A habit's icon in a circle: tinted while not done, filled with a check
+/// badge once the day (or period) is complete.
+class _HabitDayIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final bool isCompleted;
+
+  const _HabitDayIcon({Key? key, required this.icon, required this.color, required this.isCompleted})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: isCompleted ? 'completed' : 'not completed',
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: isCompleted ? color : color.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Icon(icon, size: 22, color: isCompleted ? Colors.white : color),
+              ),
+            ),
+            if (isCompleted)
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  key: const Key('completedBadge'),
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+                  ),
+                  child: const Icon(Icons.check, size: 11, color: Colors.white),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -56,6 +56,17 @@ class HabitMetadata extends Equatable {
     );
   }
 
+  /// Copy with [icon] replaced, including by null (copyWith can't clear it).
+  HabitMetadata withIcon(String? icon) {
+    return HabitMetadata(
+      createdDate: createdDate,
+      lastModifiedDate: lastModifiedDate,
+      version: version,
+      icon: icon,
+      customFields: customFields,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'createdDate': createdDate.toIso8601String(),

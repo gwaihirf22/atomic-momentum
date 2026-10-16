@@ -13,6 +13,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
+import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
 import '../core/theme/ios_colors.dart';
@@ -89,29 +90,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _selectedFrequency.isPeriodic &&
       (_selectedFrequency != ResetFrequency.daily || _resetInterval > 1);
 
-  // Available habit icons
-  static const Map<String, IconData> habitIcons = {
-    'water': Icons.local_drink,
-    'exercise': Icons.fitness_center,
-    'book': Icons.menu_book,
-    'meditation': Icons.self_improvement,
-    'sleep': Icons.bedtime,
-    'food': Icons.restaurant,
-    'pill': Icons.medication,
-    'run': Icons.directions_run,
-    'bike': Icons.directions_bike,
-    'music': Icons.music_note,
-    'phone': Icons.phone,
-    'heart': Icons.favorite,
-    'work': Icons.work,
-    'study': Icons.school,
-    'clean': Icons.cleaning_services,
-    'walk': Icons.directions_walk,
-    'write': Icons.edit,
-    'money': Icons.attach_money,
-    'check': Icons.check_circle,
-    'star': Icons.star,
-  };
 
   @override
   void initState() {
@@ -381,7 +359,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       size: 22,
                     ),
                   ),
-                  ...habitIcons.entries.map((entry) {
+                  ...HabitIcons.library.entries.map((entry) {
                     final iconKey = entry.key;
                     final isSelected = _selectedIcon == iconKey;
                     return SelectableSwatch(
@@ -659,7 +637,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           categoryId: params.categoryId,
           resetFrequency: params.resetFrequency,
           reminder: reminder,
-          icon: _selectedIcon,
+          // '' tells updateDetails to remove an existing icon ("No icon")
+          icon: _selectedIcon ?? '',
           resetAnchor: _resetAnchor,
           resetInterval: params.resetInterval,
           // All seven days means "every day", which also clears a weekday schedule

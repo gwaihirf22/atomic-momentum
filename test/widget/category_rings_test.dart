@@ -178,6 +178,27 @@ void main() {
     expect(ring(Category.uncategorizedId), findsNothing);
   });
 
+  testWidgets('habit cards show the chosen icon, or the category icon', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Water',
+      target: 8,
+      color: HabitColor.blue,
+      categoryId: BuiltInCategoryIds.body,
+      icon: 'water',
+    ));
+    final water = habitProvider.habits.firstWhere((h) => h.name == 'Water');
+    final read = habitProvider.habits.firstWhere((h) => h.name == 'Read');
+
+    await pumpHome(tester);
+
+    expect(find.descendant(of: find.byKey(Key('habitIcon_${water.id}')), matching: find.byIcon(Icons.local_drink)),
+        findsOneWidget);
+    final mind = Category.defaults.firstWhere((c) => c.id == BuiltInCategoryIds.mind);
+    expect(find.descendant(of: find.byKey(Key('habitIcon_${read.id}')), matching: find.byIcon(mind.icon)),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('tapping a ring filters; tapping it again shows all', (tester) async {
     await pumpHome(tester);
     expect(find.text('Read'), findsOneWidget);

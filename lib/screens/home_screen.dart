@@ -13,6 +13,7 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
+import '../presentation/widgets/habit_icons.dart';
 import 'add_habit_screen.dart';
 import 'categories_screen.dart';
 
@@ -274,6 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       itemBuilder: (context, index) {
         final habit = habits[index];
         final isRestDay = !habit.isDueOn(DateTime.now());
+        final category = context.read<CategoryProvider>().resolve(habit.categoryId);
         return Card(
           key: Key('habitCard_${habit.id}'),
           margin: const EdgeInsets.only(bottom: 12),
@@ -289,6 +291,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Container(
+                      key: Key('habitIcon_${habit.id}'),
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        color: habit.color.color.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(habitIcon(habit, category), size: 22, color: habit.color.color),
+                    ),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +315,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                           // One line that truncates, so narrow screens / large text can't overflow
                           Text(
-                            '${context.read<CategoryProvider>().resolve(habit.categoryId).name}  •  ${habit.schedule.shortLabel}'
+                            '${category.name}  •  ${habit.schedule.shortLabel}'
                             '${isRestDay ? '  •  Rest day' : ''}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
