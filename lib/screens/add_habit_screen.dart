@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/category.dart';
@@ -13,6 +14,7 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
+import '../presentation/widgets/unsaved_changes_guard.dart';
 import '../core/theme/ios_colors.dart';
 
 class AddHabitScreen extends StatefulWidget {
@@ -144,10 +146,44 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       
       print('DEBUG: Initialized edit form for habit: ${habit.name}');
     }
+
+    // Unsaved-changes check: compare against the form as it opened
+    _initialSnapshot = _formSnapshot();
+    for (final controller in [_nameController, _targetController, _unitsController]) {
+      controller.addListener(_onTextChanged);
+    }
   }
+
+  late final String _initialSnapshot;
+
+  // Rebuild so the leave-confirmation knows about typed changes
+  void _onTextChanged() => setState(() {});
+
+  bool get _hasUnsavedChanges => _formSnapshot() != _initialSnapshot;
+
+  /// Every value the form would save, as one comparable string.
+  String _formSnapshot() => jsonEncode([
+        _nameController.text,
+        _targetController.text,
+        _unitsController.text,
+        _selectedColor.value,
+        _selectedCategoryId,
+        _selectedFrequency.name,
+        _resetInterval,
+        _resetAnchor.toIso8601String(),
+        _scheduleDays,
+        _reminderEnabled,
+        _reminderTime.hour * 60 + _reminderTime.minute,
+        _selectedDays,
+        _customMessage,
+        _selectedIcon,
+      ]);
 
   @override
   void dispose() {
+    for (final controller in [_nameController, _targetController, _unitsController]) {
+      controller.removeListener(_onTextChanged);
+    }
     _nameController.dispose();
     _targetController.dispose();
     _unitsController.dispose();
@@ -162,7 +198,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             (themeProvider.themeMode == ThemeMode.system &&
                 MediaQuery.platformBrightnessOf(context) == Brightness.dark);
                 
-        return Scaffold(
+        return UnsavedChangesGuard(
+          hasChanges: _hasUnsavedChanges,
+          child: Scaffold(
       appBar: AppBar(
         title: Text(widget.editHabit != null ? 'Edit Habit' : 'Add New Habit'),
         centerTitle: true,
@@ -538,7 +576,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   ),
                   maxLength: 100,
                   onChanged: (value) {
-                    _customMessage = value;
+                    setState(() => _customMessage = value);
                   },
                 ),
               ],
@@ -560,7 +598,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           ),
         ),
       ),
-    );
+          ),
+        );
       },
     );
   }

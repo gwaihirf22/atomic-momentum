@@ -7,6 +7,7 @@ import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import 'category_icons.dart';
 import 'selectable_swatch.dart';
+import 'unsaved_changes_guard.dart';
 
 /// Add a category, or edit [existing] (including deleting it).
 Future<void> showCategoryEditorSheet(BuildContext context, {Category? existing}) {
@@ -14,6 +15,9 @@ Future<void> showCategoryEditorSheet(BuildContext context, {Category? existing})
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    // A drag closes the sheet without asking about unsaved changes; Cancel
+    // and tapping outside do ask
+    enableDrag: false,
     builder: (_) => _CategoryEditor(existing: existing),
   );
 }
@@ -38,6 +42,13 @@ class _CategoryEditorState extends State<_CategoryEditor> {
   String? _saveError;
 
   bool get _isNew => widget.existing == null;
+
+  bool get _hasUnsavedChanges {
+    final existing = widget.existing;
+    return _name.text.trim() != (existing?.name ?? '') ||
+        _colorValue != (existing?.colorValue ?? HabitColor.blue.value) ||
+        _iconKey != (existing?.iconKey ?? 'star');
+  }
 
   @override
   void initState() {
@@ -113,7 +124,9 @@ class _CategoryEditorState extends State<_CategoryEditor> {
     final color = Color(_colorValue);
     final canDelete = provider.categories.length > 1;
 
-    return Padding(
+    return UnsavedChangesGuard(
+      hasChanges: _hasUnsavedChanges,
+      child: Padding(
       // Keep the name field above the keyboard
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
@@ -121,10 +134,24 @@ class _CategoryEditorState extends State<_CategoryEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              _isNew ? 'New Category' : 'Edit Category',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
+            Row(
+              children: [
+                TextButton(
+                  key: const Key('cancelCategoryEdit'),
+                  // maybePop, so unsaved changes are confirmed first
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  child: const Text('Cancel'),
+                ),
+                Expanded(
+                  child: Text(
+                    _isNew ? 'New Category' : 'Edit Category',
+                    style: Theme.of(context).textTheme.titleLarge,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                // Balances the Cancel button so the title stays centered
+                const SizedBox(width: 72),
+              ],
             ),
             const SizedBox(height: 16),
             // Live preview
@@ -219,6 +246,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             ],
           ],
         ),
+      ),
       ),
     );
   }
