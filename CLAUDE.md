@@ -45,6 +45,12 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # Run Flutter app (development) - requires specifying device
 ./flutter/bin/flutter run -d chrome --web-port=8080 --web-hostname=localhost
 
+# Run on the iPhone simulator (iOS 15+ deployment target; Xcode 27 has no separate
+# Simulator app - the booted device is shown in Xcode's DeviceHub)
+xcrun simctl boot "iPhone 17 Pro"
+./flutter/bin/flutter run -d "iPhone 17 Pro"
+xcrun simctl io booted screenshot shot.png   # screenshot without the UI
+
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web
 
