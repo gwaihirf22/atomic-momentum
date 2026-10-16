@@ -1,0 +1,54 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# New file, and the first thing in .github/ for this repo.
+#
+# Only the pub ecosystem is declared, and the two obvious omissions are
+# deliberate rather than oversights:
+#
+#   github-actions  There is no .github/workflows/ here at all, so an entry
+#                   would have nothing to watch. Add one alongside the first
+#                   workflow, not before it.
+#
+#   gradle          android/app/build.gradle has no dependencies {} block --
+#                   Flutter manages them. The only versions on the Android side
+#                   are the Android Gradle Plugin and Kotlin in
+#                   android/settings.gradle, and those live in a pluginManagement
+#                   block, which Dependabot's gradle ecosystem does not update.
+#                   An entry would find nothing. (Both are well behind: AGP
+#                   7.3.0 and Kotlin 1.7.10. Worth moving by hand sometime.)
+#
+# Unlike the npm and pip repos, there is no security-updates group below.
+# Dependabot's pub support is beta and does VERSION UPDATES ONLY -- it raises no
+# security updates for Dart packages, so such a group would never fire.
+
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    groups:
+      # The whole surface is four runtime packages and flutter_lints, so one
+      # group is enough -- tiers would be ceremony over a handful of updates.
+      # Majors deliberately fall through and arrive individually.
+      minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore(dev)"
+      include: "scope"
+    # Nothing is ignored yet. flutter and flutter_test come from the SDK and are
+    # never bumped by Dependabot; the rest are small, stable packages. Note
+    # flutter_lints is pinned at ^3.0.0 while newer majors exist -- that is a
+    # deliberate lag to revisit, not something to auto-bump.
