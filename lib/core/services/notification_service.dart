@@ -7,11 +7,40 @@ import 'package:timezone/data/latest.dart' as tz;
 import '../../domain/entities/habit.dart';
 import '../../domain/services/streak_warning_planner.dart';
 
+/// Whether the app may show notifications on this device.
+enum NotificationPermission { granted, denied, unknown, unsupported }
+
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+  static FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
+
+  /// IDs used by the developer notification tester.
+  static const int testNotificationId = 999;
+  static const int scheduledTestNotificationId = 998;
+
+  /// Substitutes the plugin (and readiness) in tests, where there is no
+  /// platform implementation to talk to.
+  @visibleForTesting
+  static void debugOverride({required FlutterLocalNotificationsPlugin plugin, bool initialized = true}) {
+    _notificationsPlugin = plugin;
+    _initialized = initialized;
+    _supportedOverride = initialized;
+  }
+
+  @visibleForTesting
+  static void debugReset() {
+    _notificationsPlugin = FlutterLocalNotificationsPlugin();
+    _initialized = false;
+    _supportedOverride = null;
+  }
+
+  static bool? _supportedOverride;
+
+  /// The plugin silently does nothing on the web, so notifications can only
+  /// be seen in the iOS, Android or macOS apps.
+  static bool get isSupported => _supportedOverride ?? (!kIsWeb && _initialized);
 
   /// Looks up the device's IANA timezone (e.g. "America/Los_Angeles").
   /// Replaceable in tests, where the platform plugin isn't available.
@@ -53,9 +82,10 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
-      // Request permissions for iOS/macOS
+      // iOS/macOS ask via the initialization settings above; Android 13+
+      // needs its own runtime request
       if (!kIsWeb) {
-        await _requestPermissions();
+        await requestPermission();
       }
 
       _initialized = true;
@@ -79,22 +109,57 @@ class NotificationService {
     }
   }
 
-  // Request notification permissions
-  static Future<bool> _requestPermissions() async {
+  /// Asks the OS for permission to show notifications. Returns whether it
+  /// was granted (false if declined or unavailable).
+  static Future<bool> requestPermission() async {
     try {
-      final result = await _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
-
-      return result ?? false;
+      final ios = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      if (ios != null) {
+        return await ios.requestPermissions(alert: true, badge: true, sound: true) ?? false;
+      }
+      final macos = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
+      if (macos != null) {
+        return await macos.requestPermissions(alert: true, badge: true, sound: true) ?? false;
+      }
+      final android = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        return await android.requestNotificationsPermission() ?? false;
+      }
+      return false;
     } catch (e) {
       debugPrint('NotificationService: Failed to request permissions: $e');
       return false;
+    }
+  }
+
+  /// Current permission without prompting the user.
+  static Future<NotificationPermission> permissionStatus() async {
+    if (!isSupported) return NotificationPermission.unsupported;
+
+    try {
+      bool? enabled;
+      final ios = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+      final macos = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<MacOSFlutterLocalNotificationsPlugin>();
+      final android = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (ios != null) {
+        enabled = (await ios.checkPermissions())?.isEnabled;
+      } else if (macos != null) {
+        enabled = (await macos.checkPermissions())?.isEnabled;
+      } else if (android != null) {
+        enabled = await android.areNotificationsEnabled();
+      }
+
+      if (enabled == null) return NotificationPermission.unknown;
+      return enabled ? NotificationPermission.granted : NotificationPermission.denied;
+    } catch (e) {
+      debugPrint('NotificationService: Failed to check permissions: $e');
+      return NotificationPermission.unknown;
     }
   }
 
@@ -218,23 +283,46 @@ class NotificationService {
     return await scheduleHabitReminder(habit);
   }
 
-  // Show immediate notification (for testing)
-  static Future<void> showTestNotification() async {
-    if (!_initialized) {
-      await initialize();
-    }
+  /// Shows a notification immediately. Returns false if it couldn't be sent.
+  static Future<bool> showNow({
+    required String title,
+    required String body,
+    int id = testNotificationId,
+  }) async {
+    if (!isSupported) return false;
 
     try {
-      await _notificationsPlugin.show(
-        999, // Test notification ID
-        'Test Notification',
-        'This is a test notification from Atomic Momentum!',
+      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: 'test');
+      return true;
+    } catch (e) {
+      debugPrint('NotificationService: Failed to show notification: $e');
+      return false;
+    }
+  }
+
+  /// Schedules a one-off notification [delay] from now, to check scheduled
+  /// delivery (e.g. with the app in the background). Returns when it will
+  /// fire, or null if it couldn't be scheduled.
+  static Future<DateTime?> scheduleTestNotification(Duration delay) async {
+    if (!isSupported) return null;
+
+    try {
+      final at = DateTime.now().add(delay);
+      await _notificationsPlugin.zonedSchedule(
+        scheduledTestNotificationId,
+        'Scheduled test',
+        'Scheduled ${delay.inSeconds} seconds ago from the notification tester.',
+        tz.TZDateTime.from(at, tz.UTC),
         _getNotificationDetails(),
         payload: 'test',
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
-      debugPrint('NotificationService: Test notification shown');
+      return at;
     } catch (e) {
-      debugPrint('NotificationService: Failed to show test notification: $e');
+      debugPrint('NotificationService: Failed to schedule test notification: $e');
+      return null;
     }
   }
 

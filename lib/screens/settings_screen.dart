@@ -5,6 +5,7 @@ import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
+import 'notification_tester_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -106,6 +107,16 @@ class SettingsScreen extends StatelessWidget {
                     : 'Added $added sample ${added == 1 ? 'habit' : 'habits'}'),
                 ));
             },
+          ),
+          ListTile(
+            key: const Key('openNotificationTester'),
+            leading: const Icon(Icons.notifications_outlined),
+            title: const Text('Notification tester'),
+            subtitle: const Text('Check permission, send and schedule test notifications'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const NotificationTesterScreen()),
+            ),
           ),
           const Divider(),
         ],
