@@ -76,7 +76,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     streakWarningService: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list
-  sl.registerLazySingleton(() => CategoryProvider(sl()));
+  sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));
   await sl<CategoryProvider>().load();
   
   // Theme provider with persistence

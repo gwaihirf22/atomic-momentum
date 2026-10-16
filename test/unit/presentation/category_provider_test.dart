@@ -18,7 +18,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     final categories = CategoryRepositoryImpl(prefs);
     manage = ManageCategoriesUseCase(categories, HabitRepositoryImpl(SharedPreferencesDataSource(prefs)));
-    provider = CategoryProvider(categories);
+    provider = CategoryProvider(categories, manage);
     await provider.load();
   });
 
