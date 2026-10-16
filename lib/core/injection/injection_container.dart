@@ -74,6 +74,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     deleteHabitUseCase: sl(),
     seedDefaultHabit: seedDefaultHabit,
     streakWarningService: sl(),
+    categoryRepository: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list
   sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));

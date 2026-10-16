@@ -1,6 +1,6 @@
 # Design: user-defined categories
 
-Status: **approved** (decisions below, 2026-10-16). Not built yet.
+Status: **built** (2026-10-16). See "As built" at the end for where the implementation differs from the original proposal.
 
 ## Goal
 Users can add, edit, reorder and remove categories, each with a name, color and an icon picked from a built-in library. Today's six categories (Body, Spirit, Mind, Social, Career, Creative) become the defaults. Existing habits keep working without any visible change.
@@ -42,7 +42,7 @@ class Category extends Equatable {
 - **Shared state:** a `CategoryProvider` (the existing class, extended) holds the list for the UI.
 
 ## Icon library
-- **Contents:** a curated map of about 40 flat Cupertino icons keyed by stable strings, e.g. `heart`, `book`, `briefcase`, `paintbrush`, `music_note`, `cart`, `moon`, `drop`, `leaf`, `flame`, `dumbbell`.
+- **Contents:** a curated map of about 40 flat Cupertino icons keyed by stable strings, e.g. `heart`, `book`, `briefcase`, `paintbrush`, `music_note`, `cart`, `moon`, `drop`, `leaf`, `flame`, `sport`.
 - **Why string keys:** storing a key rather than a code point keeps saved data valid if Flutter's icon font changes.
 - **Location:** this replaces the `HabitCategoryIcon` extension (`lib/presentation/widgets/category_icons.dart`).
 - **Picker:** the same 44pt grid as the habit icon picker on Add Habit, so both feel the same.
@@ -82,3 +82,17 @@ class Category extends Equatable {
 2. **Deleting is recoverable.** Deleted categories go to Recently Deleted on the Categories page and can be restored. Permanent deletion is only possible for categories with no habits.
 3. **About 40 icons**, curated, growing as needed.
 4. **The Categories page is its own screen**, reached from Settings and by long-pressing the rings.
+
+## As built
+The implementation follows this design, with these differences, all chosen during planning:
+
+- **Rules live in a use case.** `CategoryRepository` only loads and saves (`getAll`, `saveAll`). The rules for add, update, reorder, soft delete, restore, delete permanently and move habits are in `ManageCategoriesUseCase` (`lib/domain/usecases/manage_categories_usecase.dart`), which also checks the habit store. This matches how habits are layered. Name rules are in `lib/core/validation/category_validator.dart`.
+- **Storage robustness.** If the stored category data can't be read, it is copied to `categories_v1_corrupt` and the defaults are loaded, so the app never crashes or loses that data.
+- **Icons.** There's no dumbbell in Flutter's Cupertino icons, so `sport` (a sports court) is used. The library is exactly 40 icons, and the built-ins keep their previous icons.
+- **Uncategorized** gets its own grey ring at the end of the rings, shown only while some habit is in a deleted or unknown category. It's a filter on the Habits screen and a chip on the Calendar. When editing such a habit, its Uncategorized chip stays selected, and the habit keeps its original category id unless another category is picked, so restoring the category brings it back.
+- **Move habits to…** is in Recently Deleted for categories that still have habits. Delete Permanently appears once they have none.
+- **The Calendar keeps its own category filter**, separate from the Habits screen's.
+- **Restoring at the limit** is blocked with a message. Restoring a name that is now taken renames it ("Mind 2") and says so.
+- **Build order.** Paged rings were built before the Categories page, so no intermediate version could create more rings than fit.
+- **Sample habits** (developer builds) skip any built-in category the user has deleted.
+- **Not included:** categories are not part of the habit backup/restore. Habits restored onto a device without their categories show as Uncategorized, which is safe.

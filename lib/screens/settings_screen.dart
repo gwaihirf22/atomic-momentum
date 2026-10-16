@@ -107,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
             key: const Key('addSampleHabits'),
             leading: const Icon(Icons.science_outlined),
             title: const Text('Add sample habits'),
-            subtitle: const Text('One per category, with a few days of history'),
+            subtitle: const Text('One per built-in category, with a few days of history'),
             onTap: () async {
               final added = await context.read<HabitProvider>().addSampleHabits();
               if (!context.mounted) return;

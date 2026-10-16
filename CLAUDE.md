@@ -78,7 +78,7 @@ python server.py
   - ✅ **Update**: Edit functionality with form pre-population and comprehensive validation
   - ✅ **Delete**: Safe deletion with confirmation dialogs and user feedback
 - **Calendar View**: Monthly calendar with habit completion visualization and category filtering
-- **Category System**: 6 professional categories with visual filtering
+- **Category System**: User-editable categories (`Category` entity + `CategoryRepository`, rules in `ManageCategoriesUseCase`); six built-ins seeded on first launch with ids `body`, `spirit`, … that habits store as `categoryId`; Settings → Categories (or long-press the rings) to add/edit/reorder/delete/restore; deleted or unknown ids show as Uncategorized. Design: `docs/design/custom-categories.md`
 - **Streak Tracking**: Streaks are derived from per-day history (`StreakCalculator`), counted in days/weeks/months; editing a past day on the Calendar repairs or breaks a streak
 - **Reset Days**: Weekly/monthly habits reset on a user-chosen weekday/day-of-month (`Habit.resetAnchor`); progress rolls over at local midnight
 - **Streak Warnings**: One notification per habit before its streak deadline (default 4 hours, configurable in Settings) via `StreakWarningService`

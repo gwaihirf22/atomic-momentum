@@ -10,6 +10,7 @@ import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/streak_warning_service.dart';
+import '../../domain/repositories/category_repository.dart';
 
 enum HabitProviderState {
   initial,
@@ -30,6 +31,9 @@ class HabitProvider extends ChangeNotifier {
   // Null disables streak warnings (e.g. in tests that don't exercise them)
   final StreakWarningService? _streakWarnings;
 
+  // Used to skip sample habits whose category the user has deleted
+  final CategoryRepository? _categoryRepository;
+
   HabitProvider({
     required GetHabitsUseCase getHabitsUseCase,
     required CreateHabitUseCase createHabitUseCase,
@@ -37,7 +41,9 @@ class HabitProvider extends ChangeNotifier {
     required DeleteHabitUseCase deleteHabitUseCase,
     this.seedDefaultHabit = false,
     StreakWarningService? streakWarningService,
+    CategoryRepository? categoryRepository,
   })  : _streakWarnings = streakWarningService,
+        _categoryRepository = categoryRepository,
         _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
         _updateHabitUseCase = updateHabitUseCase,
@@ -416,11 +422,16 @@ class HabitProvider extends ChangeNotifier {
   /// tried straight away. Returns how many habits were added.
   Future<int> addSampleHabits() async {
     final existingNames = _habits.map((h) => h.name.trim().toLowerCase()).toSet();
+    final categoryRepository = _categoryRepository;
+    final activeCategoryIds = categoryRepository == null
+        ? null
+        : {for (final c in await categoryRepository.getAll()) if (!c.isDeleted) c.id};
     final now = DateTime.now();
     var added = 0;
 
     for (final params in _sampleHabits) {
       if (existingNames.contains(params.name.toLowerCase())) continue;
+      if (activeCategoryIds != null && !activeCategoryIds.contains(params.categoryId)) continue;
       if (!await createHabit(params)) continue;
       added++;
 

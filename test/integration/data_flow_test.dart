@@ -13,6 +13,7 @@ import 'package:atomic_momentum/domain/usecases/get_habits_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/update_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/delete_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/manage_categories_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 
@@ -453,6 +454,15 @@ void main() {
 
         expect(await habitProvider.addSampleHabits(), 0);
         expect(habitProvider.habits, hasLength(6));
+      });
+
+      test('skips samples whose built-in category was deleted', () async {
+        await get<ManageCategoriesUseCase>().softDelete(BuiltInCategoryIds.creative);
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.loadHabits();
+
+        expect(await habitProvider.addSampleHabits(), 5);
+        expect(habitProvider.habits.map((h) => h.categoryId), isNot(contains(BuiltInCategoryIds.creative)));
       });
 
       test('empty storage is seeded with all samples when seeding is on', () async {
