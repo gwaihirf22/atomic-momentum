@@ -81,8 +81,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   await sl<CategoryProvider>().load();
   
   // Theme provider with persistence
-  final isDarkMode = sharedPreferences.getBool('isDarkMode') ?? false;
-  sl.registerLazySingleton(() => ThemeProvider(isDarkMode));
+  sl.registerLazySingleton(() => ThemeProvider.fromPrefs(sharedPreferences));
 }
 
 /// Reset dependencies for testing

@@ -5,6 +5,7 @@ import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
+import '../../core/logging/log.dart';
 
 class HabitModel extends Habit {
   HabitModel({
@@ -29,7 +30,6 @@ class HabitModel extends Habit {
   /// Create HabitModel from domain Habit entity
   factory HabitModel.fromDomain(Habit habit) {
     try {
-      print('DEBUG: HabitModel.fromDomain() - Converting habit: ${habit.name} (${habit.progress}/${habit.target}) isCompleted: ${habit.isCompleted}');
       
       return HabitModel(
         id: habit.id,
@@ -50,7 +50,6 @@ class HabitModel extends Habit {
         scheduledWeekdays: habit.scheduledWeekdays,
       );
     } catch (e) {
-      print('DEBUG: HabitModel.fromDomain() - ERROR: $e');
       rethrow;
     }
   }
@@ -58,7 +57,6 @@ class HabitModel extends Habit {
   /// Convert to domain Habit entity
   Habit toDomain() {
     try {
-      print('DEBUG: HabitModel.toDomain() - Converting model: $name ($progress/$target)');
       
       final habitDomain = Habit(
         id: id,
@@ -79,10 +77,8 @@ class HabitModel extends Habit {
         scheduledWeekdays: scheduledWeekdays,
       );
       
-      print('DEBUG: HabitModel.toDomain() - Successfully converted: ${habitDomain.name} isCompleted: ${habitDomain.isCompleted}');
       return habitDomain;
     } catch (e) {
-      print('DEBUG: HabitModel.toDomain() - ERROR: $e');
       rethrow;
     }
   }
@@ -111,7 +107,7 @@ class HabitModel extends Habit {
         historyMap[date] = progress;
       } catch (e) {
         // Skip invalid history entries rather than failing completely
-        print('Warning: Skipping invalid history entry: $key -> $value');
+        logWarning('Warning: Skipping invalid history entry: $key -> $value');
       }
     });
 

@@ -1,43 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Light, dark, or following the device (the default, as iOS apps do).
 class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode;
-  
-  // Constructor sets the initial theme mode
-  ThemeProvider(bool isDarkMode) 
-    : _themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
-  
-  // Getter for the current theme mode
-  ThemeMode get themeMode => _themeMode;
-  
-  // Getter for checking if dark mode is active
-  bool get isDarkMode => _themeMode == ThemeMode.dark;
+  static const _modeKey = 'themeMode';
 
-  // Method to toggle between light and dark mode
-  Future<void> toggleTheme() async {
-    // Toggle the theme mode
-    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
-    
-    // Save the preference to shared preferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', isDarkMode);
-    
-    // Notify listeners about the change
-    notifyListeners();
+  /// Saved by earlier versions, which only had a light/dark switch.
+  static const _legacyDarkKey = 'isDarkMode';
+
+  final SharedPreferences? _prefs;
+  ThemeMode _themeMode;
+
+  ThemeProvider(this._themeMode, [this._prefs]);
+
+  /// Reads the saved choice. An old dark/light switch keeps its value;
+  /// people who never chose follow the device.
+  factory ThemeProvider.fromPrefs(SharedPreferences prefs) {
+    final saved = prefs.getString(_modeKey);
+    final mode = ThemeMode.values.where((m) => m.name == saved).firstOrNull ??
+        switch (prefs.getBool(_legacyDarkKey)) {
+          true => ThemeMode.dark,
+          false => ThemeMode.light,
+          null => ThemeMode.system,
+        };
+    return ThemeProvider(mode, prefs);
   }
-  
-  // Method to set a specific theme mode
+
+  ThemeMode get themeMode => _themeMode;
+
+  /// Whether to draw dark, resolving System from the device setting.
+  bool isDarkIn(BuildContext context) =>
+      _themeMode == ThemeMode.dark ||
+      (_themeMode == ThemeMode.system && MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
   Future<void> setThemeMode(ThemeMode mode) async {
     if (_themeMode == mode) return;
-    
     _themeMode = mode;
-    
-    // Save the preference to shared preferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', isDarkMode);
-    
-    // Notify listeners about the change
     notifyListeners();
+    final prefs = _prefs ?? await SharedPreferences.getInstance();
+    await prefs.setString(_modeKey, mode.name);
   }
 }

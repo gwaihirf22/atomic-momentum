@@ -7,6 +7,7 @@ import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
 import '../exceptions/storage_exceptions.dart';
+import '../logging/log.dart';
 
 class DataMigration {
   static const String currentVersion = '2.0.0';
@@ -98,7 +99,7 @@ class DataMigration {
         final habit = _createHabitFromV1_0_0(entry.key, habitData);
         habits.add(habit);
       } catch (e) {
-        print('Warning: Failed to migrate habit ${entry.key}: $e');
+        logWarning('Warning: Failed to migrate habit ${entry.key}: $e');
       }
     }
     
@@ -222,7 +223,7 @@ class DataMigration {
         final enhancedHabit = baseHabit.copyWith(streak: streak);
         habits.add(enhancedHabit);
       } catch (e) {
-        print('Warning: Failed to migrate habit ${entry.key}: $e');
+        logWarning('Warning: Failed to migrate habit ${entry.key}: $e');
       }
     }
     
@@ -258,7 +259,7 @@ class DataMigration {
         final enhancedHabit = baseHabit.copyWith(metadata: metadata);
         habits.add(enhancedHabit);
       } catch (e) {
-        print('Warning: Failed to migrate habit ${entry.key}: $e');
+        logWarning('Warning: Failed to migrate habit ${entry.key}: $e');
       }
     }
     
@@ -273,19 +274,19 @@ class DataMigration {
       try {
         // Basic validation
         if (habit.id.isEmpty || habit.name.trim().isEmpty) {
-          print('Warning: Skipping habit with invalid ID or name');
+          logWarning('Warning: Skipping habit with invalid ID or name');
           continue;
         }
         
         if (habit.target <= 0) {
-          print('Warning: Fixing invalid target for habit ${habit.name}');
+          logWarning('Warning: Fixing invalid target for habit ${habit.name}');
           final fixedHabit = habit.copyWith(target: 1);
           validHabits.add(fixedHabit);
           continue;
         }
         
         if (habit.progress < 0) {
-          print('Warning: Fixing negative progress for habit ${habit.name}');
+          logWarning('Warning: Fixing negative progress for habit ${habit.name}');
           final fixedHabit = habit.copyWith(progress: 0);
           validHabits.add(fixedHabit);
           continue;
@@ -293,7 +294,7 @@ class DataMigration {
         
         validHabits.add(habit);
       } catch (e) {
-        print('Warning: Skipping invalid habit: $e');
+        logWarning('Warning: Skipping invalid habit: $e');
       }
     }
     

@@ -35,7 +35,7 @@ void main() {
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
-    expect(find.text('Dark Mode'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
 
     await tester.tap(find.text('Habits').last);
     await tester.pumpAndSettle();

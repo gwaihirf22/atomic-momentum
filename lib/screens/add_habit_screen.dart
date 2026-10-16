@@ -22,6 +22,7 @@ import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'categories_screen.dart';
 import '../core/theme/ios_colors.dart';
+import '../core/exceptions/friendly_error.dart';
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
@@ -83,9 +84,21 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       if (mounted) Navigator.of(context).pop();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete ${habit.name}'), backgroundColor: Colors.red),
+        SnackBar(content: Text("Couldn't delete \"${habit.name}\". Please try again.")),
       );
     }
+  }
+
+  void _showSaveError(String? error) {
+    final name = _nameController.text.trim();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(friendlyError(
+          error,
+          fallback: "Couldn't save${name.isEmpty ? ' this habit' : ' "$name"'}. Please try again.",
+        )),
+      ),
+    );
   }
 
   /// The save button, pinned to the bottom of the screen (a "sticky footer")
@@ -209,7 +222,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       // Initialize icon
       _selectedIcon = habit.metadata.icon;
       
-      print('DEBUG: Initialized edit form for habit: ${habit.name}');
     }
 
     // Unsaved-changes check: compare against the form as it opened
@@ -259,9 +271,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.themeMode == ThemeMode.dark ||
-            (themeProvider.themeMode == ThemeMode.system &&
-                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        final isDark = themeProvider.isDarkIn(context);
                 
         return UnsavedChangesGuard(
           hasChanges: _hasUnsavedChanges,
@@ -679,7 +689,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       final habitProvider = context.read<HabitProvider>();
       
       // Store initial habit count to detect if habit was actually added
-      final initialHabitCount = habitProvider.habits.length;
       
       // Build reminder settings. When editing a habit that had a reminder,
       // turning it off must send a disabled reminder: null means "unchanged"
@@ -712,7 +721,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       final bool success;
       if (widget.editHabit != null) {
         // Update existing habit
-        print('DEBUG: Updating existing habit: ${widget.editHabit!.name} -> ${params.name}');
         success = await habitProvider.updateHabitDetails(widget.editHabit!.id, UpdateHabitParams(
           name: params.name,
           target: params.target,
@@ -728,54 +736,20 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           // All seven days means "every day", which also clears a weekday schedule
           scheduledWeekdays: params.scheduledWeekdays,
         ));
-        print('DEBUG: Habit update result: $success');
       } else {
-        // Create new habit
-        print('DEBUG: Creating habit with params: ${params.name}, target: ${params.target}, units: "${params.units}"');
-        print('DEBUG: Initial habit count: $initialHabitCount');
-        print('DEBUG: About to call habitProvider.createHabit');
-        
         success = await habitProvider.createHabit(params);
-        final finalHabitCount = habitProvider.habits.length;
-        final habitWasAdded = finalHabitCount > initialHabitCount;
-        
-        print('DEBUG: Habit creation result: $success');
-        print('DEBUG: Final habit count: $finalHabitCount');
-        print('DEBUG: Habit was actually added: $habitWasAdded');
       }
       
-      print('DEBUG: HabitProvider error: ${habitProvider.error}');
-      print('DEBUG: mounted: $mounted');
-
-      // FORCE NAVIGATION - Simple approach without complex conditions
-      if (mounted) {
-        print('DEBUG: Forcing navigation back to home screen');
-        
-        // Clear form first
-        _nameController.clear();
-        _targetController.clear();
-        _unitsController.clear();
-        _selectedColor = HabitColor.blue;
-        final categories = context.read<CategoryProvider>().categories;
-        _selectedCategoryId = categories.isEmpty ? '' : categories.first.id;
-        _selectedFrequency = ResetFrequency.daily;
-        _resetInterval = 1;
-        _scheduleDays = [1, 2, 3, 4, 5, 6, 7];
-        
-        // Navigate back immediately - no SnackBar interference
+      if (!mounted) return;
+      if (success) {
+        // pop (not maybePop): the changes are saved, so no unsaved-changes prompt
         Navigator.of(context).pop();
-        print('DEBUG: Navigator.pop() executed - should be back on home screen');
+      } else {
+        // Stay on the form so nothing typed is lost
+        _showSaveError(habitProvider.error);
       }
     } catch (e) {
-      print('DEBUG: Exception during habit creation: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      if (mounted) _showSaveError(e.toString());
     } finally {
       if (mounted) {
         setState(() {

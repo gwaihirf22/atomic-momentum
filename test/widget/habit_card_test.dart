@@ -294,7 +294,7 @@ void main() {
     await tester.tap(find.byKey(Key('incrementHabit_$waterId')));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Failed to update Drink Water'), findsOneWidget);
+    expect(find.textContaining("Couldn't update Drink Water"), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
     expect(habitProvider.getHabitById(waterId)!.progress, 0);
   });

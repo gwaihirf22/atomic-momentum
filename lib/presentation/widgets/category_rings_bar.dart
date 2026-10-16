@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../core/feedback/haptics.dart';
 import '../../core/theme/ios_colors.dart';
 import '../../domain/entities/category.dart';
 import '../providers/category_provider.dart';
@@ -229,7 +230,10 @@ class _CategoryRing extends StatelessWidget {
       onLongPressHint: onLongPress != null ? 'Manage categories' : null,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () {
+          Haptics.selection();
+          onTap();
+        },
         onLongPress: onLongPress,
         child: Opacity(
           // Empty categories stay tappable but recede

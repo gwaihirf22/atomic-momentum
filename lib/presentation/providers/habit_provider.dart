@@ -11,6 +11,7 @@ import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
+import '../../core/logging/log.dart';
 
 enum HabitProviderState {
   initial,
@@ -100,7 +101,7 @@ class HabitProvider extends ChangeNotifier {
       try {
         await _updateHabitUseCase.resetHabitsIfNeeded();
       } catch (e) {
-        print('DEBUG: Period reset failed, loading habits anyway: $e');
+        logWarning('Period reset failed, loading habits anyway: $e');
       }
 
       final habits = await _getHabitsUseCase();
@@ -125,28 +126,22 @@ class HabitProvider extends ChangeNotifier {
 
   Future<bool> createHabit(CreateHabitParams params) async {
     try {
-      print('DEBUG: HabitProvider.createHabit called with: ${params.name}');
       _setOperationInProgress(true);
       
       final habit = await _createHabitUseCase(params);
-      print('DEBUG: Habit created successfully: ${habit.id}');
       _habits.add(habit);
       await _streakWarnings?.sync(habit);
       
       // Schedule notification if habit has reminder settings
       if (habit.hasReminder) {
-        print('DEBUG: Scheduling notifications for habit: ${habit.name}');
-        final notificationScheduled = await NotificationService.scheduleHabitReminder(habit);
-        print('DEBUG: Notification scheduled: $notificationScheduled');
+        await NotificationService.scheduleHabitReminder(habit);
       }
       
       _sortHabits();
       notifyListeners();
       
-      print('DEBUG: HabitProvider returning true');
       return true;
     } catch (e) {
-      print('DEBUG: HabitProvider error: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -157,18 +152,15 @@ class HabitProvider extends ChangeNotifier {
 
   Future<bool> updateHabitProgress(String habitId, int newProgress) async {
     try {
-      print('DEBUG: HabitProvider.updateHabitProgress called: habitId=$habitId, newProgress=$newProgress');
       _setOperationInProgress(true);
       
       // TEMPORARY FIX: Try to update progress directly in the local list first
       final habitIndex = _habits.indexWhere((habit) => habit.id == habitId);
       if (habitIndex >= 0) {
         final currentHabit = _habits[habitIndex];
-        print('DEBUG: Found habit in local list: ${currentHabit.name} (${currentHabit.progress}/${currentHabit.target})');
         
         // Create updated habit directly
         final updatedHabit = currentHabit.updateProgress(newProgress);
-        print('DEBUG: Created updated habit: ${updatedHabit.name} (${updatedHabit.progress}/${updatedHabit.target}) isCompleted: ${updatedHabit.isCompleted}');
         
         // Show the change immediately so taps feel instant
         _habits[habitIndex] = updatedHabit;
@@ -188,13 +180,11 @@ class HabitProvider extends ChangeNotifier {
 
         return true;
       } else {
-        print('DEBUG: Habit not found in local list');
         _error = 'Habit not found: $habitId';
         notifyListeners();
         return false;
       }
     } catch (e) {
-      print('DEBUG: HabitProvider.updateHabitProgress failed: $e');
       _error = e.toString();
       notifyListeners();
       return false;
@@ -245,9 +235,7 @@ class HabitProvider extends ChangeNotifier {
       _updateHabitInList(updatedHabit);
       
       // Update notification schedule for the updated habit
-      print('DEBUG: Updating notifications for habit: ${updatedHabit.name}');
-      final notificationUpdated = await NotificationService.updateHabitReminder(updatedHabit);
-      print('DEBUG: Notification updated: $notificationUpdated');
+      await NotificationService.updateHabitReminder(updatedHabit);
       
       return true;
     } catch (e) {
@@ -298,7 +286,6 @@ class HabitProvider extends ChangeNotifier {
       _setOperationInProgress(true);
       
       // Cancel notifications for this habit before deleting
-      print('DEBUG: Cancelling notifications for habit: $habitId');
       await NotificationService.cancelHabitReminder(habitId);
       await _streakWarnings?.cancel(habitId);
       

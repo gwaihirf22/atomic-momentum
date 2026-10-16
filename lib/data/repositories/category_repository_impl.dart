@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/repositories/category_repository.dart';
+import '../../core/logging/log.dart';
 
 class CategoryRepositoryImpl implements CategoryRepository {
   static const storageKey = 'categories_v1';
@@ -23,7 +24,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
 
     final categories = _parse(raw);
     if (categories == null) {
-      print('Warning: Unreadable categories, restoring defaults (raw data kept in $corruptBackupKey)');
+      logWarning('Warning: Unreadable categories, restoring defaults (raw data kept in $corruptBackupKey)');
       await _prefs.setString(corruptBackupKey, raw);
       return _seedDefaults();
     }
@@ -47,7 +48,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
       await saveAll(defaults);
     } catch (e) {
       // Still usable this session; seeding is retried next launch
-      print('Warning: Could not save default categories: $e');
+      logWarning('Warning: Could not save default categories: $e');
     }
     return List.of(defaults);
   }
@@ -66,7 +67,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
           final category = Category.fromJson(item as Map<String, dynamic>);
           if (seen.add(category.id)) categories.add(category);
         } catch (e) {
-          print('Warning: Skipping invalid category: $item');
+          logWarning('Warning: Skipping invalid category: $item');
         }
       }
       if (categories.isEmpty) return null;

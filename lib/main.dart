@@ -14,16 +14,16 @@ import 'screens/ios_main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize dependency injection
   await initializeDependencies();
-  
+
   // Set preferred orientations and viewport settings to prevent unwanted zoom
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   // Set specific system UI overlays and style
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle(
@@ -62,30 +62,35 @@ class MomentumApp extends StatelessWidget {
           value: get<SettingsProvider>(),
         ),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          final isDark = themeProvider.themeMode == ThemeMode.dark ||
-              (themeProvider.themeMode == ThemeMode.system &&
-                  MediaQuery.platformBrightnessOf(context) == Brightness.dark);
-          
-          return CupertinoApp(
-            title: 'Atomic Momentum',
-            debugShowCheckedModeBanner: false,
-            theme: IOSTheme.getTheme(isDark ? Brightness.dark : Brightness.light),
-            home: const IOSMainNavigation(),
-            // Screens built from Material widgets read Theme.of(context), which
-            // CupertinoApp doesn't provide; without this they stay light in dark mode
-            builder: (context, child) => Theme(
-              data: isDark ? IOSTheme.getMaterialDarkTheme() : IOSTheme.getMaterialLightTheme(),
-              child: child!,
-            ),
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-            ],
-          );
-        },
+      // Above the app there's no MediaQuery yet; this one tracks the device's
+      // light/dark setting so "System" follows it as it changes
+      child: MediaQuery.fromView(
+        view: View.of(context),
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            final isDark = themeProvider.isDarkIn(context);
+
+            return CupertinoApp(
+              title: 'Atomic Momentum',
+              debugShowCheckedModeBanner: false,
+              theme: IOSTheme.getTheme(isDark ? Brightness.dark : Brightness.light),
+              home: const IOSMainNavigation(),
+              // Screens built from Material widgets read Theme.of(context), which
+              // CupertinoApp doesn't provide; without this they stay light in dark mode
+              // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
+              // it no SnackBar can show
+              builder: (context, child) => Theme(
+                data: isDark ? IOSTheme.getMaterialDarkTheme() : IOSTheme.getMaterialLightTheme(),
+                child: ScaffoldMessenger(child: child!),
+              ),
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+            );
+          },
+        ),
       ),
     );
   }

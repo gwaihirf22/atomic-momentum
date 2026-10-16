@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/theme/app_style.dart';
+import '../presentation/widgets/adaptive.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -30,19 +32,30 @@ class SettingsScreen extends StatelessWidget {
     
     return ListView(
       children: [
-        _sectionHeader('Appearance'),
-        SwitchListTile(
-          title: const Text('Dark Mode'),
-          subtitle: const Text('Switch between light and dark themes'),
-          value: themeProvider.isDarkMode,
-          onChanged: (value) {
-            // Use the provider to toggle the theme
-            themeProvider.toggleTheme();
-          },
-          secondary: Icon(
-            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-            color: Theme.of(context).primaryColor,
+        _sectionHeader('Display'),
+        ListTile(
+          key: const Key('appearanceSetting'),
+          leading: Icon(Icons.brightness_6_outlined, color: Theme.of(context).primaryColor),
+          title: const Text('Appearance'),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_themeModeLabel(themeProvider.themeMode), style: TextStyle(color: secondaryLabel(context))),
+              const Icon(Icons.chevron_right),
+            ],
           ),
+          onTap: () async {
+            final mode = await chooseAdaptive<ThemeMode>(
+              context,
+              title: 'Appearance',
+              selected: themeProvider.themeMode,
+              options: [
+                for (final mode in [ThemeMode.system, ThemeMode.light, ThemeMode.dark])
+                  AdaptiveOption(mode, _themeModeLabel(mode), key: Key('appearance_${mode.name}')),
+              ],
+            );
+            if (mode != null) await themeProvider.setThemeMode(mode);
+          },
         ),
         const Divider(),
         _sectionHeader('Habits'),
@@ -195,4 +208,10 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  static String _themeModeLabel(ThemeMode mode) => switch (mode) {
+        ThemeMode.system => 'System',
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+      };
 }

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'local_habit_datasource.dart';
 import '../models/habit_model.dart';
 import '../../core/exceptions/storage_exceptions.dart';
+import '../../core/logging/log.dart';
 
 class SharedPreferencesDataSource implements LocalHabitDataSource {
   final SharedPreferences _prefs;
@@ -60,7 +61,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
       
       if (validHabits.length != habits.length) {
         final invalidCount = habits.length - validHabits.length;
-        print('Warning: Filtered out $invalidCount invalid habits during save');
+        logWarning('Warning: Filtered out $invalidCount invalid habits during save');
       }
 
       final habitsJson = jsonEncode(
@@ -237,7 +238,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
           final habit = HabitModel.fromLegacyJson(habitData);
           migratedHabits.add(habit);
         } catch (e) {
-          print('Warning: Failed to migrate habit ${entry.key}: $e');
+          logWarning('Warning: Failed to migrate habit ${entry.key}: $e');
         }
       }
 
@@ -246,12 +247,12 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
         await saveHabits(migratedHabits);
         
         // Keep legacy data for safety (don't delete immediately)
-        print('Migrated ${migratedHabits.length} habits from legacy format');
+        logWarning('Migrated ${migratedHabits.length} habits from legacy format');
       }
 
       return migratedHabits;
     } catch (e) {
-      print('Warning: Failed to migrate legacy data: $e');
+      logWarning('Warning: Failed to migrate legacy data: $e');
       return [];
     }
   }
@@ -277,7 +278,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
       await saveStorageMetadata(metadata);
     } catch (e) {
       // Non-critical operation, don't throw
-      print('Warning: Failed to update storage metadata: $e');
+      logWarning('Warning: Failed to update storage metadata: $e');
     }
   }
 
@@ -290,10 +291,10 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
       
       if (validHabits.length != habits.length) {
         await saveHabits(validHabits);
-        print('Cleaned up storage: removed ${habits.length - validHabits.length} invalid habits');
+        logWarning('Cleaned up storage: removed ${habits.length - validHabits.length} invalid habits');
       }
     } catch (e) {
-      print('Warning: Failed to cleanup storage: $e');
+      logWarning('Warning: Failed to cleanup storage: $e');
     }
   }
 

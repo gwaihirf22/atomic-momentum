@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
+import '../core/feedback/haptics.dart';
+import '../core/exceptions/friendly_error.dart';
 import '../core/theme/ios_colors.dart';
 import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
@@ -79,9 +81,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.themeMode == ThemeMode.dark ||
-            (themeProvider.themeMode == ThemeMode.system &&
-                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        final isDark = themeProvider.isDarkIn(context);
         
         // Material Scaffold hosts SnackBars (delete confirmations, save
         // failures with Retry); Cupertino scaffolds can't show them
@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
-              error,
+              friendlyError(error, fallback: "Your habits couldn't be loaded. Please try again."),
               style: IOSTypography.getHabitSubtitle(isDark),
               textAlign: TextAlign.center,
             ),
@@ -297,33 +297,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _updateHabitProgress(HabitProvider habitProvider, Habit habit, int newProgress) async {
-    print('DEBUG: Updating habit progress: ${habit.name} from ${habit.progress} to $newProgress (target: ${habit.target})');
-    print('DEBUG: Current isCompleted: ${habit.isCompleted}');
-    print('DEBUG: Will be completed: ${newProgress >= habit.target}');
-    
+    Haptics.progressChanged(from: habit.progress, to: newProgress, target: habit.target);
     final success = await habitProvider.updateHabitProgress(habit.id, newProgress);
-    print('DEBUG: Update success: $success');
-    
+
     if (!success && mounted) {
-      print('DEBUG: Habit update failed, showing error');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update ${habit.name} - Error: ${habitProvider.error}'),
-          backgroundColor: Colors.red,
+          content: Text("Couldn't update ${habit.name}."),
           action: SnackBarAction(
             label: 'Retry',
             onPressed: () => _updateHabitProgress(habitProvider, habit, newProgress),
           ),
         ),
       );
-    } else {
-      print('DEBUG: Habit update succeeded - new state should be visible');
     }
   }
 
   void _editHabit(Habit habit) {
-    print('DEBUG: Edit button pressed for habit: ${habit.name}');
-    
     // Navigate to AddHabitScreen in edit mode
     Navigator.push(
       context,
@@ -343,8 +333,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success ? '${habit.name} deleted' : 'Failed to delete ${habit.name}'),
-        backgroundColor: success ? null : Colors.red,
+        content: Text(success ? '${habit.name} deleted' : "Couldn't delete ${habit.name}. Please try again."),
         duration: const Duration(seconds: 2),
       ),
     );

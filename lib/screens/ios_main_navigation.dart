@@ -14,9 +14,7 @@ class IOSMainNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.themeMode == ThemeMode.dark ||
-            (themeProvider.themeMode == ThemeMode.system &&
-                MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+        final isDark = themeProvider.isDarkIn(context);
         
         return CupertinoTabScaffold(
           backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
