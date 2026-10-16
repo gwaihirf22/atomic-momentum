@@ -7,6 +7,7 @@ import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/manage_categories_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
@@ -157,6 +158,9 @@ void main() {
 
     await pumpHome(tester);
 
+    // Six categories plus Uncategorized: the grey ring is on the second page
+    await tester.drag(find.byKey(const Key('ringPager')), const Offset(-300, 0));
+    await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Uncategorized, 0 percent, 0 of 1 habits complete'), findsOneWidget);
     expect(
       find.descendant(of: find.byKey(Key('habitCard_${pottery.id}')), matching: find.textContaining('Uncategorized')),
@@ -198,5 +202,76 @@ void main() {
 
     expect(find.text('No creative habits yet'), findsOneWidget);
     expect(find.textContaining('tap Show all'), findsOneWidget);
+  });
+
+  group('more than six categories', () {
+    Future<List<String>> addCategories(int count) async {
+      final manage = get<ManageCategoriesUseCase>();
+      for (var i = 1; i <= count; i++) {
+        await manage.add(name: 'Extra $i', iconKey: 'star', colorValue: 0xFF607D8B);
+      }
+      await categoryProvider.load();
+      return categoryProvider.categories.skip(6).map((c) => c.id).toList();
+    }
+
+    String header(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('filterHeaderLabel'))).data!;
+
+    testWidgets('seven categories page: six full-size rings, dots, swipe to the seventh', (tester) async {
+      final extra = (await tester.runAsync(() => addCategories(1)))!;
+      await pumpHome(tester);
+
+      final firstPage = Category.defaults.map((c) => tester.getRect(ring(c.id))).toList();
+      expect(firstPage.map((r) => r.top).toSet(), hasLength(1));
+      for (final r in firstPage) {
+        expect(r.width, greaterThanOrEqualTo(44));
+        expect(r.right, lessThanOrEqualTo(375));
+      }
+      expect(ring(extra.single).hitTestable(), findsNothing);
+      expect(find.bySemanticsLabel('Category page 1 of 2'), findsOneWidget);
+
+      await tester.drag(find.byKey(const Key('ringPager')), const Offset(-300, 0));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel('Category page 2 of 2'), findsOneWidget);
+      expect(tester.getRect(ring(extra.single)).width, closeTo(firstPage.first.width, 0.01));
+
+      await tester.tap(ring(extra.single));
+      await tester.pumpAndSettle();
+      expect(header(tester), 'Extra 1 · 0 habits');
+
+      // Selection is by id, not by page
+      await tester.drag(find.byKey(const Key('ringPager')), const Offset(300, 0));
+      await tester.pumpAndSettle();
+      expect(categoryProvider.selectedCategoryId, extra.single);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('thirteen categories make three pages with equal ring widths', (tester) async {
+      final extra = (await tester.runAsync(() => addCategories(7)))!;
+      await pumpHome(tester);
+
+      final width = tester.getRect(ring(BuiltInCategoryIds.body)).width;
+      expect(find.bySemanticsLabel('Category page 1 of 3'), findsOneWidget);
+
+      for (var page = 2; page <= 3; page++) {
+        await tester.drag(find.byKey(const Key('ringPager')), const Offset(-300, 0));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.getRect(ring(extra.last)).width, closeTo(width, 0.01));
+    });
+
+    testWidgets('opens on the page holding the selected ring', (tester) async {
+      final extra = (await tester.runAsync(() => addCategories(1)))!;
+      categoryProvider.setSelectedCategoryId(extra.single);
+      await pumpHome(tester);
+
+      expect(ring(extra.single).hitTestable(), findsOneWidget);
+      expect(find.bySemanticsLabel('Category page 2 of 2'), findsOneWidget);
+    });
+
+    testWidgets('exactly six categories stay on one row without a pager', (tester) async {
+      await pumpHome(tester);
+      expect(find.byKey(const Key('ringPager')), findsNothing);
+      expect(find.byKey(const Key('ringPageDots')), findsNothing);
+    });
   });
 }
