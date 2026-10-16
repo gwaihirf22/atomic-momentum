@@ -18,6 +18,8 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
+import 'package:atomic_momentum/presentation/widgets/color_picker.dart';
+import 'package:atomic_momentum/presentation/widgets/selectable_swatch.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -287,8 +289,7 @@ void main() {
       }
     });
 
-    testWidgets('wrapped swatch rows do not touch', (tester) async {
-      // Phone-width screen so the 20 colors wrap onto several rows
+    testWidgets('the color picker is one row of 44pt swatches ending in More, at phone width', (tester) async {
       tester.view.physicalSize = const Size(390, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -303,17 +304,18 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      final swatches = HabitColor.predefinedColors
-          .map((c) => tester.getRect(find.byKey(Key('colorSwatch_${c.name}'))))
-          .toList();
-      final rowTops = swatches.map((r) => r.top).toSet().toList()..sort();
-      expect(rowTops.length, greaterThan(1), reason: 'expected the palette to wrap');
+      final picker = find.byType(CompactColorPicker);
+      final swatches = find.descendant(of: picker, matching: find.byType(SelectableSwatch));
+      final rects = [for (final e in swatches.evaluate()) tester.getRect(find.byWidget(e.widget))];
 
-      final rowHeight = swatches.first.height;
-      for (var i = 1; i < rowTops.length; i++) {
-        expect(rowTops[i] - rowTops[i - 1] - rowHeight, greaterThanOrEqualTo(8),
-            reason: 'gap between swatch rows');
+      expect(rects.length, greaterThanOrEqualTo(4));
+      expect(rects.map((r) => r.top).toSet(), hasLength(1), reason: 'a single row');
+      expect(rects.last.right, lessThanOrEqualTo(390 - 16));
+      for (final r in rects) {
+        expect(r.width, greaterThanOrEqualTo(44));
       }
+      expect(find.byKey(const Key('colorSwatch_More')), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('swatches are labelled for VoiceOver and selectable', (tester) async {

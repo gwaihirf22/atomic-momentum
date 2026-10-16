@@ -15,6 +15,7 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
+import '../presentation/widgets/color_picker.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
@@ -91,6 +92,13 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _selectedCategoryId = categories.first.id;
       }
     });
+  }
+
+  // Colors other habits use (newest first), then common basics
+  List<HabitColor> _colorSuggestions(BuildContext context) {
+    final habits = List.of(context.read<HabitProvider>().habits)
+      ..sort((a, b) => b.metadata.createdDate.compareTo(a.metadata.createdDate));
+    return ColorPalette.suggestions(habits.map((h) => h.color.value));
   }
 
   // Weekday chips start on the user's first day of the week
@@ -351,28 +359,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: _swatchSpacing,
-                runSpacing: _swatchSpacing,
-                children: HabitColor.predefinedColors.map((color) {
-                  final isSelected = _selectedColor == color;
-                  return SelectableSwatch(
-                    key: Key('colorSwatch_${color.name}'),
-                    semanticLabel: '${color.name} color',
-                    isSelected: isSelected,
-                    onTap: () => setState(() => _selectedColor = color),
-                    fill: color.color,
-                    borderColor: isSelected ? Theme.of(context).primaryColor : null,
-                    borderWidth: 3,
-                    child: isSelected
-                        ? Icon(
-                            Icons.check,
-                            color: isDark ? IOSColors.black : IOSColors.white,
-                            size: 22,
-                          )
-                        : null,
-                  );
-                }).toList(),
+              CompactColorPicker(
+                selectedValue: _selectedColor.value,
+                onChanged: (color) => setState(() => _selectedColor = color),
+                suggestions: _colorSuggestions(context),
               ),
               const SizedBox(height: 24),
               

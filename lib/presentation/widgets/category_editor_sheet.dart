@@ -6,6 +6,7 @@ import '../../domain/entities/habit_color.dart';
 import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import 'category_icons.dart';
+import 'color_picker.dart';
 import 'selectable_swatch.dart';
 import 'unsaved_changes_guard.dart';
 
@@ -184,24 +185,14 @@ class _CategoryEditorState extends State<_CategoryEditor> {
             const SizedBox(height: 8),
             const Text('Color', style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: _swatchSpacing,
-              runSpacing: _swatchSpacing,
-              children: [
-                for (final habitColor in HabitColor.predefinedColors)
-                  SelectableSwatch(
-                    key: Key('categoryColorSwatch_${habitColor.name}'),
-                    semanticLabel: '${habitColor.name} color',
-                    isSelected: habitColor.value == _colorValue,
-                    onTap: () => setState(() => _colorValue = habitColor.value),
-                    fill: habitColor.color,
-                    borderColor: habitColor.value == _colorValue ? Theme.of(context).colorScheme.onSurface : null,
-                    borderWidth: 3,
-                    child: habitColor.value == _colorValue
-                        ? const Icon(Icons.check, color: Colors.white, size: 22)
-                        : null,
-                  ),
-              ],
+            CompactColorPicker(
+              keyPrefix: 'categoryColorSwatch_',
+              selectedValue: _colorValue,
+              onChanged: (habitColor) => setState(() => _colorValue = habitColor.value),
+              // Other categories' colors first, then common basics
+              suggestions: ColorPalette.suggestions(
+                provider.categories.where((c) => c.id != widget.existing?.id).map((c) => c.colorValue),
+              ),
             ),
             const SizedBox(height: 16),
             const Text('Icon', style: TextStyle(fontWeight: FontWeight.bold)),

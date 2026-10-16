@@ -64,12 +64,13 @@ class HabitColor extends Equatable {
     purpleAccent,
   ];
 
-  factory HabitColor.fromColor(Color color) {
+  /// [name] defaults to the matching predefined color's name, or "Custom".
+  factory HabitColor.fromColor(Color color, {String? name}) {
     final hex = '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
     return HabitColor(
       value: color.value,
       hex: hex,
-      name: _getColorName(color.value),
+      name: name ?? _getColorName(color.value),
     );
   }
 
