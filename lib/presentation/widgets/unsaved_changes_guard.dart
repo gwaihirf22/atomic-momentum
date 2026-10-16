@@ -1,28 +1,18 @@
 import 'package:flutter/material.dart';
+import 'adaptive.dart';
 
 /// Asks whether to throw away unsaved edits. Returns true to discard.
-Future<bool> confirmDiscardChanges(BuildContext context) async {
-  final discard = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Discard changes?'),
-      content: const Text('Your unsaved changes will be lost.'),
-      actions: [
-        TextButton(
-          key: const Key('keepEditing'),
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Keep Editing'),
-        ),
-        TextButton(
-          key: const Key('discardChanges'),
-          onPressed: () => Navigator.of(context).pop(true),
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('Discard'),
-        ),
-      ],
-    ),
+Future<bool> confirmDiscardChanges(BuildContext context) {
+  return confirmAdaptive(
+    context,
+    title: 'Discard changes?',
+    message: 'Your unsaved changes will be lost.',
+    confirmLabel: 'Discard',
+    cancelLabel: 'Keep Editing',
+    destructive: true,
+    confirmKey: const Key('discardChanges'),
+    cancelKey: const Key('keepEditing'),
   );
-  return discard == true;
 }
 
 /// While [hasChanges], leaving the route (back button, back gesture, tapping

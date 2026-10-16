@@ -51,7 +51,7 @@ class HabitCard extends StatelessWidget {
     final theme = Theme.of(context);
     final color = habit.color.color;
     final isRestDay = !habit.isDueOn(DateTime.now());
-    final secondary = theme.textTheme.bodySmall?.color ?? Colors.grey;
+    final secondary = secondaryLabel(context);
     // Momentum and streak appear once there's something to show
     final showStats = habit.schedule.isPeriodic && habit.history.values.any((amount) => amount > 0);
 

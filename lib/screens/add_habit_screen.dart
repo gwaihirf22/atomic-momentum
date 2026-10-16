@@ -23,6 +23,9 @@ import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'categories_screen.dart';
 import '../core/theme/ios_colors.dart';
 import '../core/exceptions/friendly_error.dart';
+import 'package:flutter/cupertino.dart';
+import '../core/theme/app_style.dart';
+import '../presentation/widgets/adaptive.dart';
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
@@ -89,6 +92,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     }
   }
 
+  static Widget? _noCounter(BuildContext context,
+          {required int currentLength, required bool isFocused, required int? maxLength}) =>
+      null;
+
   void _showSaveError(String? error) {
     final name = _nameController.text.trim();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -118,16 +125,20 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           child: SizedBox(
             width: double.infinity,
             height: 50,
-            child: ElevatedButton(
+            child: FilledButton(
               key: const Key('saveHabitButton'),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppStyle.controlRadius)),
+                textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
               onPressed: _isSubmitting ? null : _submitForm,
               child: _isSubmitting
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator.adaptive(strokeWidth: 2),
                     )
-                  : Text(widget.editHabit != null ? 'Update Habit' : 'Add Habit'),
+                  : Text(widget.editHabit != null ? 'Save Changes' : 'Add Habit'),
             ),
           ),
         ),
@@ -276,10 +287,22 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         return UnsavedChangesGuard(
           hasChanges: _hasUnsavedChanges,
           child: Scaffold(
-      appBar: AppBar(
-        title: Text(widget.editHabit != null ? 'Edit Habit' : 'Add New Habit'),
-        centerTitle: true,
-      ),
+      appBar: isCupertino(context)
+          ? CupertinoNavigationBar(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              middle: Text(widget.editHabit != null ? 'Edit Habit' : 'New Habit'),
+              // maybePop, so unsaved changes are confirmed first
+              leading: CupertinoButton(
+                key: const Key('cancelHabitForm'),
+                padding: EdgeInsets.zero,
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: const Text('Cancel'),
+              ),
+            )
+          : AppBar(
+              title: Text(widget.editHabit != null ? 'Edit Habit' : 'New Habit'),
+              centerTitle: true,
+            ) as PreferredSizeWidget,
       body: Column(children: [
         Expanded(child: Form(
         key: _formKey,
@@ -347,6 +370,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   border: OutlineInputBorder(),
                 ),
                 maxLength: 20,
+                // Enforce the limit without Material's "0/20" counter
+                buildCounter: _noCounter,
                 validator: (value) {
                   if (value != null && value.trim().length > 20) {
                     return 'Units cannot exceed 20 characters';
@@ -357,13 +382,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 24),
               
               // Category Selection
-              const Text(
-                'Category',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const SectionHeader('Category', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: _chipSpacing,
@@ -394,31 +413,18 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   );
                 }).toList(),
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Add or change categories in Settings → Categories',
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                    ),
-                  ),
-                  TextButton(
-                    key: const Key('manageCategories'),
-                    onPressed: _openCategories,
-                    child: const Text('Manage'),
-                  ),
-                ],
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  key: const Key('manageCategories'),
+                  onPressed: _openCategories,
+                  child: const Text('Manage Categories'),
+                ),
               ),
               const SizedBox(height: 24),
               
               // Color Selection
-              const Text(
-                'Color',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const SectionHeader('Color', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
               CompactColorPicker(
                 selectedValue: _selectedColor.value,
@@ -428,13 +434,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 24),
               
               // Icon Selection
-              const Text(
-                'Icon (Optional)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const SectionHeader('Icon', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: _swatchSpacing,
@@ -445,12 +445,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     semanticLabel: 'No icon',
                     isSelected: _selectedIcon == null,
                     onTap: () => setState(() => _selectedIcon = null),
-                    fill: isDark ? IOSColors.tertiarySystemFill : Colors.grey.shade200,
+                    fill: CupertinoDynamicColor.resolve(IOSColors.tertiarySystemFill, context),
                     borderColor: _selectedIcon == null ? Theme.of(context).primaryColor : null,
                     borderWidth: 3,
                     child: Icon(
                       Icons.close,
-                      color: isDark ? IOSColors.labelDark : Colors.grey,
+                      color: secondaryLabel(context),
                       size: 22,
                     ),
                   ),
@@ -464,14 +464,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       onTap: () => setState(() => _selectedIcon = iconKey),
                       fill: isSelected
                           ? _selectedColor.color.withOpacity(0.2)
-                          : (isDark ? IOSColors.secondarySystemFill : Colors.grey.shade100),
+                          : CupertinoDynamicColor.resolve(IOSColors.secondarySystemFill, context),
                       borderColor: isSelected ? _selectedColor.color : null,
                       borderWidth: 2,
                       child: Icon(
                         entry.value,
                         color: isSelected
                             ? _selectedColor.color
-                            : (isDark ? IOSColors.labelDark : Colors.grey.shade600),
+                            : secondaryLabel(context),
                         size: 22,
                       ),
                     );
@@ -481,13 +481,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 24),
               
               // Schedule
-              const Text(
-                'Schedule',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const SectionHeader('Schedule', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: _chipSpacing,
@@ -505,13 +499,15 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               if (_selectedFrequency.isPeriodic) ...[
                 const SizedBox(height: 8),
-                Row(
+                // Wraps at large text sizes rather than overflowing
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     const Text('Every', style: TextStyle(fontSize: 16)),
                     IconButton(
                       key: const Key('intervalMinus'),
                       icon: const Icon(Icons.remove_circle_outline),
-                      tooltip: 'Fewer',
+                      tooltip: 'Decrease interval',
                       onPressed: _resetInterval > 1 ? () => setState(() => _resetInterval--) : null,
                     ),
                     Text(
@@ -522,7 +518,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     IconButton(
                       key: const Key('intervalPlus'),
                       icon: const Icon(Icons.add_circle_outline),
-                      tooltip: 'More',
+                      tooltip: 'Increase interval',
                       onPressed: _resetInterval < _maxInterval ? () => setState(() => _resetInterval++) : null,
                     ),
                     Text(
@@ -559,36 +555,17 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               const SizedBox(height: 24),
               
               // Reminder Settings Section
-              const Text(
-                'Reminder Settings',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const SectionHeader('Reminder', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
               
               // Enable Reminder Switch
-              Row(
-                children: [
-                  Switch(
-                    key: const Key('reminderSwitch'),
-                    value: _reminderEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        _reminderEnabled = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  // Expanded so the label wraps on narrow screens / large text
-                  const Expanded(
-                    child: Text(
-                      'Enable reminders for this habit',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ],
+              // The label is part of the switch: tappable, and read with it by VoiceOver
+              SwitchListTile.adaptive(
+                key: const Key('reminderSwitch'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Remind me about this habit'),
+                value: _reminderEnabled,
+                onChanged: (value) => setState(() => _reminderEnabled = value),
               ),
               
               if (_reminderEnabled) ...[
@@ -603,12 +580,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                         style: const TextStyle(fontSize: 16),
                       ),
                     ),
-                    ElevatedButton(
+                    TextButton(
+                      key: const Key('changeReminderTime'),
                       onPressed: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: _reminderTime,
-                        );
+                        final time = await pickTimeAdaptive(context, initial: _reminderTime);
                         if (time != null) {
                           setState(() {
                             _reminderTime = time;
@@ -642,6 +617,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 100,
+                  buildCounter: _noCounter,
                   onChanged: (value) {
                     setState(() => _customMessage = value);
                   },
@@ -760,11 +736,11 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   }
 
   Future<void> _pickResetDay() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _resetAnchor,
-      firstDate: _resetAnchor.isBefore(DateTime(2020)) ? _resetAnchor : DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 366)),
+    final picked = await pickDateAdaptive(
+      context,
+      initial: _resetAnchor,
+      first: _resetAnchor.isBefore(DateTime(2020)) ? _resetAnchor : DateTime(2020),
+      last: DateTime.now().add(const Duration(days: 366)),
       helpText: _selectedFrequency == ResetFrequency.weekly
           ? 'Pick a day: the habit resets on that weekday'
           : _selectedFrequency == ResetFrequency.monthly

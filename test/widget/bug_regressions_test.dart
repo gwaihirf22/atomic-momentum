@@ -67,7 +67,7 @@ void main() {
     await pumpScreen(tester, AddHabitScreen(editHabit: habit));
     await tester.tap(find.byKey(const Key('reminderSwitch')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Update Habit'));
+    await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
     final updated = habitProvider.getHabitById(habit.id)!;

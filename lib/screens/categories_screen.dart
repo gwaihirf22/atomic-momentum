@@ -6,6 +6,9 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_editor_sheet.dart';
 import '../presentation/widgets/category_icons.dart';
+import '../presentation/widgets/adaptive.dart';
+import 'package:flutter/cupertino.dart';
+import '../core/theme/app_style.dart';
 
 /// Manage categories: add, edit, reorder, delete, and restore or
 /// permanently remove deleted ones.
@@ -19,18 +22,20 @@ class CategoriesScreen extends StatelessWidget {
     final categories = categoryProvider.categories;
     final atLimit = categories.length >= Category.maxCount;
 
+    final addButton = IconButton(
+      key: const Key('addCategory'),
+      icon: Icon(isCupertino(context) ? CupertinoIcons.add : Icons.add),
+      tooltip: atLimit ? 'You can have up to ${Category.maxCount} categories' : 'Add category',
+      onPressed: atLimit ? null : () => showCategoryEditorSheet(context),
+    );
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Categories'),
-        actions: [
-          IconButton(
-            key: const Key('addCategory'),
-            icon: const Icon(Icons.add),
-            tooltip: atLimit ? 'You can have up to ${Category.maxCount} categories' : 'Add category',
-            onPressed: atLimit ? null : () => showCategoryEditorSheet(context),
-          ),
-        ],
-      ),
+      appBar: isCupertino(context)
+          ? CupertinoNavigationBar(
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              middle: const Text('Categories'),
+              trailing: addButton,
+            )
+          : AppBar(title: const Text('Categories'), actions: [addButton]) as PreferredSizeWidget,
       body: ReorderableListView(
         buildDefaultDragHandles: false,
         onReorder: (oldIndex, newIndex) => _reorder(context, oldIndex, newIndex),
@@ -108,7 +113,7 @@ class _CategoryRow extends StatelessWidget {
             height: 44,
             child: Semantics(
               label: 'Reorder ${category.name}',
-              child: const Icon(Icons.drag_handle),
+              child: Icon(isCupertino(context) ? CupertinoIcons.line_horizontal_3 : Icons.drag_handle),
             ),
           ),
         ),
@@ -132,23 +137,20 @@ class _Footer extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (atLimit)
-          const Padding(
-            padding: EdgeInsets.all(16),
+          Padding(
+            padding: const EdgeInsets.all(16),
             child: Text(
               'You can have up to ${Category.maxCount} categories.',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: secondaryLabel(context)),
             ),
           ),
         if (deleted.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 4),
-            child: Text('Recently Deleted', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+          const SectionHeader('Recently Deleted'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
               'Habits in a deleted category are kept and shown as Uncategorized.',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: secondaryLabel(context)),
             ),
           ),
           for (final category in deleted)
@@ -182,19 +184,12 @@ class _DeletedRow extends StatelessWidget {
 
   Future<void> _moveHabits(BuildContext context) async {
     final categoryProvider = context.read<CategoryProvider>();
-    final target = await showDialog<Category>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text('Move ${_habitCountText(habitCount).toLowerCase()} to…'),
-        children: [
-          for (final c in categoryProvider.categories)
-            SimpleDialogOption(
-              key: Key('moveTarget_${c.id}'),
-              onPressed: () => Navigator.of(context).pop(c),
-              child: Row(children: [_CategoryIcon(c), const SizedBox(width: 12), Text(c.name)]),
-            ),
-        ],
-      ),
+    final target = await chooseAdaptive<Category>(
+      context,
+      title: 'Move ${_habitCountText(habitCount).toLowerCase()} to…',
+      options: [
+        for (final c in categoryProvider.categories) AdaptiveOption(c, c.name, key: Key('moveTarget_${c.id}')),
+      ],
     );
     if (target == null || !context.mounted) return;
 
@@ -211,23 +206,15 @@ class _DeletedRow extends StatelessWidget {
   }
 
   Future<void> _deletePermanently(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Permanently delete "${category.name}"?'),
-        content: const Text('This can\'t be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          TextButton(
-            key: const Key('confirmDeletePermanently'),
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete Permanently'),
-          ),
-        ],
-      ),
+    final confirmed = await confirmAdaptive(
+      context,
+      title: 'Permanently delete "${category.name}"?',
+      message: 'This can\'t be undone.',
+      confirmLabel: 'Delete Permanently',
+      destructive: true,
+      confirmKey: const Key('confirmDeletePermanently'),
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     final provider = context.read<CategoryProvider>();
     if (!await provider.deletePermanently(category.id) && context.mounted) {
@@ -239,7 +226,7 @@ class _DeletedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Opacity(opacity: 0.5, child: _CategoryIcon(category)),
-      title: Text(category.name, style: const TextStyle(color: Colors.grey)),
+      title: Text(category.name, style: TextStyle(color: secondaryLabel(context))),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

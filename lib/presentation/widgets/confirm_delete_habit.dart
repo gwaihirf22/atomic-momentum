@@ -1,25 +1,14 @@
 import 'package:flutter/material.dart';
+import 'adaptive.dart';
 
 /// Asks before deleting a habit and its history. Returns true to delete.
-Future<bool> confirmDeleteHabit(BuildContext context, String habitName) async {
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Delete Habit'),
-      content: Text('Are you sure you want to delete "$habitName"?\n\nThis action cannot be undone.'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          key: const Key('confirmDeleteHabit'),
-          onPressed: () => Navigator.of(context).pop(true),
-          style: TextButton.styleFrom(foregroundColor: Colors.red),
-          child: const Text('Delete'),
-        ),
-      ],
-    ),
+Future<bool> confirmDeleteHabit(BuildContext context, String habitName) {
+  return confirmAdaptive(
+    context,
+    title: 'Delete "$habitName"?',
+    message: 'Its history and streak will be deleted too. This can\'t be undone.',
+    confirmLabel: 'Delete',
+    destructive: true,
+    confirmKey: const Key('confirmDeleteHabit'),
   );
-  return confirmed == true;
 }

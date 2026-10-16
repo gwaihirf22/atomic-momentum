@@ -220,7 +220,7 @@ void main() {
       expect(button.hitTestable(), findsOneWidget);
     });
 
-    testWidgets('reads Update Habit when editing', (tester) async {
+    testWidgets('reads Save Changes when editing', (tester) async {
       await habitProvider.createHabit(const CreateHabitParams(
         name: 'Read',
         target: 1,
@@ -229,7 +229,7 @@ void main() {
       ));
       await pumpPhone(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
 
-      expect(find.descendant(of: button, matching: find.text('Update Habit')), findsOneWidget);
+      expect(find.descendant(of: button, matching: find.text('Save Changes')), findsOneWidget);
     });
   });
 
@@ -247,7 +247,7 @@ void main() {
     testWidgets('Manage opens Categories; the form is kept and a new category is selected', (tester) async {
       await pumpScreen(tester, const AddHabitScreen());
       await tester.enterText(find.byType(TextFormField).at(0), 'Pottery class');
-      expect(find.text('Add or change categories in Settings → Categories'), findsOneWidget);
+      expect(find.text('Manage Categories'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('manageCategories')));
       await tester.pumpAndSettle();
@@ -299,7 +299,7 @@ void main() {
 
       await pumpScreen(tester, AddHabitScreen(editHabit: habit));
       expect(chipSelected(tester, 'uncategorized'), isTrue);
-      await tester.tap(find.text('Update Habit'));
+      await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
       expect(habitProvider.habits.single.categoryId, 'hobbies');
 
@@ -308,7 +308,7 @@ void main() {
       await pumpScreen(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
       await tester.tap(find.byKey(const Key('categoryChip_mind')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Update Habit'));
+      await tester.tap(find.text('Save Changes'));
       await tester.pumpAndSettle();
       expect(habitProvider.habits.single.categoryId, BuiltInCategoryIds.mind);
     });
@@ -466,7 +466,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('iconSwatch_none')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Update Habit'));
+    await tester.tap(find.text('Save Changes'));
     await tester.pumpAndSettle();
 
     expect(habitProvider.habits.single.metadata.icon, isNull);
@@ -497,9 +497,9 @@ void main() {
       await pumpScreen(tester, const SettingsScreen());
       expect(find.text('Automatic (Sunday)'), findsOneWidget);
 
-      await tester.tap(find.byKey(const Key('weekStartDropdown')));
+      await tester.tap(find.byKey(const Key('weekStartSetting')));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Monday').last);
+      await tester.tap(find.byKey(Key('weekStart_${DateTime.monday}')));
       await tester.pumpAndSettle();
 
       expect(get<SettingsProvider>().weekStartOverride, DateTime.monday);

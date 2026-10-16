@@ -226,7 +226,7 @@ void main() {
 
     await tester.tap(find.byKey(Key('deleteHabit_$waterId')));
     await tester.pumpAndSettle();
-    expect(find.text('Delete Habit'), findsOneWidget);
+    expect(find.text('Delete "Drink Water"?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmDeleteHabit')));
     await tester.pumpAndSettle();
 

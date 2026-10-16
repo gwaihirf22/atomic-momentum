@@ -9,8 +9,11 @@ CupertinoNavigationBar appNavigationBar({
   required bool isDark,
   Widget? leading,
   Widget? trailing,
+
+  /// Defaults to the page background; Settings uses the grouped background.
+  Color? backgroundColor,
 }) {
-  final background = isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground;
+  final background = backgroundColor ?? (isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground);
   return CupertinoNavigationBar(
     backgroundColor: background,
     border: Border(

@@ -31,9 +31,10 @@ class CategoryFilterHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-      child: SizedBox(
-        // Keeps the row height stable whether or not the button is shown
-        height: 44,
+      child: ConstrainedBox(
+        // Keeps the row height stable whether or not the button is shown, and
+        // lets it grow with large text sizes
+        constraints: const BoxConstraints(minHeight: 44),
         child: Row(
           children: [
             if (category != null) ...[

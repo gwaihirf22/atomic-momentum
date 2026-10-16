@@ -21,7 +21,7 @@ class IOSMainNavigation extends StatelessWidget {
           tabBar: CupertinoTabBar(
             backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
             activeColor: IOSColors.systemBlue,
-            inactiveColor: isDark ? IOSColors.secondaryLabel : IOSColors.secondaryLabel,
+            inactiveColor: IOSColors.secondaryLabel,
             border: Border(
               top: BorderSide(
                 color: isDark ? IOSColors.separatorDark : IOSColors.separator,
@@ -36,7 +36,7 @@ class IOSMainNavigation extends StatelessWidget {
               ),
               BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.calendar),
-                activeIcon: Icon(CupertinoIcons.calendar_today),
+                activeIcon: Icon(CupertinoIcons.calendar),
                 label: 'Calendar',
               ),
               BottomNavigationBarItem(

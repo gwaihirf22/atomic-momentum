@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit_color.dart';
 import 'selectable_swatch.dart';
+import 'package:flutter/cupertino.dart';
+import '../../core/theme/app_style.dart';
 
 /// The colors offered in the full picker: 12 hue families x 6 shades.
 /// Shade 500 of each family is named like the matching predefined color
@@ -161,6 +163,7 @@ Future<HabitColor?> showColorPickerSheet(BuildContext context, {required int sel
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    showDragHandle: true,
     builder: (_) => _ColorPickerSheet(selectedValue: selectedValue),
   );
 }
@@ -178,11 +181,13 @@ class _ColorPickerSheet extends StatelessWidget {
         height: MediaQuery.sizeOf(context).height * 0.75,
         child: Column(
           children: [
+            const Text('Choose a Color', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text('Choose a Color', style: Theme.of(context).textTheme.titleLarge),
-            const TabBar(tabs: [Tab(text: 'Grid'), Tab(text: 'Custom')]),
+            isCupertino(context) ? const _SegmentedTabs() : const TabBar(tabs: [Tab(text: 'Grid'), Tab(text: 'Custom')]),
             Expanded(
               child: TabBarView(
+                // Swiping would fight with dragging on the hue wheel
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _PaletteGrid(selectedValue: selectedValue),
                   _CustomColorTab(initial: Color(selectedValue)),
@@ -190,6 +195,32 @@ class _ColorPickerSheet extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Grid / Custom as an iOS segmented control, driving the sheet's tabs.
+class _SegmentedTabs extends StatelessWidget {
+  const _SegmentedTabs();
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = DefaultTabController.of(context);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: SizedBox(
+          width: double.infinity,
+          child: CupertinoSlidingSegmentedControl<int>(
+            groupValue: controller.index,
+            onValueChanged: (index) {
+              if (index != null) controller.animateTo(index);
+            },
+            children: const {0: Text('Grid'), 1: Text('Custom')},
+          ),
         ),
       ),
     );
@@ -348,7 +379,7 @@ class _CustomColorTabState extends State<_CustomColorTab> {
       children: [
         SizedBox(width: 88, child: Text(label)),
         Expanded(
-          child: Slider(key: key, value: value, min: min, max: 1, label: label, onChanged: onChanged),
+          child: Slider.adaptive(key: key, value: value, min: min, max: 1, label: label, onChanged: onChanged),
         ),
       ],
     );

@@ -9,6 +9,9 @@ import 'category_icons.dart';
 import 'color_picker.dart';
 import 'selectable_swatch.dart';
 import 'unsaved_changes_guard.dart';
+import 'adaptive.dart';
+import 'package:flutter/cupertino.dart';
+import '../../core/theme/app_style.dart';
 
 /// Add a category, or edit [existing] (including deleting it).
 Future<void> showCategoryEditorSheet(BuildContext context, {Category? existing}) {
@@ -91,23 +94,15 @@ class _CategoryEditorState extends State<_CategoryEditor> {
         : 'Its $habitCount ${habitCount == 1 ? 'habit' : 'habits'} and their streaks are kept '
             'and shown as Uncategorized. ';
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete "${category.name}"?'),
-        content: Text('${habitsText}You can restore it from Recently Deleted.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          TextButton(
-            key: const Key('confirmDeleteCategory'),
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final confirmed = await confirmAdaptive(
+      context,
+      title: 'Delete "${category.name}"?',
+      message: '${habitsText}You can restore it from Recently Deleted.',
+      confirmLabel: 'Delete',
+      destructive: true,
+      confirmKey: const Key('confirmDeleteCategory'),
     );
-    if (confirmed != true || !mounted) return;
+    if (!confirmed || !mounted) return;
 
     final provider = context.read<CategoryProvider>();
     if (await provider.delete(category.id)) {
@@ -135,24 +130,21 @@ class _CategoryEditorState extends State<_CategoryEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Row(
-              children: [
-                TextButton(
+            // Keeps the title centered however wide Cancel is (large text sizes)
+            SizedBox(
+              height: 44,
+              child: NavigationToolbar(
+                leading: TextButton(
                   key: const Key('cancelCategoryEdit'),
                   // maybePop, so unsaved changes are confirmed first
                   onPressed: () => Navigator.of(context).maybePop(),
                   child: const Text('Cancel'),
                 ),
-                Expanded(
-                  child: Text(
-                    _isNew ? 'New Category' : 'Edit Category',
-                    style: Theme.of(context).textTheme.titleLarge,
-                    textAlign: TextAlign.center,
-                  ),
+                middle: Text(
+                  _isNew ? 'New Category' : 'Edit Category',
+                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                 ),
-                // Balances the Cancel button so the title stays centered
-                const SizedBox(width: 72),
-              ],
+              ),
             ),
             const SizedBox(height: 16),
             // Live preview
@@ -207,10 +199,10 @@ class _CategoryEditorState extends State<_CategoryEditor> {
                     semanticLabel: '${CategoryIcons.label(entry.key)} icon',
                     isSelected: entry.key == _iconKey,
                     onTap: () => setState(() => _iconKey = entry.key),
-                    fill: entry.key == _iconKey ? color.withOpacity(0.2) : Colors.grey.withOpacity(0.12),
+                    fill: entry.key == _iconKey ? color.withOpacity(0.2) : CupertinoDynamicColor.resolve(CupertinoColors.tertiarySystemFill, context),
                     borderColor: entry.key == _iconKey ? color : null,
                     borderWidth: 2,
-                    child: Icon(entry.value, size: 22, color: entry.key == _iconKey ? color : Colors.grey.shade600),
+                    child: Icon(entry.value, size: 22, color: entry.key == _iconKey ? color : secondaryLabel(context)),
                   ),
               ],
             ),
@@ -229,10 +221,10 @@ class _CategoryEditorState extends State<_CategoryEditor> {
                 child: const Text('Delete Category'),
               ),
               if (!canDelete)
-                const Text(
+                Text(
                   'Keep at least one category',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: secondaryLabel(context)),
                 ),
             ],
           ],
