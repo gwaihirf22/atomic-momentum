@@ -45,11 +45,12 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # Run Flutter app (development) - requires specifying device
 ./flutter/bin/flutter run -d chrome --web-port=8080 --web-hostname=localhost
 
-# Run on the iPhone simulator (iOS 15+ deployment target; Xcode 27 has no separate
-# Simulator app - the booted device is shown in Xcode's DeviceHub)
-xcrun simctl boot "iPhone 17 Pro"
+# Run on the iPhone simulator (iOS 15+ deployment target). Xcode 27 replaced the
+# Simulator app with DeviceHub (Xcode.app/Contents/Applications/DeviceHub.app).
+# Start the iPhone from DeviceHub: one booted with `xcrun simctl boot` shows there
+# but doesn't take clicks. Then:
 ./flutter/bin/flutter run -d "iPhone 17 Pro"
-xcrun simctl io booted screenshot shot.png   # screenshot without the UI
+xcrun simctl io booted screenshot shot.png   # screenshot from the command line
 
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web

@@ -104,7 +104,7 @@ class HabitCard extends StatelessWidget {
                         fraction: habit.progressPercentage,
                         isDone: habit.isCompleted,
                         dimmed: isRestDay,
-                        semanticLabel: '${habit.name}, $_progressText',
+                        semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                         onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
                       ),
                       const SizedBox(width: 12),
@@ -120,7 +120,7 @@ class HabitCard extends StatelessWidget {
                               style: const TextStyle(fontSize: 16, height: 1.2, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 2),
-                            // Truncates (category last) rather than overflowing
+                            // Truncates rather than overflowing
                             Text.rich(
                               TextSpan(children: [
                                 TextSpan(
@@ -130,9 +130,11 @@ class HabitCard extends StatelessWidget {
                                     color: habit.isCompleted ? color : null,
                                   ),
                                 ),
-                                TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
+                                // Only what's informative: the category shows in the
+                                // icon and color, and every day is the default
+                                if (!habit.schedule.isEveryDay)
+                                  TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
                                 if (isRestDay) const TextSpan(text: '  ·  Rest day'),
-                                TextSpan(text: '  ·  ${category.name}'),
                               ]),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

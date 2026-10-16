@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/data/datasources/local_habit_datasource.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/delete_habit_usecase.dart';
@@ -79,6 +80,46 @@ void main() {
     expect(find.descendant(of: card(), matching: find.text('Drink Water')), findsOneWidget);
     expect(find.descendant(of: card(), matching: find.textContaining('0/3 glasses')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the subtitle shows only what is informative', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Read',
+      target: 2,
+      units: 'chapters',
+      color: HabitColor.teal,
+      categoryId: BuiltInCategoryIds.mind,
+      scheduledWeekdays: [DateTime.monday, DateTime.wednesday, DateTime.friday],
+    ));
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Call a friend',
+      target: 2,
+      units: 'calls',
+      color: HabitColor.green,
+      categoryId: BuiltInCategoryIds.social,
+      resetFrequency: ResetFrequency.weekly,
+    ));
+    final handle = tester.ensureSemantics();
+    await pumpHome(tester);
+
+    String subtitle(String name) {
+      final habit = habitProvider.habits.firstWhere((h) => h.name == name);
+      final card = find.byKey(Key('habitCard_${habit.id}'));
+      return tester
+          .widgetList<RichText>(find.descendant(of: card, matching: find.byType(RichText)))
+          .map((t) => t.text.toPlainText())
+          .firstWhere((t) => t.startsWith('0/'));
+    }
+
+    // Every day is the default, and the category shows in the icon and color
+    expect(subtitle('Drink Water'), '0/3 glasses');
+    expect(subtitle('Call a friend'), '0/2 calls  ·  Weekly');
+    expect(subtitle('Read'), startsWith('0/2 chapters  ·  Mon, Wed, Fri'));
+    expect(find.descendant(of: card(), matching: find.textContaining('Body')), findsNothing);
+
+    // VoiceOver still hears the category
+    expect(find.bySemanticsLabel(RegExp('Drink Water, Body, 0/3 glasses')), findsOneWidget);
+    handle.dispose();
   });
 
   testWidgets('streaks show a flat flame, not an emoji', (tester) async {

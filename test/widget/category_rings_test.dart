@@ -162,10 +162,9 @@ void main() {
     await tester.drag(find.byKey(const Key('ringPager')), const Offset(-300, 0));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Uncategorized, 0 percent, 0 of 1 habits complete'), findsOneWidget);
-    expect(
-      find.descendant(of: find.byKey(Key('habitCard_${pottery.id}')), matching: find.textContaining('Uncategorized')),
-      findsOneWidget,
-    );
+    // The card shows the grey icon; the name is read out to VoiceOver
+    expect(find.byKey(Key('habitCard_${pottery.id}')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp('Pottery, Uncategorized')), findsOneWidget);
 
     await tester.tap(ring(Category.uncategorizedId));
     await tester.pumpAndSettle();

@@ -38,6 +38,9 @@ class HabitSchedule extends Equatable {
   bool get isPeriodic => frequency.isPeriodic;
   bool get hasRestDays => weekdays != null;
 
+  /// Plain daily: due every day, resetting each day (the default schedule).
+  bool get isEveryDay => frequency == ResetFrequency.daily && interval == 1 && !hasRestDays;
+
   /// Local midnight at which the period containing [date] began.
   DateTime periodStart(DateTime date) {
     final day = _dateOnly(date);

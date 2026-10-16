@@ -107,4 +107,12 @@ void main() {
       expect(daily(interval: 2).streakLabel(4), '4 in a row');
     });
   });
+
+  test('isEveryDay is only the plain daily default', () {
+    final anchor = DateTime(2026, 10, 16);
+    expect(HabitSchedule(frequency: ResetFrequency.daily, anchor: anchor).isEveryDay, isTrue);
+    expect(HabitSchedule(frequency: ResetFrequency.daily, interval: 2, anchor: anchor).isEveryDay, isFalse);
+    expect(HabitSchedule(frequency: ResetFrequency.daily, anchor: anchor, weekdays: [1, 3, 5]).isEveryDay, isFalse);
+    expect(HabitSchedule(frequency: ResetFrequency.weekly, anchor: anchor).isEveryDay, isFalse);
+  });
 }
