@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 Atomic Momentum is a habit tracking application:
-- **Flutter app** (primary, active): Dart/Flutter for iOS, macOS, Android and web, on `main`. The goal is an App Store release.
-- **SwiftUI app** (exploratory): a native Xcode project on the `swift` branch, kept as an option in case the project moves to Swift. Currently Xcode's starter template.
+- **Flutter app** (primary, long-term): Dart/Flutter for iOS, macOS, Android and web, on `main`. The goal is an App Store and Google Play release. Swift is written only where Apple requires it (widget, Live Activity and Watch extensions inside `ios/`).
+- **SwiftUI app** (fallback): a native Xcode project on the `swift` branch, kept in case the project ever moves to Swift. Currently Xcode's starter template.
 - **Web application** (legacy, complete): HTML/CSS/JavaScript with a Python server; kept for reference.
 
 The project focuses on helping users build and maintain positive daily habits with visual progress tracking, streak monitoring, and category-based organization.
@@ -123,17 +123,13 @@ python server.py
 
 ## Development Practices
 
-### Current Phase: Phase 3 - Feature Completion
-Based on completed Phase 2 testing and validation:
-1. **High Priority**: Notification system implementation using existing ReminderSettings
-2. **Medium Priority**: Enhanced color/icon customization and data migration tools
-3. **Future**: Advanced analytics and iOS-specific optimizations
-
-### File Modifications for Phase 3
-- **Primary Development**: Focus on `lib/` directory for Flutter development
-- **Notification System**: Implement flutter_local_notifications integration
-- **UI Enhancements**: Improve `lib/screens/` for better iOS experience
-- **Data Migration**: Create utilities in `lib/core/migration/`
+### Product Direction
+**Read `docs/strategy/product-strategy.md` before planning features.** It holds the positioning ("Momentum, not perfection", built on *Atomic Habits*), monetization (free + one-time Pro + in-app-purchase tip jar), the Flutter-over-Swift decision and the roadmap. v1, in order:
+1. Momentum score + never miss twice
+2. Two-minute version
+3. Year heatmap + weekly review
+4. Onboarding tutorial
+5. Store readiness
 
 ### Testing Strategy
 - **Every feature or fix ships with tests.** Run the whole suite with `./flutter/bin/flutter test`; it must pass.
@@ -141,21 +137,7 @@ Based on completed Phase 2 testing and validation:
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
 - **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
-- **Status (2026-10-15)**: 193 tests passing; 58.5% line coverage (use cases, data layer and `habit_provider.dart` are the weakest areas)
-
-### Current Development Status (July 14, 2025)
-- **Critical Bugs Fixed**: Navigation, units input, habit incrementation issues resolved
-- **Core Features Complete**: Full CRUD functionality (Create, Read, Update, Delete) implemented
-- **New Features Added**: 
-  - Frequency selection dropdown (Daily/Weekly/Monthly/Never)
-  - Complete edit habit functionality with form pre-population
-  - Delete habit functionality with confirmation dialogs
-  - Default habit system for testing convenience
-- **UI Enhancements**: Professional habit cards with frequency display and edit/delete buttons
-- **Debug System**: Comprehensive logging for development stability (temporary)
-- **Architecture Validated**: Clean architecture patterns working correctly with bypass solutions
-- **Ready for Phase 3**: Notifications, enhanced customization, data migration, advanced analytics
-- **Testing Framework**: Robust and reliable for continued development
+- **Status (2026-10-16)**: 371 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 

@@ -1,5 +1,7 @@
 # 🗺️ Atomic Momentum - Development Roadmap
 
+> **Superseded:** see `docs/strategy/product-strategy.md` (October 2026) for the current roadmap.
+
 ## Current Status (June 2025)
 
 ### 🎉 MAJOR MILESTONE ACHIEVED: Flutter Feature Parity Complete
