@@ -23,6 +23,8 @@ class HabitModel extends Habit {
     super.reminder,
     required super.metadata,
     super.resetAnchorDate,
+    super.resetInterval,
+    super.scheduledWeekdays,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -45,6 +47,8 @@ class HabitModel extends Habit {
         reminder: habit.reminder,
         metadata: habit.metadata,
         resetAnchorDate: habit.resetAnchorDate,
+        resetInterval: habit.resetInterval,
+        scheduledWeekdays: habit.scheduledWeekdays,
       );
     } catch (e) {
       print('DEBUG: HabitModel.fromDomain() - ERROR: $e');
@@ -72,6 +76,8 @@ class HabitModel extends Habit {
         reminder: reminder,
         metadata: metadata,
         resetAnchorDate: resetAnchorDate,
+        resetInterval: resetInterval,
+        scheduledWeekdays: scheduledWeekdays,
       );
       
       print('DEBUG: HabitModel.toDomain() - Successfully converted: ${habitDomain.name} isCompleted: ${habitDomain.isCompleted}');
@@ -129,6 +135,8 @@ class HabitModel extends Habit {
       resetAnchorDate: json['resetAnchor'] != null
           ? DateTime.parse(json['resetAnchor'] as String)
           : null,
+      resetInterval: (json['resetInterval'] as num?)?.toInt() ?? 1,
+      scheduledWeekdays: (json['scheduledWeekdays'] as List<dynamic>?)?.cast<int>(),
     );
   }
 
@@ -164,6 +172,8 @@ class HabitModel extends Habit {
         'reminder': reminder?.toJson(),
         'metadata': metadata.toJson(),
         'resetAnchor': resetAnchorDate?.toIso8601String(),
+        'resetInterval': resetInterval,
+        'scheduledWeekdays': scheduledWeekdays,
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': DateTime.now().toIso8601String(),
       };

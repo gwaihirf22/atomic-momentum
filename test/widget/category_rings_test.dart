@@ -123,6 +123,27 @@ void main() {
     expect(find.text('Run'), findsOneWidget);
   });
 
+  testWidgets('a habit on its rest day is labelled and left out of its ring', (tester) async {
+    // Due only on tomorrow's weekday, so today is a rest day
+    final tomorrowWeekday = DateTime.now().weekday % 7 + 1;
+    await habitProvider.createHabit(CreateHabitParams(
+      name: 'Pottery',
+      target: 1,
+      color: HabitColor.pink,
+      category: HabitCategory.creative,
+      scheduledWeekdays: [tomorrowWeekday],
+    ));
+    final pottery = habitProvider.habits.firstWhere((h) => h.name == 'Pottery');
+
+    await pumpHome(tester);
+
+    expect(
+      find.descendant(of: find.byKey(Key('habitCard_${pottery.id}')), matching: find.textContaining('Rest day')),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('Creative, no habits'), findsOneWidget);
+  });
+
   testWidgets('tapping a ring filters; tapping it again shows all', (tester) async {
     await pumpHome(tester);
     expect(find.text('Read'), findsOneWidget);

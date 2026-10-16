@@ -19,6 +19,28 @@ void main() {
       expect(restored, habit);
     });
 
+    test('round-trips the repeat interval and weekdays', () {
+      final habit = TestData.createTestHabit().copyWith(resetInterval: 2, scheduledWeekdays: [1, 3, 5]);
+
+      final restored = HabitModel.fromJson(HabitModel.fromDomain(habit).toJson()).toDomain();
+
+      expect(restored.resetInterval, 2);
+      expect(restored.scheduledWeekdays, [1, 3, 5]);
+      expect(restored, habit);
+    });
+
+    test('older JSON without schedule fields means every day, interval 1', () {
+      final json = HabitModel.fromDomain(TestData.createTestHabit()).toJson()
+        ..remove('resetInterval')
+        ..remove('scheduledWeekdays');
+
+      final restored = HabitModel.fromJson(json);
+
+      expect(restored.resetInterval, 1);
+      expect(restored.scheduledWeekdays, isNull);
+      expect(restored.schedule.hasRestDays, isFalse);
+    });
+
     test('compact storage JSON keeps history older than 90 days', () {
       final longAgo = DateTime.now().subtract(const Duration(days: 400));
       final day = DateTime(longAgo.year, longAgo.month, longAgo.day);

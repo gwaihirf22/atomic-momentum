@@ -54,16 +54,15 @@ void main() {
 
   group('Add habit: reset day', () {
     Future<void> chooseFrequency(WidgetTester tester, String label) async {
-      await tester.tap(find.byType(DropdownButtonFormField<ResetFrequency>));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text(label).last);
+      await tester.tap(find.byKey(Key('frequency_${label.toLowerCase()}')));
       await tester.pumpAndSettle();
     }
 
     testWidgets('is hidden for daily habits and defaults to today for weekly', (tester) async {
       await pumpScreen(tester, const AddHabitScreen());
 
-      expect(find.byKey(const Key('resetDayTile')), findsNothing);
+      expect(find.byKey(const Key('changeStartDate')), findsNothing);
+      expect(find.text('Resets every day'), findsOneWidget);
 
       await chooseFrequency(tester, 'Weekly');
 
@@ -75,7 +74,7 @@ void main() {
       await pumpScreen(tester, const AddHabitScreen());
       await chooseFrequency(tester, 'Monthly');
 
-      await tester.tap(find.text('Change'));
+      await tester.tap(find.byKey(const Key('changeStartDate')));
       await tester.pumpAndSettle();
       expect(find.byType(DatePickerDialog), findsOneWidget);
 
@@ -95,6 +94,71 @@ void main() {
       final saved = habitProvider.habits.single;
       expect(saved.resetFrequency, ResetFrequency.monthly);
       expect(saved.resetAnchor.day, pickDay);
+    });
+
+    Future<void> fillNameAndTarget(WidgetTester tester, String name, String target) async {
+      await tester.enterText(find.byType(TextFormField).at(0), name);
+      await tester.enterText(find.byType(TextFormField).at(1), target);
+    }
+
+    testWidgets('every 2 days: stepper, start date and summary are saved', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      expect(find.text('per day'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('intervalPlus')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2'), findsWidgets);
+      expect(find.textContaining('Resets every 2 days, starting'), findsOneWidget);
+      expect(find.text('per 2 days'), findsOneWidget);
+      expect(find.byKey(const Key('changeStartDate')), findsOneWidget);
+      // Weekday chips only apply to every-day habits
+      expect(find.byKey(const Key('scheduleDay_1')), findsNothing);
+
+      await fillNameAndTarget(tester, 'Run', '1');
+      await tester.tap(find.text('Add Habit'));
+      await tester.pumpAndSettle();
+
+      final saved = habitProvider.habits.single;
+      expect(saved.resetFrequency, ResetFrequency.daily);
+      expect(saved.resetInterval, 2);
+      expect(saved.scheduledWeekdays, isNull);
+    });
+
+    testWidgets('specific weekdays are saved and reminder days follow them', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+
+      // Keep Mon, Wed, Fri: turn off Tue, Thu, Sat, Sun
+      for (final day in [2, 4, 6, 7]) {
+        await tester.tap(find.byKey(Key('scheduleDay_$day')));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Due Mon, Wed, Fri; other days are rest days'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('reminderSwitch')));
+      await tester.pumpAndSettle();
+      await fillNameAndTarget(tester, 'Gym', '1');
+      await tester.tap(find.text('Add Habit'));
+      await tester.pumpAndSettle();
+
+      final saved = habitProvider.habits.single;
+      expect(saved.scheduledWeekdays, [1, 3, 5]);
+      expect(saved.reminder!.daysOfWeek, [1, 3, 5]);
+    });
+
+    testWidgets('the last weekday cannot be turned off', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      for (final day in [1, 2, 3, 4, 5, 6, 7]) {
+        await tester.tap(find.byKey(Key('scheduleDay_$day')));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Due Sun; other days are rest days'), findsOneWidget);
+    });
+
+    testWidgets('a weekly target reads as "per week"', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      await chooseFrequency(tester, 'Weekly');
+      expect(find.text('per week'), findsOneWidget);
     });
   });
 
@@ -182,6 +246,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(habitProvider.getHabitById(id)!.streak.current, 0);
     });
+  });
+
+  testWidgets('Calendar hides a habit on its rest days', (tester) async {
+    final tomorrowWeekday = DateTime.now().weekday % 7 + 1;
+    await habitProvider.createHabit(CreateHabitParams(
+      name: 'Pottery',
+      target: 1,
+      color: HabitColor.pink,
+      category: HabitCategory.creative,
+      scheduledWeekdays: [tomorrowWeekday],
+    ));
+    final id = habitProvider.habits.single.id;
+
+    // Today (selected by default) is a rest day for it
+    await pumpScreen(tester, const CalendarScreen());
+    expect(find.byKey(Key('dayHabit_$id')), findsNothing);
   });
 
   group('Calendar: editing a past day', () {

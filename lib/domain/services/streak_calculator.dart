@@ -1,31 +1,32 @@
-import '../entities/reset_frequency.dart';
+import '../entities/habit_schedule.dart';
 import '../entities/streak_data.dart';
 
 /// Derives a habit's streak from its per-day history.
 ///
-/// A streak counts consecutive completed periods (days, weeks or months,
-/// depending on [ResetFrequency]). A period is completed when the amounts
-/// logged on its days add up to the target. The current period still being
-/// in progress does not break the streak; once it ends incomplete, the streak
-/// drops to 0. Because the streak is recomputed from history, editing a past
-/// day automatically repairs or breaks it.
+/// A streak counts consecutive completed due periods (days, N-day blocks,
+/// weeks or months, per the [HabitSchedule]). A period is completed when the
+/// amounts logged on its days add up to the target. Rest days (days a
+/// weekday schedule doesn't include) are skipped, so they never break a
+/// streak, and logging on them doesn't extend one. The current period still
+/// being in progress does not break the streak; once a due period ends
+/// incomplete, the streak drops to 0. Because the streak is recomputed from
+/// history, editing a past day automatically repairs or breaks it.
 class StreakCalculator {
   const StreakCalculator._();
 
   static StreakData calculate({
     required Map<DateTime, int> history,
     required int target,
-    required ResetFrequency frequency,
-    required DateTime anchor,
+    required HabitSchedule schedule,
     required DateTime now,
   }) {
-    if (!frequency.isPeriodic || target <= 0) return StreakData.empty();
+    if (!schedule.isPeriodic || target <= 0) return StreakData.empty();
 
-    final completedPeriods = _completedPeriodStarts(history, target, frequency, anchor, now);
+    final completedPeriods = _completedPeriodStarts(history, target, schedule, now);
     if (completedPeriods.isEmpty) return StreakData.empty();
 
-    final current = _currentStreak(completedPeriods, frequency, anchor, now);
-    final runs = _runs(completedPeriods.toList()..sort(), frequency, anchor);
+    final current = _currentStreak(completedPeriods, schedule, now);
+    final runs = _runs(completedPeriods.toList()..sort(), schedule);
 
     final longest = runs.fold<int>(0, (max, run) => run.length > max ? run.length : max);
     final lastCompleted = runs.last.lastPeriodStart;
@@ -48,86 +49,66 @@ class StreakCalculator {
     );
   }
 
-  /// Start of the period that ends the current streak if it is not completed,
-  /// or null when there is no streak at risk. If the current period is already
-  /// complete, the next deadline is the end of the following period.
+  /// When the current streak is lost if the habit isn't completed, or null
+  /// when there is no streak at stake. If the current period is already
+  /// complete, or today is a rest day, it's the end of the next due period.
   static DateTime? streakDeadline({
     required Map<DateTime, int> history,
     required int target,
-    required ResetFrequency frequency,
-    required DateTime anchor,
+    required HabitSchedule schedule,
     required DateTime now,
   }) {
-    if (!frequency.isPeriodic || target <= 0) return null;
+    if (!schedule.isPeriodic || target <= 0) return null;
 
-    final streak = calculate(
-      history: history,
-      target: target,
-      frequency: frequency,
-      anchor: anchor,
-      now: now,
-    );
+    final streak = calculate(history: history, target: target, schedule: schedule, now: now);
     if (streak.current == 0) return null;
 
-    final completedPeriods = _completedPeriodStarts(history, target, frequency, anchor, now);
-    final currentStart = frequency.periodStart(now, anchor: anchor);
-    final currentEnd = frequency.nextPeriodStart(now, anchor: anchor);
+    final completedPeriods = _completedPeriodStarts(history, target, schedule, now);
+    final currentStart = schedule.periodStart(now);
 
-    if (completedPeriods.contains(currentStart)) {
-      return frequency.nextPeriodStart(currentEnd, anchor: anchor);
+    if (schedule.isDueOn(currentStart) && !completedPeriods.contains(currentStart)) {
+      return schedule.nextPeriodStart(now);
     }
-    return currentEnd;
+    return schedule.nextPeriodStart(schedule.nextDuePeriodStart(now));
   }
 
   static Set<DateTime> _completedPeriodStarts(
     Map<DateTime, int> history,
     int target,
-    ResetFrequency frequency,
-    DateTime anchor,
+    HabitSchedule schedule,
     DateTime now,
   ) {
     final totals = <DateTime, int>{};
     for (final entry in history.entries) {
       if (entry.value <= 0 || entry.key.isAfter(now)) continue;
-      final start = frequency.periodStart(entry.key, anchor: anchor);
+      final start = schedule.periodStart(entry.key);
       totals[start] = (totals[start] ?? 0) + entry.value;
     }
     return {
       for (final entry in totals.entries)
-        if (entry.value >= target) entry.key,
+        if (entry.value >= target && schedule.isDueOn(entry.key)) entry.key,
     };
   }
 
-  static int _currentStreak(
-    Set<DateTime> completed,
-    ResetFrequency frequency,
-    DateTime anchor,
-    DateTime now,
-  ) {
-    var periodStart = frequency.periodStart(now, anchor: anchor);
-    // An unfinished current period doesn't break the streak yet
+  static int _currentStreak(Set<DateTime> completed, HabitSchedule schedule, DateTime now) {
+    var periodStart = schedule.periodStart(now);
+    // An unfinished current period (or a rest day) doesn't break the streak yet
     if (!completed.contains(periodStart)) {
-      periodStart = _previousPeriodStart(periodStart, frequency, anchor);
+      periodStart = schedule.previousDuePeriodStart(periodStart);
     }
 
     var count = 0;
     while (completed.contains(periodStart)) {
       count++;
-      periodStart = _previousPeriodStart(periodStart, frequency, anchor);
+      periodStart = schedule.previousDuePeriodStart(periodStart);
     }
     return count;
   }
 
-  static DateTime _previousPeriodStart(DateTime periodStart, ResetFrequency frequency, DateTime anchor) {
-    final dayBefore = DateTime(periodStart.year, periodStart.month, periodStart.day - 1);
-    return frequency.periodStart(dayBefore, anchor: anchor);
-  }
-
-  static List<_Run> _runs(List<DateTime> sortedStarts, ResetFrequency frequency, DateTime anchor) {
+  static List<_Run> _runs(List<DateTime> sortedStarts, HabitSchedule schedule) {
     final runs = <_Run>[];
     for (final start in sortedStarts) {
-      if (runs.isNotEmpty &&
-          frequency.nextPeriodStart(runs.last.lastPeriodStart, anchor: anchor) == start) {
+      if (runs.isNotEmpty && schedule.nextDuePeriodStart(runs.last.lastPeriodStart) == start) {
         runs.last
           ..lastPeriodStart = start
           ..length += 1;

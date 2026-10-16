@@ -5,6 +5,7 @@ import 'reset_frequency.dart';
 import 'streak_data.dart';
 import 'reminder_settings.dart';
 import 'habit_metadata.dart';
+import 'habit_schedule.dart';
 import '../services/streak_calculator.dart';
 
 class Habit extends Equatable {
@@ -26,6 +27,12 @@ class Habit extends Equatable {
   /// Null for habits saved before this existed; they fall back to creation date.
   final DateTime? resetAnchorDate;
 
+  /// Periods repeat every [resetInterval] days/weeks/months (1 = every one).
+  final int resetInterval;
+
+  /// Weekdays a daily habit is due (DateTime.monday..sunday); null = every day.
+  final List<int>? scheduledWeekdays;
+
   const Habit({
     required this.id,
     required this.name,
@@ -41,6 +48,8 @@ class Habit extends Equatable {
     this.reminder,
     required this.metadata,
     this.resetAnchorDate,
+    this.resetInterval = 1,
+    this.scheduledWeekdays,
   });
 
   static int _idCounter = 0;
@@ -55,6 +64,8 @@ class Habit extends Equatable {
     ReminderSettings? reminder,
     String? icon,
     DateTime? resetAnchor,
+    int resetInterval = 1,
+    List<int>? scheduledWeekdays,
   }) {
     final now = DateTime.now();
     // Timestamp alone collides when habits are created in the same instant
@@ -75,6 +86,9 @@ class Habit extends Equatable {
       reminder: reminder,
       metadata: HabitMetadata.create(icon: icon),
       resetAnchorDate: _dateOnly(resetAnchor ?? now),
+      resetInterval: resetInterval < 1 ? 1 : resetInterval,
+      scheduledWeekdays: HabitSchedule.normalizeWeekdays(scheduledWeekdays,
+          frequency: resetFrequency, interval: resetInterval),
     );
   }
 
@@ -86,8 +100,18 @@ class Habit extends Equatable {
 
   DateTime get resetAnchor => resetAnchorDate ?? metadata.createdDate;
 
+  HabitSchedule get schedule => HabitSchedule(
+        frequency: resetFrequency,
+        interval: resetInterval,
+        anchor: resetAnchor,
+        weekdays: scheduledWeekdays,
+      );
+
+  /// False on rest days of a weekday schedule.
+  bool isDueOn(DateTime date) => schedule.isDueOn(date);
+
   bool shouldReset(DateTime currentDate) {
-    return resetFrequency.shouldReset(lastUpdatedDate, currentDate, anchor: resetAnchor);
+    return schedule.shouldReset(lastUpdatedDate, currentDate);
   }
 
   /// Total logged in the day/week/month containing [date].
@@ -97,8 +121,8 @@ class Habit extends Equatable {
       return history.values.fold(0, (sum, amount) => sum + amount);
     }
 
-    final start = resetFrequency.periodStart(date, anchor: resetAnchor);
-    final end = resetFrequency.nextPeriodStart(date, anchor: resetAnchor);
+    final start = schedule.periodStart(date);
+    final end = schedule.nextPeriodStart(date);
     return history.entries
         .where((entry) => !entry.key.isBefore(start) && entry.key.isBefore(end))
         .fold(0, (sum, entry) => sum + entry.value);
@@ -164,9 +188,7 @@ class Habit extends Equatable {
   /// Clears what was logged in the current period.
   Habit resetProgress() {
     final now = DateTime.now();
-    final start = resetFrequency.isPeriodic
-        ? resetFrequency.periodStart(now, anchor: resetAnchor)
-        : null;
+    final start = resetFrequency.isPeriodic ? schedule.periodStart(now) : null;
     final newHistory = Map<DateTime, int>.from(history)
       ..removeWhere((date, _) => start == null || !date.isBefore(start));
 
@@ -191,8 +213,7 @@ class Habit extends Equatable {
       streak: StreakCalculator.calculate(
         history: history,
         target: target,
-        frequency: resetFrequency,
-        anchor: resetAnchor,
+        schedule: schedule,
         now: now,
       ),
     );
@@ -204,8 +225,7 @@ class Habit extends Equatable {
     return StreakCalculator.streakDeadline(
       history: history,
       target: target,
-      frequency: resetFrequency,
-      anchor: resetAnchor,
+      schedule: schedule,
       now: now ?? DateTime.now(),
     );
   }
@@ -220,7 +240,11 @@ class Habit extends Equatable {
     ReminderSettings? reminder,
     String? icon,
     DateTime? resetAnchor,
+    int? resetInterval,
+    List<int>? scheduledWeekdays,
   }) {
+    final newFrequency = resetFrequency ?? this.resetFrequency;
+    final newInterval = resetInterval ?? this.resetInterval;
     final updated = copyWith(
       name: name ?? this.name,
       target: target ?? this.target,
@@ -235,10 +259,34 @@ class Habit extends Equatable {
         lastModifiedDate: DateTime.now(),
       ).incrementVersion(),
       resetAnchorDate: resetAnchor != null ? _dateOnly(resetAnchor) : null,
+      resetInterval: newInterval < 1 ? 1 : newInterval,
+    );
+    // Set explicitly (copyWith can't clear to null): weekdays only survive on
+    // a daily, every-day-interval schedule, and all seven means every day
+    final withSchedule = Habit(
+      id: updated.id,
+      name: updated.name,
+      progress: updated.progress,
+      target: updated.target,
+      units: updated.units,
+      color: updated.color,
+      category: updated.category,
+      lastUpdatedDate: updated.lastUpdatedDate,
+      resetFrequency: updated.resetFrequency,
+      history: updated.history,
+      streak: updated.streak,
+      reminder: updated.reminder,
+      metadata: updated.metadata,
+      resetAnchorDate: updated.resetAnchorDate,
+      resetInterval: updated.resetInterval,
+      scheduledWeekdays: HabitSchedule.normalizeWeekdays(
+          scheduledWeekdays ?? this.scheduledWeekdays,
+          frequency: newFrequency,
+          interval: newInterval),
     );
 
     // A new target, frequency or reset day changes how history adds up
-    return updated._recalculated(updated.lastUpdatedDate);
+    return withSchedule._recalculated(withSchedule.lastUpdatedDate);
   }
 
   int getProgressForDate(DateTime date) {
@@ -292,6 +340,8 @@ class Habit extends Equatable {
     ReminderSettings? reminder,
     HabitMetadata? metadata,
     DateTime? resetAnchorDate,
+    int? resetInterval,
+    List<int>? scheduledWeekdays,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -308,6 +358,8 @@ class Habit extends Equatable {
       reminder: reminder ?? this.reminder,
       metadata: metadata ?? this.metadata,
       resetAnchorDate: resetAnchorDate ?? this.resetAnchorDate,
+      resetInterval: resetInterval ?? this.resetInterval,
+      scheduledWeekdays: scheduledWeekdays ?? this.scheduledWeekdays,
     );
   }
 
@@ -334,6 +386,8 @@ class Habit extends Equatable {
       'reminder': reminder?.toJson(),
       'metadata': metadata.toJson(),
       'resetAnchor': resetAnchorDate?.toIso8601String(),
+      'resetInterval': resetInterval,
+      'scheduledWeekdays': scheduledWeekdays,
     };
   }
 
@@ -362,6 +416,8 @@ class Habit extends Equatable {
       resetAnchorDate: json['resetAnchor'] != null
           ? DateTime.parse(json['resetAnchor'] as String)
           : null,
+      resetInterval: (json['resetInterval'] as num?)?.toInt() ?? 1,
+      scheduledWeekdays: (json['scheduledWeekdays'] as List<dynamic>?)?.cast<int>(),
     );
   }
 
@@ -381,6 +437,8 @@ class Habit extends Equatable {
         reminder,
         metadata,
         resetAnchorDate,
+        resetInterval,
+        scheduledWeekdays,
       ];
 
   @override

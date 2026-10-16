@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atomic_momentum/domain/entities/habit_schedule.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/services/streak_calculator.dart';
 
@@ -15,8 +16,7 @@ void main() {
     calc(Map<DateTime, int> history, {DateTime? now, int target = 2}) => StreakCalculator.calculate(
           history: history,
           target: target,
-          frequency: ResetFrequency.daily,
-          anchor: mondayAnchor,
+          schedule: HabitSchedule(frequency: ResetFrequency.daily, anchor: mondayAnchor),
           now: now ?? noon15th,
         );
 
@@ -98,8 +98,7 @@ void main() {
       final streak = StreakCalculator.calculate(
         history: days({4: 1, 6: 2, 11: 1, 12: 1, 16: 1}),
         target: 3,
-        frequency: ResetFrequency.weekly,
-        anchor: thursdayAnchor,
+        schedule: HabitSchedule(frequency: ResetFrequency.weekly, anchor: thursdayAnchor),
         now: DateTime(2024, 1, 17, 8),
       );
 
@@ -110,8 +109,7 @@ void main() {
       final streak = StreakCalculator.calculate(
         history: days({8: 3, 15: 1}),
         target: 3,
-        frequency: ResetFrequency.weekly,
-        anchor: mondayAnchor,
+        schedule: HabitSchedule(frequency: ResetFrequency.weekly, anchor: mondayAnchor),
         now: DateTime(2024, 1, 17),
       );
 
@@ -123,8 +121,7 @@ void main() {
       final streak = StreakCalculator.calculate(
         history: {DateTime(2023, 11, 25): 1, DateTime(2024, 1, 10): 1},
         target: 1,
-        frequency: ResetFrequency.monthly,
-        anchor: DateTime(2023, 1, 20),
+        schedule: HabitSchedule(frequency: ResetFrequency.monthly, anchor: DateTime(2023, 1, 20)),
         now: DateTime(2024, 1, 15),
       );
 
@@ -135,16 +132,14 @@ void main() {
       final streak = StreakCalculator.calculate(
         history: days({13: 5, 14: 5}),
         target: 1,
-        frequency: ResetFrequency.never,
-        anchor: mondayAnchor,
+        schedule: HabitSchedule(frequency: ResetFrequency.never, anchor: mondayAnchor),
         now: noon15th,
       );
 
       expect(streak, equals(StreakCalculator.calculate(
         history: const {},
         target: 1,
-        frequency: ResetFrequency.daily,
-        anchor: mondayAnchor,
+        schedule: HabitSchedule(frequency: ResetFrequency.daily, anchor: mondayAnchor),
         now: noon15th,
       )));
     });
@@ -155,8 +150,7 @@ void main() {
         StreakCalculator.streakDeadline(
           history: history,
           target: 1,
-          frequency: frequency,
-          anchor: mondayAnchor,
+          schedule: HabitSchedule(frequency: frequency, anchor: mondayAnchor),
           now: noon15th,
         );
 
@@ -179,6 +173,65 @@ void main() {
 
     test('is null for never habits', () {
       expect(deadline(days({14: 1}), frequency: ResetFrequency.never), isNull);
+    });
+  });
+
+  group('StreakCalculator with intervals and rest days', () {
+    // 2026-10-16 is a Friday
+    final fri16 = DateTime(2026, 10, 16);
+    final monWedFri = HabitSchedule(
+      frequency: ResetFrequency.daily,
+      anchor: fri16,
+      weekdays: [DateTime.monday, DateTime.wednesday, DateTime.friday],
+    );
+
+    test('every 2 days counts 2-day blocks', () {
+      final every2 = HabitSchedule(frequency: ResetFrequency.daily, interval: 2, anchor: DateTime(2026, 10, 10));
+      // Blocks: 10-11, 12-13, 14-15, 16-17; target 2 per block
+      final streak = StreakCalculator.calculate(
+        history: {DateTime(2026, 10, 10): 1, DateTime(2026, 10, 11): 1, DateTime(2026, 10, 13): 2, DateTime(2026, 10, 14): 2},
+        target: 2,
+        schedule: every2,
+        now: DateTime(2026, 10, 16, 9),
+      );
+      expect(streak.current, 3);
+    });
+
+    test('a Mon/Wed/Fri streak survives the rest days in between', () {
+      // Due Mon 12, Wed 14, Fri 16; Tue 13 / Thu 15 are rest days
+      final streak = StreakCalculator.calculate(
+        history: {DateTime(2026, 10, 12): 1, DateTime(2026, 10, 14): 1, DateTime(2026, 10, 16): 1},
+        target: 1,
+        schedule: monWedFri,
+        now: DateTime(2026, 10, 18, 12), // Sunday, a rest day
+      );
+      expect(streak.current, 3);
+      expect(streak.longest, 3);
+    });
+
+    test('missing a due day breaks it; logging on a rest day does not count', () {
+      final streak = StreakCalculator.calculate(
+        history: {DateTime(2026, 10, 12): 1, DateTime(2026, 10, 15): 1, DateTime(2026, 10, 16): 1},
+        target: 1,
+        schedule: monWedFri,
+        now: DateTime(2026, 10, 16, 20),
+      );
+      // Wed 14 missed; Thu 15 is a rest day, so only Fri 16 counts
+      expect(streak.current, 1);
+    });
+
+    test('the deadline skips rest days', () {
+      final history = {DateTime(2026, 10, 14): 1, DateTime(2026, 10, 16): 1};
+      // Saturday: next due day is Monday 19, which ends at midnight into Tue 20
+      expect(
+        StreakCalculator.streakDeadline(history: history, target: 1, schedule: monWedFri, now: DateTime(2026, 10, 17, 10)),
+        DateTime(2026, 10, 20),
+      );
+      // Friday 16 already done: same, the next due day is Monday
+      expect(
+        StreakCalculator.streakDeadline(history: history, target: 1, schedule: monWedFri, now: DateTime(2026, 10, 16, 21)),
+        DateTime(2026, 10, 20),
+      );
     });
   });
 }

@@ -44,7 +44,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (_selectedCategory != null && habit.category != _selectedCategory) {
         return false;
       }
-      return true;
+      // Rest days of a weekday schedule aren't shown or counted
+      return habit.isDueOn(day);
     }).toList();
 
     return dayHabits;

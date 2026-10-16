@@ -140,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       isDark: isDark,
                     ),
                     CategoryRingsBar(
-                      stats: categoryProvider.getCategoryStats(habitProvider.habits),
+                      // Rest-day habits aren't due, so they don't drag a ring down
+                      stats: categoryProvider.getCategoryStats(
+                          habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
                       selected: categoryProvider.selectedCategory,
                       onTap: categoryProvider.toggleCategory,
                       isDark: isDark,
@@ -262,7 +264,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       padding: const EdgeInsets.all(16),
       itemBuilder: (context, index) {
         final habit = habits[index];
+        final isRestDay = !habit.isDueOn(DateTime.now());
         return Card(
+          key: Key('habitCard_${habit.id}'),
           margin: const EdgeInsets.only(bottom: 12),
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -289,7 +293,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                           // One line that truncates, so narrow screens / large text can't overflow
                           Text(
-                            '${habit.category.displayName}  •  ${habit.resetFrequency.displayName}',
+                            '${habit.category.displayName}  •  ${habit.schedule.shortLabel}'
+                            '${isRestDay ? '  •  Rest day' : ''}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -338,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                         if (habit.streak.current > 0)
                           Text(
-                            '🔥 ${habit.streak.current} ${habit.resetFrequency.periodUnit} streak',
+                            '🔥 ${habit.schedule.streakLabel(habit.streak.current)}',
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -349,12 +354,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
                 const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: habit.progressPercentage,
-                  minHeight: 10,
-                  backgroundColor: Colors.grey.shade200,
-                  valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
-                  borderRadius: BorderRadius.circular(5),
+                // Dimmed on rest days: logging is allowed but doesn't affect the streak
+                Opacity(
+                  opacity: isRestDay ? 0.4 : 1,
+                  child: LinearProgressIndicator(
+                    value: habit.progressPercentage,
+                    minHeight: 10,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(

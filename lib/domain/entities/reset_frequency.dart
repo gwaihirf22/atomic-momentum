@@ -1,3 +1,5 @@
+import 'habit_schedule.dart';
+
 enum ResetFrequency {
   daily("Daily", Duration(days: 1)),
   weekly("Weekly", Duration(days: 7)),
@@ -32,51 +34,20 @@ enum ResetFrequency {
     }
   }
 
-  /// Local midnight at which the period containing [date] began.
-  ///
-  /// [anchor] picks the reset day: weekly periods start on the anchor's
-  /// weekday, monthly periods on the anchor's day of the month (clamped to the
-  /// last day in shorter months). Daily periods ignore it. A `never` habit has
-  /// a single period that starts at the anchor.
-  DateTime periodStart(DateTime date, {required DateTime anchor}) {
-    final day = _dateOnly(date);
-    switch (this) {
-      case ResetFrequency.daily:
-        return day;
-      case ResetFrequency.weekly:
-        final daysSinceResetDay = (day.weekday - anchor.weekday) % 7;
-        return DateTime(day.year, day.month, day.day - daysSinceResetDay);
-      case ResetFrequency.monthly:
-        final thisMonthReset = _monthlyResetDate(day.year, day.month, anchor.day);
-        if (!day.isBefore(thisMonthReset)) return thisMonthReset;
-        return _monthlyResetDate(day.year, day.month - 1, anchor.day);
-      case ResetFrequency.never:
-        return _dateOnly(anchor);
-    }
-  }
+  // Period maths lives in HabitSchedule; these are the interval-1 shorthands.
+
+  /// Local midnight at which the period containing [date] began. Weekly
+  /// periods start on [anchor]'s weekday, monthly ones on its day of month.
+  DateTime periodStart(DateTime date, {required DateTime anchor}) =>
+      HabitSchedule(frequency: this, anchor: anchor).periodStart(date);
 
   /// Local midnight at which the period after the one containing [date] begins.
-  DateTime nextPeriodStart(DateTime date, {required DateTime anchor}) {
-    final start = periodStart(date, anchor: anchor);
-    switch (this) {
-      case ResetFrequency.daily:
-        return DateTime(start.year, start.month, start.day + 1);
-      case ResetFrequency.weekly:
-        return DateTime(start.year, start.month, start.day + 7);
-      case ResetFrequency.monthly:
-        return _monthlyResetDate(start.year, start.month + 1, anchor.day);
-      case ResetFrequency.never:
-        throw StateError('Cannot calculate next reset date for never frequency');
-    }
-  }
+  DateTime nextPeriodStart(DateTime date, {required DateTime anchor}) =>
+      HabitSchedule(frequency: this, anchor: anchor).nextPeriodStart(date);
 
   /// True when [currentDate] falls in a later period than [lastResetDate].
-  bool shouldReset(DateTime lastResetDate, DateTime currentDate, {required DateTime anchor}) {
-    if (!isPeriodic) return false;
-
-    return periodStart(currentDate, anchor: anchor)
-        .isAfter(periodStart(lastResetDate, anchor: anchor));
-  }
+  bool shouldReset(DateTime lastResetDate, DateTime currentDate, {required DateTime anchor}) =>
+      HabitSchedule(frequency: this, anchor: anchor).shouldReset(lastResetDate, currentDate);
 
   /// Human-readable reset day, e.g. "Resets every Thursday" or "Resets on the
   /// 15th of each month". Null for frequencies without a choosable reset day.
@@ -110,19 +81,6 @@ enum ResetFrequency {
       default:
         return '${n}th';
     }
-  }
-
-  // A date's own calendar fields are the day: table_calendar passes
-  // DateTime.utc(y, m, d), and converting that to local time would land on
-  // the previous day anywhere west of UTC
-  static DateTime _dateOnly(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
-  }
-
-  // DateTime normalises month overflow (month 0 or 13), so callers can pass month +/- 1
-  static DateTime _monthlyResetDate(int year, int month, int anchorDay) {
-    final lastDayOfMonth = DateTime(year, month + 1, 0).day;
-    return DateTime(year, month, anchorDay > lastDayOfMonth ? lastDayOfMonth : anchorDay);
   }
 
   @override

@@ -84,6 +84,8 @@ class UpdateHabitUseCase {
         reminder: params.reminder,
         icon: params.icon,
         resetAnchor: params.resetAnchor,
+        resetInterval: params.resetInterval,
+        scheduledWeekdays: params.scheduledWeekdays,
       );
 
       // Validate the updated habit
@@ -214,6 +216,9 @@ class UpdateHabitParams {
   final ReminderSettings? reminder;
   final String? icon;
   final DateTime? resetAnchor;
+  final int? resetInterval;
+  /// Pass all seven days to go back to every day (null means unchanged).
+  final List<int>? scheduledWeekdays;
 
   const UpdateHabitParams({
     this.name,
@@ -225,6 +230,8 @@ class UpdateHabitParams {
     this.reminder,
     this.icon,
     this.resetAnchor,
+    this.resetInterval,
+    this.scheduledWeekdays,
   });
 
   bool get hasChanges => 
@@ -236,5 +243,7 @@ class UpdateHabitParams {
     resetFrequency != null || 
     reminder != null || 
     icon != null ||
-    resetAnchor != null;
+    resetAnchor != null ||
+    resetInterval != null ||
+    scheduledWeekdays != null;
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
+import '../domain/entities/habit_schedule.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/entities/reminder_settings.dart';
 import '../domain/usecases/create_habit_usecase.dart';
@@ -35,6 +36,11 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
   // Weekly habits reset on this date's weekday, monthly on its day of month
   DateTime _resetAnchor = DateUtils.dateOnly(DateTime.now());
+  int _resetInterval = 1;
+  // Days a daily habit is due; all seven means every day
+  List<int> _scheduleDays = [1, 2, 3, 4, 5, 6, 7];
+  // Reminder days mirror the schedule until the user picks them separately
+  bool _reminderDaysFollowSchedule = true;
   
   // Reminder settings
   bool _reminderEnabled = false;
@@ -49,6 +55,20 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   static const double _swatchSize = 44;
   static const double _swatchSpacing = 12;
   static const double _chipSpacing = 8;
+  static const int _maxInterval = 30;
+  static const _weekdayShort = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  HabitSchedule get _schedule => HabitSchedule(
+        frequency: _selectedFrequency,
+        interval: _resetInterval,
+        anchor: _resetAnchor,
+        weekdays: _scheduleDays,
+      );
+
+  // The start date only matters when periods don't simply follow the calendar day
+  bool get _startDateMatters =>
+      _selectedFrequency.isPeriodic &&
+      (_selectedFrequency != ResetFrequency.daily || _resetInterval > 1);
 
   // Available habit icons
   static const Map<String, IconData> habitIcons = {
@@ -88,6 +108,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _selectedCategory = habit.category;
       _selectedFrequency = habit.resetFrequency;
       _resetAnchor = habit.resetAnchor;
+      _resetInterval = habit.resetInterval;
+      _scheduleDays = List.of(habit.scheduledWeekdays ?? const [1, 2, 3, 4, 5, 6, 7]);
+      _reminderDaysFollowSchedule = habit.reminder == null;
       
       // Initialize reminder settings
       if (habit.reminder != null) {
@@ -158,10 +181,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               // Target Field
               TextFormField(
                 controller: _targetController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Target Number',
                   hintText: 'e.g., 8, 30, 5',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
+                  // Makes "3 per week" style goals explicit
+                  suffixText: _schedule.periodLabel,
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
@@ -320,61 +345,82 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               ),
               const SizedBox(height: 24),
               
-              // Frequency Selection
+              // Schedule
               const Text(
-                'Reset Frequency',
+                'Schedule',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
-              DropdownButtonFormField<ResetFrequency>(
-                value: _selectedFrequency,
-                // Fill the width so long hints/labels truncate instead of overflowing
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'How often should this habit reset?',
-                ),
-                items: ResetFrequency.values.map((frequency) {
-                  return DropdownMenuItem<ResetFrequency>(
-                    value: frequency,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(_getFrequencyIcon(frequency), size: 20),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(frequency.displayName, overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
+              Wrap(
+                spacing: _chipSpacing,
+                runSpacing: _chipSpacing,
+                children: [
+                  for (final frequency in ResetFrequency.values)
+                    ChoiceChip(
+                      key: Key('frequency_${frequency.name}'),
+                      avatar: Icon(_getFrequencyIcon(frequency), size: 18),
+                      label: Text(frequency.displayName),
+                      selected: _selectedFrequency == frequency,
+                      onSelected: (_) => setState(() => _selectedFrequency = frequency),
                     ),
-                  );
-                }).toList(),
-                onChanged: (ResetFrequency? newFrequency) {
-                  if (newFrequency != null) {
-                    setState(() {
-                      _selectedFrequency = newFrequency;
-                    });
-                  }
-                },
+                ],
               ),
-              if (_selectedFrequency.describeResetDay(_resetAnchor) != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: ListTile(
-                    key: const Key('resetDayTile'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event_repeat),
-                    title: Text(_selectedFrequency.describeResetDay(_resetAnchor)!),
-                    trailing: TextButton(
-                      onPressed: _pickResetDay,
-                      child: const Text('Change'),
+              if (_selectedFrequency.isPeriodic) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text('Every', style: TextStyle(fontSize: 16)),
+                    IconButton(
+                      key: const Key('intervalMinus'),
+                      icon: const Icon(Icons.remove_circle_outline),
+                      tooltip: 'Fewer',
+                      onPressed: _resetInterval > 1 ? () => setState(() => _resetInterval--) : null,
                     ),
-                    onTap: _pickResetDay,
-                  ),
+                    Text(
+                      '$_resetInterval',
+                      key: const Key('intervalValue'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                    IconButton(
+                      key: const Key('intervalPlus'),
+                      icon: const Icon(Icons.add_circle_outline),
+                      tooltip: 'More',
+                      onPressed: _resetInterval < _maxInterval ? () => setState(() => _resetInterval++) : null,
+                    ),
+                    Text(
+                      '${_selectedFrequency.periodUnit}${_resetInterval == 1 ? '' : 's'}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
                 ),
+              ],
+              if (_selectedFrequency == ResetFrequency.daily && _resetInterval == 1) ...[
+                const SizedBox(height: 4),
+                const Text('Due on', style: TextStyle(fontWeight: FontWeight.w500)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [for (var day = 1; day <= 7; day++) _buildScheduleDayChip(day)],
+                ),
+              ],
+              ListTile(
+                key: const Key('scheduleSummary'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_repeat),
+                title: Text(_schedule.describe()),
+                trailing: _startDateMatters
+                    ? TextButton(
+                        key: const Key('changeStartDate'),
+                        onPressed: _pickResetDay,
+                        child: const Text('Change'),
+                      )
+                    : null,
+                onTap: _startDateMatters ? _pickResetDay : null,
+              ),
               const SizedBox(height: 24),
               
               // Reminder Settings Section
@@ -534,6 +580,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         reminder: reminder,
         icon: _selectedIcon,
         resetAnchor: _resetAnchor,
+        resetInterval: _selectedFrequency.isPeriodic ? _resetInterval : 1,
+        scheduledWeekdays: List.of(_scheduleDays),
       );
 
       final bool success;
@@ -550,6 +598,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           reminder: reminder,
           icon: _selectedIcon,
           resetAnchor: _resetAnchor,
+          resetInterval: params.resetInterval,
+          // All seven days means "every day", which also clears a weekday schedule
+          scheduledWeekdays: params.scheduledWeekdays,
         ));
         print('DEBUG: Habit update result: $success');
       } else {
@@ -581,6 +632,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _selectedColor = HabitColor.blue;
         _selectedCategory = HabitCategory.body;
         _selectedFrequency = ResetFrequency.daily;
+        _resetInterval = 1;
+        _scheduleDays = [1, 2, 3, 4, 5, 6, 7];
         
         // Navigate back immediately - no SnackBar interference
         Navigator.of(context).pop();
@@ -646,7 +699,9 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       lastDate: DateTime.now().add(const Duration(days: 366)),
       helpText: _selectedFrequency == ResetFrequency.weekly
           ? 'Pick a day: the habit resets on that weekday'
-          : 'Pick a day: the habit resets on that day each month',
+          : _selectedFrequency == ResetFrequency.monthly
+              ? 'Pick a day: the habit resets on that day each month'
+              : 'Pick the start date',
     );
     if (picked != null) {
       setState(() {
@@ -668,6 +723,30 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     }
   }
   
+  Widget _buildScheduleDayChip(int day) {
+    final isSelected = _scheduleDays.contains(day);
+    return FilterChip(
+      key: Key('scheduleDay_$day'),
+      label: Text(_weekdayShort[day - 1]),
+      selected: isSelected,
+      onSelected: (selected) {
+        // At least one day must stay selected
+        if (!selected && _scheduleDays.length == 1) return;
+        setState(() {
+          if (selected) {
+            _scheduleDays.add(day);
+          } else {
+            _scheduleDays.remove(day);
+          }
+          _scheduleDays.sort();
+          if (_reminderDaysFollowSchedule) {
+            _selectedDays = List.of(_scheduleDays);
+          }
+        });
+      },
+    );
+  }
+
   Widget _buildDayChip(int dayOfWeek, String label) {
     final isSelected = _selectedDays.contains(dayOfWeek);
     return FilterChip(
@@ -675,6 +754,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
+          // Reminder days chosen by hand stop following the schedule
+          _reminderDaysFollowSchedule = false;
           if (selected) {
             _selectedDays.add(dayOfWeek);
           } else {

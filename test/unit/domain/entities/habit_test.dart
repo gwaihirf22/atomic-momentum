@@ -577,6 +577,51 @@ void main() {
       });
     });
 
+    group('schedules', () {
+      test('create keeps weekdays only where they apply', () {
+        Habit make(ResetFrequency f, {int interval = 1}) => Habit.create(
+              name: 'X',
+              target: 1,
+              color: HabitColor.blue,
+              category: HabitCategory.body,
+              resetFrequency: f,
+              resetInterval: interval,
+              scheduledWeekdays: const [1, 3, 5],
+            );
+
+        expect(make(ResetFrequency.daily).scheduledWeekdays, [1, 3, 5]);
+        expect(make(ResetFrequency.daily, interval: 2).scheduledWeekdays, isNull);
+        expect(make(ResetFrequency.weekly).scheduledWeekdays, isNull);
+      });
+
+      test('updateDetails can go back to every day by passing all seven days', () {
+        final habit = TestData.createTestHabit().updateDetails(scheduledWeekdays: [1, 3, 5]);
+        expect(habit.scheduledWeekdays, [1, 3, 5]);
+
+        final everyDay = habit.updateDetails(scheduledWeekdays: [1, 2, 3, 4, 5, 6, 7]);
+        expect(everyDay.scheduledWeekdays, isNull);
+        expect(everyDay.isDueOn(DateTime(2026, 10, 17)), isTrue);
+      });
+
+      test('switching to weekly drops weekdays', () {
+        final habit = TestData.createTestHabit().updateDetails(scheduledWeekdays: [1, 3, 5]);
+        expect(habit.updateDetails(resetFrequency: ResetFrequency.weekly).scheduledWeekdays, isNull);
+      });
+
+      test('an every-2-days habit keeps progress across both days of a block', () {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final habit = TestData.createTestHabit(
+          target: 4,
+          resetAnchorDate: DateTime(today.year, today.month, today.day - 1),
+          history: {DateTime(today.year, today.month, today.day - 1): 2},
+        ).updateDetails(resetInterval: 2);
+
+        expect(habit.progress, 2);
+        expect(habit.updateProgress(3).history[today], 1);
+      });
+    });
+
     group('reset anchor', () {
       test('create defaults the anchor to today', () {
         final habit = Habit.create(
