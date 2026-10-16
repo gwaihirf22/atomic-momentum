@@ -176,6 +176,62 @@ void main() {
     }
   });
 
+  group('Add habit: pinned save button', () {
+    Future<void> pumpPhone(WidgetTester tester, Widget screen) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
+          ChangeNotifierProvider<HabitProvider>.value(value: habitProvider),
+          ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
+          ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
+        ],
+        child: MaterialApp(home: screen),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    final button = find.byKey(const Key('saveHabitButton'));
+
+    testWidgets('stays at the bottom of the screen while the form scrolls', (tester) async {
+      await pumpPhone(tester, const AddHabitScreen());
+
+      expect(button.hitTestable(), findsOneWidget, reason: 'reachable without scrolling');
+      final atTop = tester.getRect(button);
+      expect(atTop.bottom, greaterThan(844 - 40));
+      expect(atTop.height, greaterThanOrEqualTo(44));
+
+      await tester.drag(find.byType(SingleChildScrollView).first, const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(button), atTop);
+      expect(find.text('Add Habit'), findsOneWidget);
+    });
+
+    testWidgets('rides above the keyboard', (tester) async {
+      await pumpPhone(tester, const AddHabitScreen());
+      tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(button).bottom, lessThanOrEqualTo(844 - 300));
+      expect(button.hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('reads Update Habit when editing', (tester) async {
+      await habitProvider.createHabit(const CreateHabitParams(
+        name: 'Read',
+        target: 1,
+        color: HabitColor.teal,
+        categoryId: BuiltInCategoryIds.mind,
+      ));
+      await pumpPhone(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
+
+      expect(find.descendant(of: button, matching: find.text('Update Habit')), findsOneWidget);
+    });
+  });
+
   group('Add habit: categories', () {
     bool chipSelected(WidgetTester tester, String key) =>
         tester.widget<FilterChip>(find.byKey(Key('categoryChip_$key'))).selected;

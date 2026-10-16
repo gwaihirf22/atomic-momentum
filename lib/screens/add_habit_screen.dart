@@ -72,6 +72,40 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     ];
   }
 
+  /// The save button, pinned to the bottom of the screen (a "sticky footer")
+  /// so it's reachable without scrolling.
+  Widget _buildActionBar(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      key: const Key('habitActionBar'),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              key: const Key('saveHabitButton'),
+              onPressed: _isSubmitting ? null : _submitForm,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(widget.editHabit != null ? 'Update Habit' : 'Add Habit'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Opens the Categories page on top of the form (so nothing typed is
   /// lost), then picks up what changed there.
   Future<void> _openCategories() async {
@@ -220,10 +254,11 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         title: Text(widget.editHabit != null ? 'Edit Habit' : 'Add New Habit'),
         centerTitle: true,
       ),
-      body: Form(
+      body: Column(children: [
+        Expanded(child: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -586,24 +621,13 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   },
                 ),
               ],
-              
-              const SizedBox(height: 32),
-              
-              // Submit Button
-              ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitForm,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(widget.editHabit != null ? 'Update Habit' : 'Add Habit'),
-              ),
             ],
           ),
         ),
-      ),
+        )),
+        // Pinned below the scrolling form; rides above the keyboard
+        _buildActionBar(context),
+      ]),
           ),
         );
       },
