@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/injection/injection_container.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/habit_provider.dart';
@@ -32,6 +33,11 @@ void main() async {
   );
 
   runApp(const MomentumApp());
+
+  // Ask for notification permission once the app is on screen
+  if (NotificationService.isSupported) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => NotificationService.requestPermission());
+  }
 }
 
 class MomentumApp extends StatelessWidget {

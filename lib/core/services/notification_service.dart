@@ -51,7 +51,21 @@ class NotificationService {
   static Future<String> Function() timezoneResolver =
       () async => (await FlutterTimezone.getLocalTimezone()).identifier;
 
-  // Initialize the notification service
+  /// Plugin setup. Doesn't ask for permission: on iOS and macOS the prompt
+  /// would block startup until answered, over a blank screen.
+  @visibleForTesting
+  static const InitializationSettings initializationSettings = InitializationSettings(
+    android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    iOS: _darwinSettings,
+    macOS: _darwinSettings,
+  );
+
+  static const DarwinInitializationSettings _darwinSettings = DarwinInitializationSettings(
+    requestAlertPermission: false,
+    requestBadgePermission: false,
+    requestSoundPermission: false,
+  );
+
   static Future<void> initialize() async {
     if (_initialized) return;
 
@@ -60,37 +74,14 @@ class NotificationService {
       tz.initializeTimeZones();
       await configureLocalTimeZone();
 
-      // Android initialization settings
-      const AndroidInitializationSettings androidSettings =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
-
-      // iOS initialization settings
-      const DarwinInitializationSettings iosSettings =
-          DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
-
-      // Combined initialization settings
-      const InitializationSettings initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-        macOS: iosSettings,
-      );
-
       // Initialize the plugin
       await _notificationsPlugin.initialize(
-        initSettings,
+        initializationSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
-      // iOS/macOS ask via the initialization settings above; Android 13+
-      // needs its own runtime request
-      if (!kIsWeb) {
-        await requestPermission();
-      }
-
+      // Permission is asked separately (see requestPermission), so startup
+      // never waits on the system prompt
       _initialized = true;
       debugPrint('NotificationService: Initialized successfully');
     } catch (e) {

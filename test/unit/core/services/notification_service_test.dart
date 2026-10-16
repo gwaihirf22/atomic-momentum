@@ -24,6 +24,17 @@ void main() {
     });
   });
 
+  test('setup never asks for permission, so startup is not blocked by the prompt', () {
+    for (final darwin in [
+      NotificationService.initializationSettings.iOS!,
+      NotificationService.initializationSettings.macOS!,
+    ]) {
+      expect(darwin.requestAlertPermission, isFalse);
+      expect(darwin.requestBadgePermission, isFalse);
+      expect(darwin.requestSoundPermission, isFalse);
+    }
+  });
+
   group('nextOccurrence', () {
     final la = tz.getLocation('America/Los_Angeles');
     const nineAm = TimeOfDay(hour: 9, minute: 0);
