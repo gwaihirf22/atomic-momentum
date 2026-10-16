@@ -6,10 +6,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/manage_categories_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
@@ -165,10 +165,71 @@ void main() {
 
   testWidgets('Add habit category chips use the flat category icons, not emoji', (tester) async {
     await pumpScreen(tester, const AddHabitScreen());
-    for (final c in HabitCategory.values) {
-      expect(find.widgetWithIcon(FilterChip, c.icon), findsOneWidget);
-      expect(find.text(c.emoji), findsNothing);
+    for (final c in get<CategoryProvider>().categories) {
+      expect(find.descendant(of: find.byKey(Key('categoryChip_${c.id}')), matching: find.byIcon(c.icon)),
+          findsOneWidget);
     }
+    for (final emoji in ['💪', '🙏', '🧠', '👥', '💼', '🎨']) {
+      expect(find.text(emoji), findsNothing);
+    }
+  });
+
+  group('Add habit: categories', () {
+    bool chipSelected(WidgetTester tester, String key) =>
+        tester.widget<FilterChip>(find.byKey(Key('categoryChip_$key'))).selected;
+
+    testWidgets('a new habit starts in the first category; Uncategorized is not offered', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+
+      expect(chipSelected(tester, BuiltInCategoryIds.body), isTrue);
+      expect(find.byKey(const Key('categoryChip_uncategorized')), findsNothing);
+    });
+
+    testWidgets('editing an uncategorized habit keeps its category unless another is picked', (tester) async {
+      await habitProvider.createHabit(const CreateHabitParams(
+        name: 'Pottery',
+        target: 1,
+        color: HabitColor.pink,
+        categoryId: 'hobbies',
+      ));
+      final habit = habitProvider.habits.single;
+
+      await pumpScreen(tester, AddHabitScreen(editHabit: habit));
+      expect(chipSelected(tester, 'uncategorized'), isTrue);
+      await tester.tap(find.text('Update Habit'));
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.single.categoryId, 'hobbies');
+
+      // Saving popped the only route; start a fresh app for the second edit
+      await tester.pumpWidget(const SizedBox());
+      await pumpScreen(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
+      await tester.tap(find.byKey(const Key('categoryChip_mind')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Update Habit'));
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.single.categoryId, BuiltInCategoryIds.mind);
+    });
+  });
+
+  testWidgets('Calendar shows renamed categories in its filter and day list', (tester) async {
+    await tester.runAsync(() async {
+      final body = get<CategoryProvider>().categories.first;
+      await get<ManageCategoriesUseCase>().update(body.copyWith(name: 'Fitness'));
+      await get<CategoryProvider>().load();
+    });
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Run',
+      target: 1,
+      color: HabitColor.orange,
+      categoryId: BuiltInCategoryIds.body,
+    ));
+
+    await pumpScreen(tester, const CalendarScreen());
+
+    expect(find.descendant(of: find.byKey(const Key('calendarCategoryChip_body')), matching: find.text('Fitness')),
+        findsOneWidget);
+    final id = habitProvider.habits.single.id;
+    expect(find.descendant(of: find.byKey(Key('dayHabit_$id')), matching: find.text('Fitness')), findsOneWidget);
   });
 
   group('Add habit: Apple HIG layout', () {
@@ -191,6 +252,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
           ChangeNotifierProvider<HabitProvider>.value(value: habitProvider),
+          ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
         ],
         child: const MaterialApp(home: AddHabitScreen()),
       ));

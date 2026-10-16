@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/ios_colors.dart';
-import '../../domain/entities/habit_category.dart';
+import '../../domain/entities/category.dart';
 import 'category_icons.dart';
 
 /// Row above the category rings that says what the list is showing and,
 /// while a category is selected, offers a way back to all habits.
 class CategoryFilterHeader extends StatelessWidget {
-  final HabitCategory? selected;
+  final Category? selected;
   final int habitCount;
   final VoidCallback onShowAll;
   final bool isDark;
@@ -37,12 +37,12 @@ class CategoryFilterHeader extends StatelessWidget {
         child: Row(
           children: [
             if (category != null) ...[
-              Icon(category.icon, size: 18, color: category.defaultColor),
+              Icon(category.icon, size: 18, color: category.color),
               const SizedBox(width: 6),
             ],
             Expanded(
               child: Text(
-                category == null ? 'All habits · $countText' : '${category.displayName} · $countText',
+                category == null ? 'All habits · $countText' : '${category.name} · $countText',
                 key: const Key('filterHeaderLabel'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

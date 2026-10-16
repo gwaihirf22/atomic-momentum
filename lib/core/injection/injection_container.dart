@@ -75,7 +75,9 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     seedDefaultHabit: seedDefaultHabit,
     streakWarningService: sl(),
   ));
-  sl.registerFactory(() => CategoryProvider());
+  // Shared: the Categories page and the Habits screen must see the same list
+  sl.registerLazySingleton(() => CategoryProvider(sl()));
+  await sl<CategoryProvider>().load();
   
   // Theme provider with persistence
   final isDarkMode = sharedPreferences.getBool('isDarkMode') ?? false;

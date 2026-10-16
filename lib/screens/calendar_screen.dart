@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../domain/entities/habit.dart';
-import '../domain/entities/habit_category.dart';
+import '../domain/entities/category.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/providers/habit_provider.dart';
@@ -20,7 +20,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  HabitCategory? _selectedCategory;
+  // The Calendar keeps its own filter, separate from the Habits screen's
+  String? _selectedCategoryId;
 
   @override
   void initState() {
@@ -39,9 +40,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   List<Habit> _getHabitsForDay(DateTime day) {
     final habitProvider = context.read<HabitProvider>();
+    final categoryProvider = context.read<CategoryProvider>();
+    final selectedId = _activeFilterId(habitProvider.habits);
     List<Habit> dayHabits = habitProvider.habits.where((habit) {
       // Filter by category if selected
-      if (_selectedCategory != null && habit.categoryId != _selectedCategory!.name) {
+      if (selectedId != null && !categoryProvider.matches(habit, selectedId)) {
         return false;
       }
       // Rest days of a weekday schedule aren't shown or counted
@@ -75,9 +78,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Colors.grey.withOpacity(0.2);
   }
 
+  /// The chosen filter, or null (All) if it's no longer one of the options,
+  /// e.g. the category was deleted.
+  String? _activeFilterId(List<Habit> habits) {
+    final id = _selectedCategoryId;
+    if (id == null) return null;
+    final options = context.read<CategoryProvider>().filterOptions(habits);
+    return options.any((c) => c.id == id) ? id : null;
+  }
+
   Widget _buildCategoryFilters() {
     return Consumer<CategoryProvider>(
       builder: (context, categoryProvider, child) {
+        final habits = context.read<HabitProvider>().habits;
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -85,16 +98,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             children: [
               _buildCategoryChip(null, 'All', Icons.apps),
               const SizedBox(width: 8),
-              ...HabitCategory.values.map((category) {
-                return Padding(
+              for (final category in categoryProvider.filterOptions(habits))
+                Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: _buildCategoryChip(
-                    category,
-                    category.displayName,
-                    category.icon,
-                  ),
-                );
-              }).toList(),
+                  child: _buildCategoryChip(category, category.name, category.icon),
+                ),
             ],
           ),
         );
@@ -102,8 +110,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCategoryChip(HabitCategory? category, String label, IconData icon) {
-    final isSelected = _selectedCategory == category;
+  Widget _buildCategoryChip(Category? category, String label, IconData icon) {
+    final isSelected = _activeFilterId(context.read<HabitProvider>().habits) == category?.id;
     
     return FilterChip(
       label: Row(
@@ -117,12 +125,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
-          _selectedCategory = selected ? category : null;
+          _selectedCategoryId = selected ? category?.id : null;
           _selectedHabits.value = _getHabitsForDay(_selectedDay!);
         });
       },
-      backgroundColor: category?.defaultColor.withOpacity(0.1),
-      selectedColor: category?.defaultColor.withOpacity(0.3) ?? Theme.of(context).primaryColor.withOpacity(0.3),
+      key: Key('calendarCategoryChip_${category?.id ?? 'all'}'),
+      backgroundColor: category?.color.withOpacity(0.1),
+      selectedColor: category?.color.withOpacity(0.3) ?? Theme.of(context).primaryColor.withOpacity(0.3),
     );
   }
 
@@ -194,9 +203,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
                 ),
                 Text(
-                  HabitCategory.fromString(habit.categoryId).displayName,
+                  context.read<CategoryProvider>().resolve(habit.categoryId).name,
                   style: TextStyle(
-                    color: HabitCategory.fromString(habit.categoryId).defaultColor,
+                    color: context.read<CategoryProvider>().resolve(habit.categoryId).color,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

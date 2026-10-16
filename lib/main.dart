@@ -47,8 +47,9 @@ class MomentumApp extends StatelessWidget {
         ChangeNotifierProvider<HabitProvider>(
           create: (_) => get<HabitProvider>(),
         ),
-        ChangeNotifierProvider<CategoryProvider>(
-          create: (_) => get<CategoryProvider>(),
+        // Shared singleton (category edits must reach every screen), so not owned here
+        ChangeNotifierProvider<CategoryProvider>.value(
+          value: get<CategoryProvider>(),
         ),
         // Shared singleton (the streak warning service reads it), so not owned here
         ChangeNotifierProvider<SettingsProvider>.value(

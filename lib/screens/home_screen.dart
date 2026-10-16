@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
-import '../domain/entities/habit_category.dart';
+import '../domain/entities/category.dart';
 import '../core/theme/ios_colors.dart';
 import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
@@ -140,10 +140,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       isDark: isDark,
                     ),
                     CategoryRingsBar(
+                      categories: categoryProvider.filterOptions(habitProvider.habits),
                       // Rest-day habits aren't due, so they don't drag a ring down
                       stats: categoryProvider.getCategoryStats(
                           habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
-                      selected: categoryProvider.selectedCategory,
+                      selectedId: categoryProvider.selectedCategory?.id,
                       onTap: categoryProvider.toggleCategory,
                       isDark: isDark,
                     ),
@@ -218,13 +219,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildEmptyState(bool isDark, HabitCategory? selectedCategory) {
+  Widget _buildEmptyState(bool isDark, Category? selectedCategory) {
     final isFiltered = selectedCategory != null;
     final title = isFiltered 
-        ? 'No ${selectedCategory.displayName.toLowerCase()} habits yet'
+        ? 'No ${selectedCategory.name.toLowerCase()} habits yet'
         : 'No habits yet';
     final subtitle = isFiltered
-        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or tap Show all to see all habits'
+        ? 'Tap the + button to add a ${selectedCategory.name.toLowerCase()} habit, or tap Show all to see all habits'
         : 'Tap the + button to add your first habit';
     
     return Center(
@@ -235,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             isFiltered ? selectedCategory.icon : CupertinoIcons.checkmark_circle,
             size: 80,
             color: isFiltered 
-                ? selectedCategory.defaultColor.withOpacity(0.5)
+                ? selectedCategory.color.withOpacity(0.5)
                 : IOSColors.systemBlue.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
@@ -293,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                           // One line that truncates, so narrow screens / large text can't overflow
                           Text(
-                            '${HabitCategory.fromString(habit.categoryId).displayName}  •  ${habit.schedule.shortLabel}'
+                            '${context.read<CategoryProvider>().resolve(habit.categoryId).name}  •  ${habit.schedule.shortLabel}'
                             '${isRestDay ? '  •  Rest day' : ''}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

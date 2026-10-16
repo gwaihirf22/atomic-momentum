@@ -6,7 +6,6 @@ import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/streak_warning_service.dart';
 import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/repositories/habit_repository.dart';
@@ -199,15 +198,15 @@ void main() {
         await habitProvider.createHabit(mindHabitParams);
 
         // Test category filtering
-        categoryProvider.setSelectedCategory(HabitCategory.body);
+        categoryProvider.setSelectedCategoryId(BuiltInCategoryIds.body);
         final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
         expect(filteredHabits, hasLength(1));
         expect(filteredHabits.first.categoryId, BuiltInCategoryIds.body);
 
         // Test category stats
         final stats = categoryProvider.getCategoryStats(habitProvider.habits);
-        expect(stats[HabitCategory.body]?.totalHabits, 1);
-        expect(stats[HabitCategory.mind]?.totalHabits, 1);
+        expect(stats[BuiltInCategoryIds.body]?.totalHabits, 1);
+        expect(stats[BuiltInCategoryIds.mind]?.totalHabits, 1);
       });
     });
 

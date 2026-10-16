@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
-import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/habit_schedule.dart';
 import '../domain/entities/reset_frequency.dart';
@@ -10,6 +9,7 @@ import '../domain/entities/reminder_settings.dart';
 import '../domain/usecases/create_habit_usecase.dart';
 import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
+import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../core/theme/ios_colors.dart';
@@ -34,7 +34,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   // Selected values
   HabitColor _selectedColor = HabitColor.blue;
   // An id, so a habit in an unknown/deleted category keeps it unless changed
-  String _selectedCategoryId = BuiltInCategoryIds.body;
+  String _selectedCategoryId = '';
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
   // Weekly habits reset on this date's weekday, monthly on its day of month
   DateTime _resetAnchor = DateUtils.dateOnly(DateTime.now());
@@ -53,6 +53,21 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   // Icon selection
   String? _selectedIcon;
   
+  /// Active categories, plus Uncategorized when editing a habit whose
+  /// category was deleted (it's never offered for a new habit).
+  List<Category> _categoryChoices(BuildContext context) {
+    final provider = context.watch<CategoryProvider>();
+    final original = widget.editHabit?.categoryId;
+    return [
+      ...provider.categories,
+      if (original != null && !provider.isActive(original)) Category.uncategorized,
+    ];
+  }
+
+  // Which chip shows as selected for a stored id
+  String _chipIdFor(String categoryId) =>
+      context.read<CategoryProvider>().isActive(categoryId) ? categoryId : Category.uncategorizedId;
+
   // Apple's Human Interface Guidelines: tap targets at least 44x44 pt
   static const double _swatchSize = 44;
   static const double _swatchSpacing = 12;
@@ -99,6 +114,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   @override
   void initState() {
     super.initState();
+    final categories = context.read<CategoryProvider>().categories;
+    if (categories.isNotEmpty) _selectedCategoryId = categories.first.id;
     
     // If editing an existing habit, populate the form
     if (widget.editHabit != null) {
@@ -237,24 +254,29 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               Wrap(
                 spacing: _chipSpacing,
                 runSpacing: _chipSpacing,
-                children: HabitCategory.values.map((category) {
-                  final isSelected = _selectedCategoryId == category.name;
+                children: _categoryChoices(context).map((category) {
+                  final isSelected = _chipIdFor(_selectedCategoryId) == category.id;
                   return FilterChip(
+                    key: Key('categoryChip_${category.id == Category.uncategorizedId ? 'uncategorized' : category.id}'),
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(category.icon, size: 16, color: category.defaultColor),
+                        Icon(category.icon, size: 16, color: category.color),
                         const SizedBox(width: 4),
-                        Text(category.displayName),
+                        Text(category.name),
                       ],
                     ),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
-                        _selectedCategoryId = category.name;
+                        // Choosing Uncategorized again keeps the habit's original id,
+                        // so restoring its category brings it back
+                        _selectedCategoryId = category.id == Category.uncategorizedId
+                            ? widget.editHabit!.categoryId
+                            : category.id;
                       });
                     },
-                    backgroundColor: isSelected ? category.defaultColor.withOpacity(0.2) : null,
+                    backgroundColor: isSelected ? category.color.withOpacity(0.2) : null,
                   );
                 }).toList(),
               ),
@@ -632,7 +654,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _targetController.clear();
         _unitsController.clear();
         _selectedColor = HabitColor.blue;
-        _selectedCategoryId = BuiltInCategoryIds.body;
+        final categories = context.read<CategoryProvider>().categories;
+        _selectedCategoryId = categories.isEmpty ? '' : categories.first.id;
         _selectedFrequency = ResetFrequency.daily;
         _resetInterval = 1;
         _scheduleDays = [1, 2, 3, 4, 5, 6, 7];

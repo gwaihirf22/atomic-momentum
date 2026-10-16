@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/theme/ios_colors.dart';
-import '../../domain/entities/habit_category.dart';
+import '../../domain/entities/category.dart';
 import '../providers/category_provider.dart';
 import 'category_icons.dart';
 
@@ -12,16 +12,24 @@ import 'category_icons.dart';
 /// ring again shows all habits. Sized to fit a 375pt-wide iPhone without
 /// scrolling, with 44pt tap targets.
 class CategoryRingsBar extends StatelessWidget {
-  final Map<HabitCategory, CategoryStats> stats;
-  final HabitCategory? selected;
-  final ValueChanged<HabitCategory> onTap;
+  final List<Category> categories;
+
+  /// Keyed by category id.
+  final Map<String, CategoryStats> stats;
+  final String? selectedId;
+  final ValueChanged<String> onTap;
+
+  /// Long-pressing any ring (e.g. to manage categories).
+  final VoidCallback? onLongPress;
   final bool isDark;
 
   const CategoryRingsBar({
     Key? key,
+    required this.categories,
     required this.stats,
-    required this.selected,
+    required this.selectedId,
     required this.onTap,
+    this.onLongPress,
     required this.isDark,
   }) : super(key: key);
 
@@ -32,14 +40,15 @@ class CategoryRingsBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final category in HabitCategory.values)
+          for (final category in categories)
             Expanded(
               child: _CategoryRing(
                 category: category,
-                stats: stats[category],
-                isSelected: selected == category,
+                stats: stats[category.id],
+                isSelected: selectedId == category.id,
                 isDark: isDark,
-                onTap: () => onTap(category),
+                onTap: () => onTap(category.id),
+                onLongPress: onLongPress,
               ),
             ),
         ],
@@ -52,11 +61,12 @@ class _CategoryRing extends StatelessWidget {
   static const double _ringSize = 48;
   static const double _strokeWidth = 4.5;
 
-  final HabitCategory category;
+  final Category category;
   final CategoryStats? stats;
   final bool isSelected;
   final bool isDark;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
 
   const _CategoryRing({
     required this.category,
@@ -64,6 +74,7 @@ class _CategoryRing extends StatelessWidget {
     required this.isSelected,
     required this.isDark,
     required this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -72,20 +83,21 @@ class _CategoryRing extends StatelessWidget {
     final completed = stats?.completedHabits ?? 0;
     final fraction = total == 0 ? 0.0 : stats!.averageProgress.clamp(0.0, 1.0);
     final percent = (fraction * 100).round();
-    final color = category.defaultColor;
+    final color = category.color;
     final labelColor = isDark ? IOSColors.labelDark : IOSColors.label;
 
     return Semantics(
-      key: Key('categoryRing_${category.name}'),
+      key: Key('categoryRing_${category.id}'),
       button: true,
       selected: isSelected,
       label: total == 0
-          ? '${category.displayName}, no habits'
-          : '${category.displayName}, $percent percent, $completed of $total habits complete',
+          ? '${category.name}, no habits'
+          : '${category.name}, $percent percent, $completed of $total habits complete',
       excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Opacity(
           // Empty categories stay tappable but recede
           opacity: total == 0 && !isSelected ? 0.45 : 1,
@@ -118,7 +130,7 @@ class _CategoryRing extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  category.displayName,
+                  category.name,
                   maxLines: 1,
                   style: TextStyle(
                     fontSize: 12,

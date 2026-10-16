@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
@@ -60,12 +59,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder ring(HabitCategory c) => find.byKey(Key('categoryRing_${c.name}'));
+  Finder ring(String id) => find.byKey(Key('categoryRing_$id'));
 
   testWidgets('all six rings fit on one row at 375pt with 44pt tap targets', (tester) async {
     await pumpHome(tester);
 
-    final rects = HabitCategory.values.map((c) => tester.getRect(ring(c))).toList();
+    final rects = Category.defaults.map((c) => tester.getRect(ring(c.id))).toList();
     expect(rects.map((r) => r.top).toSet(), hasLength(1), reason: 'single row');
     expect(rects.last.right, lessThanOrEqualTo(375));
     for (final r in rects) {
@@ -97,9 +96,11 @@ void main() {
 
   testWidgets('rings use the flat category icons, not emoji', (tester) async {
     await pumpHome(tester);
-    for (final c in HabitCategory.values) {
+    for (final c in Category.defaults) {
       expect(find.descendant(of: find.byType(CategoryRingsBar), matching: find.byIcon(c.icon)), findsOneWidget);
-      expect(find.text(c.emoji), findsNothing);
+    }
+    for (final emoji in ['💪', '🙏', '🧠', '👥', '💼', '🎨']) {
+      expect(find.text(emoji), findsNothing);
     }
   });
 
@@ -110,7 +111,7 @@ void main() {
     expect(header(), 'All habits · 3 habits');
     expect(find.byKey(const Key('showAllHabits')), findsNothing);
 
-    await tester.tap(ring(HabitCategory.mind));
+    await tester.tap(ring(BuiltInCategoryIds.mind));
     await tester.pumpAndSettle();
     expect(header(), 'Mind · 1 habit');
 
@@ -145,17 +146,45 @@ void main() {
     expect(find.bySemanticsLabel('Creative, no habits'), findsOneWidget);
   });
 
+  testWidgets('a habit in a deleted or unknown category shows under a grey Uncategorized ring', (tester) async {
+    await habitProvider.createHabit(const CreateHabitParams(
+      name: 'Pottery',
+      target: 1,
+      color: HabitColor.pink,
+      categoryId: 'hobbies',
+    ));
+    final pottery = habitProvider.habits.firstWhere((h) => h.name == 'Pottery');
+
+    await pumpHome(tester);
+
+    expect(find.bySemanticsLabel('Uncategorized, 0 percent, 0 of 1 habits complete'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byKey(Key('habitCard_${pottery.id}')), matching: find.textContaining('Uncategorized')),
+      findsOneWidget,
+    );
+
+    await tester.tap(ring(Category.uncategorizedId));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('filterHeaderLabel'))).data, 'Uncategorized · 1 habit');
+    expect(find.text('Read'), findsNothing);
+  });
+
+  testWidgets('no Uncategorized ring while every habit has a category', (tester) async {
+    await pumpHome(tester);
+    expect(ring(Category.uncategorizedId), findsNothing);
+  });
+
   testWidgets('tapping a ring filters; tapping it again shows all', (tester) async {
     await pumpHome(tester);
     expect(find.text('Read'), findsOneWidget);
 
-    await tester.tap(ring(HabitCategory.body));
+    await tester.tap(ring(BuiltInCategoryIds.body));
     await tester.pumpAndSettle();
-    expect(categoryProvider.selectedCategory, HabitCategory.body);
+    expect(categoryProvider.selectedCategory?.id, BuiltInCategoryIds.body);
     expect(find.text('Run'), findsOneWidget);
     expect(find.text('Read'), findsNothing);
 
-    await tester.tap(ring(HabitCategory.body));
+    await tester.tap(ring(BuiltInCategoryIds.body));
     await tester.pumpAndSettle();
     expect(categoryProvider.selectedCategory, isNull);
     expect(find.text('Read'), findsOneWidget);
@@ -164,7 +193,7 @@ void main() {
   testWidgets('an empty category shows the empty state with a way back', (tester) async {
     await pumpHome(tester);
 
-    await tester.tap(ring(HabitCategory.creative));
+    await tester.tap(ring(BuiltInCategoryIds.creative));
     await tester.pumpAndSettle();
 
     expect(find.text('No creative habits yet'), findsOneWidget);
