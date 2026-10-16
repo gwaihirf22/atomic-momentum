@@ -390,6 +390,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               Row(
                 children: [
                   Switch(
+                    key: const Key('reminderSwitch'),
                     value: _reminderEnabled,
                     onChanged: (value) {
                       setState(() {
@@ -508,12 +509,15 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       // Store initial habit count to detect if habit was actually added
       final initialHabitCount = habitProvider.habits.length;
       
-      // Create reminder settings if enabled
+      // Build reminder settings. When editing a habit that had a reminder,
+      // turning it off must send a disabled reminder: null means "unchanged"
+      // to updateDetails, which would leave the old reminder firing.
+      final reminderOn = _reminderEnabled && _selectedDays.isNotEmpty;
       ReminderSettings? reminder;
-      if (_reminderEnabled && _selectedDays.isNotEmpty) {
+      if (reminderOn || widget.editHabit?.reminder != null) {
         reminder = ReminderSettings(
           time: _reminderTime,
-          enabled: true,
+          enabled: reminderOn,
           daysOfWeek: List.from(_selectedDays),
           customMessage: _customMessage.isNotEmpty ? _customMessage : null,
         );

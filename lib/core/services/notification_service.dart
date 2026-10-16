@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../../domain/entities/habit.dart';
@@ -12,6 +13,12 @@ class NotificationService {
 
   static bool _initialized = false;
 
+  /// Looks up the device's IANA timezone (e.g. "America/Los_Angeles").
+  /// Replaceable in tests, where the platform plugin isn't available.
+  @visibleForTesting
+  static Future<String> Function() timezoneResolver =
+      () async => (await FlutterTimezone.getLocalTimezone()).identifier;
+
   // Initialize the notification service
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -19,6 +26,7 @@ class NotificationService {
     try {
       // Initialize timezone data
       tz.initializeTimeZones();
+      await configureLocalTimeZone();
 
       // Android initialization settings
       const AndroidInitializationSettings androidSettings =
@@ -54,6 +62,20 @@ class NotificationService {
       debugPrint('NotificationService: Initialized successfully');
     } catch (e) {
       debugPrint('NotificationService: Failed to initialize: $e');
+    }
+  }
+
+  /// Points tz.local at the device timezone. Without this tz.local stays UTC
+  /// and repeating reminders fire at the UTC wall-clock time (e.g. a 9am
+  /// reminder at 2am in California).
+  static Future<void> configureLocalTimeZone() async {
+    try {
+      tz.initializeTimeZones();
+      final identifier = await timezoneResolver();
+      tz.setLocalLocation(tz.getLocation(identifier));
+      debugPrint('NotificationService: Local timezone is $identifier');
+    } catch (e) {
+      debugPrint('NotificationService: Could not determine timezone, using UTC: $e');
     }
   }
 
@@ -105,9 +127,10 @@ class NotificationService {
       for (int dayOfWeek in reminder.daysOfWeek) {
         final notificationId = _getNotificationId(habit.id, dayOfWeek);
         
-        final scheduledDate = _getNextOccurrence(
+        final scheduledDate = nextOccurrence(
           dayOfWeek: dayOfWeek,
           timeOfDay: reminder.time,
+          now: tz.TZDateTime.now(tz.local),
         );
 
         await _notificationsPlugin.zonedSchedule(
@@ -247,31 +270,23 @@ class NotificationService {
     return combined.hashCode.abs() % 2147483647; // Keep within int32 range
   }
 
-  // Get next occurrence of day/time combination
-  static tz.TZDateTime _getNextOccurrence({
+  /// Next [dayOfWeek] at [timeOfDay] after [now], in [now]'s timezone.
+  @visibleForTesting
+  static tz.TZDateTime nextOccurrence({
     required int dayOfWeek,
     required TimeOfDay timeOfDay,
+    required tz.TZDateTime now,
   }) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      timeOfDay.hour,
-      timeOfDay.minute,
-    );
+    final daysUntilTarget = (dayOfWeek - now.weekday) % 7;
+    final todayAtTime = tz.TZDateTime(
+        now.location, now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
+    // If it's today but the time has passed, use next week
+    final daysAhead = daysUntilTarget == 0 && todayAtTime.isBefore(now) ? 7 : daysUntilTarget;
 
-    // Adjust to the correct day of week
-    final currentDayOfWeek = scheduledDate.weekday;
-    final daysUntilTarget = (dayOfWeek - currentDayOfWeek) % 7;
-    
-    if (daysUntilTarget > 0) {
-      scheduledDate = scheduledDate.add(Duration(days: daysUntilTarget));
-    } else if (daysUntilTarget == 0 && scheduledDate.isBefore(now)) {
-      // If it's today but the time has passed, schedule for next week
-      scheduledDate = scheduledDate.add(const Duration(days: 7));
-    }
+    // Build from calendar fields rather than adding 24h blocks, which would
+    // shift the wall-clock time across a daylight-saving change
+    final scheduledDate = tz.TZDateTime(now.location, now.year, now.month,
+        now.day + daysAhead, timeOfDay.hour, timeOfDay.minute);
 
     return scheduledDate;
   }

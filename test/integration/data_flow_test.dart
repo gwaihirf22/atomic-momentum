@@ -16,6 +16,9 @@ import 'package:atomic_momentum/domain/usecases/delete_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 
+import 'package:atomic_momentum/data/datasources/local_habit_datasource.dart';
+
+import '../helpers/failing_habit_repository.dart';
 import '../helpers/fake_streak_warning_scheduler.dart';
 
 void main() {
@@ -427,6 +430,36 @@ void main() {
           saved.resetFrequency.periodStart(DateTime.now(), anchor: saved.resetAnchor).weekday,
           DateTime.thursday,
         );
+      });
+    });
+
+    group('Save failures', () {
+      test('a failed progress save is reported and not shown as saved', () async {
+        final repository = FailingHabitRepository(get<LocalHabitDataSource>());
+        final habitProvider = HabitProvider(
+          getHabitsUseCase: GetHabitsUseCase(repository),
+          createHabitUseCase: CreateHabitUseCase(repository),
+          updateHabitUseCase: UpdateHabitUseCase(repository),
+          deleteHabitUseCase: DeleteHabitUseCase(repository),
+        );
+        await habitProvider.createHabit(CreateHabitParams(
+          name: 'Water',
+          target: 8,
+          color: HabitColor.blue,
+          category: HabitCategory.body,
+        ));
+        final id = habitProvider.habits.single.id;
+
+        repository.failSaves = true;
+        final success = await habitProvider.updateHabitProgress(id, 3);
+
+        expect(success, isFalse);
+        expect(habitProvider.error, isNotNull);
+        expect(habitProvider.getHabitById(id)!.progress, 0, reason: 'UI must not show unsaved progress');
+
+        repository.failSaves = false;
+        await habitProvider.loadHabits();
+        expect(habitProvider.getHabitById(id)!.progress, 0);
       });
     });
 

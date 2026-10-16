@@ -43,6 +43,8 @@ class Habit extends Equatable {
     this.resetAnchorDate,
   });
 
+  static int _idCounter = 0;
+
   factory Habit.create({
     required String name,
     required int target,
@@ -55,7 +57,8 @@ class Habit extends Equatable {
     DateTime? resetAnchor,
   }) {
     final now = DateTime.now();
-    final id = 'habit_${DateTime.now().millisecondsSinceEpoch}';
+    // Timestamp alone collides when habits are created in the same instant
+    final id = 'habit_${now.microsecondsSinceEpoch}_${_idCounter++}';
     
     return Habit(
       id: id,

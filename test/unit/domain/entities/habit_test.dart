@@ -6,7 +6,6 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/streak_data.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
-import 'package:atomic_momentum/domain/entities/habit_metadata.dart';
 import '../../../helpers/test_data.dart';
 
 void main() {
@@ -31,6 +30,17 @@ void main() {
     });
 
     group('create factory', () {
+      test('generates unique ids even when created in quick succession', () {
+        final ids = List.generate(200, (_) => Habit.create(
+          name: 'Same instant',
+          target: 1,
+          color: HabitColor.blue,
+          category: HabitCategory.body,
+        ).id);
+
+        expect(ids.toSet(), hasLength(200));
+      });
+
       test('should create new habit with generated ID and default values', () {
         final habit = Habit.create(
           name: 'New Habit',

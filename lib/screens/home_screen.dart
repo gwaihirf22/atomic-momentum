@@ -12,8 +12,6 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import 'add_habit_screen.dart';
-import 'settings_screen.dart';
-import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -391,13 +389,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     
     final success = await habitProvider.updateHabitProgress(habit.id, newProgress);
     print('DEBUG: Update success: $success');
-    
-    // FORCE STATE REFRESH - ensure UI updates immediately
-    if (mounted) {
-      print('DEBUG: Forcing state refresh');
-      setState(() {});
-      habitProvider.notifyListeners();
-    }
     
     if (!success && mounted) {
       print('DEBUG: Habit update failed, showing error');

@@ -7,7 +7,6 @@ import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
-import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/streak_warning_service.dart';
 
@@ -170,21 +169,22 @@ class HabitProvider extends ChangeNotifier {
         final updatedHabit = currentHabit.updateProgress(newProgress);
         print('DEBUG: Created updated habit: ${updatedHabit.name} (${updatedHabit.progress}/${updatedHabit.target}) isCompleted: ${updatedHabit.isCompleted}');
         
-        // Update local list immediately
+        // Show the change immediately so taps feel instant
         _habits[habitIndex] = updatedHabit;
         notifyListeners();
-        await _streakWarnings?.sync(updatedHabit);
-        print('DEBUG: Updated local list and notified listeners');
-        
-        // Try to save to repository, but don't fail if it doesn't work
+
         try {
-          await _updateHabitUseCase.updateProgress(habitId, newProgress);
-          print('DEBUG: Successfully saved to repository');
+          final savedHabit = await _updateHabitUseCase.updateProgress(habitId, newProgress);
+          _replaceHabit(savedHabit);
+          await _streakWarnings?.sync(savedHabit);
         } catch (saveError) {
-          print('DEBUG: Repository save failed but continuing: $saveError');
-          // Continue anyway - the UI is already updated
+          // Roll back: never show progress that isn't actually stored
+          _replaceHabit(currentHabit);
+          _error = 'Could not save progress: $saveError';
+          notifyListeners();
+          return false;
         }
-        
+
         return true;
       } else {
         print('DEBUG: Habit not found in local list');
@@ -407,6 +407,14 @@ class HabitProvider extends ChangeNotifier {
   void _setOperationInProgress(bool inProgress) {
     _isPerformingOperation = inProgress;
     notifyListeners();
+  }
+
+  void _replaceHabit(Habit habit) {
+    final index = _habits.indexWhere((h) => h.id == habit.id);
+    if (index >= 0) {
+      _habits[index] = habit;
+      notifyListeners();
+    }
   }
 
   void _updateHabitInList(Habit updatedHabit) {

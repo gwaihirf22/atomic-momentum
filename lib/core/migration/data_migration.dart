@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart' show TimeOfDay;
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_category.dart';
 import '../../domain/entities/habit_color.dart';
@@ -338,14 +339,3 @@ class DataMigration {
 }
 
 typedef MigrationFunction = List<Habit> Function(Map<String, dynamic> data);
-
-/// Helper class for time-of-day handling during migration
-class TimeOfDay {
-  final int hour;
-  final int minute;
-  
-  const TimeOfDay({required this.hour, required this.minute});
-  
-  @override
-  String toString() => '$hour:${minute.toString().padLeft(2, '0')}';
-}

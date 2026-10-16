@@ -66,6 +66,12 @@ class MomentumApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: IOSTheme.getTheme(isDark ? Brightness.dark : Brightness.light),
             home: const IOSMainNavigation(),
+            // Screens built from Material widgets read Theme.of(context), which
+            // CupertinoApp doesn't provide; without this they stay light in dark mode
+            builder: (context, child) => Theme(
+              data: isDark ? IOSTheme.getMaterialDarkTheme() : IOSTheme.getMaterialLightTheme(),
+              child: child!,
+            ),
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
