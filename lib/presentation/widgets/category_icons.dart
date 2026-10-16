@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import '../../domain/entities/category.dart';
-import '../../domain/entities/habit_category.dart';
 
 /// The flat (SF Symbols-style) icons a category can use, keyed by stable
 /// strings so stored categories stay valid if Flutter's icon font changes.
@@ -70,10 +69,4 @@ class CategoryIcons {
 extension CategoryAppearance on Category {
   IconData get icon => CategoryIcons.of(iconKey);
   Color get color => Color(colorValue);
-}
-
-/// Transitional: the fixed categories' icons, from the same library.
-extension HabitCategoryIcon on HabitCategory {
-  IconData get icon => CategoryIcons.of(
-      Category.defaults.firstWhere((c) => c.id == name).iconKey);
 }
