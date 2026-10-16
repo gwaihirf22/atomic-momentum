@@ -31,7 +31,7 @@ void main() {
 
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
-    expect(find.text('Habit Calendar'), findsOneWidget);
+    expect(find.byKey(const Key('calendarDayTitle')), findsOneWidget);
 
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
 import '../core/feedback/haptics.dart';
+import '../presentation/widgets/app_nav_bar.dart';
 import '../core/exceptions/friendly_error.dart';
 import '../core/theme/ios_colors.dart';
 import '../core/theme/ios_typography.dart';
@@ -89,18 +90,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           backgroundColor: Colors.transparent,
           body: CupertinoPageScaffold(
           backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
-          navigationBar: CupertinoNavigationBar(
-            backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
-            border: Border(
-              bottom: BorderSide(
-                color: isDark ? IOSColors.separatorDark : IOSColors.separator,
-                width: 0.5,
-              ),
-            ),
-            middle: Text(
-              'Habits',
-              style: IOSTypography.getHabitTitle(isDark),
-            ),
+          navigationBar: appNavigationBar(
+            title: 'Habits',
+            isDark: isDark,
             trailing: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () {
@@ -124,6 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 CupertinoIcons.add,
                 color: IOSColors.systemBlue,
                 size: 24,
+                semanticLabel: 'Add habit',
               ),
             ),
           ),

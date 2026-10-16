@@ -97,19 +97,27 @@ class CategoryProvider extends ChangeNotifier {
     return habits.where((habit) => matches(habit, selected.id)).toList();
   }
 
-  /// Completion stats per category id (only categories with habits).
-  Map<String, CategoryStats> getCategoryStats(List<Habit> habits) {
+  /// Completion stats per category id (only categories with habits), for
+  /// the current period, or for the period containing [on] (the Calendar).
+  Map<String, CategoryStats> getCategoryStats(List<Habit> habits, {DateTime? on}) {
     final statsMap = <String, CategoryStats>{};
+    int progressOf(Habit habit) {
+      if (on == null) return habit.progress;
+      final total = habit.progressForPeriodContaining(on);
+      return total > habit.target ? habit.target : total;
+    }
+
+    bool isDone(Habit habit) => on == null ? habit.isCompleted : habit.wasCompletedOnDate(on);
+    double fractionOf(Habit habit) => habit.target > 0 ? (progressOf(habit) / habit.target).clamp(0.0, 1.0) : 0.0;
 
     for (final category in filterOptions(habits)) {
       final categoryHabits = habits.where((habit) => matches(habit, category.id)).toList();
 
       if (categoryHabits.isNotEmpty) {
-        final completedCount = categoryHabits.where((habit) => habit.isCompleted).length;
-        final totalProgress = categoryHabits.fold(0, (sum, habit) => sum + habit.progress);
+        final completedCount = categoryHabits.where(isDone).length;
+        final totalProgress = categoryHabits.fold(0, (sum, habit) => sum + progressOf(habit));
         final totalTarget = categoryHabits.fold(0, (sum, habit) => sum + habit.target);
-        final averageProgress =
-            categoryHabits.map((h) => h.progressPercentage).reduce((a, b) => a + b) / categoryHabits.length;
+        final averageProgress = categoryHabits.map(fractionOf).reduce((a, b) => a + b) / categoryHabits.length;
 
         statsMap[category.id] = CategoryStats(
           totalHabits: categoryHabits.length,

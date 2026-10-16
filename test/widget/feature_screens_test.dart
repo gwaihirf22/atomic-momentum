@@ -1,4 +1,5 @@
 import 'dart:ui' show SemanticsFlag;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -313,7 +314,7 @@ void main() {
     });
   });
 
-  testWidgets('Calendar shows renamed categories in its filter and day list', (tester) async {
+  testWidgets('Calendar shows renamed categories in its rings and filter header', (tester) async {
     await tester.runAsync(() async {
       final body = get<CategoryProvider>().categories.first;
       await get<ManageCategoriesUseCase>().update(body.copyWith(name: 'Fitness'));
@@ -328,10 +329,11 @@ void main() {
 
     await pumpScreen(tester, const CalendarScreen());
 
-    expect(find.descendant(of: find.byKey(const Key('calendarCategoryChip_body')), matching: find.text('Fitness')),
+    expect(find.descendant(of: find.byKey(const Key('categoryRing_body')), matching: find.text('Fitness')),
         findsOneWidget);
-    final id = habitProvider.habits.single.id;
-    expect(find.descendant(of: find.byKey(Key('dayHabit_$id')), matching: find.text('Fitness')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('categoryRing_body')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('filterHeaderLabel'))).data, startsWith('Fitness'));
   });
 
   group('Add habit: Apple HIG layout', () {
@@ -399,14 +401,14 @@ void main() {
 
       await pumpScreen(tester, const CalendarScreen());
 
-      expect(find.text('Logged: 0/1'), findsOneWidget);
+      expect(find.text('0/1'), findsOneWidget);
       await tester.tap(find.byKey(Key('incrementDay_$id')));
       await tester.pumpAndSettle();
 
       final habit = habitProvider.getHabitById(id)!;
       expect(habit.progress, 1);
       expect(habit.streak.current, 1);
-      expect(find.text('Logged: 1/1'), findsOneWidget);
+      expect(find.text('1/1'), findsOneWidget);
 
       await tester.tap(find.byKey(Key('decrementDay_$id')));
       await tester.pumpAndSettle();
@@ -447,8 +449,9 @@ void main() {
 
     await tester.tap(find.byKey(Key('incrementDay_$id')));
     await tester.pumpAndSettle();
+    // Done: the ring fills and shows a check, as on the habit cards
     expect(inIcon(find.byKey(const Key('completedBadge'))), findsOneWidget);
-    expect(inIcon(find.byIcon(Icons.local_drink)), findsOneWidget);
+    expect(inIcon(find.byIcon(Icons.local_drink)), findsNothing);
   });
 
   testWidgets('editing a habit and choosing No icon removes its icon', (tester) async {
@@ -517,13 +520,13 @@ void main() {
       await pumpScreen(tester, const CalendarScreen());
 
       // A past day that's visible: the 2nd of this month, or the 15th of last
-      // month early in the month (day labels 0/1 would clash with markers)
+      // month early in the month
       final now = DateTime.now();
       final DateTime pastDay;
       if (now.day >= 3) {
         pastDay = DateTime(now.year, now.month, 2);
       } else {
-        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.tap(find.byIcon(CupertinoIcons.chevron_left));
         await tester.pumpAndSettle();
         pastDay = DateTime(now.year, now.month - 1, 15);
       }
@@ -538,14 +541,14 @@ void main() {
       for (var expected = 1; expected <= 3; expected++) {
         await tester.tap(find.byKey(Key('incrementDay_$id')));
         await tester.pumpAndSettle();
-        expect(find.text('Logged: $expected/3'), findsOneWidget);
+        expect(find.text('$expected/3'), findsOneWidget);
       }
       expect(habitProvider.getHabitById(id)!.history[pastDay], 3);
       expect(checkInCard(), findsOneWidget);
 
       await tester.tap(find.byKey(Key('decrementDay_$id')));
       await tester.pumpAndSettle();
-      expect(find.text('Logged: 2/3'), findsOneWidget);
+      expect(find.text('2/3'), findsOneWidget);
       expect(checkInCard(), findsNothing);
       expect(habitProvider.getHabitById(id)!.wasCompletedOnDate(pastDay), isFalse);
     });

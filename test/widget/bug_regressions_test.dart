@@ -105,7 +105,7 @@ void main() {
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
 
-    final calendarContext = tester.element(find.text('Habit Calendar'));
+    final calendarContext = tester.element(find.byKey(const Key('calendarDayTitle')));
     expect(Theme.of(calendarContext).brightness, Brightness.dark);
     expect(Theme.of(calendarContext).scaffoldBackgroundColor, IOSColors.systemBackgroundDark);
 
