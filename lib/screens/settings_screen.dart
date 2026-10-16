@@ -5,6 +5,7 @@ import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
+import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -41,6 +42,18 @@ class SettingsScreen extends StatelessWidget {
           secondary: Icon(
             themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
             color: Theme.of(context).primaryColor,
+          ),
+        ),
+        const Divider(),
+        _sectionHeader('Habits'),
+        ListTile(
+          key: const Key('openCategories'),
+          leading: Icon(Icons.category_outlined, color: Theme.of(context).primaryColor),
+          title: const Text('Categories'),
+          subtitle: const Text('Add, edit, reorder or restore categories'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CategoriesScreen()),
           ),
         ),
         const Divider(),

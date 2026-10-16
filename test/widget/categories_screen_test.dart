@@ -15,6 +15,8 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
+import 'package:atomic_momentum/screens/home_screen.dart';
+import 'package:atomic_momentum/screens/settings_screen.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -75,6 +77,25 @@ void main() {
 
   bool saveEnabled(WidgetTester tester) =>
       tester.widget<ElevatedButton>(find.byKey(const Key('saveCategory'))).onPressed != null;
+
+  testWidgets('opens from Settings', (tester) async {
+    await pump(tester, const SettingsScreen());
+
+    await tester.tap(find.byKey(const Key('openCategories')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CategoriesScreen), findsOneWidget);
+    expect(row(BuiltInCategoryIds.body), findsOneWidget);
+  });
+
+  testWidgets('opens by long-pressing a category ring', (tester) async {
+    await pump(tester, const HomeScreen());
+
+    await tester.longPress(find.byKey(const Key('categoryRing_mind')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CategoriesScreen), findsOneWidget);
+  });
 
   testWidgets('lists the categories with their habit counts', (tester) async {
     await pump(tester, const CategoriesScreen());

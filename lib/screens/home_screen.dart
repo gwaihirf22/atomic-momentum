@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
@@ -13,6 +14,7 @@ import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import 'add_habit_screen.dart';
+import 'categories_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -146,6 +148,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
                       selectedId: categoryProvider.selectedCategory?.id,
                       onTap: categoryProvider.toggleCategory,
+                      onLongPress: () {
+                        HapticFeedback.mediumImpact();
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(builder: (_) => const CategoriesScreen()),
+                        );
+                      },
                       isDark: isDark,
                     ),
                     Expanded(
