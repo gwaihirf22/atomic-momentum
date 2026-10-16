@@ -8,6 +8,8 @@ import '../../data/datasources/shared_preferences_datasource.dart';
 // Repositories
 import '../../domain/repositories/habit_repository.dart';
 import '../../data/repositories/habit_repository_impl.dart';
+import '../../domain/repositories/category_repository.dart';
+import '../../data/repositories/category_repository_impl.dart';
 
 // Use cases
 import '../../domain/usecases/get_habits_usecase.dart';
@@ -43,6 +45,10 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   // Repositories
   sl.registerLazySingleton<HabitRepository>(
     () => HabitRepositoryImpl(sl()),
+  );
+
+  sl.registerLazySingleton<CategoryRepository>(
+    () => CategoryRepositoryImpl(sl()),
   );
 
   // Use cases
