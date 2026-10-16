@@ -1,5 +1,4 @@
 import '../entities/habit.dart';
-import '../entities/habit_category.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 
@@ -14,25 +13,6 @@ class GetHabitsUseCase {
       return await _repository.getHabits();
     } catch (e) {
       throw StorageException('Failed to get habits: $e');
-    }
-  }
-
-  /// Get habits by category
-  Future<List<Habit>> byCategory(HabitCategory category) async {
-    try {
-      return await _repository.getHabitsByCategory(category);
-    } catch (e) {
-      throw StorageException('Failed to get habits by category: $e');
-    }
-  }
-
-  /// Get habits by multiple categories
-  Future<List<Habit>> byCategories(List<HabitCategory> categories) async {
-    try {
-      final allHabits = await _repository.getHabits();
-      return allHabits.where((habit) => categories.contains(habit.category)).toList();
-    } catch (e) {
-      throw StorageException('Failed to get habits by categories: $e');
     }
   }
 
@@ -51,23 +31,6 @@ class GetHabitsUseCase {
       return await _repository.getHabitsWithReminders();
     } catch (e) {
       throw StorageException('Failed to get habits with reminders: $e');
-    }
-  }
-
-  /// Search habits by name or category
-  Future<List<Habit>> search(String query) async {
-    try {
-      final allHabits = await _repository.getHabits();
-      final lowercaseQuery = query.toLowerCase().trim();
-      
-      if (lowercaseQuery.isEmpty) return allHabits;
-      
-      return allHabits.where((habit) {
-        return habit.name.toLowerCase().contains(lowercaseQuery) ||
-               habit.category.displayName.toLowerCase().contains(lowercaseQuery);
-      }).toList();
-    } catch (e) {
-      throw StorageException('Failed to search habits: $e');
     }
   }
 

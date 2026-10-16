@@ -1,5 +1,4 @@
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/habit_category.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../datasources/local_habit_datasource.dart';
 import '../models/habit_model.dart';
@@ -35,16 +34,6 @@ class HabitRepositoryImpl implements HabitRepository {
     } catch (e) {
       print('DEBUG: HabitRepository.getHabits() - ERROR: $e');
       throw StorageException('Failed to get habits: $e');
-    }
-  }
-
-  @override
-  Future<List<Habit>> getHabitsByCategory(HabitCategory category) async {
-    try {
-      final allHabits = await getHabits();
-      return allHabits.where((habit) => habit.category == category).toList();
-    } catch (e) {
-      throw StorageException('Failed to get habits by category: $e');
     }
   }
 
@@ -277,15 +266,6 @@ class HabitRepositoryImpl implements HabitRepository {
 
   // Additional utility methods for enhanced functionality
 
-  Future<List<Habit>> getHabitsByCategories(List<HabitCategory> categories) async {
-    try {
-      final allHabits = await getHabits();
-      return allHabits.where((habit) => categories.contains(habit.category)).toList();
-    } catch (e) {
-      throw StorageException('Failed to get habits by categories: $e');
-    }
-  }
-
   Future<List<Habit>> getCompletedHabitsForDate(DateTime date) async {
     try {
       final habits = await getHabits();
@@ -304,35 +284,6 @@ class HabitRepositoryImpl implements HabitRepository {
     }
   }
 
-  Future<Map<HabitCategory, int>> getHabitCountByCategory() async {
-    try {
-      final habits = await getHabits();
-      final countMap = <HabitCategory, int>{};
-      
-      for (final category in HabitCategory.values) {
-        countMap[category] = habits.where((habit) => habit.category == category).length;
-      }
-      
-      return countMap;
-    } catch (e) {
-      throw StorageException('Failed to get habit count by category: $e');
-    }
-  }
-
-  Future<List<Habit>> searchHabits(String query) async {
-    try {
-      final habits = await getHabits();
-      final lowercaseQuery = query.toLowerCase();
-      
-      return habits.where((habit) {
-        return habit.name.toLowerCase().contains(lowercaseQuery) ||
-               habit.category.displayName.toLowerCase().contains(lowercaseQuery);
-      }).toList();
-    } catch (e) {
-      throw StorageException('Failed to search habits: $e');
-    }
-  }
-
   Future<void> resetHabitsIfNeeded() async {
     try {
       final habitsNeedingReset = await getHabitsNeedingReset();
@@ -345,22 +296,4 @@ class HabitRepositoryImpl implements HabitRepository {
     }
   }
 
-  Future<Map<String, dynamic>> getRepositoryStats() async {
-    try {
-      final habits = await getHabits();
-      final habitsWithReminders = await getHabitsWithReminders();
-      final activeStreaks = await getActiveStreakHabits();
-      final categoryCount = await getHabitCountByCategory();
-      
-      return {
-        'totalHabits': habits.length,
-        'habitsWithReminders': habitsWithReminders.length,
-        'activeStreaks': activeStreaks.length,
-        'categoryCounts': categoryCount.map((key, value) => MapEntry(key.name, value)),
-        'lastUpdated': DateTime.now().toIso8601String(),
-      };
-    } catch (e) {
-      throw StorageException('Failed to get repository stats: $e');
-    }
-  }
 }

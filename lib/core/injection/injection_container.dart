@@ -79,52 +79,6 @@ Future<void> resetDependencies() async {
   await sl.reset();
 }
 
-/// Initialize dependencies for testing with mocks
-Future<void> initializeTestDependencies({
-  SharedPreferences? mockSharedPreferences,
-  LocalHabitDataSource? mockDataSource,
-  HabitRepository? mockRepository,
-}) async {
-  // External dependencies
-  if (mockSharedPreferences != null) {
-    sl.registerLazySingleton<SharedPreferences>(() => mockSharedPreferences);
-  }
-
-  // Data sources
-  if (mockDataSource != null) {
-    sl.registerLazySingleton<LocalHabitDataSource>(() => mockDataSource);
-  } else {
-    sl.registerLazySingleton<LocalHabitDataSource>(
-      () => SharedPreferencesDataSource(sl()),
-    );
-  }
-
-  // Repositories
-  if (mockRepository != null) {
-    sl.registerLazySingleton<HabitRepository>(() => mockRepository);
-  } else {
-    sl.registerLazySingleton<HabitRepository>(
-      () => HabitRepositoryImpl(sl()),
-    );
-  }
-
-  // Use cases
-  sl.registerLazySingleton(() => GetHabitsUseCase(sl()));
-  sl.registerLazySingleton(() => CreateHabitUseCase(sl()));
-  sl.registerLazySingleton(() => UpdateHabitUseCase(sl()));
-  sl.registerLazySingleton(() => DeleteHabitUseCase(sl()));
-
-  // Providers
-  sl.registerFactory(() => HabitProvider(
-    getHabitsUseCase: sl(),
-    createHabitUseCase: sl(),
-    updateHabitUseCase: sl(),
-    deleteHabitUseCase: sl(),
-  ));
-  sl.registerFactory(() => CategoryProvider());
-  sl.registerLazySingleton(() => ThemeProvider(false)); // Default for tests
-}
-
 /// Get dependency
 T get<T extends Object>() => sl.get<T>();
 

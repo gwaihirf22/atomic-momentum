@@ -233,41 +233,6 @@ class HabitModel extends Habit {
     }
   }
 
-  /// Create a copy with updated fields
-  HabitModel copyWithModel({
-    String? id,
-    String? name,
-    int? progress,
-    int? target,
-    String? units,
-    HabitColor? color,
-    HabitCategory? category,
-    DateTime? lastUpdatedDate,
-    ResetFrequency? resetFrequency,
-    Map<DateTime, int>? history,
-    StreakData? streak,
-    ReminderSettings? reminder,
-    HabitMetadata? metadata,
-    DateTime? resetAnchorDate,
-  }) {
-    return HabitModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      progress: progress ?? this.progress,
-      target: target ?? this.target,
-      units: units ?? this.units,
-      color: color ?? this.color,
-      category: category ?? this.category,
-      lastUpdatedDate: lastUpdatedDate ?? this.lastUpdatedDate,
-      resetFrequency: resetFrequency ?? this.resetFrequency,
-      history: history ?? this.history,
-      streak: streak ?? this.streak,
-      reminder: reminder ?? this.reminder,
-      metadata: metadata ?? this.metadata,
-      resetAnchorDate: resetAnchorDate ?? this.resetAnchorDate,
-    );
-  }
-
   @override
   String toString() => 'HabitModel(id: $id, name: $name, progress: $progress/$target)';
 }

@@ -54,13 +54,6 @@ class IOSColors {
   static const Color systemGrey5 = CupertinoColors.systemGrey5;
   static const Color systemGrey6 = CupertinoColors.systemGrey6;
 
-  // Habit Category Colors (iOS-friendly versions)
-  static const Color habitBody = systemGreen;
-  static const Color habitMind = systemBlue;
-  static const Color habitSpirit = systemPurple;
-  static const Color habitSocial = systemPink;
-  static const Color habitWork = systemOrange;
-  static const Color habitCreative = systemTeal;
 
   // Habit Progress Colors
   static const Color progressComplete = systemGreen;

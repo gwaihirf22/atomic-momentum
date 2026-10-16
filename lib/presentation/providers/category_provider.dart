@@ -8,9 +8,6 @@ class CategoryProvider extends ChangeNotifier {
 
   // Getters
   HabitCategory? get selectedCategory => _selectedCategory;
-  List<HabitCategory> get availableCategories => _availableCategories.toList();
-  bool get hasSelectedCategory => _selectedCategory != null;
-  bool get isShowingAll => _selectedCategory == null;
 
   // Actions
   void setSelectedCategory(HabitCategory? category) {
@@ -64,17 +61,6 @@ class CategoryProvider extends ChangeNotifier {
     return habits.where((habit) => habit.category == _selectedCategory).toList();
   }
 
-  // Get habit count for each category
-  Map<HabitCategory, int> getHabitCountByCategory(List<Habit> habits) {
-    final countMap = <HabitCategory, int>{};
-    
-    for (final category in HabitCategory.values) {
-      countMap[category] = habits.where((habit) => habit.category == category).length;
-    }
-    
-    return countMap;
-  }
-
   // Get completion stats by category
   Map<HabitCategory, CategoryStats> getCategoryStats(List<Habit> habits) {
     final statsMap = <HabitCategory, CategoryStats>{};
@@ -104,60 +90,6 @@ class CategoryProvider extends ChangeNotifier {
     }
     
     return statsMap;
-  }
-
-  // Get categories sorted by habit count
-  List<HabitCategory> getCategoriesSortedByCount(List<Habit> habits) {
-    final countMap = getHabitCountByCategory(habits);
-    final availableCategories = countMap.entries
-        .where((entry) => entry.value > 0)
-        .toList()
-      ..sort((a, b) => b.value.compareTo(a.value)); // Sort by count descending
-    
-    return availableCategories.map((entry) => entry.key).toList();
-  }
-
-  // Reset to initial state
-  void reset() {
-    _selectedCategory = null;
-    _availableCategories.clear();
-    notifyListeners();
-  }
-
-  // Persistence helpers
-  Map<String, dynamic> toJson() {
-    return {
-      'selectedCategory': _selectedCategory?.name,
-      'availableCategories': _availableCategories.map((c) => c.name).toList(),
-    };
-  }
-
-  void fromJson(Map<String, dynamic> json) {
-    if (json['selectedCategory'] != null) {
-      try {
-        _selectedCategory = HabitCategory.fromString(json['selectedCategory'] as String);
-      } catch (e) {
-        _selectedCategory = null;
-      }
-    }
-    
-    if (json['availableCategories'] != null) {
-      try {
-        final categoryNames = (json['availableCategories'] as List<dynamic>).cast<String>();
-        _availableCategories.clear();
-        for (final name in categoryNames) {
-          try {
-            _availableCategories.add(HabitCategory.fromString(name));
-          } catch (e) {
-            // Skip invalid category names
-          }
-        }
-      } catch (e) {
-        _availableCategories.clear();
-      }
-    }
-    
-    notifyListeners();
   }
 
   @override

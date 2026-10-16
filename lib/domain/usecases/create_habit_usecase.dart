@@ -103,12 +103,6 @@ class CreateHabitUseCase {
     }
   }
 
-  /// Create habit with default settings based on category
-  Future<Habit> createWithDefaults(String name, HabitCategory category) async {
-    final defaultParams = CreateHabitParams.forCategory(name, category);
-    return await call(defaultParams);
-  }
-
   void _validateParams(CreateHabitParams params) {
     if (params.name.trim().isEmpty) {
       throw ValidationException('Habit name cannot be empty');
@@ -167,56 +161,6 @@ class CreateHabitParams {
     this.resetInterval = 1,
     this.scheduledWeekdays,
   });
-
-  /// Create parameters with category-specific defaults
-  factory CreateHabitParams.forCategory(String name, HabitCategory category) {
-    HabitColor color;
-    int defaultTarget;
-    String? defaultIcon;
-    
-    switch (category) {
-      case HabitCategory.body:
-        color = HabitColor.orange;
-        defaultTarget = 1; // Usually daily activities
-        defaultIcon = 'fitness';
-        break;
-      case HabitCategory.spirit:
-        color = HabitColor.purple;
-        defaultTarget = 1;
-        defaultIcon = 'meditation';
-        break;
-      case HabitCategory.mind:
-        color = HabitColor.blue;
-        defaultTarget = 30; // 30 minutes of reading/learning
-        defaultIcon = 'book';
-        break;
-      case HabitCategory.social:
-        color = HabitColor.green;
-        defaultTarget = 1;
-        defaultIcon = 'people';
-        break;
-      case HabitCategory.career:
-        color = HabitColor.indigo;
-        defaultTarget = 1;
-        defaultIcon = 'work';
-        break;
-      case HabitCategory.creative:
-        color = HabitColor.pink;
-        defaultTarget = 30; // 30 minutes of creative work
-        defaultIcon = 'palette';
-        break;
-    }
-
-    return CreateHabitParams(
-      name: name,
-      target: defaultTarget,
-      units: '', // Default to empty units
-      color: color,
-      category: category,
-      resetFrequency: ResetFrequency.daily,
-      icon: defaultIcon,
-    );
-  }
 
   CreateHabitParams copyWith({
     String? name,

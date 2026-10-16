@@ -1,12 +1,9 @@
 import '../entities/habit.dart';
-import '../entities/habit_category.dart';
 
 abstract class HabitRepository {
   /// Get all habits
   Future<List<Habit>> getHabits();
   
-  /// Get habits by category
-  Future<List<Habit>> getHabitsByCategory(HabitCategory category);
   
   /// Get a specific habit by ID
   Future<Habit?> getHabitById(String id);

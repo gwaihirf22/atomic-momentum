@@ -131,11 +131,9 @@ void main() {
         final savedHabits = await getHabitsUseCase();
         expect(savedHabits, hasLength(5));
 
-        // Verify habits by category
-        for (final category in HabitCategory.values) {
-          final categoryHabits = await getHabitsUseCase.byCategory(category);
-          final expectedCount = habits.where((h) => h.category == category).length;
-          expect(categoryHabits, hasLength(expectedCount));
+        // Each habit kept its category
+        for (final habit in habits) {
+          expect(savedHabits.firstWhere((h) => h.id == habit.id).category, habit.category);
         }
       });
     });

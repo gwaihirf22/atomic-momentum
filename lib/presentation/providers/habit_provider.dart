@@ -57,11 +57,6 @@ class HabitProvider extends ChangeNotifier {
   bool get hasHabits => _habits.isNotEmpty;
   bool get isPerformingOperation => _isPerformingOperation;
 
-  // Filtered getters
-  List<Habit> getHabitsByCategory(HabitCategory category) {
-    return _habits.where((habit) => habit.category == category).toList();
-  }
-
   List<Habit> getCompletedHabits() {
     return _habits.where((habit) => habit.isCompleted).toList();
   }
@@ -314,32 +309,6 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Habit>> deleteHabitsInCategory(HabitCategory category) async {
-    try {
-      _setOperationInProgress(true);
-      
-      // Cancel notifications for all habits in this category
-      final habitsToDelete = _habits.where((habit) => habit.category == category);
-      for (final habit in habitsToDelete) {
-        print('DEBUG: Cancelling notifications for category habit: ${habit.id}');
-        await NotificationService.cancelHabitReminder(habit.id);
-        await _streakWarnings?.cancel(habit.id);
-      }
-      
-      final deletedHabits = await _deleteHabitUseCase.deleteByCategory(category);
-      _habits.removeWhere((habit) => habit.category == category);
-      
-      notifyListeners();
-      return deletedHabits;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return [];
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
-
   Future<void> resetHabitsIfNeeded() async {
     try {
       _setOperationInProgress(true);
@@ -379,17 +348,6 @@ class HabitProvider extends ChangeNotifier {
   /// Re-plan every streak warning, e.g. after the warning settings change.
   Future<void> resyncStreakWarnings() async {
     await _streakWarnings?.syncAll(_habits);
-  }
-
-  // Search functionality
-  List<Habit> searchHabits(String query) {
-    if (query.trim().isEmpty) return habits;
-    
-    final lowercaseQuery = query.toLowerCase().trim();
-    return _habits.where((habit) {
-      return habit.name.toLowerCase().contains(lowercaseQuery) ||
-             habit.category.displayName.toLowerCase().contains(lowercaseQuery);
-    }).toList();
   }
 
   // Utility methods
@@ -433,23 +391,6 @@ class HabitProvider extends ChangeNotifier {
       
       return a.name.compareTo(b.name);
     });
-  }
-
-  // Debug and analytics methods
-  Map<String, dynamic> getStatistics() {
-    final categoryStats = <String, int>{};
-    for (final category in HabitCategory.values) {
-      categoryStats[category.name] = getHabitsByCategory(category).length;
-    }
-
-    return {
-      'totalHabits': totalHabits,
-      'completedHabits': completedHabitsCount,
-      'completionPercentage': completionPercentage,
-      'activeStreaks': getHabitsWithActiveStreaks().length,
-      'categoryBreakdown': categoryStats,
-      'lastUpdated': DateTime.now().toIso8601String(),
-    };
   }
 
   // One example per category, mixing frequencies, for development and testing

@@ -1,5 +1,4 @@
 import '../entities/habit.dart';
-import '../entities/habit_category.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 
@@ -64,21 +63,6 @@ class DeleteHabitUseCase {
     } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException('Failed to delete habit: $e');
-    }
-  }
-
-  /// Delete all habits in a category
-  Future<List<Habit>> deleteByCategory(HabitCategory category) async {
-    try {
-      final categoryHabits = await _repository.getHabitsByCategory(category);
-      if (categoryHabits.isEmpty) return [];
-
-      final habitIds = categoryHabits.map((habit) => habit.id).toList();
-      await _repository.deleteHabits(habitIds);
-      
-      return categoryHabits; // Return for potential restoration
-    } catch (e) {
-      throw StorageException('Failed to delete habits by category: $e');
     }
   }
 
