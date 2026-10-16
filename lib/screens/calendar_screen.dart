@@ -8,6 +8,7 @@ import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/providers/settings_provider.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -283,7 +284,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   return isSameDay(_selectedDay, day);
                 },
                 eventLoader: _getHabitsForDay,
-                startingDayOfWeek: StartingDayOfWeek.monday,
+                // Follows Settings > Start week on (by default, the device's region)
+                startingDayOfWeek:
+                    StartingDayOfWeek.values[context.watch<SettingsProvider>().firstDayOfWeek - 1],
                 calendarStyle: CalendarStyle(
                   outsideDaysVisible: false,
                   weekendTextStyle: const TextStyle(color: Colors.red),

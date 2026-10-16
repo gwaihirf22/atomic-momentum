@@ -57,6 +57,25 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         const Divider(),
+        _sectionHeader('Calendar'),
+        ListTile(
+          leading: Icon(Icons.date_range, color: Theme.of(context).primaryColor),
+          title: const Text('Start week on'),
+          trailing: DropdownButton<int?>(
+            key: const Key('weekStartDropdown'),
+            value: settings.weekStartOverride,
+            onChanged: (day) => settings.setWeekStart(day),
+            items: [
+              DropdownMenuItem<int?>(
+                value: null,
+                child: Text('Automatic (${_dayNames[settings.regionalFirstDay - 1]})'),
+              ),
+              for (final day in const [DateTime.sunday, DateTime.monday, DateTime.saturday])
+                DropdownMenuItem<int?>(value: day, child: Text(_dayNames[day - 1])),
+            ],
+          ),
+        ),
+        const Divider(),
         _sectionHeader('Streaks'),
         SwitchListTile(
           key: const Key('streakWarningsSwitch'),
@@ -143,6 +162,10 @@ class SettingsScreen extends StatelessWidget {
       ..sort();
     return options;
   }
+
+  static const _dayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ];
 
   Widget _sectionHeader(String title) {
     return Padding(

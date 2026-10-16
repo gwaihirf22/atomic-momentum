@@ -297,6 +297,7 @@ void main() {
           ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
           ChangeNotifierProvider<HabitProvider>.value(value: habitProvider),
           ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
+          ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
         ],
         child: const MaterialApp(home: AddHabitScreen()),
       ));
@@ -408,6 +409,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(habitProvider.habits.single.metadata.icon, isNull);
+  });
+
+  group('week start', () {
+    double left(WidgetTester tester, Finder f) => tester.getTopLeft(f.first).dx;
+
+    testWidgets('the Calendar starts on Sunday in the US, or on the chosen day', (tester) async {
+      await pumpScreen(tester, const CalendarScreen());
+      expect(left(tester, find.text('Sun')), lessThan(left(tester, find.text('Mon'))));
+
+      await tester.runAsync(() => get<SettingsProvider>().setWeekStart(DateTime.monday));
+      await tester.pumpAndSettle();
+      expect(left(tester, find.text('Mon')), lessThan(left(tester, find.text('Sun'))));
+    });
+
+    testWidgets('Add Habit weekday chips follow the week start', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+
+      final sunday = tester.getRect(find.byKey(const Key('scheduleDay_7')));
+      final monday = tester.getRect(find.byKey(const Key('scheduleDay_1')));
+      expect(sunday.top, monday.top);
+      expect(sunday.left, lessThan(monday.left));
+    });
+
+    testWidgets('Settings offers Start week on, defaulting to the region', (tester) async {
+      await pumpScreen(tester, const SettingsScreen());
+      expect(find.text('Automatic (Sunday)'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('weekStartDropdown')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Monday').last);
+      await tester.pumpAndSettle();
+
+      expect(get<SettingsProvider>().weekStartOverride, DateTime.monday);
+      expect(get<SettingsProvider>().firstDayOfWeek, DateTime.monday);
+    });
   });
 
   group('Calendar: editing a past day', () {

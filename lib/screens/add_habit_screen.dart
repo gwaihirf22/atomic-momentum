@@ -10,7 +10,9 @@ import '../domain/entities/reminder_settings.dart';
 import '../domain/usecases/create_habit_usecase.dart';
 import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
+import '../core/locale/week_start.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/habit_icons.dart';
@@ -90,6 +92,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       }
     });
   }
+
+  // Weekday chips start on the user's first day of the week
+  List<int> _weekdaysInOrder(BuildContext context) =>
+      weekdaysStartingOn(context.watch<SettingsProvider>().firstDayOfWeek);
 
   // Which chip shows as selected for a stored id
   String _chipIdFor(String categoryId) =>
@@ -482,7 +488,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: [for (var day = 1; day <= 7; day++) _buildScheduleDayChip(day)],
+                  children: [for (final day in _weekdaysInOrder(context)) _buildScheduleDayChip(day)],
                 ),
               ],
               ListTile(
@@ -571,13 +577,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   spacing: _chipSpacing,
                   runSpacing: _chipSpacing,
                   children: [
-                    _buildDayChip(1, 'Mon'),
-                    _buildDayChip(2, 'Tue'), 
-                    _buildDayChip(3, 'Wed'),
-                    _buildDayChip(4, 'Thu'),
-                    _buildDayChip(5, 'Fri'),
-                    _buildDayChip(6, 'Sat'),
-                    _buildDayChip(7, 'Sun'),
+                    for (final day in _weekdaysInOrder(context)) _buildDayChip(day, _weekdayShort[day - 1]),
                   ],
                 ),
                 const SizedBox(height: 16),

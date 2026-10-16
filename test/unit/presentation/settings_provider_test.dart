@@ -1,3 +1,4 @@
+import 'dart:ui' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
@@ -28,5 +29,25 @@ void main() {
     final reloaded = SettingsProvider(await SharedPreferences.getInstance());
     expect(reloaded.streakWarnings.enabled, isFalse);
     expect(reloaded.streakWarnings.leadTime, const Duration(hours: 24));
+  });
+
+  group('week start', () {
+    Future<SettingsProvider> forRegion(Locale locale) async =>
+        SettingsProvider(await SharedPreferences.getInstance(), deviceLocale: () => locale);
+
+    test('automatic follows the device region', () async {
+      expect((await forRegion(const Locale('en', 'US'))).firstDayOfWeek, DateTime.sunday);
+      expect((await forRegion(const Locale('en', 'GB'))).firstDayOfWeek, DateTime.monday);
+      expect((await forRegion(const Locale('en', 'US'))).weekStartOverride, isNull);
+    });
+
+    test('a chosen day is saved and can be reset to automatic', () async {
+      final us = await forRegion(const Locale('en', 'US'));
+      await us.setWeekStart(DateTime.monday);
+      expect((await forRegion(const Locale('en', 'US'))).firstDayOfWeek, DateTime.monday);
+
+      await us.setWeekStart(null);
+      expect((await forRegion(const Locale('en', 'US'))).firstDayOfWeek, DateTime.sunday);
+    });
   });
 }
