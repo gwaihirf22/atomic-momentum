@@ -18,19 +18,8 @@ void main() async {
   // Initialize dependency injection
   await initializeDependencies();
 
-  // Set preferred orientations and viewport settings to prevent unwanted zoom
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  // Set specific system UI overlays and style
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
+  // Portrait only on phones (matches Info.plist)
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   runApp(const MomentumApp());
 
