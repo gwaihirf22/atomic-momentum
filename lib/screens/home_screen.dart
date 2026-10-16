@@ -1,3 +1,4 @@
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,7 +14,8 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
-import '../presentation/widgets/habit_icons.dart';
+import '../presentation/widgets/confirm_delete_habit.dart';
+import '../presentation/widgets/habit_card.dart';
 import 'add_habit_screen.dart';
 import 'categories_screen.dart';
 
@@ -81,7 +83,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             (themeProvider.themeMode == ThemeMode.system &&
                 MediaQuery.platformBrightnessOf(context) == Brightness.dark);
         
-        return CupertinoPageScaffold(
+        // Material Scaffold hosts SnackBars (delete confirmations, save
+        // failures with Retry); Cupertino scaffolds can't show them
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          body: CupertinoPageScaffold(
           backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
           navigationBar: CupertinoNavigationBar(
             backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
@@ -167,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               },
             ),
           ),
+        ),
         );
       },
     );
@@ -269,157 +276,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {
-    return ListView.builder(
-      itemCount: habits.length,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (context, index) {
-        final habit = habits[index];
-        final isRestDay = !habit.isDueOn(DateTime.now());
-        final category = context.read<CategoryProvider>().resolve(habit.categoryId);
-        return Card(
-          key: Key('habitCard_${habit.id}'),
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      key: Key('habitIcon_${habit.id}'),
-                      width: 40,
-                      height: 40,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: habit.color.color.withOpacity(0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(habitIcon(habit, category), size: 22, color: habit.color.color),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            habit.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          // One line that truncates, so narrow screens / large text can't overflow
-                          Text(
-                            '${category.name}  •  ${habit.schedule.shortLabel}'
-                            '${isRestDay ? '  •  Rest day' : ''}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(context).textTheme.bodySmall?.color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Row(
-                          children: [
-                            // Edit button
-                            IconButton(
-                              icon: const Icon(Icons.edit, size: 20),
-                              onPressed: () => _editHabit(habit),
-                              color: Colors.grey[600],
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                            ),
-                            // Delete button
-                            IconButton(
-                              icon: const Icon(Icons.delete, size: 20),
-                              onPressed: () => _deleteHabit(habit),
-                              color: Colors.red[600],
-                              padding: const EdgeInsets.all(4),
-                              constraints: const BoxConstraints(
-                                minWidth: 32,
-                                minHeight: 32,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Text(
-                          _formatProgressTarget(habit),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: habit.color.color,
-                          ),
-                        ),
-                        if (habit.streak.current > 0)
-                          Text(
-                            '🔥 ${habit.schedule.streakLabel(habit.streak.current)}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Dimmed on rest days: logging is allowed but doesn't affect the streak
-                Opacity(
-                  opacity: isRestDay ? 0.4 : 1,
-                  child: LinearProgressIndicator(
-                    value: habit.progressPercentage,
-                    minHeight: 10,
-                    backgroundColor: Colors.grey.shade200,
-                    valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: habit.progress > 0 && !habitProvider.isPerformingOperation
-                          ? () => _updateHabitProgress(habitProvider, habit, habit.progress - 1)
-                          : null,
-                      color: habit.color.color,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: habit.progress < habit.target && !habitProvider.isPerformingOperation
-                          ? () => _updateHabitProgress(habitProvider, habit, habit.progress + 1)
-                          : null,
-                      color: habit.color.color,
-                    ),
-                    if (habit.isCompleted)
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    // One open swipe-action pane at a time across the list
+    return SlidableAutoCloseBehavior(
+      child: ListView.builder(
+        itemCount: habits.length,
+        padding: const EdgeInsets.all(16),
+        itemBuilder: (context, index) {
+          final habit = habits[index];
+          return HabitCard(
+            habit: habit,
+            category: context.read<CategoryProvider>().resolve(habit.categoryId),
+            busy: habitProvider.isPerformingOperation,
+            onEdit: () => _editHabit(habit),
+            onDelete: () => _deleteHabit(habit),
+            onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
+          );
+        },
+      ),
     );
   }
-  
+
   Future<void> _updateHabitProgress(HabitProvider habitProvider, Habit habit, int newProgress) async {
     print('DEBUG: Updating habit progress: ${habit.name} from ${habit.progress} to $newProgress (target: ${habit.target})');
     print('DEBUG: Current isCompleted: ${habit.isCompleted}');
@@ -445,14 +321,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  String _formatProgressTarget(Habit habit) {
-    if (habit.units.isEmpty) {
-      return '${habit.progress}/${habit.target}';
-    } else {
-      return '${habit.progress}/${habit.target} ${habit.units}';
-    }
-  }
-
   void _editHabit(Habit habit) {
     print('DEBUG: Edit button pressed for habit: ${habit.name}');
     
@@ -468,54 +336,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  void _deleteHabit(Habit habit) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Habit'),
-          content: Text('Are you sure you want to delete "${habit.name}"?\n\nThis action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                final habitProvider = context.read<HabitProvider>();
-                
-                print('DEBUG: Deleting habit: ${habit.name} (${habit.id})');
-                final success = await habitProvider.deleteHabit(habit.id);
-                
-                if (mounted) {
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${habit.name} deleted successfully'),
-                        backgroundColor: Colors.green,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to delete ${habit.name}'),
-                        backgroundColor: Colors.red,
-                        duration: const Duration(seconds: 3),
-                      ),
-                    );
-                  }
-                }
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+  Future<void> _deleteHabit(Habit habit) async {
+    if (!await confirmDeleteHabit(context, habit.name) || !mounted) return;
+
+    final success = await context.read<HabitProvider>().deleteHabit(habit.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(success ? '${habit.name} deleted' : 'Failed to delete ${habit.name}'),
+        backgroundColor: success ? null : Colors.red,
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 }

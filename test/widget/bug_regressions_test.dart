@@ -76,21 +76,21 @@ void main() {
     expect(updated.reminder?.time, const TimeOfDay(hour: 8, minute: 30));
   });
 
-  testWidgets('habit card edit and delete buttons are 44pt tap targets', (tester) async {
+  testWidgets('habit card controls are at least 44pt tap targets', (tester) async {
     await tester.runAsync(() => habitProvider.createHabit(const CreateHabitParams(
       name: 'Floss',
       target: 1,
       color: HabitColor.teal,
       categoryId: BuiltInCategoryIds.body,
     )));
+    final id = habitProvider.habits.single.id;
 
     await pumpScreen(tester, const HomeScreen());
 
-    for (final icon in [Icons.edit, Icons.delete]) {
-      final button = find.ancestor(of: find.byIcon(icon), matching: find.byType(IconButton));
-      final size = tester.getSize(button);
-      expect(size.width, greaterThanOrEqualTo(44), reason: '$icon width');
-      expect(size.height, greaterThanOrEqualTo(44), reason: '$icon height');
+    for (final key in ['habitIcon_$id', 'decrementHabit_$id', 'incrementHabit_$id']) {
+      final size = tester.getSize(find.byKey(Key(key)));
+      expect(size.width, greaterThanOrEqualTo(44), reason: '$key width');
+      expect(size.height, greaterThanOrEqualTo(44), reason: '$key height');
     }
   });
   });

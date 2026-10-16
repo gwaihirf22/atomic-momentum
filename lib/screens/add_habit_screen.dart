@@ -16,6 +16,7 @@ import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/color_picker.dart';
+import '../presentation/widgets/confirm_delete_habit.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
@@ -70,6 +71,21 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       ...provider.categories,
       if (original != null && !provider.isActive(original)) Category.uncategorized,
     ];
+  }
+
+  Future<void> _deleteFromForm() async {
+    final habit = widget.editHabit!;
+    if (!await confirmDeleteHabit(context, habit.name) || !mounted) return;
+
+    final habitProvider = context.read<HabitProvider>();
+    if (await habitProvider.deleteHabit(habit.id)) {
+      // pop (not maybePop): the habit is gone, so no unsaved-changes prompt
+      if (mounted) Navigator.of(context).pop();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete ${habit.name}'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   /// The save button, pinned to the bottom of the screen (a "sticky footer")
@@ -619,6 +635,22 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   onChanged: (value) {
                     setState(() => _customMessage = value);
                   },
+                ),
+              ],
+              // Another way to delete, besides swiping the habit card
+              if (widget.editHabit != null) ...[
+                const SizedBox(height: 32),
+                Center(
+                  child: TextButton.icon(
+                    key: const Key('deleteHabitFromForm'),
+                    onPressed: _isSubmitting ? null : _deleteFromForm,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete Habit'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      minimumSize: const Size(44, 44),
+                    ),
+                  ),
                 ),
               ],
             ],
