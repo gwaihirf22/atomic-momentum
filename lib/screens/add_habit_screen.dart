@@ -12,6 +12,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/category_icons.dart';
+import '../presentation/widgets/selectable_swatch.dart';
 import '../core/theme/ios_colors.dart';
 
 class AddHabitScreen extends StatefulWidget {
@@ -69,7 +70,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       context.read<CategoryProvider>().isActive(categoryId) ? categoryId : Category.uncategorizedId;
 
   // Apple's Human Interface Guidelines: tap targets at least 44x44 pt
-  static const double _swatchSize = 44;
   static const double _swatchSpacing = 12;
   static const double _chipSpacing = 8;
   static const int _maxInterval = 30;
@@ -296,7 +296,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 runSpacing: _swatchSpacing,
                 children: HabitColor.predefinedColors.map((color) {
                   final isSelected = _selectedColor == color;
-                  return _buildSwatch(
+                  return SelectableSwatch(
                     key: Key('colorSwatch_${color.name}'),
                     semanticLabel: '${color.name} color',
                     isSelected: isSelected,
@@ -329,7 +329,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 spacing: _swatchSpacing,
                 runSpacing: _swatchSpacing,
                 children: [
-                  _buildSwatch(
+                  SelectableSwatch(
                     key: const Key('iconSwatch_none'),
                     semanticLabel: 'No icon',
                     isSelected: _selectedIcon == null,
@@ -346,7 +346,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   ...habitIcons.entries.map((entry) {
                     final iconKey = entry.key;
                     final isSelected = _selectedIcon == iconKey;
-                    return _buildSwatch(
+                    return SelectableSwatch(
                       key: Key('iconSwatch_$iconKey'),
                       semanticLabel: '$iconKey icon',
                       isSelected: isSelected,
@@ -681,39 +681,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         });
       }
     }
-  }
-
-  /// A circular, 44pt selectable swatch with a VoiceOver label.
-  Widget _buildSwatch({
-    required Key key,
-    required String semanticLabel,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required Color fill,
-    required Color? borderColor,
-    required double borderWidth,
-    Widget? child,
-  }) {
-    return Semantics(
-      key: key,
-      label: semanticLabel,
-      button: true,
-      selected: isSelected,
-      excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: _swatchSize,
-          height: _swatchSize,
-          decoration: BoxDecoration(
-            color: fill,
-            shape: BoxShape.circle,
-            border: borderColor != null ? Border.all(color: borderColor, width: borderWidth) : null,
-          ),
-          child: child,
-        ),
-      ),
-    );
   }
 
   Future<void> _pickResetDay() async {
