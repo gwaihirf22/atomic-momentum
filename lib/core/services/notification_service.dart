@@ -19,6 +19,9 @@ class NotificationService {
   /// IDs used by the developer notification tester.
   static const int testNotificationId = 999;
   static const int scheduledTestNotificationId = 998;
+  // Separate from testNotificationId: macOS quietly replaces a delivered
+  // notification that reuses an id, without showing a new banner
+  static const int streakPreviewNotificationId = 997;
 
   /// Substitutes the plugin (and readiness) in tests, where there is no
   /// platform implementation to talk to.

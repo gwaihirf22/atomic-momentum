@@ -94,14 +94,27 @@ void main() {
       expect(status(tester), contains('Sent a streak warning'));
     });
 
-    testWidgets('says so when no habit has a streak to preview', (tester) async {
+    testWidgets('sends an example warning when no habit has a streak yet', (tester) async {
       await pumpTester(tester);
 
       await tester.tap(find.byKey(const Key('previewStreakWarning')));
       await tester.pumpAndSettle();
 
-      expect(plugin.shown, isEmpty);
-      expect(status(tester), contains('No habit has a streak yet'));
+      final warning = plugin.shown.single;
+      expect(warning.body, 'Complete "Example habit" before midnight tonight to keep your 2-day streak.');
+      expect(status(tester), contains('example streak warning'));
+    });
+
+    testWidgets('the streak preview does not reuse the Send now id', (tester) async {
+      await pumpTester(tester);
+
+      await tester.tap(find.byKey(const Key('sendNow')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('previewStreakWarning')));
+      await tester.pumpAndSettle();
+
+      expect(plugin.shown.map((n) => n.id).toSet(), hasLength(2));
+      expect(plugin.shown.last.id, NotificationService.streakPreviewNotificationId);
     });
   });
 }

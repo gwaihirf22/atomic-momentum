@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import '../core/services/notification_service.dart';
+import '../domain/entities/habit.dart';
+import '../domain/entities/habit_category.dart';
+import '../domain/entities/habit_color.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../domain/services/streak_warning_planner.dart';
 import '../presentation/providers/habit_provider.dart';
@@ -78,14 +81,52 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
     const settings = StreakWarningSettings(enabled: true, leadTime: Duration.zero);
     final habits = context.read<HabitProvider>().habits;
 
+    // Prefer a real habit; otherwise use an example so the notification itself
+    // can always be tested
+    var isExample = false;
+    StreakWarning? warning;
+    String? habitName;
     for (final habit in habits.where((h) => h.streak.current > 0)) {
-      final warning = StreakWarningPlanner.plan(habit, settings, now);
-      if (warning == null) continue;
-      final sent = await NotificationService.showNow(title: warning.title, body: warning.body);
-      _report(sent ? 'Sent a streak warning for "${habit.name}".' : 'Could not send the notification.');
-      return;
+      warning = StreakWarningPlanner.plan(habit, settings, now);
+      if (warning != null) {
+        habitName = habit.name;
+        break;
+      }
     }
-    _report('No habit has a streak yet. Add sample habits in Settings, or log a few days on the Calendar.');
+    if (warning == null) {
+      final example = _exampleHabitWithStreak(now);
+      warning = StreakWarningPlanner.plan(example, settings, now)!;
+      habitName = example.name;
+      isExample = true;
+    }
+
+    final sent = await NotificationService.showNow(
+      id: NotificationService.streakPreviewNotificationId,
+      title: warning.title,
+      body: warning.body,
+    );
+    if (!sent) {
+      _report('Could not send the notification.');
+    } else if (isExample) {
+      _report('Sent an example streak warning (no habit has a streak yet; '
+          'add sample habits in Settings to preview a real one).');
+    } else {
+      _report('Sent a streak warning for "$habitName".');
+    }
+  }
+
+  // A daily habit completed yesterday and the day before: a 2-day streak
+  Habit _exampleHabitWithStreak(DateTime now) {
+    var habit = Habit.create(
+      name: 'Example habit',
+      target: 1,
+      color: HabitColor.blue,
+      category: HabitCategory.body,
+    );
+    for (final daysAgo in const [2, 1]) {
+      habit = habit.setProgressForDate(DateTime(now.year, now.month, now.day - daysAgo), 1);
+    }
+    return habit.refresh(now);
   }
 
   String _permissionText(NotificationPermission? permission) {
@@ -151,7 +192,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
               key: const Key('previewStreakWarning'),
               icon: Icons.local_fire_department_outlined,
               title: 'Preview a streak warning',
-              subtitle: 'Sends the warning for your first habit with a streak',
+              subtitle: 'Uses your first habit with a streak, or an example habit',
               onTap: _previewStreakWarning,
             ),
             if (_status != null)
