@@ -104,10 +104,9 @@ class HabitProvider extends ChangeNotifier {
       final habits = await _getHabitsUseCase();
       _habits = habits;
       
-      // Add default habit if no habits exist (for easy testing)
+      // Seed example habits into empty storage (development convenience)
       if (seedDefaultHabit && _habits.isEmpty) {
-        print('DEBUG: No habits found, adding default habit for testing');
-        await _addDefaultHabit();
+        await addSampleHabits();
       }
       
       _setState(HabitProviderState.loaded);
@@ -453,27 +452,45 @@ class HabitProvider extends ChangeNotifier {
     };
   }
 
-  // Add default habit for easy testing
-  Future<void> _addDefaultHabit() async {
-    try {
-      final defaultParams = CreateHabitParams(
-        name: 'Drink Water',
-        target: 8,
-        units: 'glasses',
-        color: HabitColor.blue,
-        category: HabitCategory.body,
-        resetFrequency: ResetFrequency.daily,
-      );
-      
-      final success = await createHabit(defaultParams);
-      if (success) {
-        print('DEBUG: Default habit "Drink Water" added successfully');
-      } else {
-        print('DEBUG: Failed to add default habit');
+  // One example per category, mixing frequencies, for development and testing
+  static const _sampleHabits = [
+    CreateHabitParams(name: 'Drink Water', target: 8, units: 'glasses',
+        color: HabitColor.blue, category: HabitCategory.body, resetFrequency: ResetFrequency.daily),
+    CreateHabitParams(name: 'Meditate', target: 1, units: 'session',
+        color: HabitColor.purple, category: HabitCategory.spirit, resetFrequency: ResetFrequency.daily),
+    CreateHabitParams(name: 'Read', target: 2, units: 'chapters',
+        color: HabitColor.teal, category: HabitCategory.mind, resetFrequency: ResetFrequency.daily),
+    CreateHabitParams(name: 'Call a friend', target: 2, units: 'calls',
+        color: HabitColor.green, category: HabitCategory.social, resetFrequency: ResetFrequency.weekly),
+    CreateHabitParams(name: 'Deep work', target: 3, units: 'sessions',
+        color: HabitColor.orange, category: HabitCategory.career, resetFrequency: ResetFrequency.weekly),
+    CreateHabitParams(name: 'Sketch', target: 4, units: 'sketches',
+        color: HabitColor.pink, category: HabitCategory.creative, resetFrequency: ResetFrequency.monthly),
+  ];
+
+  /// Development helper: adds one example habit per category, skipping any
+  /// whose name already exists. Daily samples get completed days 5, 4, 2 and
+  /// 1 days ago (a gap 3 days ago) so streaks and calendar editing can be
+  /// tried straight away. Returns how many habits were added.
+  Future<int> addSampleHabits() async {
+    final existingNames = _habits.map((h) => h.name.trim().toLowerCase()).toSet();
+    final now = DateTime.now();
+    var added = 0;
+
+    for (final params in _sampleHabits) {
+      if (existingNames.contains(params.name.toLowerCase())) continue;
+      if (!await createHabit(params)) continue;
+      added++;
+
+      if (params.resetFrequency == ResetFrequency.daily) {
+        final habit = _habits.firstWhere((h) => h.name == params.name);
+        for (final daysAgo in const [5, 4, 2, 1]) {
+          final day = DateTime(now.year, now.month, now.day - daysAgo);
+          await updateProgressForDate(habit.id, day, params.target);
+        }
       }
-    } catch (e) {
-      print('DEBUG: Error adding default habit: $e');
     }
+    return added;
   }
 
   @override

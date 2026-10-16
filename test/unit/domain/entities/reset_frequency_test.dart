@@ -150,6 +150,16 @@ void main() {
     expect(ResetFrequency.monthly.periodUnit, 'month');
   });
 
+  test('periodStart keeps the calendar day of a UTC midnight date', () {
+    expect(ResetFrequency.daily.periodStart(DateTime.utc(2024, 1, 16), anchor: mondayAnchor),
+        DateTime(2024, 1, 16));
+    // Monday 15th anchors the week; a UTC Monday must not slip to Sunday's week
+    expect(ResetFrequency.weekly.periodStart(DateTime.utc(2024, 1, 15), anchor: mondayAnchor),
+        DateTime(2024, 1, 15));
+    expect(ResetFrequency.monthly.periodStart(DateTime.utc(2024, 2, 1), anchor: DateTime(2024, 1, 1)),
+        DateTime(2024, 2, 1));
+  });
+
   group('ResetFrequency.describeResetDay', () {
     test('weekly names the weekday', () {
       expect(ResetFrequency.weekly.describeResetDay(thursdayAnchor), 'Resets every Thursday');

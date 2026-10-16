@@ -25,9 +25,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = DateTime.now();
+    _selectedDay = _localDay(DateTime.now());
     _selectedHabits = ValueNotifier(_getHabitsForDay(_selectedDay!));
   }
+
+  static DateTime _localDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
   @override
   void dispose() {
@@ -341,9 +343,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 onDaySelected: (selectedDay, focusedDay) {
                   if (!isSameDay(_selectedDay, selectedDay)) {
                     setState(() {
-                      _selectedDay = selectedDay;
+                      // table_calendar gives UTC midnights; keep local dates in this screen
+                      _selectedDay = _localDay(selectedDay);
                       _focusedDay = focusedDay;
-                      _selectedHabits.value = _getHabitsForDay(selectedDay);
+                      _selectedHabits.value = _getHabitsForDay(_selectedDay!);
                     });
                   }
                 },

@@ -311,9 +311,11 @@ class Habit extends Equatable {
     );
   }
 
+  // A date's own calendar fields are the day: table_calendar passes
+  // DateTime.utc(y, m, d), and converting that to local time would land on
+  // the previous day anywhere west of UTC
   static DateTime _dateOnly(DateTime date) {
-    final local = date.toLocal();
-    return DateTime(local.year, local.month, local.day);
+    return DateTime(date.year, date.month, date.day);
   }
 
   Map<String, dynamic> toJson() {

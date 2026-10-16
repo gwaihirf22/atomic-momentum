@@ -433,6 +433,44 @@ void main() {
       });
     });
 
+    group('Sample habits', () {
+      test('adds one per category, skips existing names, and seeds a streak', () async {
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.loadHabits();
+        await habitProvider.createHabit(CreateHabitParams(
+          name: 'Drink Water',
+          target: 5,
+          color: HabitColor.red,
+          category: HabitCategory.body,
+        ));
+
+        expect(await habitProvider.addSampleHabits(), 5);
+        expect(habitProvider.habits, hasLength(6));
+        expect(habitProvider.habits.map((h) => h.category).toSet(), HabitCategory.values.toSet());
+        // The user's own Drink Water is untouched
+        expect(habitProvider.habits.firstWhere((h) => h.name == 'Drink Water').target, 5);
+
+        // Days 2 and 1 ago completed (3 ago is a gap) -> 2-day streak
+        expect(habitProvider.habits.firstWhere((h) => h.name == 'Meditate').streak.current, 2);
+
+        expect(await habitProvider.addSampleHabits(), 0);
+        expect(habitProvider.habits, hasLength(6));
+      });
+
+      test('empty storage is seeded with all samples when seeding is on', () async {
+        final habitProvider = HabitProvider(
+          getHabitsUseCase: get<GetHabitsUseCase>(),
+          createHabitUseCase: get<CreateHabitUseCase>(),
+          updateHabitUseCase: get<UpdateHabitUseCase>(),
+          deleteHabitUseCase: get<DeleteHabitUseCase>(),
+          seedDefaultHabit: true,
+        );
+        await habitProvider.loadHabits();
+
+        expect(habitProvider.habits, hasLength(6));
+      });
+    });
+
     group('Save failures', () {
       test('a failed progress save is reported and not shown as saved', () async {
         final repository = FailingHabitRepository(get<LocalHabitDataSource>());

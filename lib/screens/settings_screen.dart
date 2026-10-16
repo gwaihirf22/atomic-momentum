@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/streak_warning_settings.dart';
@@ -85,6 +86,29 @@ class SettingsScreen extends StatelessWidget {
           ),
         ),
         const Divider(),
+        // Debug builds only: never shown in release / App Store builds
+        if (kDebugMode) ...[
+          _sectionHeader('Developer'),
+          ListTile(
+            key: const Key('addSampleHabits'),
+            leading: const Icon(Icons.science_outlined),
+            title: const Text('Add sample habits'),
+            subtitle: const Text('One per category, with a few days of history'),
+            onTap: () async {
+              final added = await context.read<HabitProvider>().addSampleHabits();
+              if (!context.mounted) return;
+              // Replace rather than queue behind a message from an earlier tap
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                content: Text(added == 0
+                    ? 'Sample habits are already added'
+                    : 'Added $added sample ${added == 1 ? 'habit' : 'habits'}'),
+                ));
+            },
+          ),
+          const Divider(),
+        ],
       ],
     );
   }

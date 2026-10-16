@@ -175,6 +175,71 @@ void main() {
     });
   });
 
+  group('Calendar: editing a past day', () {
+    testWidgets('+ counts up each tap, completes the day, and − undoes it', (tester) async {
+      await habitProvider.createHabit(const CreateHabitParams(
+        name: 'Stretch',
+        target: 3,
+        color: HabitColor.teal,
+        category: HabitCategory.body,
+      ));
+      final id = habitProvider.habits.single.id;
+
+      await pumpScreen(tester, const CalendarScreen());
+
+      // A past day that's visible: the 2nd of this month, or the 15th of last
+      // month early in the month (day labels 0/1 would clash with markers)
+      final now = DateTime.now();
+      final DateTime pastDay;
+      if (now.day >= 3) {
+        pastDay = DateTime(now.year, now.month, 2);
+      } else {
+        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.pumpAndSettle();
+        pastDay = DateTime(now.year, now.month - 1, 15);
+      }
+      await tester.tap(find.text('${pastDay.day}'));
+      await tester.pumpAndSettle();
+
+      Finder checkInCard() => find.descendant(
+            of: find.byKey(Key('dayHabit_$id')),
+            matching: find.byIcon(Icons.check),
+          );
+
+      for (var expected = 1; expected <= 3; expected++) {
+        await tester.tap(find.byKey(Key('incrementDay_$id')));
+        await tester.pumpAndSettle();
+        expect(find.text('Logged: $expected/3'), findsOneWidget);
+      }
+      expect(habitProvider.getHabitById(id)!.history[pastDay], 3);
+      expect(checkInCard(), findsOneWidget);
+
+      await tester.tap(find.byKey(Key('decrementDay_$id')));
+      await tester.pumpAndSettle();
+      expect(find.text('Logged: 2/3'), findsOneWidget);
+      expect(checkInCard(), findsNothing);
+      expect(habitProvider.getHabitById(id)!.wasCompletedOnDate(pastDay), isFalse);
+    });
+  });
+
+  group('Sample habits', () {
+    testWidgets('Settings adds one habit per category, once', (tester) async {
+      await pumpScreen(tester, const SettingsScreen());
+
+      await tester.tap(find.byKey(const Key('addSampleHabits')));
+      await tester.pumpAndSettle();
+      expect(find.text('Added 6 sample habits'), findsOneWidget);
+
+      final categories = habitProvider.habits.map((h) => h.category).toSet();
+      expect(categories, HabitCategory.values.toSet());
+
+      await tester.tap(find.byKey(const Key('addSampleHabits')));
+      await tester.pumpAndSettle();
+      expect(find.text('Sample habits are already added'), findsOneWidget);
+      expect(habitProvider.habits, hasLength(6));
+    });
+  });
+
   group('Settings: streak warnings', () {
     testWidgets('shows the default and persists changes', (tester) async {
       await pumpScreen(tester, const SettingsScreen());

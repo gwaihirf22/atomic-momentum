@@ -543,6 +543,40 @@ void main() {
       });
     });
 
+    // table_calendar hands us days as DateTime.utc(y, m, d). West of UTC,
+    // converting those to local time lands on the previous day.
+    group('UTC calendar dates', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final threeDaysAgo = DateTime(today.year, today.month, today.day - 3);
+      final threeDaysAgoUtc = DateTime.utc(threeDaysAgo.year, threeDaysAgo.month, threeDaysAgo.day);
+
+      test('setProgressForDate writes to the same calendar day', () {
+        final habit = TestData.createTestHabit(target: 8).setProgressForDate(threeDaysAgoUtc, 3);
+
+        expect(habit.history[threeDaysAgo], 3);
+        expect(habit.history, hasLength(1));
+      });
+
+      test('repeated edits accumulate on that day', () {
+        var habit = TestData.createTestHabit(target: 8);
+        for (var i = 1; i <= 3; i++) {
+          habit = habit.setProgressForDate(threeDaysAgoUtc, habit.getProgressForDate(threeDaysAgoUtc) + 1);
+        }
+        expect(habit.getProgressForDate(threeDaysAgoUtc), 3);
+      });
+
+      test('completion and period totals read the same calendar day', () {
+        final habit = TestData.createTestHabit(target: 8, history: {threeDaysAgo: 8});
+
+        expect(habit.progressForPeriodContaining(threeDaysAgoUtc), 8);
+        expect(habit.wasCompletedOnDate(threeDaysAgoUtc), isTrue);
+
+        final undone = habit.setProgressForDate(threeDaysAgoUtc, 7);
+        expect(undone.wasCompletedOnDate(threeDaysAgoUtc), isFalse);
+      });
+    });
+
     group('reset anchor', () {
       test('create defaults the anchor to today', () {
         final habit = Habit.create(
