@@ -283,17 +283,4 @@ class HabitRepositoryImpl implements HabitRepository {
       throw StorageException('Failed to get active streak habits: $e');
     }
   }
-
-  Future<void> resetHabitsIfNeeded() async {
-    try {
-      final habitsNeedingReset = await getHabitsNeedingReset();
-      
-      for (final habit in habitsNeedingReset) {
-        await saveHabit(habit.refresh());
-      }
-    } catch (e) {
-      throw StorageException('Failed to reset habits: $e');
-    }
-  }
-
 }

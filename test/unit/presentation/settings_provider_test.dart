@@ -31,6 +31,15 @@ void main() {
     expect(reloaded.streakWarnings.leadTime, const Duration(hours: 24));
   });
 
+  test('reminding before a first miss is off by default and is saved', () async {
+    expect(settings.streakWarnings.remindBeforeFirstMiss, isFalse);
+
+    await settings.setRemindBeforeFirstMiss(true);
+
+    final reloaded = SettingsProvider(await SharedPreferences.getInstance());
+    expect(reloaded.streakWarnings.remindBeforeFirstMiss, isTrue);
+  });
+
   group('week start', () {
     Future<SettingsProvider> forRegion(Locale locale) async =>
         SettingsProvider(await SharedPreferences.getInstance(), deviceLocale: () => locale);

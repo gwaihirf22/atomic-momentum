@@ -87,6 +87,16 @@ void main() {
         final streakData = StreakData.fromJson(json);
 
         expect(streakData.lastUpdateDate, isNull);
+        // Saved before "never miss twice" existed
+        expect(streakData.atRisk, isFalse);
+      });
+
+      test('round-trips atRisk', () {
+        const streak = StreakData(current: 5, longest: 5, history: [], atRisk: true);
+        final restored = StreakData.fromJson(streak.toJson());
+        expect(restored.atRisk, isTrue);
+        expect(restored, streak);
+        expect(restored, isNot(streak.copyWith(atRisk: false)));
       });
     });
 

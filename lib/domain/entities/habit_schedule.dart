@@ -103,6 +103,21 @@ class HabitSchedule extends Equatable {
     return start;
   }
 
+  /// Typical gap between due periods in days: 1 for daily, 7/3 for Mon/Wed/Fri,
+  /// 14 for every 2 weeks. Infinite for habits that never reset.
+  double get averageDaysBetweenDuePeriods {
+    switch (frequency) {
+      case ResetFrequency.daily:
+        return hasRestDays ? 7 / weekdays!.length : interval.toDouble();
+      case ResetFrequency.weekly:
+        return 7.0 * interval;
+      case ResetFrequency.monthly:
+        return 30.44 * interval;
+      case ResetFrequency.never:
+        return double.infinity;
+    }
+  }
+
   /// What the target is measured over, e.g. "per day" or "per 2 weeks".
   String get periodLabel {
     if (!isPeriodic) return 'in total';

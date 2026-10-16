@@ -7,7 +7,7 @@ import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
 
 class HabitModel extends Habit {
-  const HabitModel({
+  HabitModel({
     required super.id,
     required super.name,
     required super.progress,

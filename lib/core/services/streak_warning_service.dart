@@ -8,6 +8,8 @@ import 'notification_service.dart';
 /// can substitute a fake for the platform notification plugin.
 abstract class StreakWarningScheduler {
   Future<void> schedule(String habitId, StreakWarning warning);
+
+  /// Cancels every kind of warning for the habit.
   Future<void> cancel(String habitId);
 }
 
@@ -25,8 +27,8 @@ class LocalNotificationStreakWarningScheduler implements StreakWarningScheduler 
   }
 }
 
-/// Keeps exactly one pending streak warning per habit in line with the
-/// habit's current state and the user's settings.
+/// Keeps each habit's pending streak warnings (at most one of each
+/// [StreakWarningKind]) in line with its current state and the user's settings.
 class StreakWarningService {
   final StreakWarningScheduler _scheduler;
   final StreakWarningSettings Function() _readSettings;
@@ -42,10 +44,9 @@ class StreakWarningService {
 
   Future<void> sync(Habit habit) async {
     try {
-      final warning = StreakWarningPlanner.plan(habit, _readSettings(), _clock());
-      if (warning == null) {
-        await _scheduler.cancel(habit.id);
-      } else {
+      final warnings = StreakWarningPlanner.plan(habit, _readSettings(), _clock());
+      await _scheduler.cancel(habit.id);
+      for (final warning in warnings) {
         await _scheduler.schedule(habit.id, warning);
       }
     } catch (e) {

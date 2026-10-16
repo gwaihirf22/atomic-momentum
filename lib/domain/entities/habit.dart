@@ -5,6 +5,8 @@ import 'streak_data.dart';
 import 'reminder_settings.dart';
 import 'habit_metadata.dart';
 import 'habit_schedule.dart';
+import 'momentum.dart';
+import '../services/momentum_calculator.dart';
 import '../services/streak_calculator.dart';
 
 class Habit extends Equatable {
@@ -33,7 +35,7 @@ class Habit extends Equatable {
   /// Weekdays a daily habit is due (DateTime.monday..sunday); null = every day.
   final List<int>? scheduledWeekdays;
 
-  const Habit({
+  Habit({
     required this.id,
     required this.name,
     required this.progress,
@@ -228,6 +230,37 @@ class Habit extends Equatable {
       schedule: schedule,
       now: now ?? DateTime.now(),
     );
+  }
+
+  /// End of the next unfinished due period: missing it counts as a miss.
+  DateTime nextMissAt([DateTime? now]) {
+    return StreakCalculator.nextMissAt(
+      history: history,
+      target: target,
+      schedule: schedule,
+      now: now ?? DateTime.now(),
+    );
+  }
+
+  /// Momentum as of [lastUpdatedDate]. It only changes when history changes
+  /// or a period ends, and both go through [refresh] or an update, which
+  /// produce a new Habit; so it's computed once per instance.
+  late final Momentum momentum = MomentumCalculator.calculate(
+    history: history,
+    target: target,
+    schedule: schedule,
+    start: _momentumStart,
+    now: lastUpdatedDate,
+  );
+
+  /// Creation day, or the earliest logged day if that's earlier (seeded or
+  /// backfilled history counts too).
+  DateTime get _momentumStart {
+    var start = _dateOnly(metadata.createdDate);
+    for (final day in history.keys) {
+      if (day.isBefore(start)) start = day;
+    }
+    return start;
   }
 
   Habit updateDetails({

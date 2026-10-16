@@ -80,7 +80,7 @@ class SettingsScreen extends StatelessWidget {
         SwitchListTile(
           key: const Key('streakWarningsSwitch'),
           title: const Text('Streak warnings'),
-          subtitle: const Text('Get a notification before a streak expires'),
+          subtitle: const Text("Get a \"Don't miss twice\" notification before a streak would end"),
           value: streakWarnings.enabled,
           onChanged: (value) async {
             await settings.setStreakWarningsEnabled(value);
@@ -117,6 +117,22 @@ class SettingsScreen extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+        SwitchListTile(
+          key: const Key('streakWarningFirstMissSwitch'),
+          title: const Text('Also remind me before a first miss'),
+          subtitle: const Text(
+              "By default you're warned only before a second miss would end a streak"),
+          value: streakWarnings.remindBeforeFirstMiss,
+          onChanged: streakWarnings.enabled
+              ? (value) async {
+                  await settings.setRemindBeforeFirstMiss(value);
+                  if (context.mounted) {
+                    await context.read<HabitProvider>().resyncStreakWarnings();
+                  }
+                }
+              : null,
+          secondary: const Icon(Icons.notifications_active_outlined),
         ),
         const Divider(),
         // Debug builds only: never shown in release / App Store builds

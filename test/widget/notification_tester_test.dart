@@ -89,8 +89,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final warning = plugin.shown.single;
-      expect(warning.title, contains('streak'));
-      expect(warning.body, contains('2-day streak'));
+      expect(warning.title, startsWith("Don't miss twice: "));
+      expect(warning.body, contains('day streak'));
       expect(status(tester), contains('Sent a streak warning'));
     });
 
@@ -101,7 +101,8 @@ void main() {
       await tester.pumpAndSettle();
 
       final warning = plugin.shown.single;
-      expect(warning.body, 'Complete "Example habit" before midnight tonight to keep your 2-day streak.');
+      expect(warning.title, "Don't miss twice: Example habit");
+      expect(warning.body, 'Complete "Example habit" before midnight tonight to keep your 2 day streak.');
       expect(status(tester), contains('example streak warning'));
     });
 

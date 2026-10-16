@@ -87,7 +87,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
     StreakWarning? warning;
     String? habitName;
     for (final habit in habits.where((h) => h.streak.current > 0)) {
-      warning = StreakWarningPlanner.plan(habit, settings, now);
+      warning = StreakWarningPlanner.plan(habit, settings, now).firstOrNull;
       if (warning != null) {
         habitName = habit.name;
         break;
@@ -95,7 +95,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
     }
     if (warning == null) {
       final example = _exampleHabitWithStreak(now);
-      warning = StreakWarningPlanner.plan(example, settings, now)!;
+      warning = StreakWarningPlanner.plan(example, settings, now).first;
       habitName = example.name;
       isExample = true;
     }

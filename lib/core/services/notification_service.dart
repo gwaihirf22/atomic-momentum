@@ -241,12 +241,12 @@ class NotificationService {
     }
   }
 
-  // Schedule the one-off warning that a habit's streak is about to expire
+  // Schedule a one-off warning that a habit's streak is at stake
   static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning) async {
     if (!_initialized) return;
 
     try {
-      final id = _getStreakWarningId(habitId);
+      final id = _getStreakWarningId(habitId, warning.kind);
       await _notificationsPlugin.cancel(id);
       await _notificationsPlugin.zonedSchedule(
         id,
@@ -270,14 +270,19 @@ class NotificationService {
     if (!_initialized) return;
 
     try {
-      await _notificationsPlugin.cancel(_getStreakWarningId(habitId));
+      for (final kind in StreakWarningKind.values) {
+        await _notificationsPlugin.cancel(_getStreakWarningId(habitId, kind));
+      }
     } catch (e) {
       debugPrint('NotificationService: Failed to cancel streak warning for $habitId: $e');
     }
   }
 
-  static int _getStreakWarningId(String habitId) {
-    return '$habitId-streak-warning'.hashCode.abs() % 2147483647;
+  static int _getStreakWarningId(String habitId, StreakWarningKind kind) {
+    // The second-miss warning keeps the original id, so warnings scheduled by
+    // earlier versions are replaced rather than duplicated
+    final suffix = kind == StreakWarningKind.secondMiss ? 'streak-warning' : 'streak-${kind.name}';
+    return '$habitId-$suffix'.hashCode.abs() % 2147483647;
   }
 
   // Update habit reminders (cancel old, schedule new)

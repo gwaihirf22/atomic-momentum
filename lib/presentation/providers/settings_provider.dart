@@ -8,6 +8,7 @@ import '../../domain/entities/streak_warning_settings.dart';
 class SettingsProvider extends ChangeNotifier {
   static const _streakWarningEnabledKey = 'streakWarningEnabled';
   static const _streakWarningLeadHoursKey = 'streakWarningLeadHours';
+  static const _streakWarningFirstMissKey = 'streakWarningRemindFirstMiss';
   static const _weekStartKey = 'weekStartDay';
 
   final SharedPreferences _prefs;
@@ -42,7 +43,13 @@ class SettingsProvider extends ChangeNotifier {
     return StreakWarningSettings(
       enabled: _prefs.getBool(_streakWarningEnabledKey) ?? defaults.enabled,
       leadTime: leadHours != null ? Duration(hours: leadHours) : defaults.leadTime,
+      remindBeforeFirstMiss: _prefs.getBool(_streakWarningFirstMissKey) ?? defaults.remindBeforeFirstMiss,
     );
+  }
+
+  Future<void> setRemindBeforeFirstMiss(bool remind) async {
+    await _prefs.setBool(_streakWarningFirstMissKey, remind);
+    notifyListeners();
   }
 
   Future<void> setStreakWarningsEnabled(bool enabled) async {

@@ -101,9 +101,10 @@ python server.py
   - ✅ **Delete**: Safe deletion with confirmation dialogs and user feedback
 - **Calendar View**: Monthly calendar with habit completion visualization and category filtering
 - **Category System**: User-editable categories (`Category` entity + `CategoryRepository`, rules in `ManageCategoriesUseCase`); six built-ins seeded on first launch with ids `body`, `spirit`, … that habits store as `categoryId`; Settings → Categories (or long-press the rings) to add/edit/reorder/delete/restore; deleted or unknown ids show as Uncategorized. Design: `docs/design/custom-categories.md`
-- **Streak Tracking**: Streaks are derived from per-day history (`StreakCalculator`), counted in days/weeks/months; editing a past day on the Calendar repairs or breaks a streak
+- **Streak Tracking**: Streaks are derived from per-day history (`StreakCalculator`), counted in days/weeks/months, with the "never miss twice" rule: one missed due period is bridged (the streak is `atRisk` and the card says "Don't miss twice"), two in a row end it. Editing a past day on the Calendar repairs or breaks a streak. Stored streaks are recomputed on load (`UpdateHabitUseCase.resetHabitsIfNeeded`)
+- **Momentum**: a 0–100 score per habit (`MomentumCalculator`, `Habit.momentum`): an exponential moving average over due periods with partial credit, calibrated to reach 80 in ~66 days of steady practice on any schedule; shown on the card with a 7-day trend arrow
 - **Reset Days**: Weekly/monthly habits reset on a user-chosen weekday/day-of-month (`Habit.resetAnchor`); progress rolls over at local midnight
-- **Streak Warnings**: One notification per habit before its streak deadline (default 4 hours, configurable in Settings) via `StreakWarningService`
+- **Streak Warnings**: `StreakWarningPlanner` plans a "Don't miss twice" notification before the miss that would end a streak (default 4 hours ahead, configurable in Settings), plus an optional nudge before a first miss (Settings switch); `StreakWarningService` schedules them
 - **Theme Support**: iOS-native light/dark mode with proper styling
 - **Testing Framework**: Unit, integration and widget tests; see Testing Strategy
 - **Development Tools**: Default habit system, comprehensive debug logging, bypass solutions
@@ -125,7 +126,7 @@ python server.py
 
 ### Product Direction
 **Read `docs/strategy/product-strategy.md` before planning features.** It holds the positioning ("Momentum, not perfection", built on *Atomic Habits*), monetization (free + one-time Pro + in-app-purchase tip jar), the Flutter-over-Swift decision and the roadmap. v1, in order:
-1. Momentum score + never miss twice
+1. ~~Momentum score + never miss twice~~ (done)
 2. Two-minute version
 3. Year heatmap + weekly review
 4. Onboarding tutorial
@@ -137,7 +138,7 @@ python server.py
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
 - **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
-- **Status (2026-10-16)**: 371 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-16)**: 407 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 

@@ -132,16 +132,22 @@ class UpdateHabitUseCase {
     }
   }
 
-  /// Reset habits that need to be reset based on their frequency
-  Future<List<Habit>> resetHabitsIfNeeded() async {
+  /// Brings every habit up to date and saves the ones that changed: those
+  /// whose period rolled over (progress becomes the new period's total, an
+  /// expired streak drops to 0), and any whose stored streak was worked out
+  /// by an older rule. Returns the saved habits.
+  Future<List<Habit>> resetHabitsIfNeeded([DateTime? now]) async {
     try {
-      final habitsNeedingReset = await _repository.getHabitsNeedingReset();
+      final at = now ?? DateTime.now();
+      final habits = await _repository.getHabits();
       final resetHabits = <Habit>[];
 
-      for (final habit in habitsNeedingReset) {
-        // Recompute instead of zeroing: progress becomes the new period's
-        // total and an expired streak drops to 0
-        final refreshedHabit = habit.refresh();
+      for (final habit in habits) {
+        final refreshedHabit = habit.refresh(at);
+        final changed = habit.shouldReset(at) ||
+            refreshedHabit.progress != habit.progress ||
+            refreshedHabit.streak != habit.streak;
+        if (!changed) continue;
         await _repository.saveHabit(refreshedHabit);
         resetHabits.add(refreshedHabit);
       }

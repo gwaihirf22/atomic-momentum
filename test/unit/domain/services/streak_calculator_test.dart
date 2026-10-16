@@ -38,25 +38,59 @@ void main() {
       expect(streak.current, 2);
     });
 
-    test('quietly drops to 0 once a whole day is missed', () {
+    test('one missed day bends the streak: it is kept but at risk', () {
       final streak = calc(days({12: 2, 13: 2}));
+      expect(streak.current, 2);
+      expect(streak.atRisk, isTrue);
+    });
+
+    test('completing today after a miss clears the risk', () {
+      final streak = calc(days({12: 2, 13: 2, 15: 2}));
+      expect(streak.current, 3);
+      expect(streak.atRisk, isFalse);
+    });
+
+    test('a streak with no misses is not at risk', () {
+      expect(calc(days({13: 2, 14: 2})).atRisk, isFalse);
+    });
+
+    test('quietly drops to 0 after two missed days in a row', () {
+      final streak = calc(days({11: 2, 12: 2}));
       expect(streak.current, 0);
+      expect(streak.atRisk, isFalse);
       expect(streak.longest, 2);
     });
 
-    test('a partially done day does not count as completed', () {
+    test('missing every other day never misses twice in a row', () {
+      final streak = calc(days({11: 2, 13: 2, 15: 2}));
+      expect(streak.current, 3);
+    });
+
+    test('a partially done day counts as a miss for the streak', () {
       final streak = calc(days({13: 2, 14: 1}));
-      expect(streak.current, 0);
+      expect(streak.current, 1);
+      expect(streak.atRisk, isTrue);
+
+      expect(calc(days({12: 2, 13: 1, 14: 1})).current, 0);
     });
 
     test('filling in a missed day retroactively restores the streak', () {
-      final broken = days({10: 2, 11: 2, 13: 2, 14: 2});
+      final broken = days({9: 2, 10: 2, 13: 2, 14: 2});
       expect(calc(broken).current, 2);
 
+      // One missed day (the 11th) left is bridged
       final repaired = {...broken, DateTime(2024, 1, 12): 2};
       final streak = calc(repaired);
       expect(streak.current, 5);
       expect(streak.longest, 5);
+    });
+
+    test('runs join across single missed days', () {
+      final streak = calc(days({1: 2, 2: 2, 4: 2, 5: 2}));
+      expect(streak.current, 0);
+      expect(streak.longest, 4);
+      expect(streak.history.single.startDate, DateTime(2024, 1, 1));
+      expect(streak.history.single.endDate, DateTime(2024, 1, 5));
     });
 
     test('longest tracks the best run and history lists every run', () {
@@ -116,6 +150,18 @@ void main() {
       expect(streak.current, 1);
     });
 
+    test('a weekly streak survives one missed week', () {
+      final streak = StreakCalculator.calculate(
+        history: days({1: 3, 15: 3}),
+        target: 3,
+        schedule: HabitSchedule(frequency: ResetFrequency.weekly, anchor: mondayAnchor),
+        now: DateTime(2024, 1, 17),
+      );
+
+      expect(streak.current, 2);
+      expect(streak.atRisk, isFalse);
+    });
+
     test('monthly streaks respect the anchor day', () {
       // Months run from the 20th: Nov 20 - Dec 19, Dec 20 - Jan 19
       final streak = StreakCalculator.calculate(
@@ -154,12 +200,16 @@ void main() {
           now: noon15th,
         );
 
-    test('is the end of today when today is not done yet', () {
-      expect(deadline(days({14: 1})), DateTime(2024, 1, 16));
+    test('is the end of tomorrow while today is unfinished (one more miss is allowed)', () {
+      expect(deadline(days({14: 1})), DateTime(2024, 1, 17));
     });
 
-    test('is the end of tomorrow when today is already done', () {
-      expect(deadline(days({14: 1, 15: 1})), DateTime(2024, 1, 17));
+    test('is the end of the day after tomorrow when today is already done', () {
+      expect(deadline(days({14: 1, 15: 1})), DateTime(2024, 1, 18));
+    });
+
+    test('is the end of today after a miss', () {
+      expect(deadline(days({13: 1})), DateTime(2024, 1, 16));
     });
 
     test('is null when there is no streak to lose', () {
@@ -167,8 +217,8 @@ void main() {
       expect(deadline(days({12: 1})), isNull);
     });
 
-    test('is the end of the current week for weekly habits', () {
-      expect(deadline(days({8: 1}), frequency: ResetFrequency.weekly), DateTime(2024, 1, 22));
+    test('is the end of next week for weekly habits', () {
+      expect(deadline(days({8: 1}), frequency: ResetFrequency.weekly), DateTime(2024, 1, 29));
     });
 
     test('is null for never habits', () {
@@ -209,27 +259,44 @@ void main() {
       expect(streak.longest, 3);
     });
 
-    test('missing a due day breaks it; logging on a rest day does not count', () {
+    test('one missed due day is bridged; logging on a rest day does not count', () {
       final streak = StreakCalculator.calculate(
         history: {DateTime(2026, 10, 12): 1, DateTime(2026, 10, 15): 1, DateTime(2026, 10, 16): 1},
         target: 1,
         schedule: monWedFri,
         now: DateTime(2026, 10, 16, 20),
       );
-      // Wed 14 missed; Thu 15 is a rest day, so only Fri 16 counts
-      expect(streak.current, 1);
+      // Wed 14 missed (bridged); Thu 15 is a rest day, so Mon 12 and Fri 16 count
+      expect(streak.current, 2);
+    });
+
+    test('two missed due days end it, even with rest days between them', () {
+      final streak = StreakCalculator.calculate(
+        history: {DateTime(2026, 10, 9): 1},
+        target: 1,
+        schedule: monWedFri,
+        now: DateTime(2026, 10, 16, 20), // Fri 16 still open; Mon 12 and Wed 14 missed
+      );
+      expect(streak.current, 0);
     });
 
     test('the deadline skips rest days', () {
       final history = {DateTime(2026, 10, 14): 1, DateTime(2026, 10, 16): 1};
-      // Saturday: next due day is Monday 19, which ends at midnight into Tue 20
+      // Saturday: the next due days are Mon 19 and Wed 21, so missing both
+      // ends the streak at midnight into Thu 22
       expect(
         StreakCalculator.streakDeadline(history: history, target: 1, schedule: monWedFri, now: DateTime(2026, 10, 17, 10)),
-        DateTime(2026, 10, 20),
+        DateTime(2026, 10, 22),
       );
-      // Friday 16 already done: same, the next due day is Monday
+      // Friday 16 already done: same
       expect(
         StreakCalculator.streakDeadline(history: history, target: 1, schedule: monWedFri, now: DateTime(2026, 10, 16, 21)),
+        DateTime(2026, 10, 22),
+      );
+      // Fri 16 missed: the next due day, Monday, is the last chance
+      expect(
+        StreakCalculator.streakDeadline(
+            history: {DateTime(2026, 10, 14): 1}, target: 1, schedule: monWedFri, now: DateTime(2026, 10, 17, 10)),
         DateTime(2026, 10, 20),
       );
     });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atomic_momentum/domain/services/momentum_calculator.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -462,15 +463,17 @@ void main() {
       });
 
       test('setProgressForDate repairs a broken streak retroactively', () {
+        // Two days in a row missed (3 and 2 days ago) broke it
         final habit = TestData.createTestHabit(
           target: 1,
-          history: {daysAgo(3): 1, daysAgo(1): 1},
+          history: {daysAgo(5): 1, daysAgo(4): 1, daysAgo(1): 1},
         ).refresh();
         expect(habit.streak.current, 1);
 
+        // Filling in one leaves a single miss, which is bridged
         final repaired = habit.setProgressForDate(daysAgo(2), 1);
-        expect(repaired.streak.current, 3);
-        expect(repaired.streak.longest, 3);
+        expect(repaired.streak.current, 4);
+        expect(repaired.streak.longest, 4);
       });
 
       test('setProgressForDate with 0 removes the entry and can break the streak', () {
@@ -482,7 +485,10 @@ void main() {
 
         final edited = habit.setProgressForDate(daysAgo(1), 0);
         expect(edited.history.containsKey(daysAgo(1)), isFalse);
-        expect(edited.streak.current, 0);
+        expect(edited.streak.current, 1);
+        expect(edited.streak.atRisk, isTrue);
+
+        expect(edited.setProgressForDate(daysAgo(2), 0).streak.current, 0);
       });
 
       test('setProgressForDate rejects future dates, negatives and over-target totals', () {
@@ -502,7 +508,7 @@ void main() {
         final habit = TestData.createTestHabit(
           target: 1,
           progress: 1,
-          history: {daysAgo(3): 1, daysAgo(2): 1},
+          history: {daysAgo(4): 1, daysAgo(3): 1},
           streak: const StreakData(current: 2, longest: 2, history: []),
         );
 
@@ -525,9 +531,38 @@ void main() {
         expect(reset.history[daysAgo(1)], 5);
       });
 
-      test('streakDeadline is the end of today while today is unfinished', () {
+      test('streakDeadline allows one more miss: the end of tomorrow while today is unfinished', () {
         final habit = TestData.createTestHabit(target: 1, history: {daysAgo(1): 1}).refresh();
-        expect(habit.streakDeadline(), today.add(const Duration(days: 1)));
+        expect(habit.streakDeadline(), DateTime(today.year, today.month, today.day + 2));
+        expect(habit.nextMissAt(), DateTime(today.year, today.month, today.day + 1));
+      });
+
+      test('streakDeadline after a miss is the end of today', () {
+        final habit = TestData.createTestHabit(target: 1, history: {daysAgo(2): 1}).refresh();
+        expect(habit.streak.atRisk, isTrue);
+        expect(habit.streakDeadline(), DateTime(today.year, today.month, today.day + 1));
+      });
+
+      test('momentum builds from history, including days logged before the habit was created', () {
+        final history = {for (var i = 1; i <= 10; i++) daysAgo(i): 1};
+        final habit = TestData.createTestHabit(target: 1, history: history).refresh();
+
+        expect(habit.momentum, MomentumCalculator.calculate(
+          history: history,
+          target: 1,
+          schedule: habit.schedule,
+          start: daysAgo(10),
+          now: habit.lastUpdatedDate,
+        ));
+        expect(habit.momentum.score, greaterThan(20));
+        expect(habit.momentum.isRising, isTrue);
+        // Worked out once per habit
+        expect(identical(habit.momentum, habit.momentum), isTrue);
+      });
+
+      test('a new habit has no momentum yet', () {
+        final habit = Habit.create(name: 'New', target: 1, color: HabitColor.blue, categoryId: 'body');
+        expect(habit.momentum.score, 0);
       });
 
       test('changing the target recomputes progress and streak', () {

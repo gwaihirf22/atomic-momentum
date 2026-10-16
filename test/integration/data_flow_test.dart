@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atomic_momentum/domain/entities/streak_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/domain/entities/category.dart';
@@ -321,6 +322,34 @@ void main() {
         expect(reloaded.history, isNotEmpty);
       });
 
+      test('recomputes streaks saved by an older rule on load', () async {
+        final createHabitUseCase = get<CreateHabitUseCase>();
+        final repository = get<HabitRepository>();
+
+        final habit = await createHabitUseCase(CreateHabitParams(
+          name: 'Journal',
+          target: 1,
+          color: HabitColor.orange,
+          categoryId: BuiltInCategoryIds.mind,
+        ));
+
+        // Same day, so no period rollover; the stored streak of 1 is what the
+        // old one-miss rule gave for 3 and 1 days ago
+        final now = DateTime.now();
+        DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
+        await repository.saveHabit(habit.copyWith(
+          lastUpdatedDate: now,
+          history: {daysAgo(3): 1, daysAgo(1): 1},
+          streak: StreakData(current: 1, longest: 1, lastUpdateDate: daysAgo(1), history: const []),
+        ));
+
+        final habitProvider = get<HabitProvider>();
+        await habitProvider.loadHabits();
+
+        expect(habitProvider.getHabitById(habit.id)!.streak.current, 2);
+        expect((await repository.getHabitById(habit.id))!.streak.current, 2);
+      });
+
       test('should keep progress for a weekly habit within the same week', () async {
         final createHabitUseCase = get<CreateHabitUseCase>();
         final updateHabitUseCase = get<UpdateHabitUseCase>();
@@ -368,21 +397,22 @@ void main() {
         final today = DateTime(now.year, now.month, now.day);
         DateTime daysAgo(int n) => DateTime(today.year, today.month, today.day - n);
 
-        // Days 3 and 1 ago logged, day 2 forgotten
-        expect(await habitProvider.updateProgressForDate(id, daysAgo(3), 1), isTrue);
+        // Days 4 and 1 ago logged; days 3 and 2 forgotten (two misses in a row)
+        expect(await habitProvider.updateProgressForDate(id, daysAgo(4), 1), isTrue);
         expect(await habitProvider.updateProgressForDate(id, daysAgo(1), 1), isTrue);
         expect(habitProvider.getHabitById(id)!.streak.current, 1);
 
-        // Retroactively fill the gap
+        // Retroactively filling one leaves a single miss, which is bridged
         await habitProvider.updateProgressForDate(id, daysAgo(2), 1);
         expect(habitProvider.getHabitById(id)!.streak.current, 3);
 
-        // Completing today means the next deadline is the end of tomorrow
+        // With today done, the streak ends only if tomorrow and the day after
+        // are both missed
         await habitProvider.updateHabitProgress(id, 1);
         expect(habitProvider.getHabitById(id)!.streak.current, 4);
         expect(
           scheduler.scheduled[id]!.at,
-          DateTime(today.year, today.month, today.day + 2).subtract(const Duration(hours: 4)),
+          DateTime(today.year, today.month, today.day + 3).subtract(const Duration(hours: 4)),
         );
 
         // The streak survives a reload from storage
@@ -449,8 +479,10 @@ void main() {
         // The user's own Drink Water is untouched
         expect(habitProvider.habits.firstWhere((h) => h.name == 'Drink Water').target, 5);
 
-        // Days 2 and 1 ago completed (3 ago is a gap) -> 2-day streak
-        expect(habitProvider.habits.firstWhere((h) => h.name == 'Meditate').streak.current, 2);
+        // Days 5, 4, 2 and 1 ago completed; the single gap (3 ago) is bridged
+        final meditate = habitProvider.habits.firstWhere((h) => h.name == 'Meditate');
+        expect(meditate.streak.current, 4);
+        expect(meditate.momentum.score, greaterThan(0));
 
         expect(await habitProvider.addSampleHabits(), 0);
         expect(habitProvider.habits, hasLength(6));

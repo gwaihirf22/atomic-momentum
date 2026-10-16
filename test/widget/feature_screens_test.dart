@@ -587,5 +587,21 @@ void main() {
       await tester.pumpAndSettle();
       expect(get<SettingsProvider>().streakWarnings.enabled, isFalse);
     });
+
+    testWidgets('"remind before a first miss" is off by default, and only works with warnings on',
+        (tester) async {
+      await pumpScreen(tester, const SettingsScreen());
+      final firstMiss = find.byKey(const Key('streakWarningFirstMissSwitch'));
+      await tester.scrollUntilVisible(firstMiss, 200, scrollable: find.byType(Scrollable).first);
+
+      expect(tester.widget<SwitchListTile>(firstMiss).value, isFalse);
+      await tester.tap(firstMiss);
+      await tester.pumpAndSettle();
+      expect(get<SettingsProvider>().streakWarnings.remindBeforeFirstMiss, isTrue);
+
+      await get<SettingsProvider>().setStreakWarningsEnabled(false);
+      await tester.pumpAndSettle();
+      expect(tester.widget<SwitchListTile>(firstMiss).onChanged, isNull);
+    });
   });
 }

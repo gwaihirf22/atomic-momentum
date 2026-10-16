@@ -5,14 +5,18 @@ import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/momentum.dart';
 import 'habit_icons.dart';
 
-/// A compact, one-row habit: the icon inside a progress ring (tap it to add
-/// one), the name with progress, schedule and streak, and a -/+ stepper.
+/// A compact habit row: the icon inside a progress ring (tap it to add one),
+/// the name with progress and schedule, momentum and streak, and a -/+ stepper.
 /// Tap the card to edit; swipe left for Edit and Delete (also offered to
 /// VoiceOver as actions).
 class HabitCard extends StatelessWidget {
   static const flameColor = Colors.deepOrange;
+
+  /// The streak survived one miss; another would end it.
+  static final atRiskColor = Colors.amber.shade800;
 
   final Habit habit;
   final Category category;
@@ -46,6 +50,8 @@ class HabitCard extends StatelessWidget {
     final color = habit.color.color;
     final isRestDay = !habit.isDueOn(DateTime.now());
     final secondary = theme.textTheme.bodySmall?.color ?? Colors.grey;
+    // Momentum and streak appear once there's something to show
+    final showStats = habit.schedule.isPeriodic && habit.history.values.any((amount) => amount > 0);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -88,7 +94,7 @@ class HabitCard extends StatelessWidget {
               child: InkWell(
                 onTap: onEdit,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   child: Row(
                     children: [
                       _ProgressRing(
@@ -111,41 +117,51 @@ class HabitCard extends StatelessWidget {
                               habit.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              style: const TextStyle(fontSize: 16, height: 1.2, fontWeight: FontWeight.w600),
                             ),
                             const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                // Truncates (category last) rather than overflowing
-                                Flexible(
-                                  child: Text.rich(
-                                    TextSpan(children: [
-                                      TextSpan(
-                                        text: _progressText,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: habit.isCompleted ? color : null,
-                                        ),
-                                      ),
-                                      TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
-                                      if (isRestDay) const TextSpan(text: '  ·  Rest day'),
-                                      TextSpan(text: '  ·  ${category.name}'),
-                                    ]),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(fontSize: 13, color: secondary),
+                            // Truncates (category last) rather than overflowing
+                            Text.rich(
+                              TextSpan(children: [
+                                TextSpan(
+                                  text: _progressText,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: habit.isCompleted ? color : null,
                                   ),
                                 ),
-                                if (habit.streak.current > 0) ...[
-                                  const SizedBox(width: 8),
-                                  _StreakBadge(
-                                    key: Key('habitStreak_${habit.id}'),
-                                    count: habit.streak.current,
-                                    label: habit.schedule.streakLabel(habit.streak.current),
-                                  ),
-                                ],
-                              ],
+                                TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
+                                if (isRestDay) const TextSpan(text: '  ·  Rest day'),
+                                TextSpan(text: '  ·  ${category.name}'),
+                              ]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, height: 1.2, color: secondary),
                             ),
+                            if (showStats) ...[
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  _MomentumChip(
+                                    key: Key('habitMomentum_${habit.id}'),
+                                    momentum: habit.momentum,
+                                    color: color,
+                                  ),
+                                  if (habit.streak.current > 0) ...[
+                                    const SizedBox(width: 10),
+                                    Flexible(
+                                      child: _StreakBadge(
+                                        key: Key('habitStreak_${habit.id}'),
+                                        habitId: habit.id,
+                                        count: habit.streak.current,
+                                        atRisk: habit.streak.atRisk,
+                                        label: habit.schedule.streakLabel(habit.streak.current),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -168,27 +184,92 @@ class HabitCard extends StatelessWidget {
   }
 }
 
-/// Flat flame with the streak count, matching the Settings streak icon.
-class _StreakBadge extends StatelessWidget {
-  final int count;
-  final String label;
+/// Momentum score with a trend arrow, in the habit's color.
+class _MomentumChip extends StatelessWidget {
+  final Momentum momentum;
+  final Color color;
 
-  const _StreakBadge({Key? key, required this.count, required this.label}) : super(key: key);
+  const _MomentumChip({Key? key, required this.momentum, required this.color}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final trend = momentum.isRising
+        ? ', rising'
+        : momentum.isFalling
+            ? ', falling'
+            : '';
     return Semantics(
-      label: label,
+      label: 'Momentum ${momentum.rounded}$trend',
       excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.local_fire_department, size: 16, color: HabitCard.flameColor),
+          Icon(Icons.bolt, size: 16, color: color),
+          Text(
+            '${momentum.rounded}',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
+          ),
+          if (momentum.isRising || momentum.isFalling) ...[
+            const SizedBox(width: 1),
+            Icon(
+              momentum.isRising ? CupertinoIcons.arrow_up : CupertinoIcons.arrow_down,
+              size: 11,
+              color: color,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Flat flame with the streak count, matching the Settings streak icon.
+/// After a miss it turns to an amber outline with "Don't miss twice".
+class _StreakBadge extends StatelessWidget {
+  final String habitId;
+  final int count;
+  final bool atRisk;
+  final String label;
+
+  const _StreakBadge({
+    Key? key,
+    required this.habitId,
+    required this.count,
+    required this.atRisk,
+    required this.label,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final color = atRisk ? HabitCard.atRiskColor : HabitCard.flameColor;
+    return Semantics(
+      label: atRisk ? "$label, missed once, don't miss twice" : label,
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            atRisk ? Icons.local_fire_department_outlined : Icons.local_fire_department,
+            size: 16,
+            color: color,
+          ),
           const SizedBox(width: 2),
           Text(
             '$count',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: HabitCard.flameColor),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
           ),
+          if (atRisk) ...[
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                "Don't miss twice",
+                key: Key('habitAtRisk_$habitId'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+              ),
+            ),
+          ],
         ],
       ),
     );

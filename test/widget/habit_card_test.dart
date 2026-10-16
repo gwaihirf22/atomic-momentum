@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,8 +65,13 @@ void main() {
 
   Finder card() => find.byKey(Key('habitCard_$waterId'));
 
-  testWidgets('the card is a compact single row that fits a 375pt phone', (tester) async {
+  final now = DateTime.now();
+  DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
+
+  testWidgets('the card is compact and fits a 375pt phone, stats row included', (tester) async {
+    await habitProvider.updateProgressForDate(waterId, daysAgo(1), 3);
     await pumpHome(tester);
+    expect(find.byKey(Key('habitMomentum_$waterId')), findsOneWidget);
 
     final rect = tester.getRect(card());
     expect(rect.height, lessThanOrEqualTo(80));
@@ -76,14 +82,68 @@ void main() {
   });
 
   testWidgets('streaks show a flat flame, not an emoji', (tester) async {
-    final now = DateTime.now();
-    await habitProvider.updateProgressForDate(waterId, DateTime(now.year, now.month, now.day - 1), 3);
+    await habitProvider.updateProgressForDate(waterId, daysAgo(1), 3);
     await pumpHome(tester);
 
     final streak = find.byKey(Key('habitStreak_$waterId'));
     expect(find.descendant(of: streak, matching: find.byIcon(Icons.local_fire_department)), findsOneWidget);
     expect(find.descendant(of: streak, matching: find.text('1')), findsOneWidget);
     expect(find.textContaining('🔥'), findsNothing);
+  });
+
+  testWidgets('momentum shows its score with a rising arrow after a good week', (tester) async {
+    for (var i = 1; i <= 7; i++) {
+      await habitProvider.updateProgressForDate(waterId, daysAgo(i), 3);
+    }
+    await pumpHome(tester);
+
+    final habit = habitProvider.getHabitById(waterId)!;
+    expect(habit.momentum.rounded, greaterThan(10));
+    final chip = find.byKey(Key('habitMomentum_$waterId'));
+    expect(find.descendant(of: chip, matching: find.byIcon(Icons.bolt)), findsOneWidget);
+    expect(find.descendant(of: chip, matching: find.text('${habit.momentum.rounded}')), findsOneWidget);
+    expect(find.descendant(of: chip, matching: find.byIcon(CupertinoIcons.arrow_up)), findsOneWidget);
+  });
+
+  testWidgets('after a miss the flame turns to an amber outline with "Don\'t miss twice"', (tester) async {
+    // Yesterday missed; the two days before were done
+    await habitProvider.updateProgressForDate(waterId, daysAgo(3), 3);
+    await habitProvider.updateProgressForDate(waterId, daysAgo(2), 3);
+    await pumpHome(tester);
+
+    final streak = find.byKey(Key('habitStreak_$waterId'));
+    expect(find.descendant(of: streak, matching: find.text('2')), findsOneWidget);
+    expect(find.descendant(of: streak, matching: find.byIcon(Icons.local_fire_department_outlined)),
+        findsOneWidget);
+    expect(find.byKey(Key('habitAtRisk_$waterId')), findsOneWidget);
+    expect(find.text("Don't miss twice"), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Doing today clears it
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byKey(Key('incrementHabit_$waterId')));
+      await tester.pumpAndSettle();
+    }
+    expect(find.byKey(Key('habitAtRisk_$waterId')), findsNothing);
+    expect(find.descendant(of: streak, matching: find.byIcon(Icons.local_fire_department)), findsOneWidget);
+  });
+
+  testWidgets('a brand-new habit shows no momentum or streak yet', (tester) async {
+    await pumpHome(tester);
+    expect(find.byKey(Key('habitMomentum_$waterId')), findsNothing);
+    expect(find.byKey(Key('habitStreak_$waterId')), findsNothing);
+  });
+
+  testWidgets('momentum and the at-risk streak are described to VoiceOver', (tester) async {
+    final handle = tester.ensureSemantics();
+    await habitProvider.updateProgressForDate(waterId, daysAgo(3), 3);
+    await habitProvider.updateProgressForDate(waterId, daysAgo(2), 3);
+    await pumpHome(tester);
+
+    // The card reads as one element, so these are part of its label
+    expect(find.bySemanticsLabel(RegExp(r'Momentum \d+, rising')), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp("2 day streak, missed once, don't miss twice")), findsOneWidget);
+    handle.dispose();
   });
 
   testWidgets('the ring and the stepper change progress; done shows a check', (tester) async {
