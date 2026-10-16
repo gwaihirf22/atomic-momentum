@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           ),
                           // One line that truncates, so narrow screens / large text can't overflow
                           Text(
-                            '${habit.category.displayName}  •  ${habit.schedule.shortLabel}'
+                            '${HabitCategory.fromString(habit.categoryId).displayName}  •  ${habit.schedule.shortLabel}'
                             '${isRestDay ? '  •  Rest day' : ''}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,

@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import '../core/services/notification_service.dart';
 import '../domain/entities/habit.dart';
-import '../domain/entities/habit_category.dart';
+import '../domain/entities/category.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../domain/services/streak_warning_planner.dart';
@@ -121,7 +121,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
       name: 'Example habit',
       target: 1,
       color: HabitColor.blue,
-      category: HabitCategory.body,
+      categoryId: BuiltInCategoryIds.body,
     );
     for (final daysAgo in const [2, 1]) {
       habit = habit.setProgressForDate(DateTime(now.year, now.month, now.day - daysAgo), 1);

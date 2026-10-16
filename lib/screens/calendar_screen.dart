@@ -41,7 +41,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final habitProvider = context.read<HabitProvider>();
     List<Habit> dayHabits = habitProvider.habits.where((habit) {
       // Filter by category if selected
-      if (_selectedCategory != null && habit.category != _selectedCategory) {
+      if (_selectedCategory != null && habit.categoryId != _selectedCategory!.name) {
         return false;
       }
       // Rest days of a weekday schedule aren't shown or counted
@@ -194,9 +194,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   valueColor: AlwaysStoppedAnimation<Color>(habit.color.color),
                 ),
                 Text(
-                  habit.category.displayName,
+                  HabitCategory.fromString(habit.categoryId).displayName,
                   style: TextStyle(
-                    color: habit.category.defaultColor,
+                    color: HabitCategory.fromString(habit.categoryId).defaultColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

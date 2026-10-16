@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'habit_category.dart';
 import 'habit_color.dart';
 import 'reset_frequency.dart';
 import 'streak_data.dart';
@@ -15,7 +14,8 @@ class Habit extends Equatable {
   final int target;
   final String units; // Units for the target (e.g., "glasses", "minutes", "reps")
   final HabitColor color;
-  final HabitCategory category;
+  /// Id of the habit's category; deleted or unknown ids show as Uncategorized.
+  final String categoryId;
   final DateTime lastUpdatedDate;
   final ResetFrequency resetFrequency;
   final Map<DateTime, int> history;
@@ -40,7 +40,7 @@ class Habit extends Equatable {
     required this.target,
     this.units = '', // Default to empty string for backward compatibility
     required this.color,
-    required this.category,
+    required this.categoryId,
     required this.lastUpdatedDate,
     required this.resetFrequency,
     required this.history,
@@ -59,7 +59,7 @@ class Habit extends Equatable {
     required int target,
     String units = '', // Add units parameter with default empty string
     required HabitColor color,
-    required HabitCategory category,
+    required String categoryId,
     ResetFrequency resetFrequency = ResetFrequency.daily,
     ReminderSettings? reminder,
     String? icon,
@@ -78,7 +78,7 @@ class Habit extends Equatable {
       target: target,
       units: units,
       color: color,
-      category: category,
+      categoryId: categoryId,
       lastUpdatedDate: now,
       resetFrequency: resetFrequency,
       history: {},
@@ -235,7 +235,7 @@ class Habit extends Equatable {
     int? target,
     String? units,
     HabitColor? color,
-    HabitCategory? category,
+    String? categoryId,
     ResetFrequency? resetFrequency,
     ReminderSettings? reminder,
     String? icon,
@@ -250,7 +250,7 @@ class Habit extends Equatable {
       target: target ?? this.target,
       units: units ?? this.units,
       color: color ?? this.color,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       resetFrequency: resetFrequency ?? this.resetFrequency,
       reminder: reminder ?? this.reminder,
       lastUpdatedDate: DateTime.now(),
@@ -270,7 +270,7 @@ class Habit extends Equatable {
       target: updated.target,
       units: updated.units,
       color: updated.color,
-      category: updated.category,
+      categoryId: updated.categoryId,
       lastUpdatedDate: updated.lastUpdatedDate,
       resetFrequency: updated.resetFrequency,
       history: updated.history,
@@ -332,7 +332,7 @@ class Habit extends Equatable {
     int? target,
     String? units,
     HabitColor? color,
-    HabitCategory? category,
+    String? categoryId,
     DateTime? lastUpdatedDate,
     ResetFrequency? resetFrequency,
     Map<DateTime, int>? history,
@@ -350,7 +350,7 @@ class Habit extends Equatable {
       target: target ?? this.target,
       units: units ?? this.units,
       color: color ?? this.color,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       lastUpdatedDate: lastUpdatedDate ?? this.lastUpdatedDate,
       resetFrequency: resetFrequency ?? this.resetFrequency,
       history: history ?? this.history,
@@ -378,7 +378,7 @@ class Habit extends Equatable {
       'target': target,
       'units': units,
       'color': color.toJson(),
-      'category': category.name,
+      'category': categoryId,
       'lastUpdatedDate': lastUpdatedDate.toIso8601String(),
       'resetFrequency': resetFrequency.name,
       'history': history.map((key, value) => MapEntry(key.toIso8601String(), value)),
@@ -404,7 +404,8 @@ class Habit extends Equatable {
       target: json['target'] as int,
       units: json['units'] as String? ?? '', // Default to empty string for backward compatibility
       color: HabitColor.fromJson(json['color'] as Map<String, dynamic>),
-      category: HabitCategory.fromString(json['category'] as String),
+      // Unknown ids are kept as-is (they show as Uncategorized), never remapped
+      categoryId: json['category'] is String ? json['category'] as String : '',
       lastUpdatedDate: DateTime.parse(json['lastUpdatedDate'] as String),
       resetFrequency: ResetFrequency.fromString(json['resetFrequency'] as String),
       history: historyMap,
@@ -429,7 +430,7 @@ class Habit extends Equatable {
         target,
         units,
         color,
-        category,
+        categoryId,
         lastUpdatedDate,
         resetFrequency,
         history,

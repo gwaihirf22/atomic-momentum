@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart' show TimeOfDay;
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/habit_category.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
@@ -124,7 +123,6 @@ class DataMigration {
     
     // Handle category
     final categoryString = data['category'] as String? ?? 'body';
-    final category = HabitCategory.fromString(categoryString);
     
     // Handle dates
     final lastUpdatedString = data['lastUpdatedDate'] as String?;
@@ -188,7 +186,7 @@ class DataMigration {
       progress: progress,
       target: target,
       color: color,
-      category: category,
+      categoryId: categoryString,
       lastUpdatedDate: lastUpdatedDate,
       resetFrequency: resetFrequency,
       history: history,

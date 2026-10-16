@@ -34,7 +34,7 @@ class CategoryProvider extends ChangeNotifier {
 
   // Update available categories based on current habits
   void updateAvailableCategories(List<Habit> habits) {
-    final newCategories = habits.map((habit) => habit.category).toSet();
+    final newCategories = habits.map((habit) => HabitCategory.fromString(habit.categoryId)).toSet();
     
     if (!setEquals(_availableCategories, newCategories)) {
       _availableCategories.clear();
@@ -58,7 +58,7 @@ class CategoryProvider extends ChangeNotifier {
       return habits;
     }
     
-    return habits.where((habit) => habit.category == _selectedCategory).toList();
+    return habits.where((habit) => habit.categoryId == _selectedCategory!.name).toList();
   }
 
   // Get completion stats by category
@@ -66,7 +66,7 @@ class CategoryProvider extends ChangeNotifier {
     final statsMap = <HabitCategory, CategoryStats>{};
     
     for (final category in HabitCategory.values) {
-      final categoryHabits = habits.where((habit) => habit.category == category).toList();
+      final categoryHabits = habits.where((habit) => habit.categoryId == category.name).toList();
       
       if (categoryHabits.isNotEmpty) {
         final completedCount = categoryHabits.where((habit) => habit.isCompleted).length;

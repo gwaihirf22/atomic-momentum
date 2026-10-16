@@ -1,5 +1,4 @@
 import '../entities/habit.dart';
-import '../entities/habit_category.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
@@ -27,7 +26,7 @@ class CreateHabitUseCase {
         target: params.target,
         units: params.units,
         color: params.color,
-        category: params.category,
+        categoryId: params.categoryId,
         resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
         reminder: params.reminder,
         icon: params.icon,
@@ -76,7 +75,7 @@ class CreateHabitUseCase {
           target: params.target,
           units: params.units,
           color: params.color,
-          category: params.category,
+          categoryId: params.categoryId,
           resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
           reminder: params.reminder,
           icon: params.icon,
@@ -137,7 +136,7 @@ class CreateHabitParams {
   final int target;
   final String units;
   final HabitColor color;
-  final HabitCategory category;
+  final String categoryId;
   final ResetFrequency? resetFrequency;
   final ReminderSettings? reminder;
   final String? icon;
@@ -153,7 +152,7 @@ class CreateHabitParams {
     required this.target,
     this.units = '',
     required this.color,
-    required this.category,
+    required this.categoryId,
     this.resetFrequency,
     this.reminder,
     this.icon,
@@ -167,7 +166,7 @@ class CreateHabitParams {
     int? target,
     String? units,
     HabitColor? color,
-    HabitCategory? category,
+    String? categoryId,
     ResetFrequency? resetFrequency,
     ReminderSettings? reminder,
     String? icon,
@@ -177,7 +176,7 @@ class CreateHabitParams {
       target: target ?? this.target,
       units: units ?? this.units,
       color: color ?? this.color,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       resetFrequency: resetFrequency ?? this.resetFrequency,
       reminder: reminder ?? this.reminder,
       icon: icon ?? this.icon,

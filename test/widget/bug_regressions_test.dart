@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/theme/ios_colors.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
@@ -58,7 +58,7 @@ void main() {
       name: 'Vitamins',
       target: 1,
       color: HabitColor.green,
-      category: HabitCategory.body,
+      categoryId: BuiltInCategoryIds.body,
       reminder: ReminderSettings.daily(time: const TimeOfDay(hour: 8, minute: 30)),
     )));
     final habit = habitProvider.habits.single;
@@ -81,7 +81,7 @@ void main() {
       name: 'Floss',
       target: 1,
       color: HabitColor.teal,
-      category: HabitCategory.body,
+      categoryId: BuiltInCategoryIds.body,
     )));
 
     await pumpScreen(tester, const HomeScreen());

@@ -41,6 +41,15 @@ void main() {
       expect(restored.schedule.hasRestDays, isFalse);
     });
 
+    test('a habit saved without a category still loads, as Uncategorized', () {
+      final json = HabitModel.fromDomain(TestData.createTestHabit()).toJson()..remove('category');
+
+      final restored = HabitModel.fromJson(json);
+
+      expect(restored.categoryId, '');
+      expect(restored.name, 'Test Habit');
+    });
+
     test('compact storage JSON keeps history older than 90 days', () {
       final longAgo = DateTime.now().subtract(const Duration(days: 400));
       final day = DateTime(longAgo.year, longAgo.month, longAgo.day);

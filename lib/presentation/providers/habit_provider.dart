@@ -1,6 +1,7 @@
-import 'package:flutter/foundation.dart';
+// Flutter's foundation library has its own Category class
+import 'package:flutter/foundation.dart' hide Category;
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/habit_category.dart';
+import '../../domain/entities/category.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/usecases/get_habits_usecase.dart';
@@ -386,7 +387,7 @@ class HabitProvider extends ChangeNotifier {
   void _sortHabits() {
     _habits.sort((a, b) {
       // Sort by category first, then by name
-      final categoryComparison = a.category.name.compareTo(b.category.name);
+      final categoryComparison = a.categoryId.compareTo(b.categoryId);
       if (categoryComparison != 0) return categoryComparison;
       
       return a.name.compareTo(b.name);
@@ -396,17 +397,17 @@ class HabitProvider extends ChangeNotifier {
   // One example per category, mixing frequencies, for development and testing
   static const _sampleHabits = [
     CreateHabitParams(name: 'Drink Water', target: 8, units: 'glasses',
-        color: HabitColor.blue, category: HabitCategory.body, resetFrequency: ResetFrequency.daily),
+        color: HabitColor.blue, categoryId: BuiltInCategoryIds.body, resetFrequency: ResetFrequency.daily),
     CreateHabitParams(name: 'Meditate', target: 1, units: 'session',
-        color: HabitColor.purple, category: HabitCategory.spirit, resetFrequency: ResetFrequency.daily),
+        color: HabitColor.purple, categoryId: BuiltInCategoryIds.spirit, resetFrequency: ResetFrequency.daily),
     CreateHabitParams(name: 'Read', target: 2, units: 'chapters',
-        color: HabitColor.teal, category: HabitCategory.mind, resetFrequency: ResetFrequency.daily),
+        color: HabitColor.teal, categoryId: BuiltInCategoryIds.mind, resetFrequency: ResetFrequency.daily),
     CreateHabitParams(name: 'Call a friend', target: 2, units: 'calls',
-        color: HabitColor.green, category: HabitCategory.social, resetFrequency: ResetFrequency.weekly),
+        color: HabitColor.green, categoryId: BuiltInCategoryIds.social, resetFrequency: ResetFrequency.weekly),
     CreateHabitParams(name: 'Deep work', target: 3, units: 'sessions',
-        color: HabitColor.orange, category: HabitCategory.career, resetFrequency: ResetFrequency.weekly),
+        color: HabitColor.orange, categoryId: BuiltInCategoryIds.career, resetFrequency: ResetFrequency.weekly),
     CreateHabitParams(name: 'Sketch', target: 4, units: 'sketches',
-        color: HabitColor.pink, category: HabitCategory.creative, resetFrequency: ResetFrequency.monthly),
+        color: HabitColor.pink, categoryId: BuiltInCategoryIds.creative, resetFrequency: ResetFrequency.monthly),
   ];
 
   /// Development helper: adds one example habit per category, skipping any

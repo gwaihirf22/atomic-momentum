@@ -1,6 +1,5 @@
 import 'dart:convert';
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/habit_category.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
@@ -15,7 +14,7 @@ class HabitModel extends Habit {
     required super.target,
     super.units,
     required super.color,
-    required super.category,
+    required super.categoryId,
     required super.lastUpdatedDate,
     required super.resetFrequency,
     required super.history,
@@ -39,7 +38,7 @@ class HabitModel extends Habit {
         target: habit.target,
         units: habit.units,
         color: habit.color,
-        category: habit.category,
+        categoryId: habit.categoryId,
         lastUpdatedDate: habit.lastUpdatedDate,
         resetFrequency: habit.resetFrequency,
         history: habit.history,
@@ -68,7 +67,7 @@ class HabitModel extends Habit {
         target: target,
         units: units,
         color: color,
-        category: category,
+        categoryId: categoryId,
         lastUpdatedDate: lastUpdatedDate,
         resetFrequency: resetFrequency,
         history: history,
@@ -123,7 +122,8 @@ class HabitModel extends Habit {
       target: (json['target'] as num).toInt(),
       units: json['units'] as String? ?? '',
       color: HabitColor.fromJson(json['color'] as Map<String, dynamic>),
-      category: HabitCategory.fromString(json['category'] as String),
+      // Missing or unknown ids are kept/blank and show as Uncategorized
+      categoryId: json['category'] is String ? json['category'] as String : '',
       lastUpdatedDate: DateTime.parse(json['lastUpdatedDate'] as String),
       resetFrequency: ResetFrequency.fromString(json['resetFrequency'] as String),
       history: historyMap,
@@ -142,7 +142,7 @@ class HabitModel extends Habit {
 
   static void _validateRequiredFields(Map<String, dynamic> json) {
     final requiredFields = [
-      'id', 'name', 'progress', 'target', 'color', 'category',
+      'id', 'name', 'progress', 'target', 'color',
       'lastUpdatedDate', 'resetFrequency', 'streak', 'metadata'
     ];
 
@@ -164,7 +164,7 @@ class HabitModel extends Habit {
         'target': target,
         'units': units,
         'color': color.toJson(),
-        'category': category.name,
+        'category': categoryId,
         'lastUpdatedDate': lastUpdatedDate.toIso8601String(),
         'resetFrequency': resetFrequency.name,
         'history': history.map((key, value) => MapEntry(key.toIso8601String(), value)),

@@ -1,5 +1,4 @@
 import '../entities/habit.dart';
-import '../entities/habit_category.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
@@ -79,7 +78,7 @@ class UpdateHabitUseCase {
         target: params.target,
         units: params.units,
         color: params.color,
-        category: params.category,
+        categoryId: params.categoryId,
         resetFrequency: params.resetFrequency,
         reminder: params.reminder,
         icon: params.icon,
@@ -211,7 +210,7 @@ class UpdateHabitParams {
   final int? target;
   final String? units;
   final HabitColor? color;
-  final HabitCategory? category;
+  final String? categoryId;
   final ResetFrequency? resetFrequency;
   final ReminderSettings? reminder;
   final String? icon;
@@ -225,7 +224,7 @@ class UpdateHabitParams {
     this.target,
     this.units,
     this.color,
-    this.category,
+    this.categoryId,
     this.resetFrequency,
     this.reminder,
     this.icon,
@@ -239,7 +238,7 @@ class UpdateHabitParams {
     target != null || 
     units != null ||
     color != null || 
-    category != null || 
+    categoryId != null || 
     resetFrequency != null || 
     reminder != null || 
     icon != null ||

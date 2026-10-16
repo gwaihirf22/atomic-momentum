@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/streak_data.dart';
@@ -22,7 +22,7 @@ void main() {
         expect(habit.progress, 5);
         expect(habit.target, 10);
         expect(habit.color, HabitColor.blue);
-        expect(habit.category, HabitCategory.body);
+        expect(habit.categoryId, BuiltInCategoryIds.body);
         expect(habit.resetFrequency, ResetFrequency.daily);
         expect(habit.history, isEmpty);
         expect(habit.streak, StreakData.empty());
@@ -35,7 +35,7 @@ void main() {
           name: 'Same instant',
           target: 1,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         ).id);
 
         expect(ids.toSet(), hasLength(200));
@@ -46,7 +46,7 @@ void main() {
           name: 'New Habit',
           target: 8,
           color: HabitColor.green,
-          category: HabitCategory.mind,
+          categoryId: BuiltInCategoryIds.mind,
         );
 
         expect(habit.id, startsWith('habit_'));
@@ -54,7 +54,7 @@ void main() {
         expect(habit.progress, 0);
         expect(habit.target, 8);
         expect(habit.color, HabitColor.green);
-        expect(habit.category, HabitCategory.mind);
+        expect(habit.categoryId, BuiltInCategoryIds.mind);
         expect(habit.resetFrequency, ResetFrequency.daily);
         expect(habit.history, isEmpty);
         expect(habit.streak.current, 0);
@@ -68,7 +68,7 @@ void main() {
           name: 'Complete Habit',
           target: 5,
           color: HabitColor.purple,
-          category: HabitCategory.career,
+          categoryId: BuiltInCategoryIds.career,
           resetFrequency: ResetFrequency.weekly,
           reminder: reminder,
           icon: 'custom_icon',
@@ -190,7 +190,7 @@ void main() {
           name: 'Updated Name',
           target: 15,
           color: HabitColor.red,
-          category: HabitCategory.spirit,
+          categoryId: BuiltInCategoryIds.spirit,
           resetFrequency: ResetFrequency.weekly,
           reminder: newReminder,
           icon: 'new_icon',
@@ -199,7 +199,7 @@ void main() {
         expect(updated.name, 'Updated Name');
         expect(updated.target, 15);
         expect(updated.color, HabitColor.red);
-        expect(updated.category, HabitCategory.spirit);
+        expect(updated.categoryId, BuiltInCategoryIds.spirit);
         expect(updated.resetFrequency, ResetFrequency.weekly);
         expect(updated.reminder, newReminder);
         expect(updated.metadata.icon, 'new_icon');
@@ -213,7 +213,7 @@ void main() {
         expect(updated.name, 'New Name');
         expect(updated.target, habit.target); // Should remain same
         expect(updated.color, habit.color); // Should remain same
-        expect(updated.category, habit.category); // Should remain same
+        expect(updated.categoryId, habit.categoryId); // Should remain same
       });
     });
 
@@ -330,7 +330,7 @@ void main() {
         expect(habit.progress, 7);
         expect(habit.target, 10);
         expect(habit.color.value, 0xFF2196F3);
-        expect(habit.category, HabitCategory.body);
+        expect(habit.categoryId, BuiltInCategoryIds.body);
         expect(habit.resetFrequency, ResetFrequency.daily);
         expect(habit.history, hasLength(2));
         expect(habit.streak.current, 3);
@@ -583,7 +583,7 @@ void main() {
               name: 'X',
               target: 1,
               color: HabitColor.blue,
-              category: HabitCategory.body,
+              categoryId: BuiltInCategoryIds.body,
               resetFrequency: f,
               resetInterval: interval,
               scheduledWeekdays: const [1, 3, 5],
@@ -622,13 +622,25 @@ void main() {
       });
     });
 
+    group('category ids', () {
+      test('an unknown category id is kept, not turned into Body', () {
+        final habit = TestData.createTestHabit(categoryId: 'hobbies');
+        expect(Habit.fromJson(habit.toJson()).categoryId, 'hobbies');
+      });
+
+      test('a missing category loads as blank (shown as Uncategorized)', () {
+        final json = TestData.habitJsonData..remove('category');
+        expect(Habit.fromJson(json).categoryId, '');
+      });
+    });
+
     group('reset anchor', () {
       test('create defaults the anchor to today', () {
         final habit = Habit.create(
           name: 'Weekly',
           target: 1,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
           resetFrequency: ResetFrequency.weekly,
         );
         final now = DateTime.now();
@@ -641,7 +653,7 @@ void main() {
           name: 'Monthly',
           target: 1,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
           resetFrequency: ResetFrequency.monthly,
           resetAnchor: DateTime(2024, 3, 20, 17, 45),
         );

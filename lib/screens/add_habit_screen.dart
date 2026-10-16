@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/habit_category.dart';
 import '../domain/entities/habit_color.dart';
@@ -32,7 +33,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   
   // Selected values
   HabitColor _selectedColor = HabitColor.blue;
-  HabitCategory _selectedCategory = HabitCategory.body;
+  // An id, so a habit in an unknown/deleted category keeps it unless changed
+  String _selectedCategoryId = BuiltInCategoryIds.body;
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
   // Weekly habits reset on this date's weekday, monthly on its day of month
   DateTime _resetAnchor = DateUtils.dateOnly(DateTime.now());
@@ -105,7 +107,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _targetController.text = habit.target.toString();
       _unitsController.text = habit.units;
       _selectedColor = habit.color;
-      _selectedCategory = habit.category;
+      _selectedCategoryId = habit.categoryId;
       _selectedFrequency = habit.resetFrequency;
       _resetAnchor = habit.resetAnchor;
       _resetInterval = habit.resetInterval;
@@ -236,7 +238,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 spacing: _chipSpacing,
                 runSpacing: _chipSpacing,
                 children: HabitCategory.values.map((category) {
-                  final isSelected = _selectedCategory == category;
+                  final isSelected = _selectedCategoryId == category.name;
                   return FilterChip(
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -249,7 +251,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() {
-                        _selectedCategory = category;
+                        _selectedCategoryId = category.name;
                       });
                     },
                     backgroundColor: isSelected ? category.defaultColor.withOpacity(0.2) : null,
@@ -575,7 +577,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         target: int.parse(_targetController.text.trim()),
         units: _unitsController.text.trim(),
         color: _selectedColor,
-        category: _selectedCategory,
+        categoryId: _selectedCategoryId,
         resetFrequency: _selectedFrequency,
         reminder: reminder,
         icon: _selectedIcon,
@@ -593,7 +595,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           target: params.target,
           units: params.units,
           color: params.color,
-          category: params.category,
+          categoryId: params.categoryId,
           resetFrequency: params.resetFrequency,
           reminder: reminder,
           icon: _selectedIcon,
@@ -630,7 +632,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _targetController.clear();
         _unitsController.clear();
         _selectedColor = HabitColor.blue;
-        _selectedCategory = HabitCategory.body;
+        _selectedCategoryId = BuiltInCategoryIds.body;
         _selectedFrequency = ResetFrequency.daily;
         _resetInterval = 1;
         _scheduleDays = [1, 2, 3, 4, 5, 6, 7];

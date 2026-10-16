@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -27,9 +28,9 @@ void main() {
     categoryProvider = get<CategoryProvider>();
 
     for (final params in const [
-      CreateHabitParams(name: 'Run', target: 1, color: HabitColor.orange, category: HabitCategory.body),
-      CreateHabitParams(name: 'Stretch', target: 1, color: HabitColor.green, category: HabitCategory.body),
-      CreateHabitParams(name: 'Read', target: 1, color: HabitColor.blue, category: HabitCategory.mind),
+      CreateHabitParams(name: 'Run', target: 1, color: HabitColor.orange, categoryId: BuiltInCategoryIds.body),
+      CreateHabitParams(name: 'Stretch', target: 1, color: HabitColor.green, categoryId: BuiltInCategoryIds.body),
+      CreateHabitParams(name: 'Read', target: 1, color: HabitColor.blue, categoryId: BuiltInCategoryIds.mind),
     ]) {
       await habitProvider.createHabit(params);
     }
@@ -84,7 +85,7 @@ void main() {
 
   testWidgets('a ring fills with partial progress, not just completed habits', (tester) async {
     await habitProvider.createHabit(const CreateHabitParams(
-      name: 'Water', target: 8, color: HabitColor.blue, category: HabitCategory.social));
+      name: 'Water', target: 8, color: HabitColor.blue, categoryId: BuiltInCategoryIds.social));
     final water = habitProvider.habits.firstWhere((h) => h.name == 'Water');
     await pumpHome(tester);
     expect(find.bySemanticsLabel('Social, 0 percent, 0 of 1 habits complete'), findsOneWidget);
@@ -130,7 +131,7 @@ void main() {
       name: 'Pottery',
       target: 1,
       color: HabitColor.pink,
-      category: HabitCategory.creative,
+      categoryId: BuiltInCategoryIds.creative,
       scheduledWeekdays: [tomorrowWeekday],
     ));
     final pottery = habitProvider.habits.firstWhere((h) => h.name == 'Pottery');

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
-import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/streak_data.dart';
@@ -18,7 +18,7 @@ class TestData {
     int? progress,
     int? target,
     HabitColor? color,
-    HabitCategory? category,
+    String? categoryId,
     DateTime? lastUpdatedDate,
     ResetFrequency? resetFrequency,
     Map<DateTime, int>? history,
@@ -35,7 +35,7 @@ class TestData {
       target: target ?? 10,
       units: units,
       color: color ?? HabitColor.blue,
-      category: category ?? HabitCategory.body,
+      categoryId: categoryId ?? BuiltInCategoryIds.body,
       lastUpdatedDate: lastUpdatedDate ?? testDate,
       resetFrequency: resetFrequency ?? ResetFrequency.daily,
       history: history ?? {},
@@ -57,7 +57,7 @@ class TestData {
       name: 'Test Habit $index',
       progress: index % 10,
       target: 10,
-      category: HabitCategory.values[index % HabitCategory.values.length],
+      categoryId: BuiltInCategoryIds.all[index % BuiltInCategoryIds.all.length],
     ));
   }
 
@@ -67,7 +67,7 @@ class TestData {
     progress: 6,
     target: 8,
     color: HabitColor.blue,
-    category: HabitCategory.body,
+    categoryId: BuiltInCategoryIds.body,
   );
 
   static Habit get exerciseHabit => createTestHabit(
@@ -76,7 +76,7 @@ class TestData {
     progress: 1,
     target: 1,
     color: HabitColor.orange,
-    category: HabitCategory.body,
+    categoryId: BuiltInCategoryIds.body,
   );
 
   static Habit get readingHabit => createTestHabit(
@@ -85,7 +85,7 @@ class TestData {
     progress: 30,
     target: 30,
     color: HabitColor.green,
-    category: HabitCategory.mind,
+    categoryId: BuiltInCategoryIds.mind,
     reminder: ReminderSettings.daily(
       time: const TimeOfDay(hour: 20, minute: 0),
       customMessage: 'Time to read!',

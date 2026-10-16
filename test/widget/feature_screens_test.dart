@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/habit_category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -227,7 +228,7 @@ void main() {
         name: 'Journal',
         target: 1,
         color: HabitColor.indigo,
-        category: HabitCategory.mind,
+        categoryId: BuiltInCategoryIds.mind,
       ));
       final id = habitProvider.habits.single.id;
 
@@ -254,7 +255,7 @@ void main() {
       name: 'Pottery',
       target: 1,
       color: HabitColor.pink,
-      category: HabitCategory.creative,
+      categoryId: BuiltInCategoryIds.creative,
       scheduledWeekdays: [tomorrowWeekday],
     ));
     final id = habitProvider.habits.single.id;
@@ -270,7 +271,7 @@ void main() {
         name: 'Stretch',
         target: 3,
         color: HabitColor.teal,
-        category: HabitCategory.body,
+        categoryId: BuiltInCategoryIds.body,
       ));
       final id = habitProvider.habits.single.id;
 
@@ -319,8 +320,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Added 6 sample habits'), findsOneWidget);
 
-      final categories = habitProvider.habits.map((h) => h.category).toSet();
-      expect(categories, HabitCategory.values.toSet());
+      final categories = habitProvider.habits.map((h) => h.categoryId).toSet();
+      expect(categories, BuiltInCategoryIds.all.toSet());
 
       await tester.tap(find.byKey(const Key('addSampleHabits')));
       await tester.pumpAndSettle();

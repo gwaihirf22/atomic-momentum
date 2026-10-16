@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/streak_warning_service.dart';
 import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
@@ -55,7 +56,7 @@ void main() {
           name: 'Test Habit',
           target: 10,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         );
 
         final createdHabit = await createHabitUseCase(createParams);
@@ -120,7 +121,7 @@ void main() {
             name: 'Habit $i',
             target: i + 1,
             color: HabitColor.predefinedColors[i % HabitColor.predefinedColors.length],
-            category: HabitCategory.values[i % HabitCategory.values.length],
+            categoryId: BuiltInCategoryIds.all[i % BuiltInCategoryIds.all.length],
           );
           
           final habit = await createHabitUseCase(params);
@@ -133,7 +134,7 @@ void main() {
 
         // Each habit kept its category
         for (final habit in habits) {
-          expect(savedHabits.firstWhere((h) => h.id == habit.id).category, habit.category);
+          expect(savedHabits.firstWhere((h) => h.id == habit.id).categoryId, habit.categoryId);
         }
       });
     });
@@ -152,7 +153,7 @@ void main() {
           name: 'Provider Test Habit',
           target: 8,
           color: HabitColor.purple,
-          category: HabitCategory.mind,
+          categoryId: BuiltInCategoryIds.mind,
         );
 
         final success = await habitProvider.createHabit(createParams);
@@ -184,14 +185,14 @@ void main() {
           name: 'Body Habit',
           target: 5,
           color: HabitColor.orange,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         );
 
         final mindHabitParams = CreateHabitParams(
           name: 'Mind Habit',
           target: 3,
           color: HabitColor.blue,
-          category: HabitCategory.mind,
+          categoryId: BuiltInCategoryIds.mind,
         );
 
         await habitProvider.createHabit(bodyHabitParams);
@@ -201,7 +202,7 @@ void main() {
         categoryProvider.setSelectedCategory(HabitCategory.body);
         final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
         expect(filteredHabits, hasLength(1));
-        expect(filteredHabits.first.category, HabitCategory.body);
+        expect(filteredHabits.first.categoryId, BuiltInCategoryIds.body);
 
         // Test category stats
         final stats = categoryProvider.getCategoryStats(habitProvider.habits);
@@ -220,7 +221,7 @@ void main() {
           name: 'Persistent Habit',
           target: 12,
           color: HabitColor.red,
-          category: HabitCategory.career,
+          categoryId: BuiltInCategoryIds.career,
         );
 
         await habitProvider1.createHabit(createParams);
@@ -250,7 +251,7 @@ void main() {
             name: 'Concurrent Habit $i',
             target: i + 1,
             color: HabitColor.blue,
-            category: HabitCategory.body,
+            categoryId: BuiltInCategoryIds.body,
           );
           createFutures.add(habitProvider.createHabit(params));
         }
@@ -270,7 +271,7 @@ void main() {
           name: '',
           target: 5,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         );
 
         expect(
@@ -299,7 +300,7 @@ void main() {
           name: 'Daily Water',
           target: 8,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
           resetFrequency: ResetFrequency.daily,
         ));
         final progressed = await updateHabitUseCase.updateProgress(habit.id, 5);
@@ -328,7 +329,7 @@ void main() {
           name: 'Weekly Run',
           target: 3,
           color: HabitColor.green,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
           resetFrequency: ResetFrequency.weekly,
         ));
         await updateHabitUseCase.updateProgress(habit.id, 2);
@@ -359,7 +360,7 @@ void main() {
           name: 'Meditate',
           target: 1,
           color: HabitColor.purple,
-          category: HabitCategory.spirit,
+          categoryId: BuiltInCategoryIds.spirit,
         ));
         final id = habitProvider.habits.single.id;
 
@@ -398,7 +399,7 @@ void main() {
           name: 'Stretch',
           target: 1,
           color: HabitColor.teal,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         ));
         final id = habitProvider.habits.single.id;
 
@@ -416,7 +417,7 @@ void main() {
           name: 'Long run',
           target: 1,
           color: HabitColor.red,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
           resetFrequency: ResetFrequency.weekly,
           resetAnchor: thursday,
         ));
@@ -439,12 +440,12 @@ void main() {
           name: 'Drink Water',
           target: 5,
           color: HabitColor.red,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         ));
 
         expect(await habitProvider.addSampleHabits(), 5);
         expect(habitProvider.habits, hasLength(6));
-        expect(habitProvider.habits.map((h) => h.category).toSet(), HabitCategory.values.toSet());
+        expect(habitProvider.habits.map((h) => h.categoryId).toSet(), BuiltInCategoryIds.all.toSet());
         // The user's own Drink Water is untouched
         expect(habitProvider.habits.firstWhere((h) => h.name == 'Drink Water').target, 5);
 
@@ -482,7 +483,7 @@ void main() {
           name: 'Water',
           target: 8,
           color: HabitColor.blue,
-          category: HabitCategory.body,
+          categoryId: BuiltInCategoryIds.body,
         ));
         final id = habitProvider.habits.single.id;
 
@@ -509,7 +510,7 @@ void main() {
           name: 'Complex Habit',
           target: 20,
           color: HabitColor.green,
-          category: HabitCategory.creative,
+          categoryId: BuiltInCategoryIds.creative,
         );
 
         await habitProvider.createHabit(createParams);
@@ -527,7 +528,7 @@ void main() {
         expect(reloadedHabit.name, 'Complex Habit');
         expect(reloadedHabit.progress, 15);
         expect(reloadedHabit.target, 20);
-        expect(reloadedHabit.category, HabitCategory.creative);
+        expect(reloadedHabit.categoryId, BuiltInCategoryIds.creative);
         expect(reloadedHabit.history, isNotEmpty);
       });
     });
