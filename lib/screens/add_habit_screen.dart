@@ -16,6 +16,7 @@ import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
+import 'categories_screen.dart';
 import '../core/theme/ios_colors.dart';
 
 class AddHabitScreen extends StatefulWidget {
@@ -66,6 +67,28 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       ...provider.categories,
       if (original != null && !provider.isActive(original)) Category.uncategorized,
     ];
+  }
+
+  /// Opens the Categories page on top of the form (so nothing typed is
+  /// lost), then picks up what changed there.
+  Future<void> _openCategories() async {
+    final provider = context.read<CategoryProvider>();
+    final before = provider.categories.map((c) => c.id).toSet();
+
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CategoriesScreen()));
+    if (!mounted) return;
+
+    final categories = provider.categories;
+    final added = categories.where((c) => !before.contains(c.id)).toList();
+    setState(() {
+      if (added.length == 1) {
+        // Most likely made for this habit
+        _selectedCategoryId = added.single.id;
+      } else if (widget.editHabit == null && !provider.isActive(_selectedCategoryId) && categories.isNotEmpty) {
+        // The chosen category was deleted while away
+        _selectedCategoryId = categories.first.id;
+      }
+    });
   }
 
   // Which chip shows as selected for a stored id
@@ -295,6 +318,21 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     backgroundColor: isSelected ? category.color.withOpacity(0.2) : null,
                   );
                 }).toList(),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Add or change categories in Settings → Categories',
+                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    ),
+                  ),
+                  TextButton(
+                    key: const Key('manageCategories'),
+                    onPressed: _openCategories,
+                    child: const Text('Manage'),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               

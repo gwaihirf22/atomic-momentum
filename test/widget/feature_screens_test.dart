@@ -185,6 +185,50 @@ void main() {
       expect(find.byKey(const Key('categoryChip_uncategorized')), findsNothing);
     });
 
+    testWidgets('Manage opens Categories; the form is kept and a new category is selected', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      await tester.enterText(find.byType(TextFormField).at(0), 'Pottery class');
+      expect(find.text('Add or change categories in Settings → Categories'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('manageCategories')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('addCategory')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('categoryNameField')), 'Crafts');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('saveCategory')));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      final crafts = get<CategoryProvider>().categories.last;
+      expect(crafts.name, 'Crafts');
+      expect(find.text('Pottery class'), findsOneWidget);
+      expect(chipSelected(tester, crafts.id), isTrue);
+    });
+
+    testWidgets('if the selected category is deleted there, the first category is selected', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      expect(chipSelected(tester, BuiltInCategoryIds.body), isTrue);
+
+      await tester.tap(find.byKey(const Key('manageCategories')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(
+        of: find.byKey(const Key('categoryRow_body')),
+        matching: find.byType(ListTile),
+      ).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('deleteCategory')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('confirmDeleteCategory')));
+      await tester.pumpAndSettle();
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('categoryChip_body')), findsNothing);
+      expect(chipSelected(tester, BuiltInCategoryIds.spirit), isTrue);
+    });
+
     testWidgets('editing an uncategorized habit keeps its category unless another is picked', (tester) async {
       await habitProvider.createHabit(const CreateHabitParams(
         name: 'Pottery',
