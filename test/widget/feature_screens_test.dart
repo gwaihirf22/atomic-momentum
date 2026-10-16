@@ -16,6 +16,7 @@ import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -95,6 +96,14 @@ void main() {
       expect(saved.resetFrequency, ResetFrequency.monthly);
       expect(saved.resetAnchor.day, pickDay);
     });
+  });
+
+  testWidgets('Add habit category chips use the flat category icons, not emoji', (tester) async {
+    await pumpScreen(tester, const AddHabitScreen());
+    for (final c in HabitCategory.values) {
+      expect(find.widgetWithIcon(FilterChip, c.icon), findsOneWidget);
+      expect(find.text(c.emoji), findsNothing);
+    }
   });
 
   group('Add habit: Apple HIG layout', () {

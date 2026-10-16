@@ -102,6 +102,27 @@ void main() {
     }
   });
 
+  testWidgets('header shows all habits, and Show all clears a filter', (tester) async {
+    await pumpHome(tester);
+    String header() => tester.widget<Text>(find.byKey(const Key('filterHeaderLabel'))).data!;
+
+    expect(header(), 'All habits · 3 habits');
+    expect(find.byKey(const Key('showAllHabits')), findsNothing);
+
+    await tester.tap(ring(HabitCategory.mind));
+    await tester.pumpAndSettle();
+    expect(header(), 'Mind · 1 habit');
+
+    final showAll = find.byKey(const Key('showAllHabits'));
+    expect(tester.getSize(showAll).height, greaterThanOrEqualTo(44));
+    await tester.tap(showAll);
+    await tester.pumpAndSettle();
+
+    expect(categoryProvider.selectedCategory, isNull);
+    expect(header(), 'All habits · 3 habits');
+    expect(find.text('Run'), findsOneWidget);
+  });
+
   testWidgets('tapping a ring filters; tapping it again shows all', (tester) async {
     await pumpHome(tester);
     expect(find.text('Read'), findsOneWidget);
@@ -125,6 +146,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No creative habits yet'), findsOneWidget);
-    expect(find.textContaining('tap the ring again'), findsOneWidget);
+    expect(find.textContaining('tap Show all'), findsOneWidget);
   });
 }

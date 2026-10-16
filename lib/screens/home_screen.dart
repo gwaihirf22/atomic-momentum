@@ -9,6 +9,7 @@ import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import 'add_habit_screen.dart';
@@ -132,6 +133,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 
                 return Column(
                   children: [
+                    CategoryFilterHeader(
+                      selected: categoryProvider.selectedCategory,
+                      habitCount: filteredHabits.length,
+                      onShowAll: categoryProvider.clearSelectedCategory,
+                      isDark: isDark,
+                    ),
                     CategoryRingsBar(
                       stats: categoryProvider.getCategoryStats(habitProvider.habits),
                       selected: categoryProvider.selectedCategory,
@@ -215,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ? 'No ${selectedCategory.displayName.toLowerCase()} habits yet'
         : 'No habits yet';
     final subtitle = isFiltered
-        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or tap the ring again to see all habits'
+        ? 'Tap the + button to add a ${selectedCategory.displayName.toLowerCase()} habit, or tap Show all to see all habits'
         : 'Tap the + button to add your first habit';
     
     return Center(

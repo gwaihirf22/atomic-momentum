@@ -9,6 +9,7 @@ import '../domain/usecases/create_habit_usecase.dart';
 import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
+import '../presentation/widgets/category_icons.dart';
 import '../core/theme/ios_colors.dart';
 
 class AddHabitScreen extends StatefulWidget {
@@ -215,7 +216,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(category.emoji),
+                        Icon(category.icon, size: 16, color: category.defaultColor),
                         const SizedBox(width: 4),
                         Text(category.displayName),
                       ],
