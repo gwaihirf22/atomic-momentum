@@ -16,6 +16,7 @@ import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
+import '../../domain/usecases/manage_categories_usecase.dart';
 
 // Providers
 import '../../presentation/providers/habit_provider.dart';
@@ -56,6 +57,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   sl.registerLazySingleton(() => CreateHabitUseCase(sl()));
   sl.registerLazySingleton(() => UpdateHabitUseCase(sl()));
   sl.registerLazySingleton(() => DeleteHabitUseCase(sl()));
+  sl.registerLazySingleton(() => ManageCategoriesUseCase(sl(), sl()));
 
   // Settings and streak warnings
   sl.registerLazySingleton(() => SettingsProvider(sl()));
