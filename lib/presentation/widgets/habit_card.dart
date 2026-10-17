@@ -7,7 +7,9 @@ import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
+import '../../domain/services/recent_periods.dart';
 import 'habit_icons.dart';
+import 'recent_periods_bar.dart';
 import 'habit_progress_ring.dart';
 import 'habit_stepper.dart';
 import 'two_minute_button.dart';
@@ -103,6 +105,13 @@ class HabitCard extends StatelessWidget {
               key: Key('habitAtRisk_${habit.id}'),
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.warning),
             ),
+          ),
+        if (showStats)
+          RecentPeriodsBar(
+            key: Key('habitRecent_${habit.id}'),
+            periods: recentPeriods(habit, now),
+            color: color,
+            unit: habit.resetFrequency.periodUnit,
           ),
         if (showTwoMinute)
           TwoMinuteButton(

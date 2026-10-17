@@ -22,6 +22,7 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
+import 'package:atomic_momentum/presentation/widgets/recent_periods_bar.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 
 import '../helpers/failing_habit_repository.dart';
@@ -129,6 +130,29 @@ void main() {
       expect(habitProvider.habits.single.isCompleted, isTrue);
       semantics.dispose();
     });
+  });
+
+  testWidgets('the card shows the last seven days, read out for VoiceOver', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await habitProvider.updateProgressForDate(waterId, daysAgo(2), 3);
+    await habitProvider.updateProgressForDate(waterId, daysAgo(1), 1);
+    await pumpHome(tester);
+
+    final bars = find.byKey(Key('habitRecent_$waterId'));
+    expect(bars, findsOneWidget);
+    // The habit was made today, but logging earlier days tracks it from then
+    // Read as part of the card
+    expect(tester.getSemantics(bars).label, contains('Last 3 days: 1 done, 1 partly done'));
+    expect(tester.getRect(bars).right, lessThanOrEqualTo(tester.getRect(card()).right));
+    // Only the three tracked days are drawn
+    expect(tester.getSize(bars).width, closeTo(3 * RecentPeriodsBar.barWidth + 2 * RecentPeriodsBar.gap, 0.1));
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
+  });
+
+  testWidgets('a brand-new habit has no days to show yet', (tester) async {
+    await pumpHome(tester);
+    expect(find.byKey(Key('habitRecent_$waterId')), findsNothing);
   });
 
   testWidgets('on wider phones the card is one compact row', (tester) async {
