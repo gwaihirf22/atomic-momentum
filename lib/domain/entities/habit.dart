@@ -145,9 +145,17 @@ class Habit extends Equatable {
     );
   }
 
-  bool get isCompleted => progress >= target;
-  
-  double get progressPercentage => target > 0 ? (progress / target).clamp(0.0, 1.0) : 0.0;
+  /// Done for now: a build habit reached its target; a habit being broken is
+  /// still at or under its limit.
+  bool get isCompleted => isBreak ? progress <= target : progress >= target;
+
+  double get progressPercentage {
+    if (isBreak) return isCompleted ? 1.0 : 0.0;
+    return target > 0 ? (progress / target).clamp(0.0, 1.0) : 0.0;
+  }
+
+  /// For a habit being broken: its limit, counted from when it was tracked.
+  BreakRule? get _breakRule => isBreak ? BreakRule(limit: target, trackedFrom: _momentumStart) : null;
   
 
   bool get hasReminder => reminder != null && reminder!.enabled;
@@ -343,6 +351,7 @@ class Habit extends Equatable {
         schedule: schedule,
         now: now,
         twoMinute: _twoMinuteLog,
+        breakRule: _breakRule,
       ),
     );
   }
@@ -350,6 +359,8 @@ class Habit extends Equatable {
   /// When the current streak is lost if the habit isn't completed, or null if
   /// there is no streak at stake.
   DateTime? streakDeadline([DateTime? now]) {
+    // Nothing can be done to save a broken habit's streak: no deadline
+    if (isBreak) return null;
     return StreakCalculator.streakDeadline(
       history: history,
       target: target,
@@ -380,6 +391,7 @@ class Habit extends Equatable {
     start: _momentumStart,
     now: lastUpdatedDate,
     twoMinute: _twoMinuteLog,
+    breakLimit: isBreak ? target : null,
   );
 
   /// Momentum as it stood at the end of [date]'s day (for trends).
@@ -393,6 +405,7 @@ class Habit extends Equatable {
         start: _momentumStart,
         now: date,
         twoMinute: _twoMinuteLog,
+        breakLimit: isBreak ? target : null,
       );
 
   TwoMinuteLog get _twoMinuteLog => TwoMinuteLog(days: twoMinuteDays, minimum: twoMinute?.minimum);
@@ -483,7 +496,14 @@ class Habit extends Equatable {
 
   /// Whether the day/week/month containing [date] reached the target.
   /// For a `never` habit: whether the target had been reached by [date].
+  ///
+  /// A habit being broken: whether the period stayed at or under the limit
+  /// (so far, for the one under way), from the day it was first tracked.
   bool wasCompletedOnDate(DateTime date) {
+    if (isBreak) {
+      final end = resetFrequency.isPeriodic ? schedule.nextPeriodStart(date) : _dateOnly(date).add(const Duration(days: 1));
+      return end.isAfter(_momentumStart) && progressForPeriodContaining(date) <= target;
+    }
     if (!resetFrequency.isPeriodic) {
       final day = _dateOnly(date);
       final totalByDate = history.entries
@@ -498,7 +518,7 @@ class Habit extends Equatable {
   /// version rather than completed: the "2 min" button was used in it, or
   /// its total reached the two-minute minimum.
   bool isTwoMinuteOn(DateTime date) {
-    if (!resetFrequency.isPeriodic || wasCompletedOnDate(date)) return false;
+    if (isBreak || !resetFrequency.isPeriodic || wasCompletedOnDate(date)) return false;
     return usedTwoMinuteButtonOn(date) || twoMinuteReachedByAmountOn(date);
   }
 
@@ -517,6 +537,7 @@ class Habit extends Equatable {
   /// How much of the period containing [date] was done, 0 to 1. A period
   /// kept with the two-minute version counts at least half.
   double fractionDoneOn(DateTime date) {
+    if (isBreak) return wasCompletedOnDate(date) ? 1 : 0;
     if (target <= 0) return 0;
     final fraction = (progressForPeriodContaining(date) / target).clamp(0.0, 1.0);
     return fraction < TwoMinuteLog.credit && isTwoMinuteOn(date) ? TwoMinuteLog.credit : fraction;

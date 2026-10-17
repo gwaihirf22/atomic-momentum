@@ -7,6 +7,7 @@ import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
@@ -341,6 +342,61 @@ void main() {
     expect(visits.failures, isEmpty, reason: '\n${visits.failures.join('\n')}');
     expect(open.timeline, visits.timeline);
     _expectGolden(open.timeline, 'left_open_over_midnight');
+  });
+
+  test('11. habits being broken: a check-in every evening, never a streak warning', () async {
+    final checkIn = ReminderSettings(
+      time: const TimeOfDay(hour: 21, minute: 0),
+      enabled: true,
+      daysOfWeek: const [1, 2, 3, 4, 5, 6, 7],
+    );
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await phone.at(start, 'created    Smoking (quit), Drinks (at most 2), Daily', () async {
+        await phone.create(CreateHabitParams(
+          name: 'Smoking',
+          target: 0,
+          color: HabitColor.red,
+          categoryId: BuiltInCategoryIds.body,
+          goal: HabitGoal.quit,
+          resetAnchor: start,
+          reminder: checkIn,
+        ));
+        await phone.create(CreateHabitParams(
+          name: 'Drinks',
+          target: 2,
+          units: 'drinks',
+          color: HabitColor.purple,
+          categoryId: BuiltInCategoryIds.social,
+          goal: HabitGoal.limit,
+          resetAnchor: start,
+          reminder: checkIn.copyWith(customMessage: 'How many drinks today?'),
+        ));
+        // A habit being built alongside, so warnings still flow for it
+        await phone.create(habit('Daily'));
+      });
+      var d = 0;
+      for (final day in days()) {
+        d++;
+        await phone.checkIn(on(day, 7, 30));
+        if (d % 3 != 0) await doHabits(phone, on(day, 8), names: ['Daily']);
+        // A few slips, two of them on days in a row
+        if (d == 4 || d == 11 || d == 12) {
+          await phone.at(on(day, 13), 'slipped    Smoking', () => phone.log('Smoking', 1));
+        }
+        if (d == 6) await phone.at(on(day, 20), 'logged     Drinks 3', () => phone.log('Drinks', 3));
+        if (d == 7) await phone.at(on(day, 20), 'logged     Drinks 2', () => phone.log('Drinks', 2));
+        await phone.checkIn(on(day, 21));
+      }
+      await phone.advanceTo(end);
+    });
+    expectClean(phone, 'break_habits');
+    // Slipped Oct 8 and 9 (two in a row), so the streak restarted on Oct 10
+    final smoking = phone.habit('Smoking');
+    expect(smoking.wasCompletedOnDate(DateTime(2026, 10, 9)), isFalse);
+    expect(smoking.wasCompletedOnDate(DateTime(2026, 10, 10)), isTrue);
+    expect(smoking.streak.longest, greaterThanOrEqualTo(smoking.streak.current));
+    expect(phone.habit('Drinks').wasCompletedOnDate(DateTime(2026, 10, 3)), isFalse, reason: '3 of at most 2');
+    expect(phone.habit('Drinks').wasCompletedOnDate(DateTime(2026, 10, 4)), isTrue, reason: '2 of at most 2');
   });
 
   test('10. clock changes: reminders keep their time, warnings their lead on the clock', () async {

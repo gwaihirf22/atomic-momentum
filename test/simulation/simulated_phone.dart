@@ -274,7 +274,13 @@ class SimulatedPhone {
       if (!reminder.isSmart && !reminder.daysOfWeek.contains(r.at.weekday)) {
         _fail(r.at, 'reminder for "${habit.name}" on a day its custom days exclude');
       }
-      if (habit.wasKeptOnDate(r.at)) _fail(r.at, 'reminder for "${habit.name}", already done for this period');
+      // A habit being broken checks in every day: there's nothing to finish
+      if (!habit.isBreak && habit.wasKeptOnDate(r.at)) {
+        _fail(r.at, 'reminder for "${habit.name}", already done for this period');
+      }
+      if (habit.isBreak && r.body != ReminderPlanner.checkInBody && r.body != reminder.customMessage?.trim()) {
+        _fail(r.at, 'check-in for "${habit.name}" with the wrong message "${r.body}"');
+      }
       final fresh = ReminderPlanner.plan(habit, now: justBefore, horizon: 2);
       if (!fresh.any((p) => p.at == r.at && p.title == r.title && p.body == r.body)) {
         _fail(r.at, 'stale reminder for "${habit.name}": the app would no longer send "${r.body}"');
@@ -284,6 +290,8 @@ class SimulatedPhone {
 
     final warningSettings = settings.streakWarnings;
     if (!warningSettings.enabled) _fail(r.at, 'streak warning for "${habit.name}" with warnings turned off');
+    if (habit.isBreak) _fail(r.at, 'streak warning for "${habit.name}", a habit being broken');
+    if (!habit.notify.streakWarnings) _fail(r.at, 'streak warning for "${habit.name}" with its warnings turned off');
     if (kind == 'firstMiss' && !warningSettings.remindBeforeFirstMiss) {
       _fail(r.at, 'first-miss nudge for "${habit.name}" with that setting off');
     }

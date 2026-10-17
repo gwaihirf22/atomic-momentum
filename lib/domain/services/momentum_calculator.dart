@@ -33,13 +33,14 @@ class MomentumCalculator {
     required DateTime start,
     required DateTime now,
     TwoMinuteLog twoMinute = TwoMinuteLog.none,
+    int? breakLimit,
   }) {
-    if (!schedule.isPeriodic || target <= 0) return Momentum.none;
+    if (!schedule.isPeriodic || (breakLimit == null && target <= 0)) return Momentum.none;
 
     final alpha = smoothing(schedule);
-    final score = _scoreAt(history, target, schedule, start, now, alpha, twoMinute);
+    final score = _scoreAt(history, target, schedule, start, now, alpha, twoMinute, breakLimit);
     final weekAgo = DateTime(now.year, now.month, now.day - 7, now.hour, now.minute);
-    final before = _scoreAt(history, target, schedule, start, weekAgo, alpha, twoMinute);
+    final before = _scoreAt(history, target, schedule, start, weekAgo, alpha, twoMinute, breakLimit);
     return Momentum(score: score, trend: score - before);
   }
 
@@ -57,6 +58,7 @@ class MomentumCalculator {
     DateTime at,
     double alpha,
     TwoMinuteLog twoMinute,
+    int? breakLimit,
   ) {
     if (at.isBefore(start)) return 0;
     final totals = PeriodTotals.byPeriodStart(history, schedule, at);
@@ -65,7 +67,10 @@ class MomentumCalculator {
 
     var s = 0.0;
     for (final periodStart in PeriodTotals.dueStarts(schedule, start, at)) {
-      var done = math.min(1.0, (totals[periodStart] ?? 0) / target);
+      // A habit being broken: full credit at or under the limit, none over
+      var done = breakLimit != null
+          ? ((totals[periodStart] ?? 0) <= breakLimit ? 1.0 : 0.0)
+          : math.min(1.0, (totals[periodStart] ?? 0) / target);
       final isTiny = tiny.contains(periodStart);
       if (isTiny) done = math.max(done, TwoMinuteLog.credit);
       final next = s * (1 - alpha) + done * alpha;

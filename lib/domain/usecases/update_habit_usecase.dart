@@ -19,8 +19,9 @@ class UpdateHabitUseCase {
     try {
       final habit = await _getHabitById(habitId);
       
-      if (newProgress < 0 || newProgress > habit.target) {
-        throw ValidationException('Progress must be between 0 and ${habit.target}');
+      // Past the target is fine ("10/8"), and slips on a habit being broken
+      if (newProgress < 0 || newProgress > habit.maxPeriodTotal) {
+        throw ValidationException('Progress must be between 0 and ${habit.maxPeriodTotal}');
       }
 
       final updatedHabit = habit.updateProgress(newProgress);

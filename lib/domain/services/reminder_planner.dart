@@ -33,6 +33,10 @@ class PlannedReminder extends Equatable {
 /// Either way, a reminder is dropped once the habit is done (or kept with
 /// the two-minute version) for the period it falls in, so planning again
 /// after each change keeps them current.
+///
+/// A habit being broken gets a check-in instead ("Still on track? Log any
+/// slips."): every day, smart or on the chosen days, never dropped, since
+/// there's nothing to finish.
 class ReminderPlanner {
   const ReminderPlanner._();
 
@@ -54,7 +58,9 @@ class ReminderPlanner {
 
     final today = _dateOnly(now);
     final days = reminder.isSmart
-        ? _smartDays(habit.schedule, today, horizon)
+        ? (habit.isBreak
+            ? [for (var i = 0; i < horizon; i++) _addDays(today, i)]
+            : _smartDays(habit.schedule, today, horizon))
         : [
             for (var i = 0; i < horizon; i++)
               if (reminder.daysOfWeek.contains(_addDays(today, i).weekday)) _addDays(today, i),
@@ -62,7 +68,8 @@ class ReminderPlanner {
 
     return [
       for (final day in days)
-        if (_at(day, reminder.time.hour, reminder.time.minute).isAfter(now) && !habit.wasKeptOnDate(day))
+        if (_at(day, reminder.time.hour, reminder.time.minute).isAfter(now) &&
+            (habit.isBreak || !habit.wasKeptOnDate(day)))
           PlannedReminder(
             habitId: habit.id,
             at: _at(day, reminder.time.hour, reminder.time.minute),
@@ -124,7 +131,11 @@ class ReminderPlanner {
     return days;
   }
 
+  /// A break habit's check-in, when it has no message of its own.
+  static const checkInBody = 'Still on track? Log any slips.';
+
   static String _body(Habit habit, DateTime day) {
+    if (habit.isBreak) return checkInBody;
     final units = habit.units.isEmpty ? '' : ' ${habit.units}';
     final done = habit.progressForPeriodContaining(day);
     final schedule = habit.schedule;

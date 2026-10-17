@@ -23,15 +23,52 @@ class StreakCalculator {
   /// Consecutive missed due periods that end a streak.
   static const missesToBreak = 2;
 
+  /// [breakRule] makes it a habit being broken: a period is kept when its
+  /// total stays at or under the limit, nothing logged included.
   static StreakData calculate({
     required Map<DateTime, int> history,
     required int target,
     required HabitSchedule schedule,
     required DateTime now,
     TwoMinuteLog twoMinute = TwoMinuteLog.none,
+    BreakRule? breakRule,
   }) {
-    if (!schedule.isPeriodic || target <= 0) return StreakData.empty();
+    if (!schedule.isPeriodic) return StreakData.empty();
+    if (breakRule != null) return _breakStreak(history, breakRule, schedule, now);
+    if (target <= 0) return StreakData.empty();
     return _calculate(_completedPeriodStarts(history, target, schedule, now, twoMinute), schedule, now);
+  }
+
+  /// A break habit's streak. The period under way counts while it's still
+  /// under the limit (doing nothing counts), but it can't make up for a slip
+  /// before it: "at risk" comes from the last ended period. A slip in the
+  /// period under way is a miss already.
+  static StreakData _breakStreak(Map<DateTime, int> history, BreakRule rule, HabitSchedule schedule, DateTime now) {
+    final kept = _keptBreakPeriodStarts(history, rule, schedule, now);
+    final current = schedule.periodStart(now);
+    if (!kept.contains(current)) {
+      // Slipped already: judge it as if the period were over
+      return _calculate(kept, schedule, schedule.nextPeriodStart(now));
+    }
+    final ended = {...kept}..remove(current);
+    final atRisk = ended.isNotEmpty && _calculate(ended, schedule, now).atRisk;
+    return _calculate(kept, schedule, now).copyWith(atRisk: atRisk);
+  }
+
+  /// A break habit's kept periods: every due period from when it was tracked
+  /// up to now (the one under way too, while under) whose total stays at or
+  /// under the limit.
+  static Set<DateTime> _keptBreakPeriodStarts(
+    Map<DateTime, int> history,
+    BreakRule rule,
+    HabitSchedule schedule,
+    DateTime now,
+  ) {
+    final totals = PeriodTotals.byPeriodStart(history, schedule, now);
+    return {
+      for (final start in PeriodTotals.dueStarts(schedule, rule.trackedFrom, now))
+        if ((totals[start] ?? 0) <= rule.limit) start,
+    };
   }
 
   /// When the current streak is lost if the habit isn't completed, or null
@@ -45,6 +82,7 @@ class StreakCalculator {
     required DateTime now,
     TwoMinuteLog twoMinute = TwoMinuteLog.none,
   }) {
+    // (Break habits never get here: there's nothing to do to save a streak)
     if (!schedule.isPeriodic || target <= 0) return null;
 
     final completed = _completedPeriodStarts(history, target, schedule, now, twoMinute);
@@ -175,4 +213,13 @@ class _Run {
   final DateTime firstPeriodStart;
   DateTime lastPeriodStart;
   int length = 1;
+}
+
+/// What makes a habit one being broken: the most allowed per period (0 to
+/// quit), counted from the day it was first tracked.
+class BreakRule {
+  final int limit;
+  final DateTime trackedFrom;
+
+  const BreakRule({required this.limit, required this.trackedFrom});
 }

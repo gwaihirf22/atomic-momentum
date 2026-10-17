@@ -39,7 +39,7 @@ class StreakWarningPlanner {
   /// The warnings to schedule, soonest first; empty when warnings are off,
   /// there is no streak at stake, or the warning times have passed.
   static List<StreakWarning> plan(Habit habit, StreakWarningSettings settings, DateTime now) {
-    if (!settings.enabled) return const [];
+    if (!settings.enabled || !_warns(habit)) return const [];
 
     final deadline = habit.streakDeadline(now);
     if (deadline == null) return const [];
@@ -91,6 +91,10 @@ class StreakWarningPlanner {
   static int maxPending(Iterable<Habit> habits, StreakWarningSettings settings) {
     if (!settings.enabled) return 0;
     final perHabit = settings.remindBeforeFirstMiss ? 2 : 1;
-    return perHabit * habits.where((h) => h.schedule.isPeriodic).length;
+    return perHabit * habits.where(_warns).length;
   }
+
+  /// Habits that can get warnings: repeating ones being built, unless turned
+  /// off for that habit. (A habit being broken has nothing to do to save it.)
+  static bool _warns(Habit habit) => habit.schedule.isPeriodic && !habit.isBreak && habit.notify.streakWarnings;
 }

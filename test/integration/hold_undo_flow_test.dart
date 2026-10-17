@@ -70,6 +70,11 @@ void main() {
     expect(saved.dayNotes, {today: 'Two chapters on the train'});
   });
 
+  test('progress past the target is stored, however it is set', () async {
+    expect(await habits.updateHabitProgress(id, 4), isTrue);
+    expect(await stored(), 4);
+  });
+
   test('typing past the target is stored', () async {
     expect(await habits.setDays(id, {today: 5}), isTrue);
     expect(await stored(), 5);
