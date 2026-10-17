@@ -16,6 +16,7 @@ import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -52,7 +53,8 @@ void main() {
     final now = DateTime.now();
     DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
 
-    // A long name, missed yesterday (so "Don't miss twice" shows)
+    // A long name, missed yesterday (so "Don't miss twice" shows), with a
+    // two-minute version (so the "2 min" button shows too)
     await habits.createHabit(CreateHabitParams(
       name: 'Drink water every morning',
       target: 8,
@@ -60,6 +62,7 @@ void main() {
       color: HabitColor.blue,
       categoryId: BuiltInCategoryIds.body,
       reminder: ReminderSettings.smart(time: const TimeOfDay(hour: 9, minute: 0)),
+      twoMinute: const TwoMinuteVersion(description: 'Fill one glass and take a sip', minimum: 1),
     ));
     final water = habits.habits.firstWhere((h) => h.name.startsWith('Drink water every')).id;
     await habits.updateProgressForDate(water, daysAgo(3), 8);
@@ -127,6 +130,8 @@ void main() {
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Stretch')),
+    'Edit habit (two-minute version)': () =>
+        AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Categories': () => const CategoriesScreen(),
   };
 

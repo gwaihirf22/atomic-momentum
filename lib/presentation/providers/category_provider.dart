@@ -108,7 +108,8 @@ class CategoryProvider extends ChangeNotifier {
     }
 
     bool isDone(Habit habit) => on == null ? habit.isCompleted : habit.wasCompletedOnDate(on);
-    double fractionOf(Habit habit) => habit.target > 0 ? (progressOf(habit) / habit.target).clamp(0.0, 1.0) : 0.0;
+    // A two-minute day counts at least half
+    double fractionOf(Habit habit) => habit.fractionDoneOn(on ?? DateTime.now());
 
     for (final category in filterOptions(habits)) {
       final categoryHabits = habits.where((habit) => matches(habit, category.id)).toList();

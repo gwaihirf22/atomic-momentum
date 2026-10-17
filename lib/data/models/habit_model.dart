@@ -5,6 +5,7 @@ import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
+import '../../domain/entities/two_minute_version.dart';
 import '../../core/logging/log.dart';
 
 class HabitModel extends Habit {
@@ -25,6 +26,8 @@ class HabitModel extends Habit {
     super.resetAnchorDate,
     super.resetInterval,
     super.scheduledWeekdays,
+    super.twoMinute,
+    super.twoMinuteDays,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -48,6 +51,8 @@ class HabitModel extends Habit {
         resetAnchorDate: habit.resetAnchorDate,
         resetInterval: habit.resetInterval,
         scheduledWeekdays: habit.scheduledWeekdays,
+        twoMinute: habit.twoMinute,
+        twoMinuteDays: habit.twoMinuteDays,
       );
     } catch (e) {
       rethrow;
@@ -75,6 +80,8 @@ class HabitModel extends Habit {
         resetAnchorDate: resetAnchorDate,
         resetInterval: resetInterval,
         scheduledWeekdays: scheduledWeekdays,
+        twoMinute: twoMinute,
+        twoMinuteDays: twoMinuteDays,
       );
       
       return habitDomain;
@@ -133,6 +140,10 @@ class HabitModel extends Habit {
           : null,
       resetInterval: (json['resetInterval'] as num?)?.toInt() ?? 1,
       scheduledWeekdays: (json['scheduledWeekdays'] as List<dynamic>?)?.cast<int>(),
+      twoMinute: json['twoMinute'] is Map<String, dynamic>
+          ? TwoMinuteVersion.fromJson(json['twoMinute'] as Map<String, dynamic>)
+          : null,
+      twoMinuteDays: Habit.twoMinuteDaysFromJson(json['twoMinuteDays']),
     );
   }
 
@@ -170,6 +181,8 @@ class HabitModel extends Habit {
         'resetAnchor': resetAnchorDate?.toIso8601String(),
         'resetInterval': resetInterval,
         'scheduledWeekdays': scheduledWeekdays,
+        'twoMinute': twoMinute?.toJson(),
+        if (twoMinuteDays.isNotEmpty) 'twoMinuteDays': Habit.twoMinuteDaysToJson(twoMinuteDays),
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': DateTime.now().toIso8601String(),
       };

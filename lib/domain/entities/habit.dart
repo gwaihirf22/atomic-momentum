@@ -6,6 +6,7 @@ import 'reminder_settings.dart';
 import 'habit_metadata.dart';
 import 'habit_schedule.dart';
 import 'momentum.dart';
+import 'two_minute_version.dart';
 import '../services/momentum_calculator.dart';
 import '../services/streak_calculator.dart';
 
@@ -35,6 +36,13 @@ class Habit extends Equatable {
   /// Weekdays a daily habit is due (DateTime.monday..sunday); null = every day.
   final List<int>? scheduledWeekdays;
 
+  /// The tiny version for hard days, or null.
+  final TwoMinuteVersion? twoMinute;
+
+  /// Days the "2 min" button was used (date-only). Kept separately from
+  /// [history] so two-minute days stay visible, and count, after later edits.
+  final Set<DateTime> twoMinuteDays;
+
   Habit({
     required this.id,
     required this.name,
@@ -52,6 +60,8 @@ class Habit extends Equatable {
     this.resetAnchorDate,
     this.resetInterval = 1,
     this.scheduledWeekdays,
+    this.twoMinute,
+    this.twoMinuteDays = const {},
   });
 
   static int _idCounter = 0;
@@ -68,6 +78,7 @@ class Habit extends Equatable {
     DateTime? resetAnchor,
     int resetInterval = 1,
     List<int>? scheduledWeekdays,
+    TwoMinuteVersion? twoMinute,
   }) {
     final now = DateTime.now();
     // Timestamp alone collides when habits are created in the same instant
@@ -91,6 +102,7 @@ class Habit extends Equatable {
       resetInterval: resetInterval < 1 ? 1 : resetInterval,
       scheduledWeekdays: HabitSchedule.normalizeWeekdays(scheduledWeekdays,
           frequency: resetFrequency, interval: resetInterval),
+      twoMinute: twoMinute,
     );
   }
 
@@ -187,6 +199,25 @@ class Habit extends Equatable {
     return updated._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
   }
 
+  /// Marks (or unmarks) the two-minute version as done in the period
+  /// containing [date], which can't be in the future. Unmarking clears every
+  /// "2 min" day of that period.
+  Habit setTwoMinuteForDate(DateTime date, bool done) {
+    final now = DateTime.now();
+    final day = _dateOnly(date);
+    if (day.isAfter(_dateOnly(now))) {
+      throw ArgumentError('Cannot log the two-minute version for a future date');
+    }
+
+    final days = Set<DateTime>.from(twoMinuteDays);
+    if (done) {
+      days.add(day);
+    } else {
+      days.removeWhere((d) => _inSamePeriod(d, day));
+    }
+    return copyWith(twoMinuteDays: days)._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
+  }
+
   /// Clears what was logged in the current period.
   Habit resetProgress() {
     final now = DateTime.now();
@@ -217,6 +248,7 @@ class Habit extends Equatable {
         target: target,
         schedule: schedule,
         now: now,
+        twoMinute: _twoMinuteLog,
       ),
     );
   }
@@ -229,6 +261,7 @@ class Habit extends Equatable {
       target: target,
       schedule: schedule,
       now: now ?? DateTime.now(),
+      twoMinute: _twoMinuteLog,
     );
   }
 
@@ -239,6 +272,7 @@ class Habit extends Equatable {
       target: target,
       schedule: schedule,
       now: now ?? DateTime.now(),
+      twoMinute: _twoMinuteLog,
     );
   }
 
@@ -251,7 +285,10 @@ class Habit extends Equatable {
     schedule: schedule,
     start: _momentumStart,
     now: lastUpdatedDate,
+    twoMinute: _twoMinuteLog,
   );
+
+  TwoMinuteLog get _twoMinuteLog => TwoMinuteLog(days: twoMinuteDays, minimum: twoMinute?.minimum);
 
   /// Creation day, or the earliest logged day if that's earlier (seeded or
   /// backfilled history counts too).
@@ -275,6 +312,8 @@ class Habit extends Equatable {
     DateTime? resetAnchor,
     int? resetInterval,
     List<int>? scheduledWeekdays,
+    TwoMinuteVersion? twoMinute,
+    bool removeTwoMinute = false,
   }) {
     final newFrequency = resetFrequency ?? this.resetFrequency;
     final newInterval = resetInterval ?? this.resetInterval;
@@ -317,6 +356,8 @@ class Habit extends Equatable {
           scheduledWeekdays ?? this.scheduledWeekdays,
           frequency: newFrequency,
           interval: newInterval),
+      twoMinute: removeTwoMinute ? null : (twoMinute ?? this.twoMinute),
+      twoMinuteDays: updated.twoMinuteDays,
     );
 
     // A new target, frequency or reset day changes how history adds up
@@ -340,6 +381,40 @@ class Habit extends Equatable {
     }
     return progressForPeriodContaining(date) >= target;
   }
+
+  /// Whether the period containing [date] was kept with the two-minute
+  /// version rather than completed: the "2 min" button was used in it, or
+  /// its total reached the two-minute minimum.
+  bool isTwoMinuteOn(DateTime date) {
+    if (!resetFrequency.isPeriodic || wasCompletedOnDate(date)) return false;
+    return usedTwoMinuteButtonOn(date) || twoMinuteReachedByAmountOn(date);
+  }
+
+  /// Whether the "2 min" button was used in the period containing [date].
+  bool usedTwoMinuteButtonOn(DateTime date) {
+    final day = _dateOnly(date);
+    return twoMinuteDays.any((d) => _inSamePeriod(d, day));
+  }
+
+  /// Whether the period's total reached the two-minute minimum.
+  bool twoMinuteReachedByAmountOn(DateTime date) {
+    final minimum = twoMinute?.minimum;
+    return minimum != null && minimum > 0 && progressForPeriodContaining(date) >= minimum;
+  }
+
+  /// How much of the period containing [date] was done, 0 to 1. A period
+  /// kept with the two-minute version counts at least half.
+  double fractionDoneOn(DateTime date) {
+    if (target <= 0) return 0;
+    final fraction = (progressForPeriodContaining(date) / target).clamp(0.0, 1.0);
+    return fraction < TwoMinuteLog.credit && isTwoMinuteOn(date) ? TwoMinuteLog.credit : fraction;
+  }
+
+  /// Completed, or kept with the two-minute version: either keeps a streak.
+  bool wasKeptOnDate(DateTime date) => wasCompletedOnDate(date) || isTwoMinuteOn(date);
+
+  bool _inSamePeriod(DateTime a, DateTime b) =>
+      resetFrequency.isPeriodic ? schedule.periodStart(a) == schedule.periodStart(b) : true;
 
   /// Days with logged progress that belong to a completed period.
   List<DateTime> getCompletedDates() {
@@ -376,6 +451,8 @@ class Habit extends Equatable {
     DateTime? resetAnchorDate,
     int? resetInterval,
     List<int>? scheduledWeekdays,
+    TwoMinuteVersion? twoMinute,
+    Set<DateTime>? twoMinuteDays,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -394,6 +471,8 @@ class Habit extends Equatable {
       resetAnchorDate: resetAnchorDate ?? this.resetAnchorDate,
       resetInterval: resetInterval ?? this.resetInterval,
       scheduledWeekdays: scheduledWeekdays ?? this.scheduledWeekdays,
+      twoMinute: twoMinute ?? this.twoMinute,
+      twoMinuteDays: twoMinuteDays ?? this.twoMinuteDays,
     );
   }
 
@@ -422,7 +501,25 @@ class Habit extends Equatable {
       'resetAnchor': resetAnchorDate?.toIso8601String(),
       'resetInterval': resetInterval,
       'scheduledWeekdays': scheduledWeekdays,
+      'twoMinute': twoMinute?.toJson(),
+      'twoMinuteDays': twoMinuteDaysToJson(twoMinuteDays),
     };
+  }
+
+  /// Days as sorted 'yyyy-MM-dd' strings.
+  static List<String> twoMinuteDaysToJson(Set<DateTime> days) => [
+        for (final d in days.toList()..sort())
+          '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+      ];
+
+  static Set<DateTime> twoMinuteDaysFromJson(dynamic json) {
+    if (json is! List) return const {};
+    final days = <DateTime>{};
+    for (final value in json) {
+      final parsed = value is String ? DateTime.tryParse(value) : null;
+      if (parsed != null) days.add(_dateOnly(parsed));
+    }
+    return days;
   }
 
   factory Habit.fromJson(Map<String, dynamic> json) {
@@ -453,6 +550,10 @@ class Habit extends Equatable {
           : null,
       resetInterval: (json['resetInterval'] as num?)?.toInt() ?? 1,
       scheduledWeekdays: (json['scheduledWeekdays'] as List<dynamic>?)?.cast<int>(),
+      twoMinute: json['twoMinute'] is Map<String, dynamic>
+          ? TwoMinuteVersion.fromJson(json['twoMinute'] as Map<String, dynamic>)
+          : null,
+      twoMinuteDays: twoMinuteDaysFromJson(json['twoMinuteDays']),
     );
   }
 
@@ -474,6 +575,8 @@ class Habit extends Equatable {
         resetAnchorDate,
         resetInterval,
         scheduledWeekdays,
+        twoMinute,
+        twoMinuteDays,
       ];
 
   @override

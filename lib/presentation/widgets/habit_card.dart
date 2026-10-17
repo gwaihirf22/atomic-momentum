@@ -9,10 +9,11 @@ import '../../domain/entities/momentum.dart';
 import 'habit_icons.dart';
 import 'habit_progress_ring.dart';
 import 'habit_stepper.dart';
+import 'two_minute_button.dart';
 
 /// A compact habit row: the icon inside a progress ring (tap it to add one),
-/// the name with progress and schedule, momentum and streak, and a -/+ stepper.
-/// Tap the card to edit; swipe left for Edit and Delete (also offered to
+/// the name with progress and schedule, momentum and streak, the "2 min"
+/// button for a two-minute version, and a -/+ stepper. Tap the card to edit; swipe left for Edit and Delete (also offered to
 /// VoiceOver as actions).
 class HabitCard extends StatelessWidget {
   static const flameColor = Colors.deepOrange;
@@ -44,6 +45,9 @@ class HabitCard extends StatelessWidget {
   final VoidCallback onDelete;
   final ValueChanged<int> onSetProgress;
 
+  /// Marks (true) or unmarks today's two-minute version.
+  final ValueChanged<bool>? onSetTwoMinute;
+
   const HabitCard({
     Key? key,
     required this.habit,
@@ -51,6 +55,7 @@ class HabitCard extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onSetProgress,
+    this.onSetTwoMinute,
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
@@ -60,15 +65,27 @@ class HabitCard extends StatelessWidget {
   String get _progressText =>
       habit.units.isEmpty ? '${habit.progress}/${habit.target}' : '${habit.progress}/${habit.target} ${habit.units}';
 
-  /// Momentum and streak; wraps onto another line rather than cutting off
-  /// "Don't miss twice".
-  Widget _stats() {
+  /// The "2 min" button shows while today is due and not yet complete, for a
+  /// habit whose two-minute version is set to show on its card.
+  static bool showsTwoMinuteButton(Habit habit, DateTime now) {
+    final tiny = habit.twoMinute;
+    return tiny != null &&
+        tiny.showOnCard &&
+        habit.schedule.isPeriodic &&
+        habit.isDueOn(now) &&
+        !habit.wasCompletedOnDate(now);
+  }
+
+  /// Momentum, streak and the "2 min" button; wraps onto another line rather
+  /// than cutting off "Don't miss twice".
+  Widget _stats({required bool showStats, required bool showTwoMinute, required DateTime now}) {
     return Wrap(
       spacing: 10,
       runSpacing: 2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: habit.color.color),
+        if (showStats)
+          _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: habit.color.color),
         if (habit.streak.current > 0)
           _StreakBadge(
             key: Key('habitStreak_${habit.id}'),
@@ -85,6 +102,18 @@ class HabitCard extends StatelessWidget {
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: atRiskColor),
             ),
           ),
+        if (showTwoMinute)
+          TwoMinuteButton(
+            key: Key('twoMinute_${habit.id}'),
+            description: habit.twoMinute!.description,
+            color: habit.color.color,
+            done: habit.isTwoMinuteOn(now),
+            // Reaching the two-minute amount counts by itself
+            onChanged: onSetTwoMinute == null ||
+                    (habit.twoMinuteReachedByAmountOn(now) && !habit.usedTwoMinuteButtonOn(now))
+                ? null
+                : onSetTwoMinute,
+          ),
       ],
     );
   }
@@ -93,10 +122,15 @@ class HabitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = habit.color.color;
-    final isRestDay = !habit.isDueOn(DateTime.now());
+    final now = DateTime.now();
+    final isRestDay = !habit.isDueOn(now);
     final secondary = secondaryLabel(context);
     // Momentum and streak appear once there's something to show
-    final showStats = habit.schedule.isPeriodic && habit.history.values.any((amount) => amount > 0);
+    final showStats = habit.schedule.isPeriodic &&
+        (habit.history.values.any((amount) => amount > 0) || habit.twoMinuteDays.isNotEmpty);
+    final showTwoMinute = showsTwoMinuteButton(habit, now);
+    final hasStatsRow = showStats || showTwoMinute;
+    Widget stats() => _stats(showStats: showStats, showTwoMinute: showTwoMinute, now: now);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -132,6 +166,8 @@ class HabitCard extends StatelessWidget {
             customSemanticsActions: {
               const CustomSemanticsAction(label: 'Edit'): onEdit,
               const CustomSemanticsAction(label: 'Delete'): onDelete,
+              if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
+                const CustomSemanticsAction(label: 'Did the two-minute version'): () => onSetTwoMinute!(true),
             },
             child: Material(
               key: Key('habitCard_${habit.id}'),
@@ -183,9 +219,9 @@ class HabitCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(fontSize: 13, height: 1.2, color: secondary),
                         ),
-                        if (showStats && !twoRows) ...[
+                        if (hasStatsRow && !twoRows) ...[
                           const SizedBox(height: 2),
-                          _stats(),
+                          stats(),
                         ],
                       ],
                     );
@@ -233,7 +269,7 @@ class HabitCard extends StatelessWidget {
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
-                                child: showStats ? _stats() : const SizedBox.shrink(),
+                                child: hasStatsRow ? stats() : const SizedBox.shrink(),
                               ),
                             ),
                             guardStepper(Padding(

@@ -46,6 +46,9 @@ class StreakWarningPlanner {
 
     final name = habit.name;
     final streakText = habit.schedule.streakLabel(habit.streak.current);
+    final tiny = habit.twoMinute?.description.trim() ?? '';
+    // On a hard day, the tiny version still keeps the streak
+    final easier = tiny.isEmpty ? '' : ' Short on time? Even 2 minutes counts: $tiny.';
     final warnings = <StreakWarning>[];
 
     if (settings.remindBeforeFirstMiss && !habit.streak.atRisk) {
@@ -55,7 +58,7 @@ class StreakWarningPlanner {
           at: at,
           kind: StreakWarningKind.firstMiss,
           title: 'Keep $name going',
-          body: 'Complete "$name" before midnight tonight to keep your momentum.',
+          body: 'Complete "$name" before midnight tonight to keep your momentum.$easier',
         ));
       }
     }
@@ -67,7 +70,7 @@ class StreakWarningPlanner {
         title: "Don't miss twice: $name",
         // Lead times are at most a day, so the warning always lands on the
         // period's last day and the deadline is that night's midnight
-        body: 'Complete "$name" before midnight tonight to keep your $streakText.',
+        body: 'Complete "$name" before midnight tonight to keep your $streakText.$easier',
       ));
     }
     return warnings;

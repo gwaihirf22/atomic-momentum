@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import '../entities/habit_schedule.dart';
 import '../entities/momentum.dart';
+import '../entities/two_minute_version.dart';
 import 'period_totals.dart';
 
 /// Derives a habit's momentum from its per-day history.
@@ -10,6 +11,10 @@ import 'period_totals.dart';
 /// period only counts once it's complete, so finishing today raises the
 /// score at once while an unfinished today never lowers it. Rest days aren't
 /// due periods, so they're ignored.
+///
+/// A period kept with the two-minute version counts at least half
+/// ([TwoMinuteLog.credit]). A two-minute today counts early only when that
+/// raises the score, so logging the tiny version never makes it drop.
 ///
 /// Calibrated so that steady practice reaches 80 in about 66 days (the
 /// average time to form a habit, Lally et al. 2009) whatever the schedule,
@@ -27,13 +32,14 @@ class MomentumCalculator {
     required HabitSchedule schedule,
     required DateTime start,
     required DateTime now,
+    TwoMinuteLog twoMinute = TwoMinuteLog.none,
   }) {
     if (!schedule.isPeriodic || target <= 0) return Momentum.none;
 
     final alpha = smoothing(schedule);
-    final score = _scoreAt(history, target, schedule, start, now, alpha);
+    final score = _scoreAt(history, target, schedule, start, now, alpha, twoMinute);
     final weekAgo = DateTime(now.year, now.month, now.day - 7, now.hour, now.minute);
-    final before = _scoreAt(history, target, schedule, start, weekAgo, alpha);
+    final before = _scoreAt(history, target, schedule, start, weekAgo, alpha, twoMinute);
     return Momentum(score: score, trend: score - before);
   }
 
@@ -50,16 +56,21 @@ class MomentumCalculator {
     DateTime start,
     DateTime at,
     double alpha,
+    TwoMinuteLog twoMinute,
   ) {
     if (at.isBefore(start)) return 0;
     final totals = PeriodTotals.byPeriodStart(history, schedule, at);
+    final tiny = PeriodTotals.twoMinuteStarts(totals, twoMinute, schedule, at);
     final current = schedule.periodStart(at);
 
     var s = 0.0;
     for (final periodStart in PeriodTotals.dueStarts(schedule, start, at)) {
-      final done = math.min(1.0, (totals[periodStart] ?? 0) / target);
-      if (periodStart == current && done < 1) continue;
-      s = s * (1 - alpha) + done * alpha;
+      var done = math.min(1.0, (totals[periodStart] ?? 0) / target);
+      final isTiny = tiny.contains(periodStart);
+      if (isTiny) done = math.max(done, TwoMinuteLog.credit);
+      final next = s * (1 - alpha) + done * alpha;
+      if (periodStart == current && done < 1 && !(isTiny && next > s)) continue;
+      s = next;
     }
     return 100 * s;
   }

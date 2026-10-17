@@ -10,6 +10,9 @@ class Haptics {
   /// A habit reaching its target.
   static Future<void> completed() => HapticFeedback.mediumImpact();
 
+  /// Logging a habit's two-minute version: the day is kept.
+  static Future<void> twoMinute() => HapticFeedback.mediumImpact();
+
   /// Picking a filter or option.
   static Future<void> selection() => HapticFeedback.selectionClick();
 

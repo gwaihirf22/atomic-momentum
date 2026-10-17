@@ -168,16 +168,42 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  // Progress changes are shown at once and saved in the background, one
-  // save at a time: taps never wait on storage or notifications, and quick
-  // repeated taps collapse into one save of the latest value.
-  final Map<String, int> _unsavedProgress = {};
+  // Progress and two-minute changes are shown at once and saved in the
+  // background, one save at a time: taps never wait on storage or
+  // notifications, quick repeated taps collapse into one save of the latest
+  // value, and two kinds of change to one habit never overwrite each other.
+  final Map<String, _PendingChange> _unsaved = {};
   final Map<String, Habit> _lastSaved = {};
-  bool _savingProgress = false;
+  bool _saving = false;
 
   /// Sets today's progress. The change shows immediately; returns false if
   /// saving fails (the habit then goes back to what's stored).
-  Future<bool> updateHabitProgress(String habitId, int newProgress) async {
+  Future<bool> updateHabitProgress(String habitId, int newProgress) {
+    return _applyNow(
+      habitId,
+      (habit) => habit.updateProgress(newProgress),
+      (pending) => pending.progress = newProgress,
+    );
+  }
+
+  /// Marks (or unmarks) the two-minute version as done today, or in the
+  /// period containing [date]. Shows immediately and saves in the background
+  /// like progress; returns false if saving fails.
+  Future<bool> setTwoMinute(String habitId, bool done, {DateTime? date}) {
+    final now = DateTime.now();
+    final day = DateTime((date ?? now).year, (date ?? now).month, (date ?? now).day);
+    return _applyNow(
+      habitId,
+      (habit) => habit.setTwoMinuteForDate(day, done),
+      (pending) => pending.twoMinute[day] = done,
+    );
+  }
+
+  Future<bool> _applyNow(
+    String habitId,
+    Habit Function(Habit) change,
+    void Function(_PendingChange) record,
+  ) async {
     final index = _habits.indexWhere((habit) => habit.id == habitId);
     if (index < 0) {
       _error = 'Habit not found: $habitId';
@@ -186,34 +212,47 @@ class HabitProvider extends ChangeNotifier {
     }
 
     final current = _habits[index];
+    try {
+      _habits[index] = change(current);
+    } on ArgumentError catch (e) {
+      _error = e.message.toString();
+      notifyListeners();
+      return false;
+    }
     _lastSaved.putIfAbsent(habitId, () => current);
-    _habits[index] = current.updateProgress(newProgress);
     notifyListeners();
 
-    _unsavedProgress[habitId] = newProgress;
+    record(_unsaved.putIfAbsent(habitId, _PendingChange.new));
     // A save already running picks this up when it finishes
-    if (_savingProgress) return true;
-    return _saveProgress();
+    if (_saving) return true;
+    return _saveChanges();
   }
 
-  Future<bool> _saveProgress() async {
-    _savingProgress = true;
+  Future<bool> _saveChanges() async {
+    _saving = true;
     var allSaved = true;
     try {
-      while (_unsavedProgress.isNotEmpty) {
-        final habitId = _unsavedProgress.keys.first;
-        final progress = _unsavedProgress.remove(habitId)!;
+      while (_unsaved.isNotEmpty) {
+        final habitId = _unsaved.keys.first;
+        final pending = _unsaved.remove(habitId)!;
         try {
-          final saved = await _updateHabitUseCase.updateProgress(habitId, progress);
+          Habit? saved;
+          if (pending.progress != null) {
+            saved = await _updateHabitUseCase.updateProgress(habitId, pending.progress!);
+          }
+          for (final entry in pending.twoMinute.entries) {
+            saved = await _updateHabitUseCase.setTwoMinuteForDate(habitId, entry.key, entry.value);
+          }
+          if (saved == null) continue;
           // A newer tap is waiting: keep showing it rather than this save
-          if (!_unsavedProgress.containsKey(habitId)) {
+          if (!_unsaved.containsKey(habitId)) {
             _lastSaved.remove(habitId);
             _replaceHabit(saved);
           }
           _streakWarnings?.sync(saved);
         } catch (saveError) {
-          // Roll back: never show progress that isn't actually stored
-          _unsavedProgress.remove(habitId);
+          // Roll back: never show a change that isn't actually stored
+          _unsaved.remove(habitId);
           final stored = _lastSaved.remove(habitId);
           if (stored != null) _replaceHabit(stored);
           _error = 'Could not save progress: $saveError';
@@ -222,7 +261,7 @@ class HabitProvider extends ChangeNotifier {
         }
       }
     } finally {
-      _savingProgress = false;
+      _saving = false;
     }
     // Finishing a habit drops its remaining reminders; not awaited, so taps
     // never wait on notifications
@@ -482,4 +521,12 @@ class HabitProvider extends ChangeNotifier {
   void dispose() {
     super.dispose();
   }
+}
+
+/// Changes to one habit waiting to be saved.
+class _PendingChange {
+  int? progress;
+
+  /// Day -> done, in the order they were tapped.
+  final Map<DateTime, bool> twoMinute = {};
 }

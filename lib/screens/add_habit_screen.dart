@@ -7,6 +7,7 @@ import '../domain/entities/habit_color.dart';
 import '../domain/entities/habit_schedule.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/entities/reminder_settings.dart';
+import '../domain/entities/two_minute_version.dart';
 import '../domain/usecases/create_habit_usecase.dart';
 import '../domain/usecases/update_habit_usecase.dart';
 import '../presentation/providers/theme_provider.dart';
@@ -42,6 +43,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _targetController = TextEditingController();
   final TextEditingController _unitsController = TextEditingController();
+  // The two-minute version: what it is, and an amount that counts by itself
+  final TextEditingController _tinyController = TextEditingController();
+  final TextEditingController _tinyMinimumController = TextEditingController();
+  bool _tinyShowOnCard = true;
   
   bool _isSubmitting = false;
   
@@ -236,17 +241,44 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       
       // Initialize icon
       _selectedIcon = habit.metadata.icon;
+
+      final tiny = habit.twoMinute;
+      if (tiny != null) {
+        _tinyController.text = tiny.description;
+        _tinyMinimumController.text = tiny.minimum?.toString() ?? '';
+        _tinyShowOnCard = tiny.showOnCard;
+      }
       
     }
 
     // Unsaved-changes check: compare against the form as it opened
     _initialSnapshot = _formSnapshot();
-    for (final controller in [_nameController, _targetController, _unitsController]) {
+    for (final controller in _textControllers) {
       controller.addListener(_onTextChanged);
     }
   }
 
   late final String _initialSnapshot;
+
+  List<TextEditingController> get _textControllers =>
+      [_nameController, _targetController, _unitsController, _tinyController, _tinyMinimumController];
+
+  int? get _enteredTarget => int.tryParse(_targetController.text.trim());
+
+  // A minimum only makes sense when the target is more than one
+  bool get _tinyMinimumApplies => (_enteredTarget ?? 0) > 1;
+
+  /// The two-minute version the form would save, or null for none. Habits
+  /// that never reset have no streak to keep, so they don't get one.
+  TwoMinuteVersion? get _twoMinute {
+    final description = _tinyController.text.trim();
+    if (description.isEmpty || !_selectedFrequency.isPeriodic) return null;
+    return TwoMinuteVersion(
+      description: description,
+      minimum: _tinyMinimumApplies ? int.tryParse(_tinyMinimumController.text.trim()) : null,
+      showOnCard: _tinyShowOnCard,
+    );
+  }
 
   // Rebuild so the leave-confirmation knows about typed changes
   void _onTextChanged() => setState(() {});
@@ -270,16 +302,17 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _selectedDays,
         _customMessage,
         _selectedIcon,
+        _tinyController.text.trim(),
+        _tinyMinimumController.text.trim(),
+        _tinyShowOnCard,
       ]);
 
   @override
   void dispose() {
-    for (final controller in [_nameController, _targetController, _unitsController]) {
+    for (final controller in _textControllers) {
       controller.removeListener(_onTextChanged);
+      controller.dispose();
     }
-    _nameController.dispose();
-    _targetController.dispose();
-    _unitsController.dispose();
     super.dispose();
   }
 
@@ -560,7 +593,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 onTap: _startDateMatters ? _pickResetDay : null,
               ),
               const SizedBox(height: 24),
-              
+
+              if (_selectedFrequency.isPeriodic) ...[
+                _buildTwoMinuteSection(context),
+                const SizedBox(height: 24),
+              ],
+
               // Reminder Settings Section
               const SectionHeader('Reminder', padding: EdgeInsets.only(left: 4, bottom: 4)),
               const SizedBox(height: 8),
@@ -664,6 +702,75 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     );
   }
 
+  /// The tiny version for hard days ("Put on running shoes"), an optional
+  /// amount that counts by itself, and whether the card shows "2 min".
+  Widget _buildTwoMinuteSection(BuildContext context) {
+    final hasTiny = _tinyController.text.trim().isNotEmpty;
+    final units = _unitsController.text.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeader('Two-minute version', padding: EdgeInsets.only(left: 4, bottom: 4)),
+        const SizedBox(height: 8),
+        TextFormField(
+          key: const Key('twoMinuteField'),
+          controller: _tinyController,
+          decoration: const InputDecoration(
+            labelText: 'Tiny version (optional)',
+            hintText: 'e.g. Put on running shoes',
+            errorMaxLines: 2,
+            border: OutlineInputBorder(),
+          ),
+          maxLength: TwoMinuteVersion.maxLength,
+          buildCounter: _noCounter,
+          textCapitalization: TextCapitalization.sentences,
+        ),
+        if (hasTiny && _tinyMinimumApplies) ...[
+          const SizedBox(height: 16),
+          TextFormField(
+            key: const Key('twoMinuteMinimum'),
+            controller: _tinyMinimumController,
+            decoration: InputDecoration(
+              labelText: 'Minimum (optional)',
+              hintText: 'e.g. 1',
+              helperText: 'Logging this much counts too',
+              helperMaxLines: 2,
+              errorMaxLines: 2,
+              border: const OutlineInputBorder(),
+              suffixText: units.isEmpty ? null : units,
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) {
+              final text = value?.trim() ?? '';
+              if (text.isEmpty) return null;
+              final minimum = int.tryParse(text);
+              final target = _enteredTarget ?? 0;
+              if (minimum == null || minimum < 1 || minimum >= target) {
+                return 'Enter a number from 1 to ${target - 1}';
+              }
+              return null;
+            },
+          ),
+        ],
+        if (hasTiny)
+          SwitchListTile.adaptive(
+            key: const Key('twoMinuteOnCard'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Show on card'),
+            value: _tinyShowOnCard,
+            onChanged: (value) => setState(() => _tinyShowOnCard = value),
+          ),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 6),
+          child: Text(
+            'On a hard day, do just this. It keeps your streak and counts half toward momentum.',
+            style: TextStyle(fontSize: 13, color: secondaryLabel(context)),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -706,6 +813,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         resetAnchor: _resetAnchor,
         resetInterval: _selectedFrequency.isPeriodic ? _resetInterval : 1,
         scheduledWeekdays: List.of(_scheduleDays),
+        twoMinute: _twoMinute,
       );
 
       final bool success;
@@ -725,6 +833,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           resetInterval: params.resetInterval,
           // All seven days means "every day", which also clears a weekday schedule
           scheduledWeekdays: params.scheduledWeekdays,
+          twoMinute: params.twoMinute,
+          removeTwoMinute: params.twoMinute == null && widget.editHabit!.twoMinute != null,
         ));
       } else {
         success = await habitProvider.createHabit(params);

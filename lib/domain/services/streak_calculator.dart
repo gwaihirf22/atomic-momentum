@@ -1,12 +1,14 @@
 import '../entities/habit_schedule.dart';
 import '../entities/streak_data.dart';
+import '../entities/two_minute_version.dart';
 import 'period_totals.dart';
 
 /// Derives a habit's streak from its per-day history.
 ///
 /// A streak counts completed due periods (days, N-day blocks, weeks or
 /// months, per the [HabitSchedule]). A period is completed when the amounts
-/// logged on its days add up to the target.
+/// logged on its days add up to the target, or when it was kept with the
+/// two-minute version ([TwoMinuteLog]): that counts as a kept period too.
 ///
 /// Never miss twice: a single missed due period bends the streak instead of
 /// breaking it (it doesn't add to the count, and the streak is "at risk"
@@ -26,9 +28,10 @@ class StreakCalculator {
     required int target,
     required HabitSchedule schedule,
     required DateTime now,
+    TwoMinuteLog twoMinute = TwoMinuteLog.none,
   }) {
     if (!schedule.isPeriodic || target <= 0) return StreakData.empty();
-    return _calculate(_completedPeriodStarts(history, target, schedule, now), schedule, now);
+    return _calculate(_completedPeriodStarts(history, target, schedule, now, twoMinute), schedule, now);
   }
 
   /// When the current streak is lost if the habit isn't completed, or null
@@ -40,10 +43,11 @@ class StreakCalculator {
     required int target,
     required HabitSchedule schedule,
     required DateTime now,
+    TwoMinuteLog twoMinute = TwoMinuteLog.none,
   }) {
     if (!schedule.isPeriodic || target <= 0) return null;
 
-    final completed = _completedPeriodStarts(history, target, schedule, now);
+    final completed = _completedPeriodStarts(history, target, schedule, now, twoMinute);
     final streak = _calculate(completed, schedule, now);
     if (streak.current == 0) return null;
 
@@ -59,8 +63,9 @@ class StreakCalculator {
     required int target,
     required HabitSchedule schedule,
     required DateTime now,
+    TwoMinuteLog twoMinute = TwoMinuteLog.none,
   }) {
-    final completed = _completedPeriodStarts(history, target, schedule, now);
+    final completed = _completedPeriodStarts(history, target, schedule, now, twoMinute);
     return schedule.nextPeriodStart(firstOpenDuePeriodStart(completed, schedule, now));
   }
 
@@ -103,11 +108,14 @@ class StreakCalculator {
     int target,
     HabitSchedule schedule,
     DateTime now,
+    TwoMinuteLog twoMinute,
   ) {
     final totals = PeriodTotals.byPeriodStart(history, schedule, now);
     return {
       for (final entry in totals.entries)
         if (entry.value >= target && schedule.isDueOn(entry.key)) entry.key,
+      for (final start in PeriodTotals.twoMinuteStarts(totals, twoMinute, schedule, now))
+        if (schedule.isDueOn(start)) start,
     };
   }
 

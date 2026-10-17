@@ -20,6 +20,7 @@ import '../presentation/widgets/habit_card.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
+import '../presentation/widgets/two_minute_button.dart';
 
 /// Any day's habits: a month (or week) of days, each inside a ring that fills
 /// with that day's completion, and the selected day's habits below, which
@@ -71,8 +72,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         .toList();
   }
 
-  static double _fractionOn(Habit habit, DateTime day) =>
-      habit.target > 0 ? (habit.progressForPeriodContaining(day) / habit.target).clamp(0.0, 1.0) : 0.0;
+  static double _fractionOn(Habit habit, DateTime day) => habit.fractionDoneOn(day);
 
   /// The first day anything was tracked: no rings before it.
   DateTime? _firstTrackedDay(List<Habit> habits) {
@@ -96,6 +96,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     Haptics.progressChanged(from: periodTotal, to: periodTotal + amount - logged, target: habit.target);
     final habitProvider = context.read<HabitProvider>();
     final success = await habitProvider.updateProgressForDate(habit.id, day, amount);
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't update ${habit.name} for that day. Please try again.")),
+      );
+    }
+  }
+
+  Future<void> _setTwoMinuteForDay(Habit habit, DateTime day, bool done) async {
+    done ? Haptics.twoMinute() : Haptics.selection();
+    final success = await context.read<HabitProvider>().setTwoMinute(habit.id, done, date: day);
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Couldn't update ${habit.name} for that day. Please try again.")),
@@ -317,6 +327,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             icon: habitIcon(habit, categories.resolve(habit.categoryId)),
             isEditable: isEditable,
             onSet: (amount, periodTotal) => _setLoggedForDay(habit, day, amount, periodTotal: periodTotal),
+            onSetTwoMinute: (done) => _setTwoMinuteForDay(habit, day, done),
           );
         },
       ),
@@ -402,12 +413,16 @@ class _DayHabitRow extends StatelessWidget {
   /// Sets the amount logged on [day]; also gets the period total before.
   final void Function(int amount, int periodTotal) onSet;
 
+  /// Marks (true) or unmarks the two-minute version on [day].
+  final ValueChanged<bool> onSetTwoMinute;
+
   const _DayHabitRow({
     required this.habit,
     required this.day,
     required this.icon,
     required this.isEditable,
     required this.onSet,
+    required this.onSetTwoMinute,
   });
 
   String _subtitle(int loggedThatDay, int periodTotal) {
@@ -420,6 +435,9 @@ class _DayHabitRow extends StatelessWidget {
     return '$loggedThatDay logged · $periodTotal/${habit.target} $period';
   }
 
+  /// Notes a day kept with the two-minute version, so it stays visible.
+  String _withTwoMinute(String subtitle) => habit.isTwoMinuteOn(day) ? '$subtitle · 2-min version' : subtitle;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -427,7 +445,8 @@ class _DayHabitRow extends StatelessWidget {
     final loggedThatDay = habit.getProgressForDate(day);
     final periodTotal = habit.progressForPeriodContaining(day);
     final isDone = habit.wasCompletedOnDate(day);
-    final subtitle = _subtitle(loggedThatDay, periodTotal);
+    final subtitle = _withTwoMinute(_subtitle(loggedThatDay, periodTotal));
+    final showTwoMinute = isEditable && habit.twoMinute != null && habit.schedule.isPeriodic && !isDone;
     final canAdd = isEditable && periodTotal < habit.target;
     final canRemove = isEditable && loggedThatDay > 0;
 
@@ -447,7 +466,7 @@ class _DayHabitRow extends StatelessWidget {
               key: Key('dayHabitIcon_${habit.id}'),
               icon: icon,
               color: color,
-              fraction: habit.target > 0 ? (periodTotal / habit.target).clamp(0.0, 1.0) : 0,
+              fraction: habit.fractionDoneOn(day),
               isDone: isDone,
               checkKey: const Key('completedBadge'),
               semanticLabel: '${habit.name}, $subtitle',
@@ -481,6 +500,16 @@ class _DayHabitRow extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (showTwoMinute)
+                  TwoMinuteButton(
+                    key: Key('dayTwoMinute_${habit.id}'),
+                    description: habit.twoMinute!.description,
+                    color: color,
+                    done: habit.isTwoMinuteOn(day),
+                    onChanged: habit.twoMinuteReachedByAmountOn(day) && !habit.usedTwoMinuteButtonOn(day)
+                        ? null
+                        : onSetTwoMinute,
+                  ),
               ],
             );
             final stepper = !isEditable

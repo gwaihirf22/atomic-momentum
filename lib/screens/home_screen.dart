@@ -303,6 +303,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             onEdit: () => _editHabit(habit),
             onDelete: () => _deleteHabit(habit),
             onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
+            onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
           );
         },
       ),
@@ -320,6 +321,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           action: SnackBarAction(
             label: 'Retry',
             onPressed: () => _updateHabitProgress(habitProvider, habit, newProgress),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _setTwoMinute(HabitProvider habitProvider, Habit habit, bool done) async {
+    done ? Haptics.twoMinute() : Haptics.selection();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    final success = await habitProvider.setTwoMinute(habit.id, done);
+    if (!mounted) return;
+
+    if (!success) {
+      messenger.showSnackBar(SnackBar(content: Text("Couldn't save ${habit.name}.")));
+    } else if (done) {
+      messenger.showSnackBar(
+        SnackBar(
+          key: const Key('twoMinuteSnack'),
+          content: Text('Two-minute version: ${habit.twoMinute?.description ?? habit.name}. Day kept!'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => habitProvider.setTwoMinute(habit.id, false),
           ),
         ),
       );

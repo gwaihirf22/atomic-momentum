@@ -1,6 +1,7 @@
 import '../validation/validation_result.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/streak_data.dart';
+import '../../domain/entities/two_minute_version.dart';
 
 class HabitValidator {
   static ValidationResult validate(Habit habit) {
@@ -22,12 +23,29 @@ class HabitValidator {
     // Streak validation
     _validateStreak(habit.streak, errors);
 
+    _validateTwoMinute(habit, errors);
+
     final isValid = errors.isEmpty;
     return ValidationResult(
       isValid: isValid,
       errors: errors,
       warnings: warnings,
     );
+  }
+
+  static void _validateTwoMinute(Habit habit, List<String> errors) {
+    final tiny = habit.twoMinute;
+    if (tiny == null) return;
+    final description = tiny.description.trim();
+    if (description.isEmpty) {
+      errors.add('The two-minute version needs a description');
+    } else if (description.length > TwoMinuteVersion.maxLength) {
+      errors.add('The two-minute version cannot exceed ${TwoMinuteVersion.maxLength} characters');
+    }
+    final minimum = tiny.minimum;
+    if (minimum != null && (minimum < 1 || minimum >= habit.target)) {
+      errors.add('The two-minute amount must be between 1 and ${habit.target - 1}');
+    }
   }
 
   static void _validateName(String name, List<String> errors) {

@@ -29,8 +29,9 @@ class PlannedReminder extends Equatable {
 /// to every 3 weeks, and 7, 3 and 1 day before for monthly. Custom reminders
 /// fire on the chosen weekdays.
 ///
-/// Either way, a reminder is dropped once the habit is done for the period
-/// it falls in, so planning again after each change keeps them current.
+/// Either way, a reminder is dropped once the habit is done (or kept with
+/// the two-minute version) for the period it falls in, so planning again
+/// after each change keeps them current.
 class ReminderPlanner {
   const ReminderPlanner._();
 
@@ -60,7 +61,7 @@ class ReminderPlanner {
 
     return [
       for (final day in days)
-        if (_at(day, reminder.time.hour, reminder.time.minute).isAfter(now) && !habit.wasCompletedOnDate(day))
+        if (_at(day, reminder.time.hour, reminder.time.minute).isAfter(now) && !habit.wasKeptOnDate(day))
           PlannedReminder(
             habitId: habit.id,
             at: _at(day, reminder.time.hour, reminder.time.minute),

@@ -2,6 +2,7 @@ import '../entities/habit.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
+import '../entities/two_minute_version.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/validation/habit_validator.dart';
 import '../../core/exceptions/storage_exceptions.dart';
@@ -33,6 +34,7 @@ class CreateHabitUseCase {
         resetAnchor: params.resetAnchor,
         resetInterval: params.resetInterval,
         scheduledWeekdays: params.scheduledWeekdays,
+        twoMinute: params.twoMinute,
       );
 
       // Validate the created habit
@@ -82,6 +84,7 @@ class CreateHabitUseCase {
           resetAnchor: params.resetAnchor,
           resetInterval: params.resetInterval,
           scheduledWeekdays: params.scheduledWeekdays,
+          twoMinute: params.twoMinute,
         );
         habits.add(habit);
       }
@@ -146,6 +149,8 @@ class CreateHabitParams {
   final int resetInterval;
   /// Weekdays a daily habit is due; null (or all seven) means every day.
   final List<int>? scheduledWeekdays;
+  /// The tiny version for hard days, if any.
+  final TwoMinuteVersion? twoMinute;
 
   const CreateHabitParams({
     required this.name,
@@ -159,6 +164,7 @@ class CreateHabitParams {
     this.resetAnchor,
     this.resetInterval = 1,
     this.scheduledWeekdays,
+    this.twoMinute,
   });
 
   CreateHabitParams copyWith({

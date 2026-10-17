@@ -2,6 +2,7 @@ import '../entities/habit.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
+import '../entities/two_minute_version.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/validation/habit_validator.dart';
 import '../../core/exceptions/storage_exceptions.dart';
@@ -85,6 +86,8 @@ class UpdateHabitUseCase {
         resetAnchor: params.resetAnchor,
         resetInterval: params.resetInterval,
         scheduledWeekdays: params.scheduledWeekdays,
+        twoMinute: params.twoMinute,
+        removeTwoMinute: params.removeTwoMinute,
       );
 
       // Validate the updated habit
@@ -129,6 +132,23 @@ class UpdateHabitUseCase {
     } catch (e) {
       if (e is ValidationException || e is StorageException) rethrow;
       throw StorageException('Failed to update habit history: $e');
+    }
+  }
+
+  /// Marks (or unmarks) the two-minute version as done in the period
+  /// containing [date]. The streak and momentum are recomputed.
+  Future<Habit> setTwoMinuteForDate(String habitId, DateTime date, bool done) async {
+    try {
+      final habit = await _getHabitById(habitId);
+      final updatedHabit = habit.setTwoMinuteForDate(date, done);
+
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } on ArgumentError catch (e) {
+      throw ValidationException(e.message.toString());
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to save the two-minute version: $e');
     }
   }
 
@@ -224,6 +244,9 @@ class UpdateHabitParams {
   final int? resetInterval;
   /// Pass all seven days to go back to every day (null means unchanged).
   final List<int>? scheduledWeekdays;
+  /// A new two-minute version (null means unchanged; see [removeTwoMinute]).
+  final TwoMinuteVersion? twoMinute;
+  final bool removeTwoMinute;
 
   const UpdateHabitParams({
     this.name,
@@ -237,6 +260,8 @@ class UpdateHabitParams {
     this.resetAnchor,
     this.resetInterval,
     this.scheduledWeekdays,
+    this.twoMinute,
+    this.removeTwoMinute = false,
   });
 
   bool get hasChanges => 
@@ -250,5 +275,7 @@ class UpdateHabitParams {
     icon != null ||
     resetAnchor != null ||
     resetInterval != null ||
-    scheduledWeekdays != null;
+    scheduledWeekdays != null ||
+    twoMinute != null ||
+    removeTwoMinute;
 }
