@@ -15,6 +15,7 @@ import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/hold_undo_strip.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
+import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 
 /// The habit page: opened by tapping a card (or a Calendar row).
@@ -203,5 +204,13 @@ void main() {
     expect(find.byType(HabitDetailScreen), findsOneWidget);
     expect(find.text('TODAY'), findsNothing);
     expect(number(tester), '3');
+  });
+
+  testWidgets('"Edit habit & notifications" opens the editor', (tester) async {
+    await openFromCard(tester);
+    await tester.scrollUntilVisible(find.byKey(const Key('detailEdit')), 300, scrollable: find.byType(Scrollable).first);
+    await tap(tester, 'detailEdit');
+    expect(find.byType(HabitEditorScreen), findsOneWidget);
+    expect(find.text('Edit Habit'), findsOneWidget);
   });
 }

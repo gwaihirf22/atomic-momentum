@@ -25,6 +25,7 @@ import '../presentation/widgets/hold_undo_strip.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/two_minute_button.dart';
+import 'habit_editor_screen.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -257,6 +258,18 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               today: _today,
               onAdd: () => _editNote(habit, _day),
               onOpen: (day) => _editNote(habit, day),
+            ),
+            const SizedBox(height: 18),
+            // The habit's basics and its notifications live in the editor
+            Center(
+              child: _PillButton(
+                key: const Key('detailEdit'),
+                label: 'Edit habit & notifications',
+                icon: CupertinoIcons.chevron_right,
+                onPressed: () => Navigator.of(context, rootNavigator: true).push(
+                  CupertinoPageRoute<void>(builder: (_) => HabitEditorScreen(editHabit: habit)),
+                ),
+              ),
             ),
           ]),
         ),
