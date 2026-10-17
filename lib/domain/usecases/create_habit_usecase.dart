@@ -1,5 +1,7 @@
 import '../entities/habit.dart';
 import '../entities/habit_color.dart';
+import '../entities/habit_goal.dart';
+import '../entities/habit_notify.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
 import '../entities/two_minute_version.dart';
@@ -35,6 +37,8 @@ class CreateHabitUseCase {
         resetInterval: params.resetInterval,
         scheduledWeekdays: params.scheduledWeekdays,
         twoMinute: params.twoMinute,
+        goal: params.goal,
+        notify: params.notify,
       );
 
       // Validate the created habit
@@ -60,7 +64,8 @@ class CreateHabitUseCase {
     if (params.name.trim().length > 50) {
       throw ValidationException('Habit name cannot exceed 50 characters');
     }
-    if (params.target <= 0) {
+    // Quitting allows nothing; every other habit needs a target
+    if (params.goal == HabitGoal.quit ? params.target != 0 : params.target <= 0) {
       throw ValidationException('Target must be greater than 0');
     }
     if (params.target > 1000) {
@@ -100,6 +105,10 @@ class CreateHabitParams {
   /// The tiny version for hard days, if any.
   final TwoMinuteVersion? twoMinute;
 
+  /// Building it up, or breaking it; for a break habit [target] is the limit.
+  final HabitGoal goal;
+  final HabitNotify notify;
+
   const CreateHabitParams({
     required this.name,
     required this.target,
@@ -113,6 +122,8 @@ class CreateHabitParams {
     this.resetInterval = 1,
     this.scheduledWeekdays,
     this.twoMinute,
+    this.goal = HabitGoal.build,
+    this.notify = HabitNotify.standard,
   });
 
   CreateHabitParams copyWith({

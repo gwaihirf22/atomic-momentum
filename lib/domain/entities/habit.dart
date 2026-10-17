@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
 import 'habit_color.dart';
 import 'reset_frequency.dart';
@@ -5,6 +6,8 @@ import 'streak_data.dart';
 import 'reminder_settings.dart';
 import 'habit_metadata.dart';
 import 'habit_schedule.dart';
+import 'habit_goal.dart';
+import 'habit_notify.dart';
 import 'momentum.dart';
 import 'two_minute_version.dart';
 import '../services/momentum_calculator.dart';
@@ -50,6 +53,15 @@ class Habit extends Equatable {
   /// A short note on any day (date-only keys).
   final Map<DateTime, String> dayNotes;
 
+  /// Building it up, or breaking it (quit or limit). For a break habit,
+  /// [target] is the most allowed per period (0 to quit) and logs are slips.
+  final HabitGoal goal;
+
+  /// How this habit's notifications arrive (sound, time sensitive, warnings).
+  final HabitNotify notify;
+
+  bool get isBreak => goal.isBreak;
+
   static const maxWhyLength = 300;
   static const maxDayNoteLength = 200;
 
@@ -57,8 +69,9 @@ class Habit extends Equatable {
   /// up to this many times it, which still catches a mistyped extra zero.
   static const maxOverTarget = 10;
 
-  /// The most a period can hold.
-  int get maxPeriodTotal => target * maxOverTarget;
+  /// The most a period can hold (for a break habit, room to log slips well
+  /// past the limit).
+  int get maxPeriodTotal => isBreak ? math.max(target * maxOverTarget, 99) : target * maxOverTarget;
 
   Habit({
     required this.id,
@@ -81,6 +94,8 @@ class Habit extends Equatable {
     this.twoMinuteDays = const {},
     this.why = '',
     this.dayNotes = const {},
+    this.goal = HabitGoal.build,
+    this.notify = HabitNotify.standard,
   });
 
   static int _idCounter = 0;
@@ -98,6 +113,8 @@ class Habit extends Equatable {
     int resetInterval = 1,
     List<int>? scheduledWeekdays,
     TwoMinuteVersion? twoMinute,
+    HabitGoal goal = HabitGoal.build,
+    HabitNotify notify = HabitNotify.standard,
   }) {
     final now = clock.now();
     // Timestamp alone collides when habits are created in the same instant
@@ -121,7 +138,10 @@ class Habit extends Equatable {
       resetInterval: resetInterval < 1 ? 1 : resetInterval,
       scheduledWeekdays: HabitSchedule.normalizeWeekdays(scheduledWeekdays,
           frequency: resetFrequency, interval: resetInterval),
-      twoMinute: twoMinute,
+      // Break habits have no tiny version: there's nothing to do on a hard day
+      twoMinute: goal.isBreak ? null : twoMinute,
+      goal: goal,
+      notify: notify,
     );
   }
 
@@ -401,6 +421,7 @@ class Habit extends Equatable {
     List<int>? scheduledWeekdays,
     TwoMinuteVersion? twoMinute,
     bool removeTwoMinute = false,
+    HabitNotify? notify,
   }) {
     final newFrequency = resetFrequency ?? this.resetFrequency;
     final newInterval = resetInterval ?? this.resetInterval;
@@ -447,6 +468,8 @@ class Habit extends Equatable {
       twoMinuteDays: updated.twoMinuteDays,
       why: updated.why,
       dayNotes: updated.dayNotes,
+      goal: goal,
+      notify: notify ?? this.notify,
     );
 
     // A new target, frequency or reset day changes how history adds up
@@ -544,6 +567,8 @@ class Habit extends Equatable {
     Set<DateTime>? twoMinuteDays,
     String? why,
     Map<DateTime, String>? dayNotes,
+    HabitGoal? goal,
+    HabitNotify? notify,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -566,6 +591,8 @@ class Habit extends Equatable {
       twoMinuteDays: twoMinuteDays ?? this.twoMinuteDays,
       why: why ?? this.why,
       dayNotes: dayNotes ?? this.dayNotes,
+      goal: goal ?? this.goal,
+      notify: notify ?? this.notify,
     );
   }
 
@@ -598,6 +625,8 @@ class Habit extends Equatable {
       'twoMinuteDays': twoMinuteDaysToJson(twoMinuteDays),
       if (why.isNotEmpty) 'why': why,
       if (dayNotes.isNotEmpty) 'dayNotes': dayNotesToJson(dayNotes),
+      if (goal != HabitGoal.build) 'goal': goal.name,
+      if (!notify.isStandard) 'notify': notify.toJson(),
     };
   }
 
@@ -669,6 +698,8 @@ class Habit extends Equatable {
       twoMinuteDays: twoMinuteDaysFromJson(json['twoMinuteDays']),
       why: json['why'] is String ? json['why'] as String : '',
       dayNotes: dayNotesFromJson(json['dayNotes']),
+      goal: HabitGoal.fromJson(json['goal']),
+      notify: HabitNotify.fromJson(json['notify']),
     );
   }
 
@@ -694,6 +725,8 @@ class Habit extends Equatable {
         twoMinuteDays,
         why,
         dayNotes,
+        goal,
+        notify,
       ];
 
   @override

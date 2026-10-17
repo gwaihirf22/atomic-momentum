@@ -1,3 +1,4 @@
+import '../entities/habit_notify.dart';
 import '../entities/habit.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
@@ -65,6 +66,7 @@ class UpdateHabitUseCase {
         scheduledWeekdays: params.scheduledWeekdays,
         twoMinute: params.twoMinute,
         removeTwoMinute: params.removeTwoMinute,
+        notify: params.notify,
       );
 
       // Validate the updated habit
@@ -195,7 +197,8 @@ class UpdateHabitUseCase {
     }
     
     if (params.target != null) {
-      if (params.target! <= 0) {
+      // 0 is a quit habit's allowance; HabitValidator checks it fits the goal
+      if (params.target! < 0) {
         throw ValidationException('Target must be greater than 0');
       }
       if (params.target! > 1000) {
@@ -235,6 +238,9 @@ class UpdateHabitParams {
   final TwoMinuteVersion? twoMinute;
   final bool removeTwoMinute;
 
+  /// New notification settings (null means unchanged).
+  final HabitNotify? notify;
+
   const UpdateHabitParams({
     this.name,
     this.target,
@@ -249,6 +255,7 @@ class UpdateHabitParams {
     this.scheduledWeekdays,
     this.twoMinute,
     this.removeTwoMinute = false,
+    this.notify,
   });
 
   bool get hasChanges => 
@@ -264,5 +271,6 @@ class UpdateHabitParams {
     resetInterval != null ||
     scheduledWeekdays != null ||
     twoMinute != null ||
-    removeTwoMinute;
+    removeTwoMinute ||
+    notify != null;
 }

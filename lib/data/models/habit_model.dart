@@ -1,5 +1,7 @@
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_color.dart';
+import '../../domain/entities/habit_goal.dart';
+import '../../domain/entities/habit_notify.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/reminder_settings.dart';
@@ -30,6 +32,8 @@ class HabitModel extends Habit {
     super.twoMinuteDays,
     super.why,
     super.dayNotes,
+    super.goal,
+    super.notify,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -57,6 +61,8 @@ class HabitModel extends Habit {
         twoMinuteDays: habit.twoMinuteDays,
         why: habit.why,
         dayNotes: habit.dayNotes,
+        goal: habit.goal,
+        notify: habit.notify,
       );
     } catch (e) {
       rethrow;
@@ -88,6 +94,8 @@ class HabitModel extends Habit {
         twoMinuteDays: twoMinuteDays,
         why: why,
         dayNotes: dayNotes,
+        goal: goal,
+        notify: notify,
       );
       
       return habitDomain;
@@ -152,6 +160,8 @@ class HabitModel extends Habit {
       twoMinuteDays: Habit.twoMinuteDaysFromJson(json['twoMinuteDays']),
       why: json['why'] is String ? json['why'] as String : '',
       dayNotes: Habit.dayNotesFromJson(json['dayNotes']),
+      goal: HabitGoal.fromJson(json['goal']),
+      notify: HabitNotify.fromJson(json['notify']),
     );
   }
 
@@ -193,6 +203,8 @@ class HabitModel extends Habit {
         if (twoMinuteDays.isNotEmpty) 'twoMinuteDays': Habit.twoMinuteDaysToJson(twoMinuteDays),
         if (why.isNotEmpty) 'why': why,
         if (dayNotes.isNotEmpty) 'dayNotes': Habit.dayNotesToJson(dayNotes),
+        if (goal != HabitGoal.build) 'goal': goal.name,
+        if (!notify.isStandard) 'notify': notify.toJson(),
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': clock.now().toIso8601String(),
       };
@@ -221,7 +233,8 @@ class HabitModel extends Habit {
   bool isValid() {
     try {
       if (id.isEmpty || name.trim().isEmpty) return false;
-      if (target <= 0 || progress < 0) return false;
+      // A habit to quit allows nothing (0); every other habit needs a target
+      if (target < 0 || (target == 0 && goal != HabitGoal.quit) || progress < 0) return false;
       if (lastUpdatedDate.isAfter(clock.now().add(const Duration(hours: 1)))) return false;
       
       return true;

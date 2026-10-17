@@ -1,5 +1,6 @@
 import '../validation/validation_result.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/habit_goal.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/two_minute_version.dart';
 import 'package:clock/clock.dart';
@@ -13,13 +14,13 @@ class HabitValidator {
     _validateName(habit.name, errors);
     
     // Progress and target validation
-    _validateProgress(habit.progress, habit.target, errors);
+    _validateProgress(habit, errors);
     
     // Date validation
     _validateDates(habit, errors, warnings);
     
     // History validation
-    _validateHistory(habit.history, habit.target, warnings);
+    _validateHistory(habit.history, habit.maxPeriodTotal, warnings);
     
     // Streak validation
     _validateStreak(habit.streak, errors);
@@ -71,18 +72,20 @@ class HabitValidator {
     }
   }
 
-  static void _validateProgress(int progress, int target, List<String> errors) {
-    if (target <= 0) {
-      errors.add("Target must be greater than 0");
+  static void _validateProgress(Habit habit, List<String> errors) {
+    final target = habit.target;
+    // Quitting allows nothing (0); every other habit needs a target
+    if (habit.goal == HabitGoal.quit ? target != 0 : target <= 0) {
+      errors.add(habit.goal == HabitGoal.quit ? "A habit to quit has no allowance" : "Target must be greater than 0");
       return; // Can't validate progress if target is invalid
     }
-    
-    if (progress < 0) {
+
+    if (habit.progress < 0) {
       errors.add("Progress cannot be negative");
     }
-    
-    // Going past the target is fine ("10/8"), up to Habit.maxOverTarget times it
-    if (progress > target * Habit.maxOverTarget) {
+
+    // Going past the target is fine ("10/8"), up to Habit.maxPeriodTotal
+    if (habit.progress > habit.maxPeriodTotal) {
       errors.add("Progress seems unusually high compared to target");
     }
   }
@@ -112,14 +115,14 @@ class HabitValidator {
     }
   }
 
-  static void _validateHistory(Map<DateTime, int> history, int target, List<String> warnings) {
+  static void _validateHistory(Map<DateTime, int> history, int most, List<String> warnings) {
     if (history.isEmpty) {
       return; // Empty history is valid for new habits
     }
     
     // Check for unrealistic progress values in history
     final invalidEntries = history.entries.where((entry) => 
-      entry.value < 0 || entry.value > target * Habit.maxOverTarget
+      entry.value < 0 || entry.value > most
     );
     
     if (invalidEntries.isNotEmpty) {
