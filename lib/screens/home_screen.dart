@@ -128,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: LargeTitleScaffold(
                 title: 'Habits',
                 backgroundColor: palette.background,
-                trailing: _buildAddButton(context),
                 header: LargeTitleHeader(
                   eyebrow: DateFormat.MMMMEEEEd().format(now),
                   title: _greetingFor(now, dayStart),
@@ -180,31 +179,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           },
         );
       },
-    );
-  }
-
-  Widget _buildAddButton(BuildContext context) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () {
-        Navigator.push(
-          context,
-          CupertinoPageRoute(builder: (context) => const AddHabitScreen()),
-        ).then((_) {
-          // Refresh habits when returning from add screen
-          final habitProvider = context.read<HabitProvider>();
-          final categoryProvider = context.read<CategoryProvider>();
-          habitProvider.refreshHabits().then((_) {
-            categoryProvider.updateAvailableCategories(habitProvider.habits);
-          });
-        });
-      },
-      child: Icon(
-        CupertinoIcons.add,
-        color: AppPalette.of(context).accent,
-        size: 24,
-        semanticLabel: 'Add habit',
-      ),
     );
   }
 
@@ -411,9 +385,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _editHabit(Habit habit) {
-    // Navigate to AddHabitScreen in edit mode
-    Navigator.push(
-      context,
+    // Over the tabs, so the tab bar never covers the form's Save button
+    Navigator.of(context, rootNavigator: true).push(
       CupertinoPageRoute(
         builder: (context) => AddHabitScreen(editHabit: habit),
       ),

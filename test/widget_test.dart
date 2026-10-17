@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,6 +39,7 @@ void main() {
 
     await tester.tap(find.text('Habits').last);
     await tester.pumpAndSettle();
-    expect(find.byIcon(CupertinoIcons.add), findsWidgets);
+    expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
+    expect(find.byKey(const Key('addHabitOrb')), findsOneWidget);
   });
 }

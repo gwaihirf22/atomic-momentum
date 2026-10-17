@@ -63,6 +63,15 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Delete and other destructive actions.
   final Color danger;
 
+  /// The floating tab bar: translucent over the blurred content behind it,
+  /// with a hairline edge and a soft shadow.
+  final Color bar;
+  final Color barEdge;
+  final Color barShadow;
+
+  /// The glow under the orb.
+  final Color orbShadow;
+
   const AppPalette({
     required this.theme,
     required this.brightness,
@@ -85,6 +94,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.flame,
     required this.warning,
     required this.danger,
+    required this.bar,
+    required this.barEdge,
+    required this.barShadow,
+    required this.orbShadow,
   });
 
   static const dark = AppPalette(
@@ -109,6 +122,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFFF8A3D),
     warning: Color(0xFFFFB020),
     danger: Color(0xFFFF6B6B),
+    bar: Color(0xC71C1F26),
+    barEdge: Color(0x14FFFFFF),
+    barShadow: Color(0x80000000),
+    orbShadow: Color(0x73FF8A3D),
   );
 
   static const light = AppPalette(
@@ -133,6 +150,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFD9480F),
     warning: Color(0xFFB45309),
     danger: Color(0xFFD93025),
+    bar: Color(0xCCFFFFFF),
+    barEdge: Color(0x14000000),
+    barShadow: Color(0x2414161C),
+    orbShadow: Color(0x59F27A12),
   );
 
   static const sepia = AppPalette(
@@ -157,6 +178,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFB3541A),
     warning: Color(0xFF9A5A0C),
     danger: Color(0xFFA8432F),
+    bar: Color(0xD1FBF6EC),
+    barEdge: Color(0x1A3B2F22),
+    barShadow: Color(0x29503C1E),
+    orbShadow: Color(0x4DC9671C),
   );
 
   static AppPalette forTheme(AppTheme theme) => switch (theme) {
@@ -171,6 +196,10 @@ class AppPalette extends ThemeExtension<AppPalette> {
     final theme = Theme.of(context);
     return theme.extension<AppPalette>() ?? (theme.brightness == Brightness.dark ? dark : light);
   }
+
+  /// Marks on the orb (its "+", a call to action's label): dark ink in every
+  /// theme, since the orb is always bright amber.
+  static const onOrb = Color(0xFF1A1206);
 
   /// The orb gradient, for the main "+" and calls to action.
   LinearGradient get orb => LinearGradient(

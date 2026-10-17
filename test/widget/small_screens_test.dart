@@ -29,6 +29,7 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
+import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
 import '../helpers/real_fonts.dart';
@@ -129,6 +130,7 @@ void main() {
     'Habits': () => const HomeScreen(),
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
+    'Insights': () => const InsightsScreen(),
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Stretch')),

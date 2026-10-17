@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
+import 'floating_tab_bar.dart';
 
 /// A main tab's page with an iOS-style large title: a big header at the top
 /// of the scrolling content that hands over to a small centered title in the
@@ -58,9 +59,14 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
   @override
   Widget build(BuildContext context) {
     final separator = AppPalette.of(context).separator;
+    // Under the floating tab bar, the content scrolls on beneath it; this
+    // space at the end lets the last item clear it, and SnackBars sit above it
+    final tabBarInset = TabBarInset.of(context);
     // Material Scaffold hosts SnackBars; Cupertino scaffolds can't show them
     return Scaffold(
       backgroundColor: widget.backgroundColor,
+      extendBody: true,
+      bottomNavigationBar: tabBarInset > 0 ? SizedBox(height: tabBarInset) : null,
       body: CupertinoPageScaffold(
         backgroundColor: widget.backgroundColor,
         navigationBar: CupertinoNavigationBar(
@@ -75,12 +81,18 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
           trailing: widget.trailing,
         ),
         child: SafeArea(
-          child: CustomScrollView(
-            controller: _controller,
-            slivers: [
-              SliverToBoxAdapter(child: widget.header),
-              ...widget.slivers,
-            ],
+          bottom: false,
+          // Inside the Scaffold, the bottom padding includes the tab bar
+          child: Builder(
+            builder: (context) => CustomScrollView(
+              controller: _controller,
+              slivers: [
+                SliverToBoxAdapter(child: widget.header),
+                ...widget.slivers,
+                // The home indicator, and the tab bar when there is one
+                SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
+              ],
+            ),
           ),
         ),
       ),
