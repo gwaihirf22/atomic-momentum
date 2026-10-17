@@ -59,6 +59,12 @@ xcrun simctl io booted screenshot shot.png   # screenshot from the command line
 # Run ALL tests (unit, integration and widget) - do this before calling any change done
 ./flutter/bin/flutter test
 
+# Notification simulator in four time zones (after changing reminders, warnings or dates)
+tool/notification_sim.sh
+
+# Real notifications on a simulator (by hand, on both iPhones)
+./flutter/bin/flutter test integration_test -d "iPhone 17 Pro"
+
 # Generate test coverage
 ./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
 
@@ -156,15 +162,17 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Every feature or fix ships with tests.** Run the whole suite with `./flutter/bin/flutter test`; it must pass.
 - **Layout**: `test/unit/` (pure logic, mirrors `lib/`), `test/integration/` (real use cases + SharedPreferences mock), `test/widget/` and `test/widget_test.dart` (screens)
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
-- **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
+- **Time**: app code reads the time with `clock.now()` from package:clock, never `DateTime.now()` (a guard test enforces it), so tests can run the app under `withClock`. Pure logic also takes a `now` parameter
+- **Notification simulator** (`test/simulation/`): six weeks of the real app on a simulated clock, against a simulated iOS notification center (delivers as time passes, applies iOS's 64 limit). Every delivery is checked (nothing missing or extra versus the app's plan, nothing for a finished period, right times, warnings only with a streak at stake, no duplicates). Each scenario's timeline is saved in `test/simulation/goldens/`: review diffs, update with `./flutter/bin/flutter test test/simulation --update-goldens`. After changing reminders, warnings or dates, run `tool/notification_sim.sh` (UTC, New York, London, Lord Howe: clock changes). Add a scenario for each new kind of notification
+- **On-device check**: `./flutter/bin/flutter test integration_test -d <simulator>` schedules real notifications seconds ahead and confirms iOS delivers them; run by hand on both simulators when notification code changes
 - **Notifications**: tests use fakes from `test/helpers/` (`FakeStreakWarningScheduler`, `FakeReminderScheduler`, `FakeNotificationsPlugin`)
 - **Fonts and randomness**: widget tests draw text in a square placeholder font; tests about fit load real fonts (`real_fonts.dart`). `test/flutter_test_config.dart` seeds the greeting so layouts are the same every run
 - **Async in widget tests**: don't keep a `Future` alive across calls in app code (chained futures break under the test clock); use a flag and a pending value instead (see `ReminderService.syncAll`)
-- **Status (2026-10-16)**: 581 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-17)**: 596 tests passing, including the notification simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 - **Storage**: habits are JSON in SharedPreferences via `SharedPreferencesDataSource`; a habit keeps its full per-day `history`, and streak, progress and momentum are derived from it (`Habit.refresh`, `StreakCalculator`, `MomentumCalculator`). Categories live under `categories_v1`
 - **Dates**: day-only dates are built from calendar fields (`DateTime(y, m, d)`), never with `toLocal()`; table_calendar hands over UTC midnights
-- **Notifications**: `NotificationService` wraps flutter_local_notifications. Reminders use payload `reminder|<habitId>` and are found and replaced as a set; streak warnings use ids hashed from `<habitId>-streak-…`. Permission is asked once at first launch, after the first frame
+- **Notifications**: `NotificationService` wraps flutter_local_notifications. Reminders use payload `reminder|<habitId>` and are found and replaced as a set; streak warnings use ids hashed from `<habitId>-streak-…`. iOS keeps at most 64 pending: reminders get what streak warnings leave (`ReminderService.roomFor`). Warning lead times count on the clock (24h before midnight is midnight the day before, even when clocks change). Permission is asked once at first launch, after the first frame
 - **Adding a screen or sheet**: use `LargeTitleScaffold` for main tabs, the adaptive helpers for dialogs and pickers, and add it to `test/widget/small_screens_test.dart`
 - **Legacy web app** (`templates/`, `scripts/`, `styles/`, `server.py`): the original prototype, kept for reference only; don't change it

@@ -33,6 +33,10 @@ Flutter is bundled in `./flutter` (git-ignored; see below).
 # Tests and analysis
 ./flutter/bin/flutter test
 ./flutter/bin/flutter analyze
+
+# Notifications: six simulated weeks in four time zones, and a real check on a simulator
+tool/notification_sim.sh
+./flutter/bin/flutter test integration_test -d "iPhone 17 Pro"
 ```
 
 Requirements: Xcode with CocoaPods for iOS and macOS. The minimum iOS is 16.
