@@ -106,6 +106,41 @@ void main() {
       expect(status(tester), contains('example streak warning'));
     });
 
+    testWidgets('the tap test schedules a notification that opens the habit picked', (tester) async {
+      await tester.runAsync(habitProvider.addSampleHabits);
+      await pumpTester(tester);
+      final habit = habitProvider.habits.first;
+
+      await tester.tap(find.byKey(const Key('sendHabitTapTest')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('tapTestHabit_${habit.id}')));
+      await tester.pumpAndSettle();
+
+      final scheduled = plugin.scheduled[NotificationService.habitTapTestNotificationId]!;
+      expect(scheduled.title, 'Tap to open ${habit.name}');
+      // Tapping it is handled like a streak warning: opens this habit
+      expect(NotificationService.habitIdFromPayload(scheduled.payload), habit.id);
+      expect(status(tester), contains('Habits should open at "${habit.name}"'));
+    });
+
+    testWidgets('the tap test asks for a habit first when there are none', (tester) async {
+      await pumpTester(tester);
+      await tester.tap(find.byKey(const Key('sendHabitTapTest')));
+      await tester.pumpAndSettle();
+      expect(plugin.scheduled, isEmpty);
+      expect(status(tester), contains('Add a habit first'));
+    });
+
+    testWidgets("a real habit's streak preview opens that habit when tapped", (tester) async {
+      await tester.runAsync(habitProvider.addSampleHabits);
+      await pumpTester(tester);
+      await tester.tap(find.byKey(const Key('previewStreakWarning')));
+      await tester.pumpAndSettle();
+
+      final payload = plugin.shown.single.payload;
+      expect(habitProvider.habits.map((h) => h.id), contains(NotificationService.habitIdFromPayload(payload)));
+    });
+
     testWidgets('the streak preview does not reuse the Send now id', (tester) async {
       await pumpTester(tester);
 

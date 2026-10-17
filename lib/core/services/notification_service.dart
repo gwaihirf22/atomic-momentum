@@ -22,6 +22,7 @@ class NotificationService {
   // Separate from testNotificationId: macOS quietly replaces a delivered
   // notification that reuses an id, without showing a new banner
   static const int streakPreviewNotificationId = 997;
+  static const int habitTapTestNotificationId = 996;
 
   /// Substitutes the plugin (and readiness) in tests, where there is no
   /// platform implementation to talk to.
@@ -302,11 +303,12 @@ class NotificationService {
     required String title,
     required String body,
     int id = testNotificationId,
+    String payload = testPayload,
   }) async {
     if (!isSupported) return false;
 
     try {
-      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: testPayload);
+      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: payload);
       return true;
     } catch (e) {
       debugPrint('NotificationService: Failed to show notification: $e');
@@ -336,6 +338,36 @@ class NotificationService {
       return at;
     } catch (e) {
       debugPrint('NotificationService: Failed to schedule test notification: $e');
+      return null;
+    }
+  }
+
+  /// Schedules a notification about [habitId] [delay] from now, for trying
+  /// out what tapping one does (it opens Habits at that habit). It carries
+  /// the bare habit id, as streak warnings do, so reminder resyncs in the
+  /// meantime don't cancel it. Returns when it fires, or null on failure.
+  static Future<DateTime?> scheduleHabitTapTest({
+    required String habitId,
+    required String habitName,
+    required Duration delay,
+  }) async {
+    if (!isSupported) return null;
+
+    try {
+      final at = clock.now().add(delay);
+      await _notificationsPlugin.zonedSchedule(
+        habitTapTestNotificationId,
+        'Tap to open $habitName',
+        'From the notification tester: should open Habits at "$habitName".',
+        tz.TZDateTime.from(at, tz.UTC),
+        _getNotificationDetails(),
+        payload: habitId,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      return at;
+    } catch (e) {
+      debugPrint('NotificationService: Failed to schedule tap test: $e');
       return null;
     }
   }

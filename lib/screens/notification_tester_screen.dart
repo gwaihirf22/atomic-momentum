@@ -8,11 +8,13 @@ import '../domain/entities/habit_color.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../domain/services/streak_warning_planner.dart';
 import '../presentation/providers/habit_provider.dart';
+import '../presentation/widgets/adaptive.dart';
 import 'package:clock/clock.dart';
 
 /// Developer tool (debug builds only) for checking that notifications work on
-/// this device: permission, immediate and scheduled delivery, the streak
-/// warning text, and what is currently queued.
+/// this device: permission, immediate and scheduled delivery, tapping one
+/// (it should open the habit), the streak warning text, and what is
+/// currently queued.
 class NotificationTesterScreen extends StatefulWidget {
   const NotificationTesterScreen({Key? key}) : super(key: key);
 
@@ -70,8 +72,38 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
     if (at == null) {
       _report('Could not schedule the notification.');
     } else {
-      _report('Scheduled for ${TimeOfDay.fromDateTime(at).format(context)}:'
-          '${at.second.toString().padLeft(2, '0')}. Switch to another app to see it arrive.');
+      _report('Scheduled for ${_timeWithSeconds(at)}. Switch to another app to see it arrive.');
+    }
+    await _refresh();
+  }
+
+  String _timeWithSeconds(DateTime at) =>
+      '${TimeOfDay.fromDateTime(at).format(context)}:${at.second.toString().padLeft(2, '0')}';
+
+  /// Sends a notification for a habit the developer picks; tapping it should
+  /// open Habits at that habit's card.
+  Future<void> _sendHabitTapTest() async {
+    final habits = context.read<HabitProvider>().habits;
+    if (habits.isEmpty) {
+      _report('Add a habit first: the notification needs one to open.');
+      return;
+    }
+    final habitId = await chooseAdaptive<String>(
+      context,
+      title: 'Which habit should it open?',
+      options: [
+        for (final habit in habits) AdaptiveOption(habit.id, habit.name, key: Key('tapTestHabit_${habit.id}')),
+      ],
+    );
+    if (habitId == null || !mounted) return;
+    final name = habits.firstWhere((h) => h.id == habitId).name;
+
+    final at = await NotificationService.scheduleHabitTapTest(habitId: habitId, habitName: name, delay: _scheduleDelay);
+    if (at == null) {
+      _report('Could not schedule the notification.');
+    } else {
+      _report('Arrives at ${_timeWithSeconds(at)}. Tap the banner (in the app or from the Home Screen): '
+          'Habits should open at "$name", briefly highlighted.');
     }
     await _refresh();
   }
@@ -87,10 +119,12 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
     var isExample = false;
     StreakWarning? warning;
     String? habitName;
+    String? habitId;
     for (final habit in habits.where((h) => h.streak.current > 0)) {
       warning = StreakWarningPlanner.plan(habit, settings, now).firstOrNull;
       if (warning != null) {
         habitName = habit.name;
+        habitId = habit.id;
         break;
       }
     }
@@ -105,6 +139,8 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
       id: NotificationService.streakPreviewNotificationId,
       title: warning.title,
       body: warning.body,
+      // A real habit's warning opens it when tapped, like the real thing
+      payload: habitId ?? NotificationService.testPayload,
     );
     if (!sent) {
       _report('Could not send the notification.');
@@ -112,7 +148,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
       _report('Sent an example streak warning (no habit has a streak yet; '
           'add sample habits in Settings to preview a real one).');
     } else {
-      _report('Sent a streak warning for "$habitName".');
+      _report('Sent a streak warning for "$habitName". Tapping it opens the habit.');
     }
   }
 
@@ -188,6 +224,14 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
               title: 'Send in ${_scheduleDelay.inSeconds} seconds',
               subtitle: 'Tests scheduled delivery; switch away from the app after tapping',
               onTap: _sendLater,
+            ),
+            _action(
+              key: const Key('sendHabitTapTest'),
+              icon: Icons.touch_app_outlined,
+              title: 'Tap test: open a habit',
+              subtitle: 'Pick a habit; a notification arrives in ${_scheduleDelay.inSeconds} seconds. '
+                  'Tapping it should open Habits at that habit',
+              onTap: _sendHabitTapTest,
             ),
             _action(
               key: const Key('previewStreakWarning'),

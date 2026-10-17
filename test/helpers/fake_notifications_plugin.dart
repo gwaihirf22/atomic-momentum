@@ -5,13 +5,13 @@ import 'package:timezone/timezone.dart' as tz;
 
 /// Records what would have been shown or scheduled, in place of the OS plugin.
 class FakeNotificationsPlugin extends Fake implements FlutterLocalNotificationsPlugin {
-  final List<({int id, String? title, String? body})> shown = [];
+  final List<({int id, String? title, String? body, String? payload})> shown = [];
   final Map<int, ({String? title, String? body, tz.TZDateTime at, String? payload})> scheduled = {};
 
   @override
   Future<void> show(int id, String? title, String? body, NotificationDetails? notificationDetails,
       {String? payload}) async {
-    shown.add((id: id, title: title, body: body));
+    shown.add((id: id, title: title, body: body, payload: payload));
   }
 
   @override
