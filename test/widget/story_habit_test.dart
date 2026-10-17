@@ -17,7 +17,7 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 void main() {
   Future<void> setUpApp({bool story = true}) async {
     await resetDependencies();
-    SharedPreferences.setMockInitialValues({if (story) 'addHabitStyle': 'story'});
+    SharedPreferences.setMockInitialValues({'addHabitStyle': story ? 'story' : 'builder'});
     await initializeDependencies(seedDefaultHabit: false);
   }
 

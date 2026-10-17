@@ -175,7 +175,7 @@ void main() {
       expect(find.byKey(const Key('dayThemeSetting')), findsNothing);
     });
 
-    testWidgets('New habit style offers Builder and Story, each explained, and saves the choice', (tester) async {
+    testWidgets('Habit editor offers Story and Builder, each explained, and saves the choice', (tester) async {
       await tester.pumpWidget(MultiProvider(
         providers: [
           ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
@@ -187,18 +187,18 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Builder')),
+      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Story')),
           findsOneWidget);
       await tester.tap(find.byKey(const Key('addHabitStyleSetting')));
       await tester.pumpAndSettle();
       expect(find.text('Three quick steps'), findsOneWidget);
       expect(find.text('Write it as one sentence'), findsOneWidget);
-      await tester.tap(find.byKey(const Key('addHabitStyle_story')));
+      await tester.tap(find.byKey(const Key('addHabitStyle_builder')));
       await tester.pumpAndSettle();
 
-      expect(get<SettingsProvider>().addHabitStyle, AddHabitStyle.story);
-      expect((await SharedPreferences.getInstance()).getString('addHabitStyle'), 'story');
-      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Story')),
+      expect(get<SettingsProvider>().addHabitStyle, AddHabitStyle.builder);
+      expect((await SharedPreferences.getInstance()).getString('addHabitStyle'), 'builder');
+      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Builder')),
           findsOneWidget);
     });
 

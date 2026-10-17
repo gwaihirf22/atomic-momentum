@@ -9,11 +9,11 @@ import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/screens/builder_add_screen.dart';
 
-/// Builder: a new habit in three steps, opened by the orb (the default style).
+/// Builder: a new habit in three steps, opened by the orb when it's the chosen style.
 void main() {
   setUp(() async {
     await resetDependencies();
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'addHabitStyle': 'builder'});
     await initializeDependencies(seedDefaultHabit: false);
   });
 

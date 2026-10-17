@@ -19,8 +19,7 @@ import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import '../presentation/widgets/confirm_delete_habit.dart';
 import '../presentation/widgets/habit_card.dart';
-import 'add_habit_screen.dart';
-import 'story_habit_screen.dart';
+import 'habit_editor_screen.dart';
 import 'categories_screen.dart';
 import 'package:intl/intl.dart';
 import '../core/copy/greetings.dart';
@@ -386,12 +385,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _editHabit(Habit habit) {
-    final story = context.read<SettingsProvider>().addHabitStyle == AddHabitStyle.story;
     // Over the tabs, so the tab bar never covers the form's Save button
     Navigator.of(context, rootNavigator: true).push(
       CupertinoPageRoute(
-        // Story edits in its sentence; Builder edits on one page
-        builder: (context) => story ? StoryHabitScreen(editHabit: habit) : AddHabitScreen(editHabit: habit),
+        builder: (context) => HabitEditorScreen(editHabit: habit),
       ),
     ).then((_) {
       // Refresh habits when returning from edit screen

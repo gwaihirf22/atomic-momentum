@@ -29,7 +29,14 @@ enum StoryPart { name, amount, schedule, reminder, tiny }
 class StoryHabitScreen extends StatefulWidget {
   final Habit? editHabit;
 
-  const StoryHabitScreen({super.key, this.editHabit});
+  /// The draft to edit, when the habit editor owns it (so switching styles
+  /// keeps what's entered); otherwise this screen starts its own.
+  final HabitDraft? draft;
+
+  /// The "Switch to Builder" control, shown at the top.
+  final Widget? styleSwitch;
+
+  const StoryHabitScreen({super.key, this.editHabit, this.draft, this.styleSwitch});
 
   @override
   State<StoryHabitScreen> createState() => _StoryHabitScreenState();
@@ -42,12 +49,12 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = HabitDraft.start(context, widget.editHabit);
+    _draft = widget.draft ?? HabitDraft.start(context, widget.editHabit);
   }
 
   @override
   void dispose() {
-    _draft.dispose();
+    if (widget.draft == null) _draft.dispose();
     super.dispose();
   }
 
@@ -114,7 +121,7 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
         hasChanges: _draft.hasChanges,
         child: Scaffold(
           backgroundColor: palette.background,
-          appBar: habitFormBar(context, editing ? 'Edit habit' : 'New habit'),
+          appBar: habitFormBar(context, editing ? 'Edit Habit' : 'New Habit'),
           body: Column(
             children: [
               Expanded(
@@ -123,8 +130,15 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Tap any underlined part to change it.',
-                          style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text('Tap any underlined part to change it.',
+                                style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+                          ),
+                          if (widget.styleSwitch != null) ...[const SizedBox(width: 10), widget.styleSwitch!],
+                        ],
+                      ),
                       const SizedBox(height: 18),
                       _StorySentence(draft: _draft, onTap: _openPart),
                       const SizedBox(height: 26),

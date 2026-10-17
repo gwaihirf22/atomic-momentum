@@ -5,32 +5,22 @@ import '../core/services/notification_service.dart';
 import '../core/theme/app_palette.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
-import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
-import 'builder_add_screen.dart';
+import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'insights_screen.dart';
 import 'settings_screen.dart';
-import 'story_habit_screen.dart';
 
 /// The app's main screen: four tabs, each with its own navigation stack,
 /// under the floating tab bar with the "+" orb in the middle.
 class IOSMainNavigation extends StatefulWidget {
   const IOSMainNavigation({Key? key}) : super(key: key);
 
-  /// Opens New Habit over everything (the tab bar included), from anywhere,
-  /// in the style chosen in Settings (Builder or Story).
+  /// Opens New Habit over everything (the tab bar included), from anywhere.
   static Future<void> addHabit(BuildContext context) async {
-    final style = context.read<SettingsProvider>().addHabitStyle;
     await Navigator.of(context, rootNavigator: true).push(
-      CupertinoPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => switch (style) {
-          AddHabitStyle.builder => const BuilderAddScreen(),
-          AddHabitStyle.story => const StoryHabitScreen(),
-        },
-      ),
+      CupertinoPageRoute<void>(fullscreenDialog: true, builder: (_) => const HabitEditorScreen()),
     );
     if (!context.mounted) return;
     final habitProvider = context.read<HabitProvider>();

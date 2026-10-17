@@ -18,7 +18,14 @@ import 'add_habit_screen.dart';
 /// Builder: a new habit in three quick steps (what, how often, make it
 /// easy), from the Charged design. Editing uses the one-page form.
 class BuilderAddScreen extends StatefulWidget {
-  const BuilderAddScreen({super.key});
+  /// The draft to fill, when the habit editor owns it (so switching styles
+  /// keeps what's entered); otherwise this screen starts its own.
+  final HabitDraft? draft;
+
+  /// The "Switch to Story" control, shown at the top.
+  final Widget? styleSwitch;
+
+  const BuilderAddScreen({super.key, this.draft, this.styleSwitch});
 
   static const stepCount = 3;
 
@@ -46,12 +53,12 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = HabitDraft.start(context, null);
+    _draft = widget.draft ?? HabitDraft.start(context, null);
   }
 
   @override
   void dispose() {
-    _draft.dispose();
+    if (widget.draft == null) _draft.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -115,6 +122,11 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (widget.styleSwitch != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Align(alignment: AlignmentDirectional.centerEnd, child: widget.styleSwitch),
+                            ),
                           Semantics(
                             header: true,
                             child: Text(

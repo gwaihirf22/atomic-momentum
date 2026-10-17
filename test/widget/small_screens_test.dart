@@ -29,6 +29,7 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/builder_add_screen.dart';
+import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
@@ -141,6 +142,9 @@ void main() {
     'Categories': () => const CategoriesScreen(),
     'Builder, step 1': () => const BuilderAddScreen(),
     'Story, new': () => const StoryHabitScreen(),
+    'Habit editor (with its style switch)': () => const HabitEditorScreen(),
+    'Habit editor, editing a long name': () =>
+        HabitEditorScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Story, editing a long name with a two-minute version': () =>
         StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
   };

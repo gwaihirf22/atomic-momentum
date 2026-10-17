@@ -19,7 +19,14 @@ import '../presentation/widgets/unsaved_changes_guard.dart';
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
 
-  const AddHabitScreen({Key? key, this.editHabit}) : super(key: key);
+  /// The draft to edit, when the habit editor owns it (so switching styles
+  /// keeps what's entered); otherwise this screen starts its own.
+  final HabitDraft? draft;
+
+  /// The "Switch to Story" control, shown at the top.
+  final Widget? styleSwitch;
+
+  const AddHabitScreen({Key? key, this.editHabit, this.draft, this.styleSwitch}) : super(key: key);
 
   @override
   State<AddHabitScreen> createState() => _AddHabitScreenState();
@@ -33,12 +40,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   @override
   void initState() {
     super.initState();
-    _draft = HabitDraft.start(context, widget.editHabit);
+    _draft = widget.draft ?? HabitDraft.start(context, widget.editHabit);
   }
 
   @override
   void dispose() {
-    _draft.dispose();
+    if (widget.draft == null) _draft.dispose();
     super.dispose();
   }
 
@@ -83,6 +90,11 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (widget.styleSwitch != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Align(alignment: AlignmentDirectional.centerEnd, child: widget.styleSwitch),
+                        ),
                       FormCard(children: [
                         NameField(_draft),
                         const SizedBox(height: 16),

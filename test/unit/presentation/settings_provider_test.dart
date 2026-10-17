@@ -74,19 +74,19 @@ void main() {
     });
   });
 
-  test('new habits start in Builder; Story is saved when chosen', () async {
-    expect(settings.addHabitStyle, AddHabitStyle.builder);
+  test('the habit editor opens in Story; Builder is saved when chosen', () async {
+    expect(settings.addHabitStyle, AddHabitStyle.story);
     var notified = false;
     settings.addListener(() => notified = true);
 
-    await settings.setAddHabitStyle(AddHabitStyle.story);
+    await settings.setAddHabitStyle(AddHabitStyle.builder);
 
     expect(notified, isTrue);
-    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.story);
+    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.builder);
   });
 
-  test('an unknown saved style falls back to Builder', () async {
+  test('an unknown saved style falls back to Story', () async {
     SharedPreferences.setMockInitialValues({'addHabitStyle': 'wizard'});
-    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.builder);
+    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.story);
   });
 }

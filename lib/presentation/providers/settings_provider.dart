@@ -5,13 +5,13 @@ import '../../core/copy/greetings.dart';
 import '../../core/locale/week_start.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 
-/// How a new habit is set up (and, in Story, edited).
+/// The style the habit editor opens in; either can be switched to there.
 enum AddHabitStyle {
-  /// Three quick steps; edits happen on one page.
-  builder,
-
-  /// One sentence with blanks to fill in, for adding and editing.
+  /// One sentence with blanks to fill in.
   story,
+
+  /// Three quick steps for a new habit; edits happen on one page.
+  builder,
 }
 
 /// App-wide preferences persisted in SharedPreferences.
@@ -82,10 +82,10 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Builder until the person picks Story.
+  /// Story until the person picks Builder.
   AddHabitStyle get addHabitStyle {
     final saved = _prefs.getString(_addHabitStyleKey);
-    return AddHabitStyle.values.where((s) => s.name == saved).firstOrNull ?? AddHabitStyle.builder;
+    return AddHabitStyle.values.where((s) => s.name == saved).firstOrNull ?? AddHabitStyle.story;
   }
 
   Future<void> setAddHabitStyle(AddHabitStyle style) async {

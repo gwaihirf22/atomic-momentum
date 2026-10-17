@@ -100,18 +100,18 @@ class SettingsScreen extends StatelessWidget {
         ),
         SettingsSection(
           header: 'Habits',
-          footer: 'Your new habit style is used for adding habits, and in Story for editing them too.',
+          footer: 'Adding and editing open in this style. Switch any time at the top of the page.',
           children: [
             SettingsTile(
               tileKey: const Key('addHabitStyleSetting'),
               icon: CupertinoIcons.wand_stars,
               iconColor: HabitColor.deepOrange.color,
-              title: 'New habit style',
+              title: 'Habit editor',
               value: _styleLabel(settings.addHabitStyle),
               onTap: () async {
                 final style = await chooseAdaptive<AddHabitStyle>(
                   context,
-                  title: 'New habit style',
+                  title: 'Open the habit editor in',
                   selected: settings.addHabitStyle,
                   options: [
                     for (final style in AddHabitStyle.values)
