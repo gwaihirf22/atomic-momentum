@@ -1,6 +1,6 @@
 # Atomic Momentum: product strategy
 
-*Decided October 16, 2026. This replaces the older `docs/ROADMAP.md`.*
+*Decided October 16, 2026.*
 
 The core habit tracker is built: habits, categories, flexible schedules, streaks, the Calendar and streak warnings. This document covers four things:
 - what will make the app stand out;
@@ -98,7 +98,7 @@ For the code, use RevenueCat's `purchases_flutter`, which is the simplest for on
 **Why:**
 - **Android matters.** A SwiftUI app would mean writing the Android app a second time.
 - **The lead features are ordinary app screens:** the method features, charts, heatmaps and animations. Flutter does these well and they look the same on both phones.
-- **Nothing is wasted.** The existing logic and tests (371 as of this decision) carry over unchanged.
+- **Nothing is wasted.** The existing logic and tests (371 at the time of this decision, over 600 since) carry over unchanged.
 
 **What needs Swift (and Android's native code) anyway:** these are small native add-ons inside the Flutter project, not a rewrite. They share data with the app through an App Group.
 

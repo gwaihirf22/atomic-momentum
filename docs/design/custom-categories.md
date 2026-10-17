@@ -5,7 +5,7 @@ Status: **built** (2026-10-16). See "As built" at the end for where the implemen
 ## Goal
 Users can add, edit, reorder and remove categories, each with a name, color and an icon picked from a built-in library. Today's six categories (Body, Spirit, Mind, Social, Career, Creative) become the defaults. Existing habits keep working without any visible change.
 
-## Where we are today
+## Before (the starting point)
 - `HabitCategory` is a Dart `enum`. Its name, color and icon are fixed in code.
   - `HabitCategory` is referenced 78 times across 19 files in `lib/`, and 6 test files use it.
   - The most affected files are `category_provider.dart` (15), `create_habit_usecase.dart` (10), `habit_provider.dart` (9) and `category_icons.dart` (7).
@@ -66,7 +66,7 @@ class Category extends Equatable {
 - **Calendar filter:** the chips are already horizontally scrollable, so more categories need no change.
 
 ## Limits
-- Up to 24 categories, so rings stay at 4 pages or fewer.
+- Up to 24 categories: at most 4 pages of 6 rings. Above 115% text size pages hold 4 rings (`category_rings_bar.dart`), so 24 categories take up to 6 pages.
 - Names: 1–20 characters, unique, ignoring case.
 
 ## Implementation order
