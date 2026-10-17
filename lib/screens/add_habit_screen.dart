@@ -281,9 +281,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
+      // Rebuilds when the appearance changes
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.isDarkIn(context);
-                
         return UnsavedChangesGuard(
           hasChanges: _hasUnsavedChanges,
           child: Scaffold(

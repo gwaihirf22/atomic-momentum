@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
 import '../core/feedback/haptics.dart';
-import '../presentation/widgets/app_nav_bar.dart';
 import '../core/exceptions/friendly_error.dart';
 import '../core/theme/ios_colors.dart';
 import '../core/theme/ios_typography.dart';
@@ -21,6 +20,10 @@ import '../presentation/widgets/confirm_delete_habit.dart';
 import '../presentation/widgets/habit_card.dart';
 import 'add_habit_screen.dart';
 import 'categories_screen.dart';
+import 'package:intl/intl.dart';
+import '../core/copy/greetings.dart';
+import '../presentation/widgets/large_title_scaffold.dart';
+import '../presentation/widgets/momentum_ring.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -83,95 +86,99 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final isDark = themeProvider.isDarkIn(context);
-        
-        // Material Scaffold hosts SnackBars (delete confirmations, save
-        // failures with Retry); Cupertino scaffolds can't show them
-        return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: CupertinoPageScaffold(
-          backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
-          navigationBar: appNavigationBar(
-            title: 'Habits',
-            isDark: isDark,
-            trailing: CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder: (context) => AddHabitScreen(),
-                  ),
-                ).then((_) {
-                  // Refresh habits when returning from add screen
-                  final habitProvider = context.read<HabitProvider>();
-                  final categoryProvider = context.read<CategoryProvider>();
-                  
-                  habitProvider.refreshHabits().then((_) {
-                    // Update available categories after refresh
-                    categoryProvider.updateAvailableCategories(habitProvider.habits);
-                  });
-                });
-              },
-              child: Icon(
-                CupertinoIcons.add,
-                color: IOSColors.systemBlue,
-                size: 24,
-                semanticLabel: 'Add habit',
-              ),
-            ),
-          ),
-          child: SafeArea(
-            child: Consumer2<HabitProvider, CategoryProvider>(
-              builder: (context, habitProvider, categoryProvider, child) {
-                if (habitProvider.isLoading) {
-                  return _buildLoadingState(isDark);
-                }
-                
-                if (habitProvider.hasError) {
-                  return _buildErrorState(habitProvider.error!, isDark);
-                }
-                
-                final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
-                
-                return Column(
-                  children: [
-                    CategoryFilterHeader(
-                      selected: categoryProvider.selectedCategory,
-                      habitCount: filteredHabits.length,
-                      onShowAll: categoryProvider.clearSelectedCategory,
-                      isDark: isDark,
+        final now = DateTime.now();
+
+        return Consumer2<HabitProvider, CategoryProvider>(
+          builder: (context, habitProvider, categoryProvider, child) {
+            final momentum = habitProvider.overallMomentum;
+            final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
+
+            return SlidableAutoCloseBehavior(
+              child: LargeTitleScaffold(
+                title: 'Habits',
+                backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+                trailing: _buildAddButton(context),
+                header: LargeTitleHeader(
+                  eyebrow: DateFormat.MMMMEEEEd().format(now),
+                  title: Greetings.forTime(now),
+                  titleKey: const Key('habitsGreeting'),
+                  accessory: momentum == null
+                      ? null
+                      : MomentumRing(key: const Key('overallMomentum'), momentum: momentum),
+                ),
+                slivers: [
+                  if (habitProvider.isLoading)
+                    SliverFillRemaining(hasScrollBody: false, child: _buildLoadingState(isDark))
+                  else if (habitProvider.hasError)
+                    SliverFillRemaining(hasScrollBody: false, child: _buildErrorState(habitProvider.error!, isDark))
+                  else ...[
+                    SliverToBoxAdapter(
+                      child: CategoryFilterHeader(
+                        selected: categoryProvider.selectedCategory,
+                        habitCount: filteredHabits.length,
+                        onShowAll: categoryProvider.clearSelectedCategory,
+                        isDark: isDark,
+                      ),
                     ),
-                    CategoryRingsBar(
-                      categories: categoryProvider.filterOptions(habitProvider.habits),
-                      // Rest-day habits aren't due, so they don't drag a ring down
-                      stats: categoryProvider.getCategoryStats(
-                          habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
-                      selectedId: categoryProvider.selectedCategory?.id,
-                      onTap: categoryProvider.toggleCategory,
-                      onLongPress: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(builder: (_) => const CategoriesScreen()),
-                        );
-                      },
-                      isDark: isDark,
+                    SliverToBoxAdapter(
+                      child: CategoryRingsBar(
+                        categories: categoryProvider.filterOptions(habitProvider.habits),
+                        // Rest-day habits aren't due, so they don't drag a ring down
+                        stats: categoryProvider.getCategoryStats(
+                            habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
+                        selectedId: categoryProvider.selectedCategory?.id,
+                        onTap: categoryProvider.toggleCategory,
+                        onLongPress: () {
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(context).push(
+                            CupertinoPageRoute(builder: (_) => const CategoriesScreen()),
+                          );
+                        },
+                        isDark: isDark,
+                      ),
                     ),
-                    Expanded(
-                      child: filteredHabits.isEmpty 
-                        ? _buildEmptyState(isDark, categoryProvider.selectedCategory)
-                        : _buildHabitList(filteredHabits, habitProvider, isDark),
-                    ),
+                    if (filteredHabits.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _buildEmptyState(isDark, categoryProvider.selectedCategory),
+                      )
+                    else
+                      _buildHabitList(filteredHabits, habitProvider, isDark),
                   ],
-                );
-              },
-            ),
-          ),
-        ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
-  
+
+  Widget _buildAddButton(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () {
+        Navigator.push(
+          context,
+          CupertinoPageRoute(builder: (context) => const AddHabitScreen()),
+        ).then((_) {
+          // Refresh habits when returning from add screen
+          final habitProvider = context.read<HabitProvider>();
+          final categoryProvider = context.read<CategoryProvider>();
+          habitProvider.refreshHabits().then((_) {
+            categoryProvider.updateAvailableCategories(habitProvider.habits);
+          });
+        });
+      },
+      child: const Icon(
+        CupertinoIcons.add,
+        color: IOSColors.systemBlue,
+        size: 24,
+        semanticLabel: 'Add habit',
+      ),
+    );
+  }
+
   Widget _buildLoadingState(bool isDark) {
     return Center(
       child: Column(
@@ -269,11 +276,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {
-    // One open swipe-action pane at a time across the list
-    return SlidableAutoCloseBehavior(
-      child: ListView.builder(
+    return SliverPadding(
+      padding: const EdgeInsets.all(16),
+      sliver: SliverList.builder(
         itemCount: habits.length,
-        padding: const EdgeInsets.all(16),
         itemBuilder: (context, index) {
           final habit = habits[index];
           return HabitCard(

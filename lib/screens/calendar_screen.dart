@@ -12,7 +12,7 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
-import '../presentation/widgets/app_nav_bar.dart';
+import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import '../presentation/widgets/habit_icons.dart';
@@ -106,14 +106,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final isDark = context.watch<ThemeProvider>().isDarkIn(context);
     final isMonth = _calendarFormat == CalendarFormat.month;
 
-    // Material Scaffold hosts SnackBars, as on the Habits screen
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: CupertinoPageScaffold(
-        backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
-        navigationBar: appNavigationBar(
-          title: 'Calendar',
-          isDark: isDark,
+    return Consumer2<HabitProvider, CategoryProvider>(
+      builder: (context, habitProvider, categoryProvider, _) {
+        final habits = habitProvider.habits;
+        final dayHabits = _habitsForDay(_selectedDay);
+        final filterId = _activeFilterId(habits);
+
+        return LargeTitleScaffold(
+          title: DateFormat.yMMMM().format(_focusedDay),
+          backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
           trailing: CupertinoButton(
             key: const Key('calendarFormatToggle'),
             padding: EdgeInsets.zero,
@@ -125,47 +126,64 @@ class _CalendarScreenState extends State<CalendarScreen> {
               semanticLabel: isMonth ? 'Show one week' : 'Show the whole month',
             ),
           ),
-        ),
-        child: SafeArea(
-          child: Consumer2<HabitProvider, CategoryProvider>(
-            builder: (context, habitProvider, categoryProvider, _) {
-              final habits = habitProvider.habits;
-              final dayHabits = _habitsForDay(_selectedDay);
-              final filterId = _activeFilterId(habits);
-
-              return CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: CategoryFilterHeader(
-                      selected: filterId == null ? null : categoryProvider.resolve(filterId),
-                      habitCount: dayHabits.length,
-                      onShowAll: () => setState(() => _selectedCategoryId = null),
-                      isDark: isDark,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: CategoryRingsBar(
-                      categories: categoryProvider.filterOptions(habits),
-                      // The rings show the selected day
-                      stats: categoryProvider.getCategoryStats(
-                        habits.where((h) => h.isDueOn(_selectedDay)).toList(),
-                        on: _selectedDay,
-                      ),
-                      selectedId: filterId,
-                      onTap: _toggleCategory,
-                      isDark: isDark,
-                    ),
-                  ),
-                  SliverToBoxAdapter(child: _buildCalendar(context, habits, isDark)),
-                  SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
-                  _buildDayHabits(context, dayHabits),
-                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                ],
-              );
-            },
+          // The month is the title, with the year above and paging beside it
+          header: LargeTitleHeader(
+            eyebrow: DateFormat.y().format(_focusedDay),
+            title: DateFormat.MMMM().format(_focusedDay),
+            titleKey: const Key('calendarMonthTitle'),
+            accessory: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _pageButton(CupertinoIcons.chevron_left, isMonth ? 'Previous month' : 'Previous week', -1),
+                _pageButton(CupertinoIcons.chevron_right, isMonth ? 'Next month' : 'Next week', 1),
+              ],
+            ),
           ),
-        ),
-      ),
+          slivers: [
+            SliverToBoxAdapter(
+              child: CategoryFilterHeader(
+                selected: filterId == null ? null : categoryProvider.resolve(filterId),
+                habitCount: dayHabits.length,
+                onShowAll: () => setState(() => _selectedCategoryId = null),
+                isDark: isDark,
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: CategoryRingsBar(
+                categories: categoryProvider.filterOptions(habits),
+                // The rings show the selected day
+                stats: categoryProvider.getCategoryStats(
+                  habits.where((h) => h.isDueOn(_selectedDay)).toList(),
+                  on: _selectedDay,
+                ),
+                selectedId: filterId,
+                onTap: _toggleCategory,
+                isDark: isDark,
+              ),
+            ),
+            SliverToBoxAdapter(child: _buildCalendar(context, habits, isDark)),
+            SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
+            _buildDayHabits(context, dayHabits),
+            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Pages the calendar a month (or a week) back or forward.
+  Widget _pageButton(IconData icon, String label, int direction) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      minSize: 44,
+      onPressed: () => setState(() {
+        final d = _focusedDay;
+        _focusedDay = _calendarFormat == CalendarFormat.month
+            ? DateTime(d.year, d.month + direction, 1)
+            : DateTime(d.year, d.month, d.day + 7 * direction);
+      }),
+      child: Icon(icon, size: 22, color: accent, semanticLabel: label),
     );
   }
 
@@ -203,6 +221,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       // Follows Settings > Start week on (by default, the device's region)
       startingDayOfWeek: StartingDayOfWeek.values[context.watch<SettingsProvider>().firstDayOfWeek - 1],
       rowHeight: 48,
+      headerVisible: false,
       headerStyle: HeaderStyle(
         formatButtonVisible: false,
         titleCentered: true,
@@ -231,7 +250,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       onFormatChanged: (format) {
         if (_calendarFormat != format) setState(() => _calendarFormat = format);
       },
-      onPageChanged: (focusedDay) => _focusedDay = focusedDay,
+      // Swiping the grid changes the month in the title
+      onPageChanged: (focusedDay) => setState(() => _focusedDay = focusedDay),
     );
   }
 

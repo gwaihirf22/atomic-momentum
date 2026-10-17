@@ -134,10 +134,11 @@ python server.py
 ### Product Direction
 **Read `docs/strategy/product-strategy.md` before planning features.** It holds the positioning ("Momentum, not perfection", built on *Atomic Habits*), monetization (free + one-time Pro + in-app-purchase tip jar), the Flutter-over-Swift decision and the roadmap. v1, in order:
 1. ~~Momentum score + never miss twice~~ (done)
-2. Two-minute version
-3. Year heatmap + weekly review
-4. Onboarding tutorial
-5. Store readiness
+2. Smart reminders: on by default, following each habit's due days, per-habit control (Edit Habit rework)
+3. Two-minute version
+4. Year heatmap + weekly review
+5. Onboarding tutorial
+6. Store readiness (name "Momentum", icon and app id `com.paulblake.momentum` are done)
 
 ### Testing Strategy
 - **Every feature or fix ships with tests.** Run the whole suite with `./flutter/bin/flutter test`; it must pass.
@@ -145,7 +146,7 @@ python server.py
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
 - **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
-- **Status (2026-10-16)**: 407 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-16)**: 447 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 

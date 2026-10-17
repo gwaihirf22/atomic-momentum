@@ -12,6 +12,7 @@ import '../../core/services/notification_service.dart';
 import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../core/logging/log.dart';
+import '../../domain/entities/momentum.dart';
 
 enum HabitProviderState {
   initial,
@@ -60,6 +61,18 @@ class HabitProvider extends ChangeNotifier {
   HabitProviderState get state => _state;
   List<Habit> get habits => List.unmodifiable(_habits);
   String? get error => _error;
+  /// Average momentum across habits that reset and have something logged,
+  /// or null when there's nothing to average yet.
+  Momentum? get overallMomentum {
+    final tracked = _habits
+        .where((h) => h.schedule.isPeriodic && h.history.values.any((amount) => amount > 0))
+        .map((h) => h.momentum)
+        .toList();
+    if (tracked.isEmpty) return null;
+    double average(double Function(Momentum m) of) => tracked.map(of).reduce((a, b) => a + b) / tracked.length;
+    return Momentum(score: average((m) => m.score), trend: average((m) => m.trend));
+  }
+
   bool get isLoading => _state == HabitProviderState.loading;
   bool get hasError => _state == HabitProviderState.error;
   bool get hasHabits => _habits.isNotEmpty;

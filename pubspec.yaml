@@ -77,6 +77,18 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  assets:
+    - assets/fonts/Sora/OFL.txt
+
+  # Sora (SIL Open Font License), for large titles; body text is the system font
+  fonts:
+    - family: Sora
+      fonts:
+        - asset: assets/fonts/Sora/Sora-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Sora/Sora-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg

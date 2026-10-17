@@ -8,7 +8,7 @@ import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/adaptive.dart';
-import '../presentation/widgets/app_nav_bar.dart';
+import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/settings_list.dart';
 import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
@@ -18,23 +18,16 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkIn(context);
-    if (!isCupertino(context)) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Settings')),
-        body: _buildSettingsList(context),
-      );
-    }
-    // iOS Settings style: grouped rows on the grouped background. The Material
-    // Scaffold hosts SnackBars (Developer section)
-    final grouped = CupertinoDynamicColor.resolve(CupertinoColors.systemGroupedBackground, context);
-    return Scaffold(
-      backgroundColor: grouped,
-      body: CupertinoPageScaffold(
-        backgroundColor: grouped,
-        navigationBar: appNavigationBar(title: 'Settings', isDark: isDark, backgroundColor: grouped),
-        child: SafeArea(child: _buildSettingsList(context)),
-      ),
+    context.watch<ThemeProvider>(); // rebuild when the appearance changes
+    // iOS Settings style: grouped rows on the grouped background
+    final background = isCupertino(context)
+        ? CupertinoDynamicColor.resolve(CupertinoColors.systemGroupedBackground, context)
+        : Theme.of(context).scaffoldBackgroundColor;
+    return LargeTitleScaffold(
+      title: 'Settings',
+      backgroundColor: background,
+      header: const LargeTitleHeader(title: 'Settings', titleKey: Key('settingsTitle')),
+      slivers: [_buildSettingsList(context)],
     );
   }
 
@@ -49,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
 
     final automaticWeekStart = 'Automatic (${_dayNames[settings.regionalFirstDay - 1]})';
 
-    return ListView(
+    return SliverList.list(
       children: [
         SettingsSection(
           header: 'Display',
