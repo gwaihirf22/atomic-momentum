@@ -1,6 +1,7 @@
 import '../entities/habit.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/exceptions/storage_exceptions.dart';
+import 'package:clock/clock.dart';
 
 class DeleteHabitUseCase {
   final HabitRepository _repository;
@@ -70,7 +71,7 @@ class DeleteHabitUseCase {
   Future<List<Habit>> deleteOldCompletedHabits({int olderThanDays = 365}) async {
     try {
       final allHabits = await _repository.getHabits();
-      final cutoffDate = DateTime.now().subtract(Duration(days: olderThanDays));
+      final cutoffDate = clock.now().subtract(Duration(days: olderThanDays));
       
       final oldHabits = allHabits.where((habit) {
         // Check if habit was last updated before cutoff and is completed
@@ -102,7 +103,7 @@ class DeleteHabitUseCase {
   Future<List<Habit>> getHabitsForCleanup({int olderThanDays = 365}) async {
     try {
       final allHabits = await _repository.getHabits();
-      final cutoffDate = DateTime.now().subtract(Duration(days: olderThanDays));
+      final cutoffDate = clock.now().subtract(Duration(days: olderThanDays));
       
       return allHabits.where((habit) {
         return habit.lastUpdatedDate.isBefore(cutoffDate) && 

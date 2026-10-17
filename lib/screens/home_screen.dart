@@ -24,6 +24,7 @@ import 'package:intl/intl.dart';
 import '../core/copy/greetings.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/momentum_ring.dart';
+import 'package:clock/clock.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -78,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // The day may have rolled over while the app was in the background
     if (state == AppLifecycleState.resumed) {
       // Back in the app: a fresh greeting
-      setState(() => _greeting = Greetings.pick(DateTime.now(), avoid: _greeting));
+      setState(() => _greeting = Greetings.pick(clock.now(), avoid: _greeting));
       context.read<HabitProvider>().resetHabitsIfNeeded();
       _scheduleMidnightReset();
     }
@@ -87,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Every reset boundary (day, week, month) falls on a local midnight
   void _scheduleMidnightReset() {
     _midnightTimer?.cancel();
-    final now = DateTime.now();
+    final now = clock.now();
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     _midnightTimer = Timer(nextMidnight.difference(now) + const Duration(seconds: 1), () {
       if (!mounted) return;
@@ -101,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         final isDark = themeProvider.isDarkIn(context);
-        final now = DateTime.now();
+        final now = clock.now();
 
         return Consumer2<HabitProvider, CategoryProvider>(
           builder: (context, habitProvider, categoryProvider, child) {
@@ -140,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         categories: categoryProvider.filterOptions(habitProvider.habits),
                         // Rest-day habits aren't due, so they don't drag a ring down
                         stats: categoryProvider.getCategoryStats(
-                            habitProvider.habits.where((h) => h.isDueOn(DateTime.now())).toList()),
+                            habitProvider.habits.where((h) => h.isDueOn(clock.now())).toList()),
                         selectedId: categoryProvider.selectedCategory?.id,
                         onTap: categoryProvider.toggleCategory,
                         onLongPress: () {

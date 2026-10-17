@@ -3,6 +3,7 @@ import '../repositories/category_repository.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/validation/category_validator.dart';
+import 'package:clock/clock.dart';
 
 /// Rules for adding, editing, ordering and deleting categories. Each
 /// operation loads the stored categories, applies its rule, saves, and
@@ -75,7 +76,7 @@ class ManageCategoriesUseCase {
     if (category.isDeleted) return all;
     if (_active(all).length <= 1) throw ValidationException('Keep at least one category');
 
-    final deleted = category.markDeleted(now ?? DateTime.now());
+    final deleted = category.markDeleted(now ?? clock.now());
     return _save([for (final c in all) c.id == id ? deleted : c]);
   }
 
@@ -150,7 +151,7 @@ class ManageCategoriesUseCase {
     final taken = all.map((c) => c.id).toSet();
     String id;
     do {
-      id = 'cat_${DateTime.now().microsecondsSinceEpoch}_${_idCounter++}';
+      id = 'cat_${clock.now().microsecondsSinceEpoch}_${_idCounter++}';
     } while (taken.contains(id));
     return id;
   }

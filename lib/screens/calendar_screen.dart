@@ -21,6 +21,7 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
 import '../presentation/widgets/two_minute_button.dart';
+import 'package:clock/clock.dart';
 
 /// Any day's habits: a month (or week) of days, each inside a ring that fills
 /// with that day's completion, and the selected day's habits below, which
@@ -34,7 +35,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
-  DateTime _focusedDay = DateTime.now();
+  DateTime _focusedDay = clock.now();
   late DateTime _selectedDay;
 
   // The Calendar keeps its own filter, separate from the Habits screen's
@@ -43,13 +44,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = _localDay(DateTime.now());
+    _selectedDay = _localDay(clock.now());
   }
 
   // table_calendar gives UTC midnights; this screen works in local dates
   static DateTime _localDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  static DateTime get _today => _localDay(DateTime.now());
+  static DateTime get _today => _localDay(clock.now());
 
   /// The chosen filter, or null (All) if it's no longer one of the options,
   /// e.g. the category was deleted.

@@ -8,6 +8,7 @@ import '../domain/entities/habit_color.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../domain/services/streak_warning_planner.dart';
 import '../presentation/providers/habit_provider.dart';
+import 'package:clock/clock.dart';
 
 /// Developer tool (debug builds only) for checking that notifications work on
 /// this device: permission, immediate and scheduled delivery, the streak
@@ -76,7 +77,7 @@ class _NotificationTesterScreenState extends State<NotificationTesterScreen> {
   }
 
   Future<void> _previewStreakWarning() async {
-    final now = DateTime.now();
+    final now = clock.now();
     // Zero lead time: preview the message as of the deadline itself
     const settings = StreakWarningSettings(enabled: true, leadTime: Duration.zero);
     final habits = context.read<HabitProvider>().habits;

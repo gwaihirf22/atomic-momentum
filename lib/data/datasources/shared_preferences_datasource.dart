@@ -4,6 +4,7 @@ import 'local_habit_datasource.dart';
 import '../models/habit_model.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/logging/log.dart';
+import 'package:clock/clock.dart';
 
 class SharedPreferencesDataSource implements LocalHabitDataSource {
   final SharedPreferences _prefs;
@@ -175,7 +176,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
       
       final backupData = {
         'version': '2.0.0',
-        'createdAt': DateTime.now().toIso8601String(),
+        'createdAt': clock.now().toIso8601String(),
         'metadata': metadata,
         'habits': habits.map((habit) => habit.toJson()).toList(),
         'habitCount': habits.length,
@@ -260,8 +261,8 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
   Map<String, dynamic> _getDefaultMetadata() {
     return {
       'version': '2.0.0',
-      'createdAt': DateTime.now().toIso8601String(),
-      'lastUpdated': DateTime.now().toIso8601String(),
+      'createdAt': clock.now().toIso8601String(),
+      'lastUpdated': clock.now().toIso8601String(),
       'habitCount': 0,
       'totalOperations': 0,
     };
@@ -271,7 +272,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
     try {
       final metadata = await getStorageMetadata();
       
-      metadata['lastUpdated'] = DateTime.now().toIso8601String();
+      metadata['lastUpdated'] = clock.now().toIso8601String();
       metadata['habitCount'] = habitCount;
       metadata['totalOperations'] = (metadata['totalOperations'] as int? ?? 0) + 1;
       

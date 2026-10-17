@@ -10,6 +10,7 @@ import 'habit_icons.dart';
 import 'habit_progress_ring.dart';
 import 'habit_stepper.dart';
 import 'two_minute_button.dart';
+import 'package:clock/clock.dart';
 
 /// A compact habit row: the icon inside a progress ring (tap it to add one),
 /// the name with progress and schedule, momentum and streak, the "2 min"
@@ -122,7 +123,7 @@ class HabitCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = habit.color.color;
-    final now = DateTime.now();
+    final now = clock.now();
     final isRestDay = !habit.isDueOn(now);
     final secondary = secondaryLabel(context);
     // Momentum and streak appear once there's something to show

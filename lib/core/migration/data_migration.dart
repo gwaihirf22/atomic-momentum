@@ -8,6 +8,7 @@ import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
 import '../exceptions/storage_exceptions.dart';
 import '../logging/log.dart';
+import 'package:clock/clock.dart';
 
 class DataMigration {
   static const String currentVersion = '2.0.0';
@@ -128,8 +129,8 @@ class DataMigration {
     // Handle dates
     final lastUpdatedString = data['lastUpdatedDate'] as String?;
     final lastUpdatedDate = lastUpdatedString != null 
-        ? DateTime.tryParse(lastUpdatedString) ?? DateTime.now()
-        : DateTime.now();
+        ? DateTime.tryParse(lastUpdatedString) ?? clock.now()
+        : clock.now();
     
     // Handle reset frequency
     final resetFrequencyString = data['resetFrequency'] as String? ?? 'weekly';
@@ -316,7 +317,7 @@ class DataMigration {
       'migratedCount': migratedData.length,
       'skippedCount': skippedCount,
       'success': skippedCount < originalData.length * 0.1, // Allow 10% failure rate
-      'migratedAt': DateTime.now().toIso8601String(),
+      'migratedAt': clock.now().toIso8601String(),
     };
   }
 

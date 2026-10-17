@@ -5,6 +5,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../../domain/services/streak_warning_planner.dart';
+import 'package:clock/clock.dart';
 
 /// Whether the app may show notifications on this device.
 enum NotificationPermission { granted, denied, unknown, unsupported }
@@ -293,7 +294,7 @@ class NotificationService {
     if (!isSupported) return null;
 
     try {
-      final at = DateTime.now().add(delay);
+      final at = clock.now().add(delay);
       await _notificationsPlugin.zonedSchedule(
         scheduledTestNotificationId,
         'Scheduled test',

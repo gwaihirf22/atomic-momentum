@@ -5,6 +5,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../domain/usecases/manage_categories_usecase.dart';
 import '../../core/exceptions/storage_exceptions.dart';
+import 'package:clock/clock.dart';
 
 /// The user's categories and the Habits screen's category filter.
 ///
@@ -109,7 +110,7 @@ class CategoryProvider extends ChangeNotifier {
 
     bool isDone(Habit habit) => on == null ? habit.isCompleted : habit.wasCompletedOnDate(on);
     // A two-minute day counts at least half
-    double fractionOf(Habit habit) => habit.fractionDoneOn(on ?? DateTime.now());
+    double fractionOf(Habit habit) => habit.fractionDoneOn(on ?? clock.now());
 
     for (final category in filterOptions(habits)) {
       final categoryHabits = habits.where((habit) => matches(habit, category.id)).toList();

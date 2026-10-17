@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:clock/clock.dart';
 
 class StreakData extends Equatable {
   final int current;
@@ -91,7 +92,7 @@ class StreakPeriod extends Equatable {
     if (endDate != null) {
       return endDate!.difference(startDate).inDays + 1;
     }
-    return DateTime.now().difference(startDate).inDays + 1;
+    return clock.now().difference(startDate).inDays + 1;
   }
 
   StreakPeriod copyWith({

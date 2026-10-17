@@ -28,6 +28,7 @@ import 'package:flutter/cupertino.dart';
 import '../core/theme/app_style.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../domain/services/reminder_planner.dart';
+import 'package:clock/clock.dart';
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
@@ -56,7 +57,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   String _selectedCategoryId = '';
   ResetFrequency _selectedFrequency = ResetFrequency.daily;
   // Weekly habits reset on this date's weekday, monthly on its day of month
-  DateTime _resetAnchor = DateUtils.dateOnly(DateTime.now());
+  DateTime _resetAnchor = DateUtils.dateOnly(clock.now());
   int _resetInterval = 1;
   // Days a daily habit is due; all seven means every day
   List<int> _scheduleDays = [1, 2, 3, 4, 5, 6, 7];
@@ -864,7 +865,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       context,
       initial: _resetAnchor,
       first: _resetAnchor.isBefore(DateTime(2020)) ? _resetAnchor : DateTime(2020),
-      last: DateTime.now().add(const Duration(days: 366)),
+      last: clock.now().add(const Duration(days: 366)),
       helpText: _selectedFrequency == ResetFrequency.weekly
           ? 'Resets on this weekday'
           : _selectedFrequency == ResetFrequency.monthly

@@ -6,6 +6,7 @@ import '../entities/two_minute_version.dart';
 import '../repositories/habit_repository.dart';
 import '../../core/validation/habit_validator.dart';
 import '../../core/exceptions/storage_exceptions.dart';
+import 'package:clock/clock.dart';
 
 class UpdateHabitUseCase {
   final HabitRepository _repository;
@@ -158,7 +159,7 @@ class UpdateHabitUseCase {
   /// by an older rule. Returns the saved habits.
   Future<List<Habit>> resetHabitsIfNeeded([DateTime? now]) async {
     try {
-      final at = now ?? DateTime.now();
+      final at = now ?? clock.now();
       final habits = await _repository.getHabits();
       final resetHabits = <Habit>[];
 

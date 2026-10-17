@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_style.dart';
+import 'package:clock/clock.dart';
 
 /// One button in an [showAdaptiveAlert].
 class AdaptiveAction<T> {
@@ -153,7 +154,7 @@ Future<TimeOfDay?> pickTimeAdaptive(BuildContext context, {required TimeOfDay in
   if (!isCupertino(context)) {
     return showTimePicker(context: context, initialTime: initial);
   }
-  final now = DateTime.now();
+  final now = clock.now();
   final picked = await _cupertinoPicker(
     context,
     mode: CupertinoDatePickerMode.time,

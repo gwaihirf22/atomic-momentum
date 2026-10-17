@@ -3,6 +3,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 import '../../domain/services/streak_warning_planner.dart';
 import 'notification_service.dart';
+import 'package:clock/clock.dart' as system_clock show clock;
 
 /// Delivers streak warnings. Separated from [StreakWarningService] so tests
 /// can substitute a fake for the platform notification plugin.
@@ -40,7 +41,7 @@ class StreakWarningService {
     DateTime Function()? clock,
   })  : _scheduler = scheduler,
         _readSettings = readSettings,
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? _systemNow;
 
   Future<void> sync(Habit habit) async {
     try {
@@ -68,3 +69,5 @@ class StreakWarningService {
     }
   }
 }
+
+DateTime _systemNow() => system_clock.clock.now();

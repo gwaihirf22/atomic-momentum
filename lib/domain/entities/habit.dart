@@ -9,6 +9,7 @@ import 'momentum.dart';
 import 'two_minute_version.dart';
 import '../services/momentum_calculator.dart';
 import '../services/streak_calculator.dart';
+import 'package:clock/clock.dart';
 
 class Habit extends Equatable {
   final String id;
@@ -80,7 +81,7 @@ class Habit extends Equatable {
     List<int>? scheduledWeekdays,
     TwoMinuteVersion? twoMinute,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     // Timestamp alone collides when habits are created in the same instant
     final id = 'habit_${now.microsecondsSinceEpoch}_${_idCounter++}';
     
@@ -150,7 +151,7 @@ class Habit extends Equatable {
       throw ArgumentError('Progress must be between 0 and $target');
     }
 
-    final now = DateTime.now();
+    final now = clock.now();
     final today = _dateOnly(now);
     final loggedEarlierThisPeriod = progressForPeriodContaining(now) - (history[today] ?? 0);
     final todayAmount = newProgress - loggedEarlierThisPeriod;
@@ -175,7 +176,7 @@ class Habit extends Equatable {
   /// Records what was logged on a past (or today's) [date] and recomputes
   /// progress and streak. Used to fix history retroactively.
   Habit setProgressForDate(DateTime date, int amount) {
-    final now = DateTime.now();
+    final now = clock.now();
     final day = _dateOnly(date);
     if (day.isAfter(_dateOnly(now))) {
       throw ArgumentError('Cannot log progress for a future date');
@@ -203,7 +204,7 @@ class Habit extends Equatable {
   /// containing [date], which can't be in the future. Unmarking clears every
   /// "2 min" day of that period.
   Habit setTwoMinuteForDate(DateTime date, bool done) {
-    final now = DateTime.now();
+    final now = clock.now();
     final day = _dateOnly(date);
     if (day.isAfter(_dateOnly(now))) {
       throw ArgumentError('Cannot log the two-minute version for a future date');
@@ -220,7 +221,7 @@ class Habit extends Equatable {
 
   /// Clears what was logged in the current period.
   Habit resetProgress() {
-    final now = DateTime.now();
+    final now = clock.now();
     final start = resetFrequency.isPeriodic ? schedule.periodStart(now) : null;
     final newHistory = Map<DateTime, int>.from(history)
       ..removeWhere((date, _) => start == null || !date.isBefore(start));
@@ -235,7 +236,7 @@ class Habit extends Equatable {
   /// rolled over: progress drops to this period's total and an expired
   /// streak quietly becomes 0.
   Habit refresh([DateTime? now]) {
-    final at = now ?? DateTime.now();
+    final at = now ?? clock.now();
     return _recalculated(at).copyWith(lastUpdatedDate: at);
   }
 
@@ -260,7 +261,7 @@ class Habit extends Equatable {
       history: history,
       target: target,
       schedule: schedule,
-      now: now ?? DateTime.now(),
+      now: now ?? clock.now(),
       twoMinute: _twoMinuteLog,
     );
   }
@@ -271,7 +272,7 @@ class Habit extends Equatable {
       history: history,
       target: target,
       schedule: schedule,
-      now: now ?? DateTime.now(),
+      now: now ?? clock.now(),
       twoMinute: _twoMinuteLog,
     );
   }
@@ -325,11 +326,11 @@ class Habit extends Equatable {
       categoryId: categoryId ?? this.categoryId,
       resetFrequency: resetFrequency ?? this.resetFrequency,
       reminder: reminder ?? this.reminder,
-      lastUpdatedDate: DateTime.now(),
+      lastUpdatedDate: clock.now(),
       // null keeps the icon; '' removes it
       metadata: metadata
           .withIcon(icon == null ? metadata.icon : (icon.isEmpty ? null : icon))
-          .copyWith(lastModifiedDate: DateTime.now())
+          .copyWith(lastModifiedDate: clock.now())
           .incrementVersion(),
       resetAnchorDate: resetAnchor != null ? _dateOnly(resetAnchor) : null,
       resetInterval: newInterval < 1 ? 1 : newInterval,

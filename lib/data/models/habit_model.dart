@@ -7,6 +7,7 @@ import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/habit_metadata.dart';
 import '../../domain/entities/two_minute_version.dart';
 import '../../core/logging/log.dart';
+import 'package:clock/clock.dart';
 
 class HabitModel extends Habit {
   HabitModel({
@@ -184,7 +185,7 @@ class HabitModel extends Habit {
         'twoMinute': twoMinute?.toJson(),
         if (twoMinuteDays.isNotEmpty) 'twoMinuteDays': Habit.twoMinuteDaysToJson(twoMinuteDays),
         '_version': '2.0.0', // Add version for future migrations
-        '_serializedAt': DateTime.now().toIso8601String(),
+        '_serializedAt': clock.now().toIso8601String(),
       };
     } catch (e) {
       throw HabitModelException('Failed to serialize habit to JSON: $e');
@@ -212,7 +213,7 @@ class HabitModel extends Habit {
     // Handle old web app format
     if (json.containsKey('lastUpdatedDate') && json['lastUpdatedDate'] is! String) {
       // Convert legacy date format if needed
-      json['lastUpdatedDate'] = DateTime.now().toIso8601String();
+      json['lastUpdatedDate'] = clock.now().toIso8601String();
     }
 
     // Add missing fields with defaults
@@ -234,7 +235,7 @@ class HabitModel extends Habit {
     try {
       if (id.isEmpty || name.trim().isEmpty) return false;
       if (target <= 0 || progress < 0) return false;
-      if (lastUpdatedDate.isAfter(DateTime.now().add(const Duration(hours: 1)))) return false;
+      if (lastUpdatedDate.isAfter(clock.now().add(const Duration(hours: 1)))) return false;
       
       return true;
     } catch (e) {
@@ -276,7 +277,7 @@ class HabitModelUtils {
     final data = {
       'habits': models.map((model) => model.toJson()).toList(),
       'version': '2.0.0',
-      'exportedAt': DateTime.now().toIso8601String(),
+      'exportedAt': clock.now().toIso8601String(),
       'count': models.length,
     };
     

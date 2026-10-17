@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../entities/habit.dart';
 import '../entities/habit_schedule.dart';
 import '../entities/reset_frequency.dart';
+import 'package:clock/clock.dart';
 
 /// One reminder notification to deliver.
 class PlannedReminder extends Equatable {
@@ -80,7 +81,7 @@ class ReminderPlanner {
       return schedule.hasRestDays ? 'On each due day (${schedule.shortLabel})' : 'Every day';
     }
 
-    final start = schedule.periodStart(now ?? DateTime.now());
+    final start = schedule.periodStart(now ?? clock.now());
     final next = schedule.nextPeriodStart(start);
     final offsets = countdownOffsets(_daysBetween(start, next));
     final when = switch (offsets.length) {

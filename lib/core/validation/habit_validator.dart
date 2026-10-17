@@ -2,6 +2,7 @@ import '../validation/validation_result.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/two_minute_version.dart';
+import 'package:clock/clock.dart';
 
 class HabitValidator {
   static ValidationResult validate(Habit habit) {
@@ -86,7 +87,7 @@ class HabitValidator {
   }
 
   static void _validateDates(Habit habit, List<String> errors, List<String> warnings) {
-    final now = DateTime.now();
+    final now = clock.now();
     
     // Check if last updated date is in the future
     if (habit.lastUpdatedDate.isAfter(now.add(const Duration(hours: 1)))) {
@@ -125,7 +126,7 @@ class HabitValidator {
     }
     
     // Check for future dates in history
-    final now = DateTime.now();
+    final now = clock.now();
     final futureEntries = history.keys.where((date) => 
       date.isAfter(now.add(const Duration(days: 1)))
     );
@@ -188,7 +189,7 @@ class HabitValidator {
     final warnings = <String>[];
 
     // Check if habit should be reset based on frequency
-    final now = DateTime.now();
+    final now = clock.now();
     if (habit.shouldReset(now) && habit.progress > 0) {
       warnings.add("Habit may need to be reset based on reset frequency");
     }

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:clock/clock.dart';
 
 class HabitMetadata extends Equatable {
   final DateTime createdDate;
@@ -19,7 +20,7 @@ class HabitMetadata extends Equatable {
     String? icon,
     Map<String, dynamic>? customFields,
   }) {
-    final now = DateTime.now();
+    final now = clock.now();
     return HabitMetadata(
       createdDate: now,
       lastModifiedDate: now,
@@ -30,13 +31,13 @@ class HabitMetadata extends Equatable {
   }
 
   HabitMetadata updateModifiedDate() {
-    return copyWith(lastModifiedDate: DateTime.now());
+    return copyWith(lastModifiedDate: clock.now());
   }
 
   HabitMetadata incrementVersion() {
     return copyWith(
       version: version + 1,
-      lastModifiedDate: DateTime.now(),
+      lastModifiedDate: clock.now(),
     );
   }
 

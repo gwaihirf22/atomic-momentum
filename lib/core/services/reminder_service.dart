@@ -2,6 +2,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/services/reminder_planner.dart';
 import '../logging/log.dart';
 import 'notification_service.dart';
+import 'package:clock/clock.dart' as system_clock show clock;
 
 /// Delivers habit reminders. Separated from [ReminderService] so tests can
 /// substitute a fake for the platform notification plugin.
@@ -71,7 +72,7 @@ class ReminderService {
 
   ReminderService({required ReminderScheduler scheduler, DateTime Function()? clock})
       : _scheduler = scheduler,
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? _systemNow;
 
   Future<void> syncAll(Iterable<Habit> habits) async {
     _pending = habits.toList();
@@ -103,3 +104,5 @@ class ReminderService {
     }
   }
 }
+
+DateTime _systemNow() => system_clock.clock.now();

@@ -16,6 +16,7 @@ import '../../domain/entities/momentum.dart';
 import '../../core/services/reminder_service.dart';
 import '../../domain/entities/reminder_settings.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:clock/clock.dart';
 
 enum HabitProviderState {
   initial,
@@ -190,7 +191,7 @@ class HabitProvider extends ChangeNotifier {
   /// period containing [date]. Shows immediately and saves in the background
   /// like progress; returns false if saving fails.
   Future<bool> setTwoMinute(String habitId, bool done, {DateTime? date}) {
-    final now = DateTime.now();
+    final now = clock.now();
     final day = DateTime((date ?? now).year, (date ?? now).month, (date ?? now).day);
     return _applyNow(
       habitId,
@@ -493,7 +494,7 @@ class HabitProvider extends ChangeNotifier {
     final activeCategoryIds = categoryRepository == null
         ? null
         : {for (final c in await categoryRepository.getAll()) if (!c.isDeleted) c.id};
-    final now = DateTime.now();
+    final now = clock.now();
     var added = 0;
 
     for (final params in _sampleHabits) {

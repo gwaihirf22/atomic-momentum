@@ -4,6 +4,7 @@ import '../datasources/local_habit_datasource.dart';
 import '../models/habit_model.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/validation/habit_validator.dart';
+import 'package:clock/clock.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
   final LocalHabitDataSource _localDataSource;
@@ -167,7 +168,7 @@ class HabitRepositoryImpl implements HabitRepository {
 
       final updatedHabit = habit.copyWith(
         history: updatedHistory,
-        lastUpdatedDate: DateTime.now(),
+        lastUpdatedDate: clock.now(),
         metadata: habit.metadata.updateModifiedDate(),
       );
 
@@ -210,7 +211,7 @@ class HabitRepositoryImpl implements HabitRepository {
   Future<List<Habit>> getHabitsNeedingReset() async {
     try {
       final habits = await getHabits();
-      final now = DateTime.now();
+      final now = clock.now();
       
       return habits.where((habit) => habit.shouldReset(now)).toList();
     } catch (e) {
