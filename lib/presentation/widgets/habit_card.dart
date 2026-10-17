@@ -9,6 +9,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/services/recent_periods.dart';
 import 'habit_icons.dart';
+import 'break_wording.dart';
 import 'hold_undo_strip.dart';
 import 'recent_periods_bar.dart';
 import 'habit_progress_ring.dart';
@@ -76,15 +77,23 @@ class HabitCard extends StatelessWidget {
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
-  bool get _canAdd => habit.progress < habit.target;
+  /// + adds one up to the target; for a habit being broken it logs a slip,
+  /// with room well past the limit.
+  bool get _canAdd => habit.isBreak ? habit.progress < habit.maxPeriodTotal : habit.progress < habit.target;
 
   /// Holding a done habit's ring clears its period; one that never resets
   /// has no period to clear.
-  bool get _canClear => habit.isCompleted && habit.resetFrequency.isPeriodic;
+  bool get _canClear => !habit.isBreak && habit.isCompleted && habit.resetFrequency.isPeriodic;
+
+  /// Holding the ring finishes or clears a habit being built; a habit being
+  /// broken has nothing to finish, and a stray hold shouldn't log slips.
+  bool get _canHold => !habit.isBreak && (_canAdd || _canClear);
   bool get _canRemove => habit.progress > 0;
 
-  String get _progressText =>
-      habit.units.isEmpty ? '${habit.progress}/${habit.target}' : '${habit.progress}/${habit.target} ${habit.units}';
+  String get _progressText {
+    if (habit.isBreak) return BreakWording.status(habit, clock.now());
+    return habit.units.isEmpty ? '${habit.progress}/${habit.target}' : '${habit.progress}/${habit.target} ${habit.units}';
+  }
 
   /// The "2 min" button shows while today is due and not yet complete, for a
   /// habit whose two-minute version is set to show on its card.
@@ -113,13 +122,15 @@ class HabitCard extends StatelessWidget {
             key: Key('habitStreak_${habit.id}'),
             count: habit.streak.current,
             atRisk: habit.streak.atRisk,
-            label: habit.schedule.streakLabel(habit.streak.current),
+            label: habit.isBreak
+                ? BreakWording.streak(habit, habit.streak.current)
+                : habit.schedule.streakLabel(habit.streak.current),
           ),
         if (habit.streak.current > 0 && habit.streak.atRisk)
           // Read out with the streak badge, so hidden from VoiceOver here
           ExcludeSemantics(
             child: Text(
-              "Don't miss twice",
+              habit.isBreak ? "Don't slip twice" : "Don't miss twice",
               key: Key('habitAtRisk_${habit.id}'),
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.warning),
             ),
@@ -129,6 +140,7 @@ class HabitCard extends StatelessWidget {
             key: Key('habitRecent_${habit.id}'),
             periods: recentPeriods(habit, now),
             color: color,
+            missedColor: habit.isBreak ? palette.warning : null,
             unit: habit.resetFrequency.periodUnit,
           ),
         if (showTwoMinute)
@@ -193,8 +205,8 @@ class HabitCard extends StatelessWidget {
           child: Semantics(
             // Swipe actions are hard to reach with VoiceOver; offer them as actions
             customSemanticsActions: {
-              if (onHold != null && _canAdd) const CustomSemanticsAction(label: 'Mark done'): onHold!,
-              if (onHold != null && _canClear) const CustomSemanticsAction(label: 'Clear'): onHold!,
+              if (onHold != null && _canHold && _canAdd) const CustomSemanticsAction(label: 'Mark done'): onHold!,
+              if (onHold != null && _canHold && _canClear) const CustomSemanticsAction(label: 'Clear'): onHold!,
               const CustomSemanticsAction(label: 'Edit'): onEdit,
               const CustomSemanticsAction(label: 'Delete'): onDelete,
               if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
@@ -218,12 +230,14 @@ class HabitCard extends StatelessWidget {
                       key: Key('habitIcon_${habit.id}'),
                       icon: habitIcon(habit, category),
                       color: color,
-                      fraction: habit.progressPercentage,
-                      isDone: habit.isCompleted,
+                      // A habit being broken shows the room left, not a check
+                      fraction: habit.isBreak ? habit.roomLeftOn(now) : habit.progressPercentage,
+                      isDone: !habit.isBreak && habit.isCompleted,
                       dimmed: isRestDay,
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
-                      onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
-                      onLongPress: _canAdd || _canClear ? onHold : null,
+                      // A tap on the ring never logs a slip by accident
+                      onTap: _canAdd && !habit.isBreak ? () => onSetProgress(habit.progress + 1) : null,
+                      onLongPress: _canHold ? onHold : null,
                       longPressHint: _canAdd ? 'Finish' : 'Clear',
                     );
                     final details = Column(
@@ -243,7 +257,9 @@ class HabitCard extends StatelessWidget {
                               text: _progressText,
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: habit.isCompleted ? color : null,
+                                color: habit.isBreak
+                                    ? (habit.isCompleted ? null : palette.warning)
+                                    : (habit.isCompleted ? color : null),
                               ),
                             ),
                             // Only what's informative: the category shows in the
@@ -265,6 +281,8 @@ class HabitCard extends StatelessWidget {
                       color: color,
                       removeKey: Key('decrementHabit_${habit.id}'),
                       addKey: Key('incrementHabit_${habit.id}'),
+                      removeTooltip: habit.isBreak ? 'Remove a slip' : 'Remove one',
+                      addTooltip: habit.isBreak ? 'Log a slip' : 'Add one',
                       onRemove: _canRemove ? () => onSetProgress(habit.progress - 1) : null,
                       onAdd: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
                     );

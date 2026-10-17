@@ -17,6 +17,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_rings_bar.dart';
+import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/habit_card.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
@@ -517,11 +518,17 @@ class _DayHabitRow extends StatelessWidget {
     final loggedThatDay = habit.getProgressForDate(day);
     final periodTotal = habit.progressForPeriodContaining(day);
     final isDone = habit.wasCompletedOnDate(day);
-    final subtitle = _withTwoMinute(_subtitle(loggedThatDay, periodTotal));
+    final subtitle = habit.isBreak
+        ? BreakWording.status(habit, day,
+            current: habit.schedule.periodStart(day) == habit.schedule.periodStart(clock.now()))
+        : _withTwoMinute(_subtitle(loggedThatDay, periodTotal));
     final showTwoMinute = isEditable && habit.twoMinute != null && habit.schedule.isPeriodic && !isDone;
-    final canAdd = isEditable && periodTotal < habit.target;
+    // For a habit being broken, + logs a slip (room well past the limit)
+    final canAdd = isEditable && periodTotal < (habit.isBreak ? habit.maxPeriodTotal : habit.target);
     final canRemove = isEditable && loggedThatDay > 0;
-    final canClear = isEditable && isDone && habit.schedule.isPeriodic;
+    final canClear = isEditable && isDone && habit.schedule.isPeriodic && !habit.isBreak;
+    // Nothing to finish when breaking a habit, and no slips logged by accident
+    final canHold = !habit.isBreak && (canAdd || canClear);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
@@ -542,13 +549,13 @@ class _DayHabitRow extends StatelessWidget {
               key: Key('dayHabitIcon_${habit.id}'),
               icon: icon,
               color: color,
-              fraction: habit.fractionDoneOn(day),
-              isDone: isDone,
+              fraction: habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day),
+              isDone: isDone && !habit.isBreak,
               checkKey: const Key('completedBadge'),
               semanticLabel: '${habit.name}, $subtitle',
-              onTap: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+              onTap: canAdd && !habit.isBreak ? () => onSet(loggedThatDay + 1, periodTotal) : null,
               // Holding finishes the period (that day gets whatever's left), or clears it
-              onLongPress: canAdd || canClear ? onHold : null,
+              onLongPress: canHold ? onHold : null,
               longPressHint: canAdd ? 'Finish' : 'Clear',
             );
             final details = Column(
@@ -564,7 +571,7 @@ class _DayHabitRow extends StatelessWidget {
                     height: 1.2,
                     fontWeight: FontWeight.w600,
                     // Crossed off, like a done list
-                    decoration: isDone ? TextDecoration.lineThrough : null,
+                    decoration: isDone && !habit.isBreak ? TextDecoration.lineThrough : null,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -597,8 +604,8 @@ class _DayHabitRow extends StatelessWidget {
                     color: color,
                     removeKey: Key('decrementDay_${habit.id}'),
                     addKey: Key('incrementDay_${habit.id}'),
-                    removeTooltip: 'Remove one from this day',
-                    addTooltip: 'Add one to this day',
+                    removeTooltip: habit.isBreak ? 'Remove a slip from this day' : 'Remove one from this day',
+                    addTooltip: habit.isBreak ? 'Log a slip on this day' : 'Add one to this day',
                     onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
                     onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
                   );

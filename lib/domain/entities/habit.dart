@@ -543,6 +543,15 @@ class Habit extends Equatable {
     return fraction < TwoMinuteLog.credit && isTwoMinuteOn(date) ? TwoMinuteLog.credit : fraction;
   }
 
+  /// For a habit being broken: how much room is left in the period
+  /// containing [date], 0 to 1. Clean (or quitting and clean) is 1; at the
+  /// limit 0; a slipped period is 0 too.
+  double roomLeftOn(DateTime date) {
+    if (!wasCompletedOnDate(date)) return 0;
+    if (target == 0) return 1;
+    return ((target - progressForPeriodContaining(date)) / target).clamp(0.0, 1.0);
+  }
+
   /// Completed, or kept with the two-minute version: either keeps a streak.
   bool wasKeptOnDate(DateTime date) => wasCompletedOnDate(date) || isTwoMinuteOn(date);
 

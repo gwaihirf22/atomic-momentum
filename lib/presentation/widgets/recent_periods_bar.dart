@@ -20,7 +20,11 @@ class RecentPeriodsBar extends StatelessWidget {
   /// "day", "week" or "month", for VoiceOver.
   final String unit;
 
-  const RecentPeriodsBar({super.key, required this.periods, required this.color, required this.unit});
+  /// A missed period's color: a slip on a habit being broken shows in the
+  /// warning color, taller than the flat track of a plain miss.
+  final Color? missedColor;
+
+  const RecentPeriodsBar({super.key, required this.periods, required this.color, required this.unit, this.missedColor});
 
   /// What VoiceOver reads: "Last 7 days: 5 done, 1 two-minute, 1 missed".
   static String describe(List<RecentPeriod> periods, String unit) {
@@ -81,7 +85,7 @@ class RecentPeriodsBar extends StatelessWidget {
           ),
         );
       case PeriodMark.missed:
-        return filled(3, fill: palette.track);
+        return missedColor == null ? filled(3, fill: palette.track) : filled(6, fill: missedColor);
       case PeriodMark.done:
         return filled(barHeight);
       case PeriodMark.twoMinute:

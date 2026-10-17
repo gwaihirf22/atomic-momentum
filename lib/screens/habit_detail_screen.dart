@@ -19,6 +19,7 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/habit_icons.dart';
+import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
@@ -114,7 +115,11 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   String _amountTitle(Habit habit) {
-    final what = habit.units.isEmpty ? 'Amount' : habit.units[0].toUpperCase() + habit.units.substring(1);
+    final what = habit.isBreak && habit.units.isEmpty
+        ? 'Slips'
+        : habit.units.isEmpty
+            ? 'Amount'
+            : habit.units[0].toUpperCase() + habit.units.substring(1);
     return _day == _today ? '$what today' : '$what on ${DateFormat.MMMEd().format(_day)}';
   }
 
@@ -424,11 +429,15 @@ class _DayCard extends StatelessWidget {
     final periodTotal = habit.progressForPeriodContaining(day);
     final logged = habit.getProgressForDate(day);
     final isDone = habit.wasCompletedOnDate(day);
-    final canAdd = periodTotal < habit.target;
-    final canClear = isDone && habit.resetFrequency.isPeriodic;
+    // For a habit being broken, + logs a slip, and holding does nothing
+    final canAdd = periodTotal < (habit.isBreak ? habit.maxPeriodTotal : habit.target);
+    final canClear = isDone && habit.resetFrequency.isPeriodic && !habit.isBreak;
+    final canHold = !habit.isBreak && (canAdd || canClear);
     final units = habit.units.isEmpty ? '' : ' ${habit.units}';
     final everyDay = habit.resetFrequency == ResetFrequency.daily && habit.resetInterval == 1;
-    final of = 'of ${habit.target}$units${everyDay ? '' : ' ${habit.schedule.periodLabel}'}';
+    final of = habit.isBreak
+        ? BreakWording.underNumber(habit, periodTotal)
+        : 'of ${habit.target}$units${everyDay ? '' : ' ${habit.schedule.periodLabel}'}';
     final showTwoMinute = habit.twoMinute != null && habit.resetFrequency.isPeriodic && !isDone;
     // Scales with text size, within the card
     final ring = ringSize * math.min(1.25, MediaQuery.textScalerOf(context).scale(1));
@@ -448,20 +457,25 @@ class _DayCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Semantics(
-                onLongPressHint: canAdd ? 'Finish' : canClear ? 'Clear' : null,
-                onLongPress: canAdd || canClear ? onHold : null,
+                onLongPressHint: !canHold ? null : canAdd ? 'Finish' : 'Clear',
+                onLongPress: canHold ? onHold : null,
                 child: GestureDetector(
                   key: const Key('detailRing'),
-                  onLongPress: canAdd || canClear ? onHold : null,
+                  onLongPress: canHold ? onHold : null,
                   child: SizedBox(
                     width: ring,
                     height: ring,
                     child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: habit.fractionDoneOn(day)),
+                      tween: Tween(end: habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day)),
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeOutCubic,
                       builder: (context, value, child) => CustomPaint(
-                        painter: RingPainter(fraction: value, color: color, stroke: 12),
+                        painter: RingPainter(
+                          fraction: value,
+                          // A slipped day shows in the warning color
+                          color: habit.isBreak && !isDone ? palette.warning : color,
+                          stroke: 12,
+                        ),
                         child: child,
                       ),
                       child: Center(
@@ -875,7 +889,7 @@ class _StatsGrid extends StatelessWidget {
           key: const Key('detailStreak'),
           icon: Icons.local_fire_department,
           iconColor: palette.flame,
-          label: 'Streak',
+          label: habit.isBreak ? 'Clean streak' : 'Streak',
           value: '${stats.streak}',
           unit: plural(stats.streak),
         ),
@@ -912,7 +926,7 @@ class _StatsGrid extends StatelessWidget {
           below: Text(
             stats.due == 0
                 ? 'Nothing due yet'
-                : '${stats.kept} of ${stats.due} kept'
+                : '${stats.kept} of ${stats.due} ${habit.isBreak ? 'on track' : 'kept'}'
                     '${stats.keptWithTwoMinute > 0 ? ' · ${stats.keptWithTwoMinute} with 2 min' : ''}',
             style: TextStyle(fontSize: 13, color: palette.textSecondary),
           ),
@@ -1050,7 +1064,7 @@ class _TrendCard extends StatelessWidget {
           children: [
             _CardHeading(
               stats.barsLabel,
-              action: daily ? Text('days kept', style: TextStyle(fontSize: 13, color: palette.textSecondary)) : null,
+              action: daily ? Text(habit.isBreak ? 'days on track' : 'days kept', style: TextStyle(fontSize: 13, color: palette.textSecondary)) : null,
             ),
             const SizedBox(height: 12),
             Row(
