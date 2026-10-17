@@ -320,7 +320,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Habit Name',
-                  hintText: 'e.g., Drink Water, Exercise, Read',
+                  hintText: 'e.g. Drink water',
+                  errorMaxLines: 2,
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
@@ -343,7 +344,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 controller: _targetController,
                 decoration: InputDecoration(
                   labelText: 'Target Number',
-                  hintText: 'e.g., 8, 30, 5',
+                  hintText: 'e.g. 8',
+                  errorMaxLines: 2,
                   border: const OutlineInputBorder(),
                   // Makes "3 per week" style goals explicit
                   suffixText: _schedule.periodLabel,
@@ -370,7 +372,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 controller: _unitsController,
                 decoration: const InputDecoration(
                   labelText: 'Units (Optional)',
-                  hintText: 'e.g., glasses, minutes, reps, pages',
+                  hintText: 'e.g. glasses',
+                  errorMaxLines: 2,
                   border: OutlineInputBorder(),
                 ),
                 maxLength: 20,
@@ -621,8 +624,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                 TextFormField(
                   initialValue: _customMessage,
                   decoration: const InputDecoration(
-                    labelText: 'Custom reminder message (optional)',
-                    hintText: 'e.g., "Time for your daily walk!"',
+                    labelText: 'Message (optional)',
+                    hintText: 'e.g. Time for a walk!',
                     border: OutlineInputBorder(),
                   ),
                   maxLength: 100,
@@ -753,10 +756,10 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       first: _resetAnchor.isBefore(DateTime(2020)) ? _resetAnchor : DateTime(2020),
       last: DateTime.now().add(const Duration(days: 366)),
       helpText: _selectedFrequency == ResetFrequency.weekly
-          ? 'Pick a day: the habit resets on that weekday'
+          ? 'Resets on this weekday'
           : _selectedFrequency == ResetFrequency.monthly
-              ? 'Pick a day: the habit resets on that day each month'
-              : 'Pick the start date',
+              ? 'Resets on this day each month'
+              : 'Start date',
     );
     if (picked != null) {
       setState(() {

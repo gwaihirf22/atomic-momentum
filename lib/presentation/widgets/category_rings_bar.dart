@@ -43,25 +43,29 @@ class CategoryRingsBar extends StatefulWidget {
 }
 
 class _CategoryRingsBarState extends State<CategoryRingsBar> {
-  // Ring + label; fixed so the pager has a height (labels' text scaling is clamped)
-  static const double _pageHeight = 76;
-
   PageController? _pageController;
   int _page = 0;
 
-  int get _pageCount => (widget.categories.length / CategoryRingsBar.ringsPerPage).ceil();
-  bool get _paged => widget.categories.length > CategoryRingsBar.ringsPerPage;
+  // Fewer rings per page with large text, so labels stay readable
+  int _perPage = CategoryRingsBar.ringsPerPage;
+
+  int get _pageCount => (widget.categories.length / _perPage).ceil();
+  bool get _paged => widget.categories.length > _perPage;
 
   int _pageOf(String? id) {
     final index = widget.categories.indexWhere((c) => c.id == id);
-    return index < 0 ? 0 : index ~/ CategoryRingsBar.ringsPerPage;
+    return index < 0 ? 0 : index ~/ _perPage;
   }
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final perPage = MediaQuery.textScalerOf(context).scale(1) > 1.15 ? 4 : CategoryRingsBar.ringsPerPage;
+    if (_pageController != null && perPage == _perPage) return;
+    _perPage = perPage;
     // Open on the page that holds the selected ring
     _page = _pageOf(widget.selectedId);
+    _pageController?.dispose();
     _pageController = PageController(initialPage: _page);
   }
 
@@ -107,36 +111,34 @@ class _CategoryRingsBarState extends State<CategoryRingsBar> {
       );
     }
 
-    const perPage = CategoryRingsBar.ringsPerPage;
+    final perPage = _perPage;
+    // Ring, gap and up to two lines of label, growing with the text size
+    final pageHeight = _CategoryRing.ringSize + 4 + 2 * MediaQuery.textScalerOf(context).scale(12) * 1.3 + 4;
     return Padding(
       padding: const EdgeInsets.only(top: 8, bottom: 4),
       child: Column(
         children: [
           SizedBox(
-            height: _pageHeight,
-            child: MediaQuery.withClampedTextScaling(
-              maxScaleFactor: 1.3,
-              child: PageView.builder(
-                key: const Key('ringPager'),
-                controller: _pageController,
-                itemCount: _pageCount,
-                onPageChanged: (page) => setState(() => _page = page),
-                itemBuilder: (context, page) {
-                  final pageCategories =
-                      widget.categories.skip(page * perPage).take(perPage).toList();
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (final category in pageCategories) Expanded(child: _ring(category)),
-                        // Pad the last page so its rings are as wide as the others
-                        for (var i = pageCategories.length; i < perPage; i++) const Expanded(child: SizedBox()),
-                      ],
-                    ),
-                  );
-                },
-              ),
+            height: pageHeight,
+            child: PageView.builder(
+              key: const Key('ringPager'),
+              controller: _pageController,
+              itemCount: _pageCount,
+              onPageChanged: (page) => setState(() => _page = page),
+              itemBuilder: (context, page) {
+                final pageCategories = widget.categories.skip(page * perPage).take(perPage).toList();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final category in pageCategories) Expanded(child: _ring(category)),
+                      // Pad the last page so its rings are as wide as the others
+                      for (var i = pageCategories.length; i < perPage; i++) const Expanded(child: SizedBox()),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           _PageDots(
@@ -191,7 +193,7 @@ class _PageDots extends StatelessWidget {
 }
 
 class _CategoryRing extends StatelessWidget {
-  static const double _ringSize = 48;
+  static const double ringSize = 48;
   static const double _strokeWidth = 4.5;
 
   final Category category;
@@ -242,8 +244,8 @@ class _CategoryRing extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: _ringSize,
-                height: _ringSize,
+                width: ringSize,
+                height: ringSize,
                 child: TweenAnimationBuilder<double>(
                   tween: Tween(end: fraction),
                   duration: const Duration(milliseconds: 450),
@@ -264,16 +266,17 @@ class _CategoryRing extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  category.name,
-                  maxLines: 1,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isSelected ? color : labelColor,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  ),
+              // Wraps to a second line rather than shrinking below 12pt
+              Text(
+                category.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.2,
+                  color: isSelected ? color : labelColor,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ],
@@ -317,15 +320,11 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, stroke..color = trackColor);
     if (fraction > 0) {
       // Start at 12 o'clock and run clockwise, like Apple's activity rings
-      canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * fraction.clamp(0.0, 1.0), false,
-          stroke..color = color);
+      canvas.drawArc(rect, -math.pi / 2, 2 * math.pi * fraction.clamp(0.0, 1.0), false, stroke..color = color);
     }
   }
 
   @override
   bool shouldRepaint(_RingPainter old) =>
-      old.fraction != fraction ||
-      old.color != color ||
-      old.trackColor != trackColor ||
-      old.fillColor != fillColor;
+      old.fraction != fraction || old.color != color || old.trackColor != trackColor || old.fillColor != fillColor;
 }

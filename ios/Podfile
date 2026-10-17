@@ -1,5 +1,5 @@
-# Xcode 27 builds for iOS 15 and later only
-platform :ios, '15.0'
+# Minimum iOS 16: every supported iPhone is at least 375pt wide (iPhone SE 2nd gen)
+platform :ios, '16.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -39,9 +39,9 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-    # Some plugin pods still declare iOS 9-12, which Xcode 27 rejects
+    # Some plugin pods still declare iOS 9-12, which Xcode 27 rejects; match the app
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
     end
   end
 end

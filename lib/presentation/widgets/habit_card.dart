@@ -17,6 +17,10 @@ import 'habit_stepper.dart';
 class HabitCard extends StatelessWidget {
   static const flameColor = Colors.deepOrange;
 
+  /// Below this width inside the card (a phone narrower than 390pt), the
+  /// card uses two rows.
+  static const twoRowWidth = 334.0;
+
   /// The streak survived one miss; another would end it.
   static final atRiskColor = Colors.amber.shade800;
 
@@ -45,6 +49,35 @@ class HabitCard extends StatelessWidget {
   String get _progressText => habit.units.isEmpty
       ? '${habit.progress}/${habit.target}'
       : '${habit.progress}/${habit.target} ${habit.units}';
+
+  /// Momentum and streak; wraps onto another line rather than cutting off
+  /// "Don't miss twice".
+  Widget _stats() {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: habit.color.color),
+        if (habit.streak.current > 0)
+          _StreakBadge(
+            key: Key('habitStreak_${habit.id}'),
+            count: habit.streak.current,
+            atRisk: habit.streak.atRisk,
+            label: habit.schedule.streakLabel(habit.streak.current),
+          ),
+        if (habit.streak.current > 0 && habit.streak.atRisk)
+          // Read out with the streak badge, so hidden from VoiceOver here
+          ExcludeSemantics(
+            child: Text(
+              "Don't miss twice",
+              key: Key('habitAtRisk_${habit.id}'),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: atRiskColor),
+            ),
+          ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,88 +130,91 @@ class HabitCard extends StatelessWidget {
                 onTap: onEdit,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(
-                    children: [
-                      HabitProgressRing(
-                        key: Key('habitIcon_${habit.id}'),
-                        icon: habitIcon(habit, category),
-                        color: color,
-                        fraction: habit.progressPercentage,
-                        isDone: habit.isCompleted,
-                        dimmed: isRestDay,
-                        semanticLabel: '${habit.name}, ${category.name}, $_progressText',
-                        onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              habit.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16, height: 1.2, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 2),
-                            // Truncates rather than overflowing
-                            Text.rich(
-                              TextSpan(children: [
-                                TextSpan(
-                                  text: _progressText,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: habit.isCompleted ? color : null,
-                                  ),
-                                ),
-                                // Only what's informative: the category shows in the
-                                // icon and color, and every day is the default
-                                if (!habit.schedule.isEveryDay)
-                                  TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
-                                if (isRestDay) const TextSpan(text: '  ·  Rest day'),
-                              ]),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, height: 1.2, color: secondary),
-                            ),
-                            if (showStats) ...[
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  _MomentumChip(
-                                    key: Key('habitMomentum_${habit.id}'),
-                                    momentum: habit.momentum,
-                                    color: color,
-                                  ),
-                                  if (habit.streak.current > 0) ...[
-                                    const SizedBox(width: 10),
-                                    Flexible(
-                                      child: _StreakBadge(
-                                        key: Key('habitStreak_${habit.id}'),
-                                        habitId: habit.id,
-                                        count: habit.streak.current,
-                                        atRisk: habit.streak.atRisk,
-                                        label: habit.schedule.streakLabel(habit.streak.current),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                  child: LayoutBuilder(builder: (context, constraints) {
+                    // Narrow phones (under 390pt) and large text get two rows, so
+                    // the name and details have the full width instead of being cut off
+                    final twoRows = constraints.maxWidth < twoRowWidth ||
+                        MediaQuery.textScalerOf(context).scale(1) > 1.15;
+                    final ring = HabitProgressRing(
+                      key: Key('habitIcon_${habit.id}'),
+                      icon: habitIcon(habit, category),
+                      color: color,
+                      fraction: habit.progressPercentage,
+                      isDone: habit.isCompleted,
+                      dimmed: isRestDay,
+                      semanticLabel: '${habit.name}, ${category.name}, $_progressText',
+                      onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
+                    );
+                    final details = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          habit.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 16, height: 1.2, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text.rich(
+                          TextSpan(children: [
+                            TextSpan(
+                              text: _progressText,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: habit.isCompleted ? color : null,
                               ),
-                            ],
+                            ),
+                            // Only what's informative: the category shows in the
+                            // icon and color, and every day is the default
+                            if (!habit.schedule.isEveryDay) TextSpan(text: '  ·  ${habit.schedule.shortLabel}'),
+                            if (isRestDay) const TextSpan(text: '  ·  Rest day'),
+                          ]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 13, height: 1.2, color: secondary),
+                        ),
+                        if (showStats && !twoRows) ...[
+                          const SizedBox(height: 2),
+                          _stats(),
+                        ],
+                      ],
+                    );
+                    final stepper = HabitStepper(
+                      color: color,
+                      removeKey: Key('decrementHabit_${habit.id}'),
+                      addKey: Key('incrementHabit_${habit.id}'),
+                      onRemove: _canRemove ? () => onSetProgress(habit.progress - 1) : null,
+                      onAdd: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
+                    );
+
+                    if (!twoRows) {
+                      return Row(
+                        children: [
+                          ring,
+                          const SizedBox(width: 12),
+                          Expanded(child: details),
+                          const SizedBox(width: 8),
+                          stepper,
+                        ],
+                      );
+                    }
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(children: [ring, const SizedBox(width: 12), Expanded(child: details)]),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const SizedBox(width: HabitProgressRing.defaultSize + 12),
+                            Expanded(child: showStats ? _stats() : const SizedBox.shrink()),
+                            const SizedBox(width: 8),
+                            stepper,
                           ],
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      HabitStepper(
-                        color: color,
-                        removeKey: Key('decrementHabit_${habit.id}'),
-                        addKey: Key('incrementHabit_${habit.id}'),
-                        onRemove: _canRemove ? () => onSetProgress(habit.progress - 1) : null,
-                        onAdd: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
-                      ),
-                    ],
-                  ),
+                      ],
+                    );
+                  }),
                 ),
               ),
             ),
@@ -229,16 +265,14 @@ class _MomentumChip extends StatelessWidget {
 }
 
 /// Flat flame with the streak count, matching the Settings streak icon.
-/// After a miss it turns to an amber outline with "Don't miss twice".
+/// After a miss it turns to an amber outline ("Don't miss twice" follows it).
 class _StreakBadge extends StatelessWidget {
-  final String habitId;
   final int count;
   final bool atRisk;
   final String label;
 
   const _StreakBadge({
     Key? key,
-    required this.habitId,
     required this.count,
     required this.atRisk,
     required this.label,
@@ -263,18 +297,6 @@ class _StreakBadge extends StatelessWidget {
             '$count',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
           ),
-          if (atRisk) ...[
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                "Don't miss twice",
-                key: Key('habitAtRisk_$habitId'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
-              ),
-            ),
-          ],
         ],
       ),
     );

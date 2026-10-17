@@ -118,7 +118,7 @@ class SettingsScreen extends StatelessWidget {
               tileKey: const Key('defaultReminderTime'),
               icon: CupertinoIcons.alarm_fill,
               iconColor: CupertinoColors.systemGreen,
-              title: 'Default reminder time',
+              title: 'Default time',
               value: settings.defaultReminderTime.format(context),
               onTap: () async {
                 final time = await pickTimeAdaptive(context, initial: settings.defaultReminderTime);
@@ -129,14 +129,13 @@ class SettingsScreen extends StatelessWidget {
         ),
         SettingsSection(
           header: 'Streaks',
-          footer: "By default you're warned only before a second miss would end a streak.",
           children: [
             SettingsSwitchTile(
               tileKey: const Key('streakWarningsSwitch'),
               icon: Icons.local_fire_department,
               iconColor: CupertinoColors.systemOrange,
               title: 'Streak warnings',
-              subtitle: "A \"Don't miss twice\" notification before a streak would end",
+              subtitle: 'Before a second miss would end it',
               value: streakWarnings.enabled,
               onChanged: (value) async {
                 await settings.setStreakWarningsEnabled(value);
@@ -169,7 +168,8 @@ class SettingsScreen extends StatelessWidget {
               tileKey: const Key('streakWarningFirstMissSwitch'),
               icon: CupertinoIcons.bell_fill,
               iconColor: CupertinoColors.systemPurple,
-              title: 'Also remind me before a first miss',
+              title: 'Early nudge',
+              subtitle: 'Remind before a first miss, too',
               value: streakWarnings.remindBeforeFirstMiss,
               onChanged: streakWarnings.enabled
                   ? (value) async {

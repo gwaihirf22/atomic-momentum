@@ -88,9 +88,8 @@ class SettingsTile extends StatelessWidget {
         child: CupertinoListTile(
           key: tileKey,
           leading: _SettingsIcon(icon, iconColor),
-          title: Text(title),
-          subtitle: subtitle == null ? null : Text(subtitle!, maxLines: 2),
-          additionalInfo: value == null ? null : _ValueText(value!),
+          title: _TitleAndValue(title: title, value: value),
+          subtitle: subtitle == null ? null : _Wrapping(subtitle!),
           trailing: showChevron && onTap != null ? const CupertinoListTileChevron() : null,
           onTap: enabled ? onTap : null,
         ),
@@ -100,39 +99,69 @@ class SettingsTile extends StatelessWidget {
       key: tileKey,
       enabled: enabled,
       leading: Icon(icon, color: enabled ? iconColor : null),
-      title: Text(title),
+      title: _TitleAndValue(title: title, value: value),
       subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (value != null) _ValueText(value!, color: secondaryLabel(context)),
-          if (showChevron && onTap != null) const Icon(Icons.chevron_right),
-        ],
-      ),
+      trailing: showChevron && onTap != null ? const Icon(Icons.chevron_right) : null,
       onTap: onTap,
     );
   }
 }
 
-/// A row's current value, shortened rather than pushing the title off
-/// screen (long values, large text sizes).
-class _ValueText extends StatelessWidget {
+/// Text that wraps instead of being cut off. CupertinoListTile makes its
+/// title and subtitle single-line with "…"; an explicit line count overrides
+/// that, and no label of ours needs more lines than this.
+class _Wrapping extends StatelessWidget {
   final String text;
-  final Color? color;
+  final TextStyle? style;
 
-  const _ValueText(this.text, {this.color});
+  const _Wrapping(this.text, {this.style});
+
+  @override
+  Widget build(BuildContext context) => Text(text, maxLines: 6, style: style);
+}
+
+/// A row's title with its current value: side by side when both fit, as in
+/// the Settings app, otherwise the value goes under the title (as iOS does
+/// with large text) so neither is cut off.
+class _TitleAndValue extends StatelessWidget {
+  final String title;
+  final String? value;
+
+  const _TitleAndValue({required this.title, this.value});
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.4),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: color == null ? null : TextStyle(color: color),
-      ),
-    );
+    final value = this.value;
+    if (value == null) return _Wrapping(title);
+    final valueStyle = TextStyle(color: secondaryLabel(context));
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final style = DefaultTextStyle.of(context).style;
+      double widthOf(String text, TextStyle s) => (TextPainter(
+            text: TextSpan(text: text, style: s),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+            maxLines: 1,
+          )..layout())
+              .width;
+
+      const gap = 12.0;
+      final fits = widthOf(title, style) + gap + widthOf(value, style.merge(valueStyle)) <= constraints.maxWidth;
+      if (fits) {
+        return Row(
+          children: [
+            Expanded(child: _Wrapping(title)),
+            const SizedBox(width: gap),
+            Text(value, style: valueStyle),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [_Wrapping(title), _Wrapping(value, style: valueStyle)],
+      );
+    });
   }
 }
 
@@ -170,8 +199,8 @@ class SettingsSwitchTile extends StatelessWidget {
           child: CupertinoListTile(
             key: tileKey,
             leading: _SettingsIcon(icon, iconColor),
-            title: Text(title),
-            subtitle: subtitle == null ? null : Text(subtitle!, maxLines: 3),
+            title: _Wrapping(title),
+            subtitle: subtitle == null ? null : _Wrapping(subtitle!),
             trailing: CupertinoSwitch(value: value, onChanged: onChanged),
             onTap: enabled ? () => onChanged!(!value) : null,
           ),

@@ -22,10 +22,14 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 
 import '../helpers/failing_habit_repository.dart';
+import '../helpers/real_fonts.dart';
 
 void main() {
   late HabitProvider habitProvider;
   late String waterId;
+
+  // Real text widths, so sizes match a phone
+  setUpAll(loadRealFonts);
 
   setUp(() async {
     await resetDependencies();
@@ -48,8 +52,8 @@ void main() {
     await resetDependencies();
   });
 
-  Future<void> pumpHome(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(375, 812);
+  Future<void> pumpHome(WidgetTester tester, {double width = 375}) async {
+    tester.view.physicalSize = Size(width, 812);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MultiProvider(
@@ -69,15 +73,31 @@ void main() {
   final now = DateTime.now();
   DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
 
-  testWidgets('the card is compact and fits a 375pt phone, stats row included', (tester) async {
+  testWidgets('on wider phones the card is one compact row', (tester) async {
     await habitProvider.updateProgressForDate(waterId, daysAgo(1), 3);
-    await pumpHome(tester);
+    await pumpHome(tester, width: 402);
     expect(find.byKey(Key('habitMomentum_$waterId')), findsOneWidget);
 
     final rect = tester.getRect(card());
     expect(rect.height, lessThanOrEqualTo(80));
+    final stepper = tester.getRect(find.byKey(Key('incrementHabit_$waterId')));
+    final name = tester.getRect(find.descendant(of: card(), matching: find.text('Drink Water')));
+    expect(stepper.center.dy, closeTo(rect.center.dy, 4), reason: 'stepper beside the text');
+    expect(name.right, lessThan(stepper.left));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('on an iPhone SE (375pt) the stats and stepper move under the name', (tester) async {
+    await habitProvider.updateProgressForDate(waterId, daysAgo(1), 3);
+    await pumpHome(tester);
+
+    final rect = tester.getRect(card());
     expect(rect.right, lessThanOrEqualTo(375));
-    expect(find.descendant(of: card(), matching: find.text('Drink Water')), findsOneWidget);
+    final name = tester.getRect(find.descendant(of: card(), matching: find.text('Drink Water')));
+    final stepper = tester.getRect(find.byKey(Key('incrementHabit_$waterId')));
+    final momentum = tester.getRect(find.byKey(Key('habitMomentum_$waterId')));
+    expect(stepper.top, greaterThan(name.bottom), reason: 'stepper on the second row');
+    expect(momentum.top, greaterThan(name.bottom));
     expect(find.descendant(of: card(), matching: find.textContaining('0/3 glasses')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });

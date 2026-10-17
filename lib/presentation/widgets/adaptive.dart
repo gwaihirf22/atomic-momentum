@@ -205,26 +205,19 @@ Future<DateTime?> _cupertinoPicker(
     builder: (context) {
       final background = CupertinoDynamicColor.resolve(CupertinoColors.systemBackground, context);
       return Container(
-        height: 300,
         color: background,
         child: SafeArea(
           top: false,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
                     key: const Key('pickerCancel'),
                     onPressed: () => Navigator.of(context).pop(),
                     child: const Text('Cancel'),
-                  ),
-                  Expanded(
-                    child: Text(
-                      title ?? '',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
                   CupertinoButton(
                     key: const Key('pickerDone'),
@@ -233,7 +226,18 @@ Future<DateTime?> _cupertinoPicker(
                   ),
                 ],
               ),
-              Expanded(
+              // A caption of its own, so it wraps rather than squeezing between the buttons
+              if (title != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: secondaryLabel(context)),
+                  ),
+                ),
+              SizedBox(
+                height: 216,
                 child: CupertinoDatePicker(
                   mode: mode,
                   initialDateTime: initial,

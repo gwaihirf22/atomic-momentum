@@ -130,21 +130,29 @@ class _CategoryEditorState extends State<_CategoryEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Keeps the title centered however wide Cancel is (large text sizes)
-            SizedBox(
-              height: 44,
-              child: NavigationToolbar(
-                leading: TextButton(
+            // Title centered between Cancel and an invisible copy of it, so it
+            // stays centered however wide Cancel is, and wraps if it must
+            Row(
+              children: [
+                TextButton(
                   key: const Key('cancelCategoryEdit'),
                   // maybePop, so unsaved changes are confirmed first
                   onPressed: () => Navigator.of(context).maybePop(),
                   child: const Text('Cancel'),
                 ),
-                middle: Text(
-                  _isNew ? 'New Category' : 'Edit Category',
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                Expanded(
+                  child: Text(
+                    _isNew ? 'New Category' : 'Edit Category',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                  ),
                 ),
-              ),
+                ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: Opacity(opacity: 0, child: TextButton(onPressed: () {}, child: const Text('Cancel'))),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // Live preview
@@ -165,6 +173,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
               autofocus: _isNew,
               decoration: InputDecoration(
                 labelText: 'Name',
+                errorMaxLines: 2,
                 border: const OutlineInputBorder(),
                 // Don't complain about an empty name before the user has typed
                 errorText: (_nameEdited || !_isNew) ? (nameError ?? _saveError) : _saveError,

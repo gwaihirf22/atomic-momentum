@@ -15,6 +15,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_rings_bar.dart';
+import '../presentation/widgets/habit_card.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
@@ -405,7 +406,7 @@ class _DayHabitRow extends StatelessWidget {
       return '$loggedThatDay/${habit.target}$units';
     }
     final period = schedule.interval == 1 ? 'this ${schedule.frequency.periodUnit}' : 'this period';
-    return '$loggedThatDay this day · $periodTotal/${habit.target} $period';
+    return '$loggedThatDay logged · $periodTotal/${habit.target} $period';
   }
 
   @override
@@ -428,65 +429,75 @@ class _DayHabitRow extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              HabitProgressRing(
-                key: Key('dayHabitIcon_${habit.id}'),
-                icon: icon,
-                color: color,
-                fraction: habit.target > 0 ? (periodTotal / habit.target).clamp(0.0, 1.0) : 0,
-                isDone: isDone,
-                checkKey: const Key('completedBadge'),
-                semanticLabel: '${habit.name}, $subtitle',
-                onTap: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      habit.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.2,
-                        fontWeight: FontWeight.w600,
-                        // Crossed off, like a done list
-                        decoration: isDone ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.2,
-                        color: secondaryLabel(context),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
+          // Same rule as the habit cards: two rows on narrow phones or large text
+          child: LayoutBuilder(builder: (context, constraints) {
+            final twoRows =
+                constraints.maxWidth < HabitCard.twoRowWidth || MediaQuery.textScalerOf(context).scale(1) > 1.15;
+            final ring = HabitProgressRing(
+              key: Key('dayHabitIcon_${habit.id}'),
+              icon: icon,
+              color: color,
+              fraction: habit.target > 0 ? (periodTotal / habit.target).clamp(0.0, 1.0) : 0,
+              isDone: isDone,
+              checkKey: const Key('completedBadge'),
+              semanticLabel: '${habit.name}, $subtitle',
+              onTap: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+            );
+            final details = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  habit.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.2,
+                    fontWeight: FontWeight.w600,
+                    // Crossed off, like a done list
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
                 ),
-              ),
-              if (isEditable) ...[
-                const SizedBox(width: 8),
-                HabitStepper(
-                  color: color,
-                  removeKey: Key('decrementDay_${habit.id}'),
-                  addKey: Key('incrementDay_${habit.id}'),
-                  removeTooltip: 'Remove one from this day',
-                  addTooltip: 'Add one to this day',
-                  onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
-                  onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.2,
+                    color: secondaryLabel(context),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
-            ],
-          ),
+            );
+            final stepper = !isEditable
+                ? null
+                : HabitStepper(
+                    color: color,
+                    removeKey: Key('decrementDay_${habit.id}'),
+                    addKey: Key('incrementDay_${habit.id}'),
+                    removeTooltip: 'Remove one from this day',
+                    addTooltip: 'Add one to this day',
+                    onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
+                    onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                  );
+
+            final topRow = Row(children: [
+              ring,
+              const SizedBox(width: 12),
+              Expanded(child: details),
+              if (stepper != null && !twoRows) ...[const SizedBox(width: 8), stepper],
+            ]);
+            if (stepper == null || !twoRows) return topRow;
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [topRow, const SizedBox(height: 6), stepper],
+            );
+          }),
         ),
       ),
     );

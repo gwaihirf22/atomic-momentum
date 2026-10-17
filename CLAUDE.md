@@ -45,7 +45,7 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # Run Flutter app (development) - requires specifying device
 ./flutter/bin/flutter run -d chrome --web-port=8080 --web-hostname=localhost
 
-# Run on the iPhone simulator (iOS 15+ deployment target). Xcode 27 replaced the
+# Run on the iPhone simulator (iOS 16+ deployment target). Xcode 27 replaced the
 # Simulator app with DeviceHub (Xcode.app/Contents/Applications/DeviceHub.app).
 # Start the iPhone from DeviceHub: one booted with `xcrun simctl boot` shows there
 # but doesn't take clicks. Then:
@@ -140,13 +140,21 @@ python server.py
 5. Onboarding tutorial
 6. Store readiness (name "Momentum", icon and app id `com.paulblake.momentum` are done)
 
+### Small Screens and Text
+The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the minimum iOS is 16. Every screen must work there at the default text size and at iOS's largest standard size (~135%), and must not break at Accessibility sizes.
+- **Our labels are never cut off with "…".** Keep titles short (~20 characters or fewer); explanations go in subtitles and footers, which wrap.
+- **Rows grow taller instead of truncating.** No fixed heights around text; use minimum heights. `CupertinoListTile` truncates titles by default: give text an explicit `maxLines` (see `settings_list.dart`).
+- **User content** (habit and category names) may wrap to 2 lines; only beyond that may it end in "…".
+- **Layouts adapt:** habit cards and Calendar rows switch to two rows below 390pt or above 115% text (`HabitCard.twoRowWidth`); category rings show 4 per page with large text.
+- **Guard:** `test/widget/small_screens_test.dart` renders every screen with real fonts (`test/helpers/real_fonts.dart`) at 375/390pt and 100%/135% text, and fails on any overflow or text that hits its line limit. Add new screens and sheets to it.
+
 ### Testing Strategy
 - **Every feature or fix ships with tests.** Run the whole suite with `./flutter/bin/flutter test`; it must pass.
 - **Layout**: `test/unit/` (pure logic, mirrors `lib/`), `test/integration/` (real use cases + SharedPreferences mock), `test/widget/` and `test/widget_test.dart` (screens)
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
 - **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
-- **Status (2026-10-16)**: 447 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-16)**: 526 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 
