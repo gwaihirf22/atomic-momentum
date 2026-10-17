@@ -13,6 +13,7 @@ import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
+import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
@@ -40,10 +41,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _greeting;
   DayPart? _greetingPart;
 
-  String _greetingFor(DateTime now) {
-    final part = Greetings.partOf(now);
+  /// The greeting for [now] on the person's own day (Settings → "My day
+  /// starts at"); a new one when the part of the day changes.
+  String _greetingFor(DateTime now, TimeOfDay dayStart) {
+    final part = Greetings.partOf(now, dayStart: dayStart);
     if (_greeting == null || part != _greetingPart) {
-      _greeting = Greetings.pick(now, avoid: _greeting);
+      _greeting = Greetings.pick(now, avoid: _greeting, dayStart: dayStart);
       _greetingPart = part;
     }
     return _greeting!;
@@ -79,7 +82,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // The day may have rolled over while the app was in the background
     if (state == AppLifecycleState.resumed) {
       // Back in the app: a fresh greeting
-      setState(() => _greeting = Greetings.pick(clock.now(), avoid: _greeting));
+      final now = clock.now();
+      final dayStart = context.read<SettingsProvider>().dayStart;
+      setState(() {
+        _greeting = Greetings.pick(now, avoid: _greeting, dayStart: dayStart);
+        _greetingPart = Greetings.partOf(now, dayStart: dayStart);
+      });
       context.read<HabitProvider>().resetHabitsIfNeeded();
       _scheduleMidnightReset();
     }
@@ -103,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       builder: (context, themeProvider, child) {
         final isDark = themeProvider.isDarkIn(context);
         final now = clock.now();
+        final dayStart = context.watch<SettingsProvider>().dayStart;
 
         return Consumer2<HabitProvider, CategoryProvider>(
           builder: (context, habitProvider, categoryProvider, child) {
@@ -116,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 trailing: _buildAddButton(context),
                 header: LargeTitleHeader(
                   eyebrow: DateFormat.MMMMEEEEd().format(now),
-                  title: _greetingFor(now),
+                  title: _greetingFor(now, dayStart),
                   titleKey: const Key('habitsGreeting'),
                   accessory: momentum == null
                       ? null

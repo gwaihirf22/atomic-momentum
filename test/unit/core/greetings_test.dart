@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atomic_momentum/core/copy/greetings.dart';
 
@@ -10,6 +11,42 @@ void main() {
     expect(at(17), DayPart.evening);
     expect(at(22), DayPart.night);
     expect(at(2), DayPart.night);
+  });
+
+  group('my day starts at', () {
+    DayPart at(int hour, int minute, TimeOfDay start) =>
+        Greetings.partOf(DateTime(2026, 10, 16, hour, minute), dayStart: start);
+
+    test('a night shift waking at 3 PM: morning from 3 PM, night from 8 AM', () {
+      const threePm = TimeOfDay(hour: 15, minute: 0);
+      expect(at(15, 0, threePm), DayPart.morning);
+      expect(at(21, 59, threePm), DayPart.morning);
+      expect(at(22, 0, threePm), DayPart.afternoon);
+      expect(at(2, 59, threePm), DayPart.afternoon);
+      expect(at(3, 0, threePm), DayPart.evening);
+      expect(at(8, 0, threePm), DayPart.night);
+      expect(at(14, 59, threePm), DayPart.night);
+    });
+
+    test('minutes count, and the default is the usual 5 AM', () {
+      const halfPastFive = TimeOfDay(hour: 5, minute: 30);
+      expect(at(5, 29, halfPastFive), DayPart.night);
+      expect(at(5, 30, halfPastFive), DayPart.morning);
+      expect(Greetings.defaultDayStart, const TimeOfDay(hour: 5, minute: 0));
+    });
+
+    test('an earlier start works across midnight too', () {
+      const twoAm = TimeOfDay(hour: 2, minute: 0);
+      expect(at(2, 0, twoAm), DayPart.morning);
+      expect(at(1, 59, twoAm), DayPart.night);
+      expect(at(19, 0, twoAm), DayPart.night);
+    });
+
+    test('picks come from the shifted part of the day', () {
+      const threePm = TimeOfDay(hour: 15, minute: 0);
+      expect(Greetings.lines[DayPart.morning],
+          contains(Greetings.pick(DateTime(2026, 10, 16, 16), dayStart: threePm)));
+    });
   });
 
   test('a greeting suits the time of day', () {

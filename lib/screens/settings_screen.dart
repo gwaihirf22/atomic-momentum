@@ -46,6 +46,7 @@ class SettingsScreen extends StatelessWidget {
       children: [
         SettingsSection(
           header: 'Display',
+          footer: 'Habits greetings follow your day. Working nights? Set when you wake up.',
           children: [
             SettingsTile(
               tileKey: const Key('appearanceSetting'),
@@ -64,6 +65,17 @@ class SettingsScreen extends StatelessWidget {
                   ],
                 );
                 if (mode != null) await themeProvider.setThemeMode(mode);
+              },
+            ),
+            SettingsTile(
+              tileKey: const Key('dayStartSetting'),
+              icon: CupertinoIcons.sunrise_fill,
+              iconColor: CupertinoColors.systemOrange,
+              title: 'My day starts at',
+              value: settings.dayStart.format(context),
+              onTap: () async {
+                final time = await pickTimeAdaptive(context, initial: settings.dayStart);
+                if (time != null) await settings.setDayStart(time);
               },
             ),
           ],

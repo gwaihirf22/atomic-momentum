@@ -47,6 +47,13 @@ void main() {
     expect(reloaded.defaultReminderTime, const TimeOfDay(hour: 19, minute: 15));
   });
 
+  test('my day starts at 5:00 by default and is saved', () async {
+    expect(settings.dayStart, const TimeOfDay(hour: 5, minute: 0));
+    await settings.setDayStart(const TimeOfDay(hour: 15, minute: 30));
+    final reloaded = SettingsProvider(await SharedPreferences.getInstance());
+    expect(reloaded.dayStart, const TimeOfDay(hour: 15, minute: 30));
+  });
+
   group('week start', () {
     Future<SettingsProvider> forRegion(Locale locale) async =>
         SettingsProvider(await SharedPreferences.getInstance(), deviceLocale: () => locale);

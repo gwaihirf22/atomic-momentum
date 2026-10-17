@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Locale, TimeOfDay, WidgetsBinding;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/copy/greetings.dart';
 import '../../core/locale/week_start.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 
@@ -12,6 +13,8 @@ class SettingsProvider extends ChangeNotifier {
   static const _weekStartKey = 'weekStartDay';
   static const _reminderHourKey = 'defaultReminderHour';
   static const _reminderMinuteKey = 'defaultReminderMinute';
+  static const _dayStartHourKey = 'dayStartHour';
+  static const _dayStartMinuteKey = 'dayStartMinute';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -52,6 +55,20 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setDefaultReminderTime(TimeOfDay time) async {
     await _prefs.setInt(_reminderHourKey, time.hour);
     await _prefs.setInt(_reminderMinuteKey, time.minute);
+    notifyListeners();
+  }
+
+  /// When the person's day starts; the Habits greetings follow it (see
+  /// Greetings.partOf), so night shifts get morning greetings on waking.
+  TimeOfDay get dayStart {
+    final hour = _prefs.getInt(_dayStartHourKey);
+    final minute = _prefs.getInt(_dayStartMinuteKey);
+    return hour == null || minute == null ? Greetings.defaultDayStart : TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> setDayStart(TimeOfDay time) async {
+    await _prefs.setInt(_dayStartHourKey, time.hour);
+    await _prefs.setInt(_dayStartMinuteKey, time.minute);
     notifyListeners();
   }
 
