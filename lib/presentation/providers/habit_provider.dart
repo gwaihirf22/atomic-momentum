@@ -421,6 +421,8 @@ class HabitProvider extends ChangeNotifier {
   /// Re-plan every streak warning, e.g. after the warning settings change.
   Future<void> resyncStreakWarnings() async {
     await _streakWarnings?.syncAll(_habits);
+    // Warnings may now need more (or less) of iOS's 64, which reminders share
+    await _reminders?.syncAll(_habits);
   }
 
   // Utility methods

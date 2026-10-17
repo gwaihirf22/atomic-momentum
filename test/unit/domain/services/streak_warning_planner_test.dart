@@ -134,4 +134,23 @@ void main() {
       expect(warning.kind, StreakWarningKind.secondMiss);
     });
   });
+
+  group('StreakWarningPlanner.maxPending', () {
+    final daily = TestData.createTestHabit(target: 1);
+    final lifetime = TestData.createTestHabit(id: 'l', target: 5, resetFrequency: ResetFrequency.never);
+
+    test('one per repeating habit, two with the early nudge, none when off', () {
+      expect(StreakWarningPlanner.maxPending([daily, lifetime], fourHours), 1);
+      expect(StreakWarningPlanner.maxPending([daily, lifetime], withFirstMiss), 2);
+      expect(StreakWarningPlanner.maxPending([daily], fourHours.copyWith(enabled: false)), 0);
+    });
+  });
+
+  test('the lead time is counted on the clock: 24 hours before midnight is midnight the day before', () {
+    const dayAhead = StreakWarningSettings(enabled: true, leadTime: Duration(hours: 24));
+    final habit = TestData.createTestHabit(target: 1, history: {DateTime(2024, 1, 13): 1}).refresh(noon);
+
+    final warning = StreakWarningPlanner.plan(habit, dayAhead, DateTime(2024, 1, 14, 23)).single;
+    expect(warning.at, DateTime(2024, 1, 15));
+  });
 }

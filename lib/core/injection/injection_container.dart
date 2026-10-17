@@ -28,6 +28,7 @@ import '../../presentation/providers/settings_provider.dart';
 import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
+import '../../domain/services/streak_warning_planner.dart';
 import '../migration/smart_reminders_migration.dart';
 
 final GetIt sl = GetIt.instance;
@@ -67,7 +68,11 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     scheduler: const LocalNotificationStreakWarningScheduler(),
     readSettings: () => sl<SettingsProvider>().streakWarnings,
   ));
-  sl.registerLazySingleton(() => ReminderService(scheduler: LocalNotificationReminderScheduler()));
+  sl.registerLazySingleton(() => ReminderService(
+        scheduler: LocalNotificationReminderScheduler(),
+        // Streak warnings come first; reminders get the rest of iOS's 64
+        reservedFor: (habits) => StreakWarningPlanner.maxPending(habits, sl<SettingsProvider>().streakWarnings),
+      ));
   // Habits that never had a reminder get smart ones, once
   await enableSmartRemindersOnce(
     repository: sl(),

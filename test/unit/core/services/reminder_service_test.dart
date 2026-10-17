@@ -42,6 +42,19 @@ void main() {
     expect(latest, DateTime(2026, 10, 19, 9));
   });
 
+  test('leaves room for streak warnings, so the total stays under iOS\'s 64', () async {
+    final habits = [
+      for (var i = 0; i < 12; i++) TestData.createTestHabit(id: 'h$i', target: 1, reminder: smart),
+    ];
+    final sharing = ReminderService(scheduler: scheduler, clock: () => eightAm, reservedFor: (h) => 2 * h.length);
+    await sharing.syncAll(habits);
+
+    // 64 - 4 spare - 24 warnings
+    expect(scheduler.scheduled, hasLength(36));
+    expect(sharing.roomFor(habits), 36);
+    expect(ReminderService(scheduler: scheduler, reservedFor: (_) => 100).roomFor(habits), 0);
+  });
+
   test('each sync replaces the previous set, including older versions\' weekly reminders', () async {
     final habit = TestData.createTestHabit(id: 'a', target: 1, reminder: smart);
     await service.syncAll([habit]);

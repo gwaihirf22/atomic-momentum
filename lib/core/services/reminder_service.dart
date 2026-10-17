@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../../domain/entities/habit.dart';
 import '../../domain/services/reminder_planner.dart';
 import '../logging/log.dart';
@@ -60,8 +61,18 @@ class ReminderService {
   /// for streak warnings and the developer tester.
   static const budget = 48;
 
+  /// iOS keeps at most this many pending notifications and silently
+  /// discards the rest.
+  static const iosPendingLimit = 64;
+
+  /// Kept free under [iosPendingLimit] for the developer tester.
+  static const spare = 4;
+
   final ReminderScheduler _scheduler;
   final DateTime Function() _clock;
+
+  /// How many streak warnings may be pending alongside the reminders.
+  final int Function(List<Habit> habits) _reservedFor;
 
   // One sync at a time, so a slow one can't undo a newer one. Requests that
   // arrive meanwhile collapse into one more pass with the latest habits.
@@ -70,9 +81,19 @@ class ReminderService {
   bool _running = false;
   List<Habit>? _pending;
 
-  ReminderService({required ReminderScheduler scheduler, DateTime Function()? clock})
-      : _scheduler = scheduler,
-        _clock = clock ?? _systemNow;
+  ReminderService({
+    required ReminderScheduler scheduler,
+    DateTime Function()? clock,
+    int Function(List<Habit> habits)? reservedFor,
+  })  : _scheduler = scheduler,
+        _clock = clock ?? _systemNow,
+        _reservedFor = reservedFor ?? _noneReserved;
+
+  /// How many reminders to schedule for [habits]: [budget], or less when
+  /// their streak warnings need the room, so the total stays under iOS's
+  /// limit and nothing is silently dropped.
+  int roomFor(List<Habit> habits) =>
+      math.max(0, math.min(budget, iosPendingLimit - spare - _reservedFor(habits)));
 
   Future<void> syncAll(Iterable<Habit> habits) async {
     _pending = habits.toList();
@@ -96,7 +117,7 @@ class ReminderService {
         ..sort((a, b) => a.at.compareTo(b.at));
 
       await _scheduler.cancelAll(habits.map((h) => h.id));
-      for (final reminder in planned.take(budget)) {
+      for (final reminder in planned.take(roomFor(habits))) {
         await _scheduler.schedule(reminder);
       }
     } catch (e) {
@@ -106,3 +127,5 @@ class ReminderService {
 }
 
 DateTime _systemNow() => system_clock.clock.now();
+
+int _noneReserved(List<Habit> habits) => 0;

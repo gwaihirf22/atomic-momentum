@@ -52,7 +52,7 @@ class StreakWarningPlanner {
     final warnings = <StreakWarning>[];
 
     if (settings.remindBeforeFirstMiss && !habit.streak.atRisk) {
-      final at = habit.nextMissAt(now).subtract(settings.leadTime);
+      final at = _beforeOnTheClock(habit.nextMissAt(now), settings.leadTime);
       if (at.isAfter(now)) {
         warnings.add(StreakWarning(
           at: at,
@@ -63,7 +63,7 @@ class StreakWarningPlanner {
       }
     }
 
-    final at = deadline.subtract(settings.leadTime);
+    final at = _beforeOnTheClock(deadline, settings.leadTime);
     if (at.isAfter(now)) {
       warnings.add(StreakWarning(
         at: at,
@@ -74,5 +74,23 @@ class StreakWarningPlanner {
       ));
     }
     return warnings;
+  }
+
+  /// [lead] before [deadline] as the clock on the wall shows it: "4 hours
+  /// before midnight" is 20:00 even on a day the clocks change, and "24
+  /// hours before" is the same time the day before (never a 23 or 25 hour
+  /// gap, which would move the warning off the right day).
+  static DateTime _beforeOnTheClock(DateTime deadline, Duration lead) => DateTime(
+      deadline.year, deadline.month, deadline.day, deadline.hour, deadline.minute - lead.inMinutes);
+
+  /// The most streak warnings [habits] can have pending at once: one per
+  /// repeating habit, two with the early nudge on. Reminders leave room for
+  /// them under iOS's limit (see ReminderService). Counted whether or not a
+  /// streak is running yet: a habit's first completion schedules its
+  /// warnings before reminders resync, and iOS would drop the overflow.
+  static int maxPending(Iterable<Habit> habits, StreakWarningSettings settings) {
+    if (!settings.enabled) return 0;
+    final perHabit = settings.remindBeforeFirstMiss ? 2 : 1;
+    return perHabit * habits.where((h) => h.schedule.isPeriodic).length;
   }
 }
