@@ -1,0 +1,188 @@
+Mon Sep 28 07:00  created    Daily, Mon Wed Fri, Every 2 days, Every 3 days, Weekly, Every 2 weeks, Every 3 weeks, Monthly 15th, Monthly 31st, Lifetime
+Mon Sep 28 09:00  REMINDER   Daily: 0 of 1 today
+Mon Sep 28 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Mon Sep 28 09:00  REMINDER   Lifetime: 0 of 20 pages so far
+Mon Sep 28 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Sep 28 09:00  REMINDER   Monthly 31st: 0 of 1 this month. Due tomorrow
+Mon Sep 28 12:00  done       Daily, Lifetime, Mon Wed Fri
+Tue Sep 29 09:00  REMINDER   Daily: 0 of 1 today
+Tue Sep 29 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Tue Sep 29 09:00  REMINDER   Lifetime: 1 of 20 pages so far
+Tue Sep 29 12:00  done       Daily, Every 2 days, Lifetime, Monthly 31st
+Wed Sep 30 09:00  REMINDER   Daily: 0 of 1 today
+Wed Sep 30 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Wed Sep 30 09:00  REMINDER   Lifetime: 2 of 20 pages so far
+Wed Sep 30 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Sep 30 12:00  done       Daily, Every 3 days, Lifetime, Mon Wed Fri
+Thu Oct 01 09:00  REMINDER   Daily: 0 of 1 today
+Thu Oct 01 09:00  REMINDER   Lifetime: 3 of 20 pages so far
+Thu Oct 01 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Oct 01 12:00  done       Daily, Every 2 days, Lifetime
+Fri Oct 02 09:00  REMINDER   Daily: 0 of 1 today
+Fri Oct 02 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Fri Oct 02 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Fri Oct 02 09:00  REMINDER   Lifetime: 4 of 20 pages so far
+Fri Oct 02 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Oct 02 12:00  done       Daily, Lifetime, Mon Wed Fri
+Sat Oct 03 09:00  REMINDER   Daily: 0 of 1 today
+Sat Oct 03 09:00  REMINDER   Lifetime: 5 of 20 pages so far
+Sat Oct 03 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Oct 03 12:00  done       Daily, Every 2 days, Every 3 days, Lifetime
+Sun Oct 04 09:00  REMINDER   Daily: 0 of 1 today
+Sun Oct 04 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sun Oct 04 09:00  REMINDER   Lifetime: 6 of 20 pages so far
+Sun Oct 04 12:00  done       Daily, Lifetime, Weekly
+Mon Oct 05 09:00  REMINDER   Daily: 0 of 1 today
+Mon Oct 05 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Mon Oct 05 09:00  REMINDER   Lifetime: 7 of 20 pages so far
+Mon Oct 05 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Oct 05 12:00  done       Daily, Every 2 days, Lifetime, Mon Wed Fri
+Tue Oct 06 09:00  REMINDER   Daily: 0 of 1 today
+Tue Oct 06 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Tue Oct 06 09:00  REMINDER   Lifetime: 8 of 20 pages so far
+Tue Oct 06 12:00  done       Daily, Every 3 days, Lifetime
+Wed Oct 07 09:00  REMINDER   Daily: 0 of 1 today
+Wed Oct 07 09:00  REMINDER   Lifetime: 9 of 20 pages so far
+Wed Oct 07 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Oct 07 09:00  REMINDER   Monthly 15th: 0 of 1 this month. Due Oct 14
+Wed Oct 07 12:00  done       Daily, Every 2 days, Lifetime, Mon Wed Fri
+Thu Oct 08 09:00  REMINDER   Daily: 0 of 1 today
+Thu Oct 08 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Thu Oct 08 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due Sunday
+Thu Oct 08 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Thu Oct 08 09:00  REMINDER   Lifetime: 10 of 20 pages so far
+Thu Oct 08 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Oct 08 12:00  done       Daily, Lifetime
+Fri Oct 09 09:00  REMINDER   Daily: 0 of 1 today
+Fri Oct 09 09:00  REMINDER   Lifetime: 11 of 20 pages so far
+Fri Oct 09 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Oct 09 12:00  done       Daily, Every 2 days, Every 3 days, Lifetime, Mon Wed Fri
+Sat Oct 10 09:00  REMINDER   Daily: 0 of 1 today
+Sat Oct 10 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sat Oct 10 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due tomorrow
+Sat Oct 10 09:00  REMINDER   Lifetime: 12 of 20 pages so far
+Sat Oct 10 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Oct 10 12:00  done       Daily, Lifetime
+Sun Oct 11 09:00  REMINDER   Daily: 0 of 1 today
+Sun Oct 11 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Sun Oct 11 09:00  REMINDER   Lifetime: 13 of 20 pages so far
+Sun Oct 11 09:00  REMINDER   Monthly 15th: 0 of 1 this month. Due Wednesday
+Sun Oct 11 12:00  done       Daily, Every 2 days, Every 2 weeks, Lifetime, Weekly
+Mon Oct 12 09:00  REMINDER   Daily: 0 of 1 today
+Mon Oct 12 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Mon Oct 12 09:00  REMINDER   Lifetime: 14 of 20 pages so far
+Mon Oct 12 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Oct 12 12:00  done       Daily, Every 3 days, Lifetime, Mon Wed Fri
+Tue Oct 13 09:00  REMINDER   Daily: 0 of 1 today
+Tue Oct 13 09:00  REMINDER   Lifetime: 15 of 20 pages so far
+Tue Oct 13 09:00  REMINDER   Monthly 15th: 0 of 1 this month. Due tomorrow
+Tue Oct 13 12:00  done       Daily, Every 2 days, Lifetime
+Wed Oct 14 09:00  REMINDER   Daily: 0 of 1 today
+Wed Oct 14 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Wed Oct 14 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Wed Oct 14 09:00  REMINDER   Lifetime: 16 of 20 pages so far
+Wed Oct 14 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Oct 14 12:00  done       Daily, Lifetime, Mon Wed Fri, Monthly 15th
+Thu Oct 15 09:00  REMINDER   Daily: 0 of 1 today
+Thu Oct 15 09:00  REMINDER   Every 3 weeks: 0 of 1 this period. Due Sunday
+Thu Oct 15 09:00  REMINDER   Lifetime: 17 of 20 pages so far
+Thu Oct 15 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Oct 15 12:00  done       Daily, Every 2 days, Every 3 days, Lifetime
+Fri Oct 16 09:00  REMINDER   Daily: 0 of 1 today
+Fri Oct 16 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Fri Oct 16 09:00  REMINDER   Lifetime: 18 of 20 pages so far
+Fri Oct 16 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Oct 16 12:00  done       Daily, Lifetime, Mon Wed Fri
+Sat Oct 17 09:00  REMINDER   Daily: 0 of 1 today
+Sat Oct 17 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Sat Oct 17 09:00  REMINDER   Every 3 weeks: 0 of 1 this period. Due tomorrow
+Sat Oct 17 09:00  REMINDER   Lifetime: 19 of 20 pages so far
+Sat Oct 17 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Oct 17 12:00  done       Daily, Every 2 days, Lifetime
+Sun Oct 18 09:00  REMINDER   Daily: 0 of 1 today
+Sun Oct 18 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sun Oct 18 12:00  done       Daily, Every 3 days, Every 3 weeks, Weekly
+Mon Oct 19 09:00  REMINDER   Daily: 0 of 1 today
+Mon Oct 19 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Oct 19 12:00  done       Daily, Every 2 days, Mon Wed Fri
+Tue Oct 20 09:00  REMINDER   Daily: 0 of 1 today
+Tue Oct 20 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Tue Oct 20 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Tue Oct 20 12:00  done       Daily
+Wed Oct 21 09:00  REMINDER   Daily: 0 of 1 today
+Wed Oct 21 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Oct 21 12:00  done       Daily, Every 2 days, Every 3 days, Mon Wed Fri
+Thu Oct 22 09:00  REMINDER   Daily: 0 of 1 today
+Thu Oct 22 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Thu Oct 22 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due Sunday
+Thu Oct 22 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Oct 22 12:00  done       Daily
+Fri Oct 23 09:00  REMINDER   Daily: 0 of 1 today
+Fri Oct 23 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Fri Oct 23 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Oct 23 09:00  REMINDER   Monthly 31st: 0 of 1 this month. Due Oct 30
+Fri Oct 23 12:00  done       Daily, Every 2 days, Mon Wed Fri
+Sat Oct 24 09:00  REMINDER   Daily: 0 of 1 today
+Sat Oct 24 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sat Oct 24 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due tomorrow
+Sat Oct 24 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Oct 24 12:00  done       Daily, Every 3 days
+Sun Oct 25 09:00  REMINDER   Daily: 0 of 1 today
+Sun Oct 25 12:00  done       Daily, Every 2 days, Every 2 weeks, Weekly
+Mon Oct 26 09:00  REMINDER   Daily: 0 of 1 today
+Mon Oct 26 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Mon Oct 26 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Mon Oct 26 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Oct 26 12:00  done       Daily, Mon Wed Fri
+Tue Oct 27 09:00  REMINDER   Daily: 0 of 1 today
+Tue Oct 27 09:00  REMINDER   Monthly 31st: 0 of 1 this month. Due Friday
+Tue Oct 27 12:00  done       Daily, Every 2 days, Every 3 days
+Wed Oct 28 09:00  REMINDER   Daily: 0 of 1 today
+Wed Oct 28 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Wed Oct 28 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Oct 28 12:00  done       Daily, Mon Wed Fri
+Thu Oct 29 09:00  REMINDER   Daily: 0 of 1 today
+Thu Oct 29 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Thu Oct 29 09:00  REMINDER   Monthly 31st: 0 of 1 this month. Due tomorrow
+Thu Oct 29 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Oct 29 12:00  done       Daily, Every 2 days
+Fri Oct 30 09:00  REMINDER   Daily: 0 of 1 today
+Fri Oct 30 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Fri Oct 30 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Oct 30 12:00  done       Daily, Every 3 days, Mon Wed Fri, Monthly 31st
+Sat Oct 31 09:00  REMINDER   Daily: 0 of 1 today
+Sat Oct 31 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Oct 31 12:00  done       Daily, Every 2 days
+Sun Nov 01 09:00  REMINDER   Daily: 0 of 1 today
+Sun Nov 01 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sun Nov 01 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Sun Nov 01 12:00  done       Daily, Weekly
+Mon Nov 02 09:00  REMINDER   Daily: 0 of 1 today
+Mon Nov 02 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Mon Nov 02 12:00  done       Daily, Every 2 days, Every 3 days, Mon Wed Fri
+Tue Nov 03 09:00  REMINDER   Daily: 0 of 1 today
+Tue Nov 03 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Tue Nov 03 12:00  done       Daily
+Wed Nov 04 09:00  REMINDER   Daily: 0 of 1 today
+Wed Nov 04 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Wed Nov 04 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Wed Nov 04 12:00  done       Daily, Every 2 days, Mon Wed Fri
+Thu Nov 05 09:00  REMINDER   Daily: 0 of 1 today
+Thu Nov 05 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Thu Nov 05 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due Sunday
+Thu Nov 05 09:00  REMINDER   Every 3 weeks: 0 of 1 this period. Due Sunday
+Thu Nov 05 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due Sunday
+Thu Nov 05 12:00  done       Daily, Every 3 days
+Fri Nov 06 09:00  REMINDER   Daily: 0 of 1 today
+Fri Nov 06 09:00  REMINDER   Mon Wed Fri: 0 of 1 today
+Fri Nov 06 12:00  done       Daily, Every 2 days, Mon Wed Fri
+Sat Nov 07 09:00  REMINDER   Daily: 0 of 1 today
+Sat Nov 07 09:00  REMINDER   Every 2 days: 0 of 1 this period. Due tomorrow
+Sat Nov 07 09:00  REMINDER   Every 2 weeks: 0 of 1 this period. Due tomorrow
+Sat Nov 07 09:00  REMINDER   Every 3 days: 0 of 1 this period. Due tomorrow
+Sat Nov 07 09:00  REMINDER   Every 3 weeks: 0 of 1 this period. Due tomorrow
+Sat Nov 07 09:00  REMINDER   Monthly 15th: 0 of 1 this month. Due Nov 14
+Sat Nov 07 09:00  REMINDER   Weekly: 0 of 3 runs this week. Due tomorrow
+Sat Nov 07 12:00  done       Daily
+Sun Nov 08 09:00  REMINDER   Daily: 0 of 1 today
+Sun Nov 08 12:00  done       Daily, Every 2 days, Every 2 weeks, Every 3 days, Every 3 weeks, Weekly
