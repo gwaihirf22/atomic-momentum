@@ -26,11 +26,12 @@ version: 2
 updates:
   - package-ecosystem: "pub"
     directory: "/"
+    # Monthly, one PR at a time: most updates wait on a Flutter SDK upgrade
+    # anyway, so weekly runs were mostly noise
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "09:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 1
     groups:
       # The whole surface is four runtime packages and flutter_lints, so one
       # group is enough -- tiers would be ceremony over a handful of updates.
