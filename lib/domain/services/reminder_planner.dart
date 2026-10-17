@@ -1,7 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:intl/intl.dart';
 import '../entities/habit.dart';
+import '../entities/habit_notify.dart';
 import '../entities/habit_schedule.dart';
+import '../entities/quiet_hours.dart';
 import '../entities/reset_frequency.dart';
 import 'package:clock/clock.dart';
 
@@ -12,10 +14,19 @@ class PlannedReminder extends Equatable {
   final String title;
   final String body;
 
-  const PlannedReminder({required this.habitId, required this.at, required this.title, required this.body});
+  /// How it arrives: the habit's sound and time sensitivity.
+  final HabitNotify notify;
+
+  const PlannedReminder({
+    required this.habitId,
+    required this.at,
+    required this.title,
+    required this.body,
+    this.notify = HabitNotify.standard,
+  });
 
   @override
-  List<Object?> get props => [habitId, at, title, body];
+  List<Object?> get props => [habitId, at, title, body, notify];
 
   @override
   String toString() => 'PlannedReminder($habitId at $at: $body)';
@@ -52,7 +63,14 @@ class ReminderPlanner {
     return const [7, 3, 1];
   }
 
-  static List<PlannedReminder> plan(Habit habit, {required DateTime now, int horizon = horizonDays}) {
+  /// [quiet]: reminders falling in quiet hours move out of them, staying on
+  /// the same day (see [QuietHours.shift]).
+  static List<PlannedReminder> plan(
+    Habit habit, {
+    required DateTime now,
+    int horizon = horizonDays,
+    QuietHours quiet = QuietHours.off,
+  }) {
     final reminder = habit.reminder;
     if (reminder == null || !reminder.enabled) return const [];
 
@@ -66,13 +84,14 @@ class ReminderPlanner {
               if (reminder.daysOfWeek.contains(_addDays(today, i).weekday)) _addDays(today, i),
           ];
 
+    DateTime at(DateTime day) => quiet.shift(_at(day, reminder.time.hour, reminder.time.minute));
     return [
       for (final day in days)
-        if (_at(day, reminder.time.hour, reminder.time.minute).isAfter(now) &&
-            (habit.isBreak || !habit.wasKeptOnDate(day)))
+        if (at(day).isAfter(now) && (habit.isBreak || !habit.wasKeptOnDate(day)))
           PlannedReminder(
             habitId: habit.id,
-            at: _at(day, reminder.time.hour, reminder.time.minute),
+            at: at(day),
+            notify: habit.notify,
             title: habit.name,
             body:
                 reminder.customMessage?.trim().isNotEmpty == true ? reminder.customMessage!.trim() : _body(habit, day),

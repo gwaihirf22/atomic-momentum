@@ -8,6 +8,7 @@ import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
@@ -397,6 +398,50 @@ void main() {
     expect(smoking.streak.longest, greaterThanOrEqualTo(smoking.streak.current));
     expect(phone.habit('Drinks').wasCompletedOnDate(DateTime(2026, 10, 3)), isFalse, reason: '3 of at most 2');
     expect(phone.habit('Drinks').wasCompletedOnDate(DateTime(2026, 10, 4)), isTrue, reason: '2 of at most 2');
+  });
+
+  test('12. quiet hours: nothing arrives in them; late ones come before, early ones after', () async {
+    ReminderSettings at(int hour, [int minute = 0]) => ReminderSettings(
+          time: TimeOfDay(hour: hour, minute: minute),
+          enabled: true,
+          daysOfWeek: const [1, 2, 3, 4, 5, 6, 7],
+        );
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await phone.at(start, 'quiet      22:00 to 07:00; warnings 1h before, with the early nudge', () async {
+        await phone.quietHours(const QuietHours(enabled: true));
+        await phone.warnings(lead: const Duration(hours: 1), firstMiss: true);
+      });
+      await phone.at(start, 'created    Night owl 23:00, Early bird 06:00, Smoking check-in 22:30', () async {
+        await phone.create(habit('Night owl', reminder: at(23)));
+        await phone.create(habit('Early bird', reminder: at(6)));
+        await phone.create(CreateHabitParams(
+          name: 'Smoking',
+          target: 0,
+          color: HabitColor.red,
+          categoryId: BuiltInCategoryIds.body,
+          goal: HabitGoal.quit,
+          resetAnchor: start,
+          reminder: at(22, 30),
+        ));
+      });
+      var d = 0;
+      for (final day in days()) {
+        d++;
+        await phone.checkIn(on(day, 7, 30));
+        // Done most days, so streaks (and warnings) come and go
+        if (d % 4 != 0) await doHabits(phone, on(day, 12), names: ['Night owl', 'Early bird']);
+        await phone.checkIn(on(day, 21));
+      }
+      await phone.advanceTo(end);
+    });
+    expect(phone.timeline.where((l) => l.contains('REMINDER   Night owl')).every((l) => l.contains('21:45')), isTrue);
+    expect(phone.timeline.where((l) => l.contains('REMINDER   Early bird')).every((l) => l.contains('07:00')), isTrue);
+    expect(phone.timeline.where((l) => l.contains('REMINDER   Smoking')).every((l) => l.contains('21:45')), isTrue);
+    final warnings = phone.timeline.where((l) => l.contains('WARNING') || l.contains('NUDGE'));
+    expect(warnings, isNotEmpty);
+    expect(warnings.every((l) => l.contains('21:45')), isTrue, reason: '1h before midnight is 23:00, in quiet hours');
+    // Wall-clock times, so the same in every zone
+    expectClean(phone, 'quiet_hours');
   });
 
   test('10. clock changes: reminders keep their time, warnings their lead on the clock', () async {

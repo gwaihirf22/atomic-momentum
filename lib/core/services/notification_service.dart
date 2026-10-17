@@ -1,3 +1,4 @@
+import '../../domain/entities/habit_notify.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -203,6 +204,7 @@ class NotificationService {
     required String title,
     required String body,
     required String habitId,
+    NotificationDetails? details,
   }) async {
     if (!_initialized) return;
     try {
@@ -212,7 +214,7 @@ class NotificationService {
         body,
         // An absolute instant, so it fires at the right moment whatever tz.local is
         tz.TZDateTime.from(at, tz.UTC),
-        _getNotificationDetails(),
+        details ?? _getNotificationDetails(),
         payload: '$reminderPayloadPrefix$habitId',
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
@@ -238,7 +240,7 @@ class NotificationService {
   }
 
   // Schedule a one-off warning that a habit's streak is at stake
-  static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning) async {
+  static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning, {NotificationDetails? details}) async {
     if (!_initialized) return;
 
     try {
@@ -250,7 +252,7 @@ class NotificationService {
         warning.body,
         // An absolute instant, so it fires at the right moment whatever tz.local is
         tz.TZDateTime.from(warning.at, tz.UTC),
-        _getNotificationDetails(),
+        details ?? _getNotificationDetails(),
         payload: habitId,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
@@ -355,6 +357,33 @@ class NotificationService {
     }
   }
 
+  /// How a notification arrives: [sound] (a bundled tone, iOS's own, or
+  /// silent) and whether it may break through Focus. Android keeps one
+  /// channel per sound, since a channel's sound can't change once made.
+  static NotificationDetails detailsFor({NotifySound sound = NotifySound.system, bool timeSensitive = false}) {
+    final silent = sound == NotifySound.silent;
+    final file = sound.fileName;
+    final android = AndroidNotificationDetails(
+      sound == NotifySound.system ? 'habit_reminders' : 'habit_reminders_${sound.name}',
+      sound == NotifySound.system ? 'Habit Reminders' : 'Habit Reminders (${sound.label})',
+      channelDescription: 'Reminders to complete your daily habits',
+      importance: silent ? Importance.low : Importance.high,
+      priority: silent ? Priority.low : Priority.high,
+      playSound: !silent,
+      sound: file == null ? null : RawResourceAndroidNotificationSound(sound.name),
+      ticker: 'Habit Reminder',
+      icon: '@mipmap/ic_launcher',
+    );
+    final darwin = DarwinNotificationDetails(
+      categoryIdentifier: 'habit_reminder',
+      threadIdentifier: 'habit_reminders',
+      presentSound: !silent,
+      sound: file,
+      interruptionLevel: timeSensitive ? InterruptionLevel.timeSensitive : InterruptionLevel.active,
+    );
+    return NotificationDetails(android: android, iOS: darwin, macOS: darwin);
+  }
+
   // Get notification details (styling)
   static NotificationDetails _getNotificationDetails() {
     const AndroidNotificationDetails androidDetails =
@@ -399,4 +428,24 @@ class HabitFocusRequest {
   final String habitId;
 
   HabitFocusRequest(this.habitId);
+}
+
+/// Settings' notification defaults: the sound for habits without their own,
+/// and whether time-sensitive habits may break through Focus.
+class NotifyDefaults {
+  final NotifySound sound;
+  final bool allowTimeSensitive;
+
+  const NotifyDefaults({this.sound = NotifySound.chime, this.allowTimeSensitive = true});
+
+  static const standard = NotifyDefaults();
+
+  /// The sound [notify] plays here.
+  NotifySound soundFor(HabitNotify notify) => notify.sound ?? sound;
+
+  /// Whether [notify] arrives as time-sensitive.
+  bool timeSensitiveFor(HabitNotify notify) => notify.timeSensitive && allowTimeSensitive;
+
+  NotificationDetails detailsFor(HabitNotify notify) =>
+      NotificationService.detailsFor(sound: soundFor(notify), timeSensitive: timeSensitiveFor(notify));
 }

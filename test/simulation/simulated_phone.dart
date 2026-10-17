@@ -5,6 +5,7 @@ import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/core/services/reminder_service.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/domain/services/reminder_planner.dart';
 import 'package:atomic_momentum/domain/services/streak_warning_planner.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
@@ -183,6 +184,12 @@ class SimulatedPhone {
 
   Future<void> delete(String name) => habits.deleteHabit(id(name));
 
+  /// Sets quiet hours, then resyncs as the Settings screen does.
+  Future<void> quietHours(QuietHours quiet) async {
+    await settings.setQuietHours(quiet);
+    await habits.resyncStreakWarnings();
+  }
+
   /// Changes streak warning settings, then resyncs as the Settings screen does.
   Future<void> warnings({bool? enabled, Duration? lead, bool? firstMiss}) async {
     if (enabled != null) await settings.setStreakWarningsEnabled(enabled);
@@ -203,14 +210,14 @@ class SimulatedPhone {
   /// the soonest reminders within the budget, and every streak warning.
   List<_Expected> _plan() {
     final reminders = [
-      for (final h in habits.habits) ...ReminderPlanner.plan(h, now: now),
+      for (final h in habits.habits) ...ReminderPlanner.plan(h, now: now, quiet: settings.quietHours),
     ]..sort((a, b) => a.at.compareTo(b.at));
     final warningSettings = settings.streakWarnings;
     return [
       for (final r in reminders.take(get<ReminderService>().roomFor(habits.habits)))
         _Expected(r.habitId, 'reminder', r.at, r.title, r.body),
       for (final h in habits.habits)
-        for (final w in StreakWarningPlanner.plan(h.refresh(now), warningSettings, now))
+        for (final w in StreakWarningPlanner.plan(h.refresh(now), warningSettings, now, quiet: settings.quietHours))
           _Expected(h.id, w.kind.name, w.at, w.title, w.body),
     ];
   }
@@ -259,6 +266,8 @@ class SimulatedPhone {
       return;
     }
     final justBefore = r.at.subtract(const Duration(minutes: 1));
+    final quiet = settings.quietHours;
+    if (quiet.contains(r.at)) _fail(r.at, '"${r.title}" arrived during quiet hours');
 
     if (kind == 'reminder') {
       final reminder = habit.reminder;
@@ -268,8 +277,10 @@ class SimulatedPhone {
       }
       final wanted = DateTime(r.at.year, r.at.month, r.at.day, reminder.time.hour, reminder.time.minute);
       final wallTimeExists = wanted.hour == reminder.time.hour && wanted.minute == reminder.time.minute;
-      if (wallTimeExists && (r.at.hour != reminder.time.hour || r.at.minute != reminder.time.minute)) {
-        _fail(r.at, 'reminder for "${habit.name}" at ${_hm(r.at)}, not its time ${_two(reminder.time.hour)}:${_two(reminder.time.minute)}');
+      // Its time, or moved out of quiet hours on the same day
+      final expected = quiet.shift(wanted);
+      if (wallTimeExists && (r.at.hour != expected.hour || r.at.minute != expected.minute)) {
+        _fail(r.at, 'reminder for "${habit.name}" at ${_hm(r.at)}, not its time ${_hm(expected)}');
       }
       if (!reminder.isSmart && !reminder.daysOfWeek.contains(r.at.weekday)) {
         _fail(r.at, 'reminder for "${habit.name}" on a day its custom days exclude');
@@ -281,7 +292,7 @@ class SimulatedPhone {
       if (habit.isBreak && r.body != ReminderPlanner.checkInBody && r.body != reminder.customMessage?.trim()) {
         _fail(r.at, 'check-in for "${habit.name}" with the wrong message "${r.body}"');
       }
-      final fresh = ReminderPlanner.plan(habit, now: justBefore, horizon: 2);
+      final fresh = ReminderPlanner.plan(habit, now: justBefore, horizon: 2, quiet: quiet);
       if (!fresh.any((p) => p.at == r.at && p.title == r.title && p.body == r.body)) {
         _fail(r.at, 'stale reminder for "${habit.name}": the app would no longer send "${r.body}"');
       }
@@ -304,14 +315,14 @@ class SimulatedPhone {
     final deadline = kind == 'secondMiss' ? current.streakDeadline(justBefore) : current.nextMissAt(justBefore);
     if (deadline != null) {
       final lead = warningSettings.leadTime;
-      final onTheClock = DateTime(deadline.year, deadline.month, deadline.day, deadline.hour - lead.inHours,
-          deadline.minute - lead.inMinutes.remainder(60));
+      final onTheClock = quiet.shift(DateTime(deadline.year, deadline.month, deadline.day,
+          deadline.hour - lead.inHours, deadline.minute - lead.inMinutes.remainder(60)));
       if (r.at != onTheClock) {
         _fail(r.at, 'streak warning for "${habit.name}" at ${_stamp(r.at)}; '
             '${lead.inHours}h before the deadline on the clock is ${_stamp(onTheClock)}');
       }
     }
-    final fresh = StreakWarningPlanner.plan(current, warningSettings, justBefore);
+    final fresh = StreakWarningPlanner.plan(current, warningSettings, justBefore, quiet: quiet);
     if (!fresh.any((w) => w.at == r.at && w.title == r.title && w.body == r.body)) {
       _fail(r.at, 'stale streak warning for "${habit.name}": the app would no longer send "${r.body}"');
     }

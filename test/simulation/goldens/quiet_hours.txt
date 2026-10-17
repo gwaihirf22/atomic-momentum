@@ -1,0 +1,147 @@
+Mon Sep 28 07:00  quiet      22:00 to 07:00; warnings 1h before, with the early nudge
+Mon Sep 28 07:00  created    Night owl 23:00, Early bird 06:00, Smoking check-in 22:30
+Mon Sep 28 12:00  done       Early bird, Night owl
+Mon Sep 28 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Sep 29 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Sep 29 12:00  done       Early bird, Night owl
+Tue Sep 29 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Sep 30 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Sep 30 12:00  done       Early bird, Night owl
+Wed Sep 30 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Oct 01 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Oct 01 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Thu Oct 01 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Thu Oct 01 21:45  REMINDER   Night owl: 0 of 1 today
+Thu Oct 01 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Oct 02 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Oct 02 12:00  done       Early bird, Night owl
+Fri Oct 02 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Oct 03 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Oct 03 12:00  done       Early bird, Night owl
+Sat Oct 03 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Oct 04 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Oct 04 12:00  done       Early bird, Night owl
+Sun Oct 04 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Mon Oct 05 07:00  REMINDER   Early bird: 0 of 1 today
+Mon Oct 05 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Mon Oct 05 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Mon Oct 05 21:45  REMINDER   Night owl: 0 of 1 today
+Mon Oct 05 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Oct 06 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Oct 06 12:00  done       Early bird, Night owl
+Tue Oct 06 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Oct 07 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Oct 07 12:00  done       Early bird, Night owl
+Wed Oct 07 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Oct 08 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Oct 08 12:00  done       Early bird, Night owl
+Thu Oct 08 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Oct 09 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Oct 09 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Fri Oct 09 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Fri Oct 09 21:45  REMINDER   Night owl: 0 of 1 today
+Fri Oct 09 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Oct 10 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Oct 10 12:00  done       Early bird, Night owl
+Sat Oct 10 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Oct 11 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Oct 11 12:00  done       Early bird, Night owl
+Sun Oct 11 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Mon Oct 12 07:00  REMINDER   Early bird: 0 of 1 today
+Mon Oct 12 12:00  done       Early bird, Night owl
+Mon Oct 12 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Oct 13 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Oct 13 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Tue Oct 13 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Tue Oct 13 21:45  REMINDER   Night owl: 0 of 1 today
+Tue Oct 13 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Oct 14 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Oct 14 12:00  done       Early bird, Night owl
+Wed Oct 14 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Oct 15 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Oct 15 12:00  done       Early bird, Night owl
+Thu Oct 15 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Oct 16 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Oct 16 12:00  done       Early bird, Night owl
+Fri Oct 16 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Oct 17 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Oct 17 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Sat Oct 17 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Sat Oct 17 21:45  REMINDER   Night owl: 0 of 1 today
+Sat Oct 17 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Oct 18 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Oct 18 12:00  done       Early bird, Night owl
+Sun Oct 18 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Mon Oct 19 07:00  REMINDER   Early bird: 0 of 1 today
+Mon Oct 19 12:00  done       Early bird, Night owl
+Mon Oct 19 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Oct 20 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Oct 20 12:00  done       Early bird, Night owl
+Tue Oct 20 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Oct 21 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Oct 21 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Wed Oct 21 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Wed Oct 21 21:45  REMINDER   Night owl: 0 of 1 today
+Wed Oct 21 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Oct 22 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Oct 22 12:00  done       Early bird, Night owl
+Thu Oct 22 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Oct 23 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Oct 23 12:00  done       Early bird, Night owl
+Fri Oct 23 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Oct 24 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Oct 24 12:00  done       Early bird, Night owl
+Sat Oct 24 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Oct 25 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Oct 25 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Sun Oct 25 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Sun Oct 25 21:45  REMINDER   Night owl: 0 of 1 today
+Sun Oct 25 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Mon Oct 26 07:00  REMINDER   Early bird: 0 of 1 today
+Mon Oct 26 12:00  done       Early bird, Night owl
+Mon Oct 26 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Oct 27 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Oct 27 12:00  done       Early bird, Night owl
+Tue Oct 27 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Oct 28 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Oct 28 12:00  done       Early bird, Night owl
+Wed Oct 28 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Oct 29 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Oct 29 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Thu Oct 29 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Thu Oct 29 21:45  REMINDER   Night owl: 0 of 1 today
+Thu Oct 29 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Oct 30 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Oct 30 12:00  done       Early bird, Night owl
+Fri Oct 30 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Oct 31 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Oct 31 12:00  done       Early bird, Night owl
+Sat Oct 31 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Nov 01 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Nov 01 12:00  done       Early bird, Night owl
+Sun Nov 01 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Mon Nov 02 07:00  REMINDER   Early bird: 0 of 1 today
+Mon Nov 02 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Mon Nov 02 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Mon Nov 02 21:45  REMINDER   Night owl: 0 of 1 today
+Mon Nov 02 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Tue Nov 03 07:00  REMINDER   Early bird: 0 of 1 today
+Tue Nov 03 12:00  done       Early bird, Night owl
+Tue Nov 03 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Wed Nov 04 07:00  REMINDER   Early bird: 0 of 1 today
+Wed Nov 04 12:00  done       Early bird, Night owl
+Wed Nov 04 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Thu Nov 05 07:00  REMINDER   Early bird: 0 of 1 today
+Thu Nov 05 12:00  done       Early bird, Night owl
+Thu Nov 05 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Fri Nov 06 07:00  REMINDER   Early bird: 0 of 1 today
+Fri Nov 06 21:45  NUDGE      Keep Early bird going: Complete "Early bird" before midnight tonight to keep your momentum.
+Fri Nov 06 21:45  NUDGE      Keep Night owl going: Complete "Night owl" before midnight tonight to keep your momentum.
+Fri Nov 06 21:45  REMINDER   Night owl: 0 of 1 today
+Fri Nov 06 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sat Nov 07 07:00  REMINDER   Early bird: 0 of 1 today
+Sat Nov 07 12:00  done       Early bird, Night owl
+Sat Nov 07 21:45  REMINDER   Smoking: Still on track? Log any slips.
+Sun Nov 08 07:00  REMINDER   Early bird: 0 of 1 today
+Sun Nov 08 12:00  done       Early bird, Night owl
+Sun Nov 08 21:45  REMINDER   Smoking: Still on track? Log any slips.

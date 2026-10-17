@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/quiet_hours.dart';
 import '../../domain/services/reminder_planner.dart';
 import '../logging/log.dart';
 import 'notification_service.dart';
@@ -16,7 +17,11 @@ abstract class ReminderScheduler {
 }
 
 class LocalNotificationReminderScheduler implements ReminderScheduler {
-  LocalNotificationReminderScheduler();
+  /// Settings' defaults for habits without their own sound.
+  final NotifyDefaults Function() _defaults;
+
+  LocalNotificationReminderScheduler({NotifyDefaults Function()? defaults})
+      : _defaults = defaults ?? (() => NotifyDefaults.standard);
 
   @override
   Future<void> cancelAll(Iterable<String> habitIds) => NotificationService.cancelPendingReminders();
@@ -29,6 +34,7 @@ class LocalNotificationReminderScheduler implements ReminderScheduler {
       title: reminder.title,
       body: reminder.body,
       habitId: reminder.habitId,
+      details: _defaults().detailsFor(reminder.notify),
     );
   }
 
@@ -77,9 +83,15 @@ class ReminderService {
     required ReminderScheduler scheduler,
     DateTime Function()? clock,
     int Function(List<Habit> habits)? reservedFor,
+    QuietHours Function()? quietHours,
   })  : _scheduler = scheduler,
         _clock = clock ?? _systemNow,
-        _reservedFor = reservedFor ?? _noneReserved;
+        _reservedFor = reservedFor ?? _noneReserved,
+        _quietHours = quietHours ?? _noQuietHours;
+
+  /// Settings' quiet hours: reminders move out of them.
+  final QuietHours Function() _quietHours;
+  static QuietHours _noQuietHours() => QuietHours.off;
 
   /// How many reminders to schedule for [habits]: [budget], or less when
   /// their streak warnings need the room, so the total stays under iOS's
@@ -105,7 +117,7 @@ class ReminderService {
   Future<void> _sync(List<Habit> habits) async {
     try {
       final now = _clock();
-      final planned = [for (final habit in habits) ...ReminderPlanner.plan(habit, now: now)]
+      final planned = [for (final habit in habits) ...ReminderPlanner.plan(habit, now: now, quiet: _quietHours())]
         ..sort((a, b) => a.at.compareTo(b.at));
 
       await _scheduler.cancelAll(habits.map((h) => h.id));

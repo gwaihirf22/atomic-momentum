@@ -65,13 +65,15 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   // Settings and streak warnings
   sl.registerLazySingleton(() => SettingsProvider(sl()));
   sl.registerLazySingleton(() => StreakWarningService(
-    scheduler: const LocalNotificationStreakWarningScheduler(),
+    scheduler: LocalNotificationStreakWarningScheduler(defaults: () => sl<SettingsProvider>().notifyDefaults),
     readSettings: () => sl<SettingsProvider>().streakWarnings,
+    quietHours: () => sl<SettingsProvider>().quietHours,
   ));
   sl.registerLazySingleton(() => ReminderService(
-        scheduler: LocalNotificationReminderScheduler(),
+        scheduler: LocalNotificationReminderScheduler(defaults: () => sl<SettingsProvider>().notifyDefaults),
         // Streak warnings come first; reminders get the rest of iOS's 64
         reservedFor: (habits) => StreakWarningPlanner.maxPending(habits, sl<SettingsProvider>().streakWarnings),
+        quietHours: () => sl<SettingsProvider>().quietHours,
       ));
   // Habits that never had a reminder get smart ones, once
   await enableSmartRemindersOnce(

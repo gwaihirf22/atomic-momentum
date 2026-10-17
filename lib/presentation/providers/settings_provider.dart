@@ -3,6 +3,9 @@ import 'package:flutter/material.dart' show Locale, TimeOfDay, WidgetsBinding;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/copy/greetings.dart';
 import '../../core/locale/week_start.dart';
+import '../../core/services/notification_service.dart' show NotifyDefaults;
+import '../../domain/entities/habit_notify.dart';
+import '../../domain/entities/quiet_hours.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 
 /// The style the habit editor opens in; either can be switched to there.
@@ -25,6 +28,11 @@ class SettingsProvider extends ChangeNotifier {
   static const _dayStartHourKey = 'dayStartHour';
   static const _dayStartMinuteKey = 'dayStartMinute';
   static const _addHabitStyleKey = 'addHabitStyle';
+  static const _notifySoundKey = 'notifySound';
+  static const _allowTimeSensitiveKey = 'allowTimeSensitive';
+  static const _quietEnabledKey = 'quietHoursEnabled';
+  static const _quietStartKey = 'quietHoursStart';
+  static const _quietEndKey = 'quietHoursEnd';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -90,6 +98,46 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAddHabitStyle(AddHabitStyle style) async {
     await _prefs.setString(_addHabitStyleKey, style.name);
+    notifyListeners();
+  }
+
+  /// The sound habits use unless they pick their own (Chime by default).
+  NotifySound get notifySound => NotifySound.fromJson(_prefs.getString(_notifySoundKey)) ?? NotifySound.chime;
+
+  Future<void> setNotifySound(NotifySound sound) async {
+    await _prefs.setString(_notifySoundKey, sound.name);
+    notifyListeners();
+  }
+
+  /// Whether habits marked time-sensitive may break through Focus.
+  bool get allowTimeSensitive => _prefs.getBool(_allowTimeSensitiveKey) ?? true;
+
+  Future<void> setAllowTimeSensitive(bool allow) async {
+    await _prefs.setBool(_allowTimeSensitiveKey, allow);
+    notifyListeners();
+  }
+
+  /// What habits fall back to, for the notification scheduler.
+  NotifyDefaults get notifyDefaults => NotifyDefaults(sound: notifySound, allowTimeSensitive: allowTimeSensitive);
+
+  /// A nightly window when nothing arrives (off until turned on).
+  QuietHours get quietHours {
+    TimeOfDay? read(String key) {
+      final minutes = _prefs.getInt(key);
+      return minutes == null ? null : TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+    }
+
+    return QuietHours(
+      enabled: _prefs.getBool(_quietEnabledKey) ?? false,
+      start: read(_quietStartKey) ?? QuietHours.defaultStart,
+      end: read(_quietEndKey) ?? QuietHours.defaultEnd,
+    );
+  }
+
+  Future<void> setQuietHours(QuietHours quiet) async {
+    await _prefs.setBool(_quietEnabledKey, quiet.enabled);
+    await _prefs.setInt(_quietStartKey, quiet.start.hour * 60 + quiet.start.minute);
+    await _prefs.setInt(_quietEndKey, quiet.end.hour * 60 + quiet.end.minute);
     notifyListeners();
   }
 

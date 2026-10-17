@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
+import '../entities/habit_notify.dart';
 import '../entities/habit.dart';
+import '../entities/quiet_hours.dart';
 import '../entities/streak_warning_settings.dart';
 
 enum StreakWarningKind {
@@ -17,15 +19,19 @@ class StreakWarning extends Equatable {
   final String body;
   final StreakWarningKind kind;
 
+  /// How it arrives: the habit's sound and time sensitivity.
+  final HabitNotify notify;
+
   const StreakWarning({
     required this.at,
     required this.title,
     required this.body,
     this.kind = StreakWarningKind.secondMiss,
+    this.notify = HabitNotify.standard,
   });
 
   @override
-  List<Object?> get props => [at, title, body, kind];
+  List<Object?> get props => [at, title, body, kind, notify];
 }
 
 /// Decides whether and when to warn about a habit's streak.
@@ -38,7 +44,14 @@ class StreakWarningPlanner {
 
   /// The warnings to schedule, soonest first; empty when warnings are off,
   /// there is no streak at stake, or the warning times have passed.
-  static List<StreakWarning> plan(Habit habit, StreakWarningSettings settings, DateTime now) {
+  /// [quiet]: a warning falling in quiet hours comes a little before they
+  /// start instead (see [QuietHours.shift]), still before the deadline.
+  static List<StreakWarning> plan(
+    Habit habit,
+    StreakWarningSettings settings,
+    DateTime now, {
+    QuietHours quiet = QuietHours.off,
+  }) {
     if (!settings.enabled || !_warns(habit)) return const [];
 
     final deadline = habit.streakDeadline(now);
@@ -52,21 +65,23 @@ class StreakWarningPlanner {
     final warnings = <StreakWarning>[];
 
     if (settings.remindBeforeFirstMiss && !habit.streak.atRisk) {
-      final at = _beforeOnTheClock(habit.nextMissAt(now), settings.leadTime);
+      final at = quiet.shift(_beforeOnTheClock(habit.nextMissAt(now), settings.leadTime));
       if (at.isAfter(now)) {
         warnings.add(StreakWarning(
           at: at,
           kind: StreakWarningKind.firstMiss,
+          notify: habit.notify,
           title: 'Keep $name going',
           body: 'Complete "$name" before midnight tonight to keep your momentum.$easier',
         ));
       }
     }
 
-    final at = _beforeOnTheClock(deadline, settings.leadTime);
+    final at = quiet.shift(_beforeOnTheClock(deadline, settings.leadTime));
     if (at.isAfter(now)) {
       warnings.add(StreakWarning(
         at: at,
+        notify: habit.notify,
         title: "Don't miss twice: $name",
         // Lead times are at most a day, so the warning always lands on the
         // period's last day and the deadline is that night's midnight
