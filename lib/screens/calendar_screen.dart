@@ -472,6 +472,8 @@ class _DayHabitRow extends StatelessWidget {
               checkKey: const Key('completedBadge'),
               semanticLabel: '${habit.name}, $subtitle',
               onTap: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+              // Holding finishes the period: that day gets whatever's left
+              onLongPress: canAdd ? () => onSet(loggedThatDay + habit.target - periodTotal, periodTotal) : null,
             );
             final details = Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -166,6 +166,7 @@ class HabitCard extends StatelessWidget {
           child: Semantics(
             // Swipe actions are hard to reach with VoiceOver; offer them as actions
             customSemanticsActions: {
+              if (_canAdd) const CustomSemanticsAction(label: 'Mark done'): () => onSetProgress(habit.target),
               const CustomSemanticsAction(label: 'Edit'): onEdit,
               const CustomSemanticsAction(label: 'Delete'): onDelete,
               if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
@@ -193,6 +194,7 @@ class HabitCard extends StatelessWidget {
                       dimmed: isRestDay,
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                       onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
+                      onLongPress: _canAdd ? () => onSetProgress(habit.target) : null,
                     );
                     final details = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

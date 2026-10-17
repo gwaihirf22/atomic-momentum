@@ -114,6 +114,22 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets("holding a day's ring finishes that day", (tester) async {
+    await habitProvider.updateProgressForDate(id, yesterday, 1);
+    await pumpCalendar(tester);
+    await showMonthOf(tester, yesterday);
+    await tester.tap(dayCell(yesterday));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(Key('dayHabitIcon_$id')));
+    await tester.pumpAndSettle();
+
+    final habit = habitProvider.habits.single;
+    expect(habit.getProgressForDate(yesterday), 2, reason: 'the 1 missing was added');
+    expect(habit.wasCompletedOnDate(yesterday), isTrue);
+    expect(habit.getProgressForDate(today), 0, reason: 'only that day changes');
+  });
+
   testWidgets("future days can be looked at but not logged", (tester) async {
     await pumpCalendar(tester);
     await showMonthOf(tester, tomorrow);

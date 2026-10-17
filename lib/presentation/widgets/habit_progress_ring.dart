@@ -4,7 +4,8 @@ import '../../core/theme/app_palette.dart';
 
 /// A habit's icon inside a ring that fills with its progress, the app's core
 /// visual (habit cards and Calendar rows). Done: filled with the habit color
-/// and a check. Tapping it (when [onTap] is set) adds one.
+/// and a check. Tapping it (when [onTap] is set) adds one; holding it (when
+/// [onLongPress] is set) finishes it.
 class HabitProgressRing extends StatelessWidget {
   static const double defaultSize = 52;
   static const double _stroke = 4.5;
@@ -18,6 +19,9 @@ class HabitProgressRing extends StatelessWidget {
   final bool dimmed;
   final String semanticLabel;
   final VoidCallback? onTap;
+
+  /// Holding the ring: logs whatever's left, so the habit is done.
+  final VoidCallback? onLongPress;
   final double size;
 
   /// Key for the check shown when done (tests look for it).
@@ -32,6 +36,7 @@ class HabitProgressRing extends StatelessWidget {
     this.dimmed = false,
     required this.semanticLabel,
     this.onTap,
+    this.onLongPress,
     this.size = defaultSize,
     this.checkKey,
   });
@@ -42,10 +47,14 @@ class HabitProgressRing extends StatelessWidget {
       button: onTap != null,
       label: isDone ? '$semanticLabel, done' : semanticLabel,
       hint: onTap != null ? 'Adds one' : null,
+      onLongPressHint: onLongPress != null ? 'Finish' : null,
       excludeSemantics: true,
+      onTap: onTap,
+      onLongPress: onLongPress,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Opacity(
           opacity: dimmed ? 0.45 : 1,
           child: SizedBox(

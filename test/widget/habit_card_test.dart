@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -73,6 +75,61 @@ void main() {
 
   final now = DateTime.now();
   DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
+
+  group('holding the ring finishes the habit', () {
+    testWidgets('a long press logs the whole target, with the "done" haptic', (tester) async {
+      final haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+        return null;
+      });
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+      await habitProvider.updateHabitProgress(waterId, 1);
+      await pumpHome(tester);
+
+      await tester.longPress(find.byKey(Key('habitIcon_$waterId')));
+      await tester.pumpAndSettle();
+
+      final habit = habitProvider.habits.single;
+      expect(habit.progress, 3);
+      expect(habit.isCompleted, isTrue);
+      expect(find.descendant(of: card(), matching: find.textContaining('3/3 glasses')), findsOneWidget);
+      expect(haptics.last, 'HapticFeedbackType.mediumImpact');
+    });
+
+    testWidgets('a finished habit has nothing to hold for', (tester) async {
+      await habitProvider.updateHabitProgress(waterId, 3);
+      await pumpHome(tester);
+      await tester.longPress(find.byKey(Key('habitIcon_$waterId')));
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.single.progress, 3);
+    });
+
+    testWidgets('VoiceOver can finish it too: "Mark done", and holding the ring', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpHome(tester);
+
+      expect(tester.getSemantics(find.byKey(Key('habitIcon_$waterId'))),
+          matchesSemantics(
+            label: 'Drink Water, Body, 0/3 glasses',
+            hint: 'Adds one',
+            onLongPressHint: 'Finish',
+            isButton: true,
+            hasTapAction: true,
+            hasLongPressAction: true,
+          ));
+
+      final cardNode = tester.getSemantics(card());
+      final markDone = cardNode.getSemanticsData().customSemanticsActionIds!
+          .map(CustomSemanticsAction.getAction)
+          .firstWhere((action) => action!.label == 'Mark done')!;
+      tester.binding.pipelineOwner.semanticsOwner!
+          .performAction(cardNode.id, SemanticsAction.customAction, CustomSemanticsAction.getIdentifier(markDone));
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.single.isCompleted, isTrue);
+      semantics.dispose();
+    });
+  });
 
   testWidgets('on wider phones the card is one compact row', (tester) async {
     await habitProvider.updateProgressForDate(waterId, daysAgo(1), 3);
