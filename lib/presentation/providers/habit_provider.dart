@@ -13,6 +13,9 @@ import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../core/logging/log.dart';
 import '../../domain/entities/momentum.dart';
+import '../../core/services/reminder_service.dart';
+import '../../domain/entities/reminder_settings.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 
 enum HabitProviderState {
   initial,
@@ -33,6 +36,9 @@ class HabitProvider extends ChangeNotifier {
   // Null disables streak warnings (e.g. in tests that don't exercise them)
   final StreakWarningService? _streakWarnings;
 
+  // Null disables habit reminders (e.g. in tests that don't exercise them)
+  final ReminderService? _reminders;
+
   // Used to skip sample habits whose category the user has deleted
   final CategoryRepository? _categoryRepository;
 
@@ -43,8 +49,10 @@ class HabitProvider extends ChangeNotifier {
     required DeleteHabitUseCase deleteHabitUseCase,
     this.seedDefaultHabit = false,
     StreakWarningService? streakWarningService,
+    ReminderService? reminderService,
     CategoryRepository? categoryRepository,
   })  : _streakWarnings = streakWarningService,
+        _reminders = reminderService,
         _categoryRepository = categoryRepository,
         _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
@@ -127,6 +135,7 @@ class HabitProvider extends ChangeNotifier {
       
       _setState(HabitProviderState.loaded);
       await _streakWarnings?.syncAll(_habits);
+      await _reminders?.syncAll(_habits);
     } catch (e) {
       _error = e.toString();
       _setState(HabitProviderState.error);
@@ -144,12 +153,8 @@ class HabitProvider extends ChangeNotifier {
       final habit = await _createHabitUseCase(params);
       _habits.add(habit);
       await _streakWarnings?.sync(habit);
-      
-      // Schedule notification if habit has reminder settings
-      if (habit.hasReminder) {
-        await NotificationService.scheduleHabitReminder(habit);
-      }
-      
+      await _reminders?.syncAll(_habits);
+
       _sortHabits();
       notifyListeners();
       
@@ -183,6 +188,8 @@ class HabitProvider extends ChangeNotifier {
           final savedHabit = await _updateHabitUseCase.updateProgress(habitId, newProgress);
           _replaceHabit(savedHabit);
           await _streakWarnings?.sync(savedHabit);
+          // Finishing it drops its remaining reminders for the period
+          await _reminders?.syncAll(_habits);
         } catch (saveError) {
           // Roll back: never show progress that isn't actually stored
           _replaceHabit(currentHabit);
@@ -246,10 +253,8 @@ class HabitProvider extends ChangeNotifier {
       
       final updatedHabit = await _updateHabitUseCase.updateDetails(habitId, params);
       _updateHabitInList(updatedHabit);
-      
-      // Update notification schedule for the updated habit
-      await NotificationService.updateHabitReminder(updatedHabit);
-      
+      await _reminders?.syncAll(_habits);
+
       return true;
     } catch (e) {
       _error = e.toString();
@@ -304,7 +309,8 @@ class HabitProvider extends ChangeNotifier {
       
       await _deleteHabitUseCase(habitId);
       _habits.removeWhere((habit) => habit.id == habitId);
-      
+      await _reminders?.syncAll(_habits);
+
       notifyListeners();
       return true;
     } catch (e) {
@@ -326,6 +332,8 @@ class HabitProvider extends ChangeNotifier {
       for (final resetHabit in resetHabits) {
         _updateHabitInList(resetHabit);
       }
+      // A new day: the reminder window moves on even if nothing changed
+      await _reminders?.syncAll(_habits);
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -388,6 +396,8 @@ class HabitProvider extends ChangeNotifier {
       notifyListeners();
     }
     _streakWarnings?.sync(updatedHabit);
+    // Finishing a habit drops its remaining reminders for the period
+    _reminders?.syncAll(_habits);
   }
 
   void _sortHabits() {
@@ -432,7 +442,11 @@ class HabitProvider extends ChangeNotifier {
     for (final params in _sampleHabits) {
       if (existingNames.contains(params.name.toLowerCase())) continue;
       if (activeCategoryIds != null && !activeCategoryIds.contains(params.categoryId)) continue;
-      if (!await createHabit(params)) continue;
+      // Like any new habit, samples start with smart reminders
+      if (!await createHabit(params.copyWith(
+          reminder: ReminderSettings.smart(time: const TimeOfDay(hour: 9, minute: 0))))) {
+        continue;
+      }
       added++;
 
       if (params.resetFrequency == ResetFrequency.daily) {

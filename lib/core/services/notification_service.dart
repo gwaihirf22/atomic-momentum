@@ -4,7 +4,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import '../../domain/entities/habit.dart';
 import '../../domain/services/streak_warning_planner.dart';
 
 /// Whether the app may show notifications on this device.
@@ -163,59 +162,53 @@ class NotificationService {
     // TODO: Handle navigation to habit details or home screen
   }
 
-  // Schedule a single habit reminder
-  static Future<bool> scheduleHabitReminder(Habit habit) async {
-    if (!_initialized) {
-      debugPrint('NotificationService: Not initialized, cannot schedule reminder');
-      return false;
-    }
+  /// Payloads of habit reminders start with this, so they can be found and
+  /// replaced as a set (see ReminderService).
+  static const reminderPayloadPrefix = 'reminder|';
 
-    if (habit.reminder == null || !habit.reminder!.enabled) {
-      debugPrint('NotificationService: No reminder set for habit ${habit.name}');
-      return false;
-    }
-
+  /// Schedules one habit reminder for an absolute instant (planned by
+  /// ReminderPlanner; one-off, not repeating, so finished days can be skipped).
+  static Future<void> scheduleReminder({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+    required String habitId,
+  }) async {
+    if (!_initialized) return;
     try {
-      await cancelHabitReminder(habit.id); // Cancel existing first
-
-      final reminder = habit.reminder!;
-      final message = reminder.customMessage ??
-          _getDefaultReminderMessage(habit.name, habit.target, habit.units);
-
-      // Schedule for each selected day of the week
-      for (int dayOfWeek in reminder.daysOfWeek) {
-        final notificationId = _getNotificationId(habit.id, dayOfWeek);
-        
-        final scheduledDate = nextOccurrence(
-          dayOfWeek: dayOfWeek,
-          timeOfDay: reminder.time,
-          now: tz.TZDateTime.now(tz.local),
-        );
-
-        await _notificationsPlugin.zonedSchedule(
-          notificationId,
-          'Habit Reminder: ${habit.name}',
-          message,
-          scheduledDate,
-          _getNotificationDetails(),
-          payload: habit.id,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        );
-
-        debugPrint('NotificationService: Scheduled reminder for ${habit.name} on day $dayOfWeek at ${reminder.timeString}');
-      }
-
-      return true;
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        // An absolute instant, so it fires at the right moment whatever tz.local is
+        tz.TZDateTime.from(at, tz.UTC),
+        _getNotificationDetails(),
+        payload: '$reminderPayloadPrefix$habitId',
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
     } catch (e) {
-      debugPrint('NotificationService: Failed to schedule reminder for ${habit.name}: $e');
-      return false;
+      debugPrint('NotificationService: Failed to schedule reminder for $habitId: $e');
     }
   }
 
-  // Cancel habit reminders
+  /// Cancels every pending habit reminder.
+  static Future<void> cancelPendingReminders() async {
+    if (!_initialized) return;
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.payload?.startsWith(reminderPayloadPrefix) ?? false) {
+          await _notificationsPlugin.cancel(request.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel reminders: $e');
+    }
+  }
+
+  /// Cancels the weekly repeating reminders earlier versions scheduled.
   static Future<void> cancelHabitReminder(String habitId) async {
     if (!_initialized) return;
 
@@ -274,12 +267,6 @@ class NotificationService {
     // earlier versions are replaced rather than duplicated
     final suffix = kind == StreakWarningKind.secondMiss ? 'streak-warning' : 'streak-${kind.name}';
     return '$habitId-$suffix'.hashCode.abs() % 2147483647;
-  }
-
-  // Update habit reminders (cancel old, schedule new)
-  static Future<bool> updateHabitReminder(Habit habit) async {
-    await cancelHabitReminder(habit.id);
-    return await scheduleHabitReminder(habit);
   }
 
   /// Shows a notification immediately. Returns false if it couldn't be sent.
@@ -378,11 +365,6 @@ class NotificationService {
     return scheduledDate;
   }
 
-  // Generate default reminder message
-  static String _getDefaultReminderMessage(String habitName, int target, String units) {
-    final targetText = units.isEmpty ? '$target' : '$target $units';
-    return 'Time to work on your "$habitName" habit! Goal: $targetText';
-  }
 
   // Get all pending notifications (for debugging)
   static Future<List<PendingNotificationRequest>> getPendingNotifications() async {

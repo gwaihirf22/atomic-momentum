@@ -26,6 +26,7 @@ import '../core/exceptions/friendly_error.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/theme/app_style.dart';
 import '../presentation/widgets/adaptive.dart';
+import '../domain/services/reminder_planner.dart';
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? editHabit;
@@ -55,10 +56,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   // Days a daily habit is due; all seven means every day
   List<int> _scheduleDays = [1, 2, 3, 4, 5, 6, 7];
   // Reminder days mirror the schedule until the user picks them separately
-  bool _reminderDaysFollowSchedule = true;
+  // Smart reminders follow the schedule (see ReminderPlanner)
+  ReminderMode _reminderMode = ReminderMode.smart;
   
   // Reminder settings
-  bool _reminderEnabled = false;
+  // New habits remind by default, at the time chosen in Settings
+  bool _reminderEnabled = true;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
   List<int> _selectedDays = [1, 2, 3, 4, 5, 6, 7]; // All days by default
   String _customMessage = '';
@@ -207,6 +210,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     super.initState();
     final categories = context.read<CategoryProvider>().categories;
     if (categories.isNotEmpty) _selectedCategoryId = categories.first.id;
+    _reminderTime = context.read<SettingsProvider>().defaultReminderTime;
     
     // If editing an existing habit, populate the form
     if (widget.editHabit != null) {
@@ -220,14 +224,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       _resetAnchor = habit.resetAnchor;
       _resetInterval = habit.resetInterval;
       _scheduleDays = List.of(habit.scheduledWeekdays ?? const [1, 2, 3, 4, 5, 6, 7]);
-      _reminderDaysFollowSchedule = habit.reminder == null;
-      
       // Initialize reminder settings
-      if (habit.reminder != null) {
-        _reminderEnabled = habit.reminder!.enabled;
-        _reminderTime = habit.reminder!.time;
-        _selectedDays = List.from(habit.reminder!.daysOfWeek);
-        _customMessage = habit.reminder!.customMessage ?? '';
+      final reminder = habit.reminder;
+      _reminderEnabled = reminder?.enabled ?? false;
+      if (reminder != null) {
+        _reminderMode = reminder.mode;
+        _reminderTime = reminder.time;
+        _selectedDays = List.from(reminder.daysOfWeek);
+        _customMessage = reminder.customMessage ?? '';
       }
       
       // Initialize icon
@@ -261,6 +265,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
         _resetAnchor.toIso8601String(),
         _scheduleDays,
         _reminderEnabled,
+        _reminderMode.name,
         _reminderTime.hour * 60 + _reminderTime.minute,
         _selectedDays,
         _customMessage,
@@ -593,20 +598,25 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                _buildReminderModeControl(),
+                const SizedBox(height: 12),
+                if (_reminderMode == ReminderMode.smart)
+                  Text(
+                    "${ReminderPlanner.describeSmart(_schedule)}. Skipped once you're done.",
+                    key: const Key('reminderSummary'),
+                    style: TextStyle(fontSize: 14, color: secondaryLabel(context)),
+                  )
+                else
+                  Wrap(
+                    spacing: _chipSpacing,
+                    runSpacing: _chipSpacing,
+                    children: [
+                      for (final day in _weekdaysInOrder(context)) _buildDayChip(day, _weekdayShort[day - 1]),
+                    ],
+                  ),
                 const SizedBox(height: 16),
-                
-                // Days of Week Selection
-                const Text('Days to remind:', style: TextStyle(fontWeight: FontWeight.w500)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: _chipSpacing,
-                  runSpacing: _chipSpacing,
-                  children: [
-                    for (final day in _weekdaysInOrder(context)) _buildDayChip(day, _weekdayShort[day - 1]),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
+
                 // Custom Message (Optional)
                 TextFormField(
                   initialValue: _customMessage,
@@ -668,12 +678,14 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       // Build reminder settings. When editing a habit that had a reminder,
       // turning it off must send a disabled reminder: null means "unchanged"
       // to updateDetails, which would leave the old reminder firing.
-      final reminderOn = _reminderEnabled && _selectedDays.isNotEmpty;
+      final reminderOn =
+          _reminderEnabled && (_reminderMode == ReminderMode.smart || _selectedDays.isNotEmpty);
       ReminderSettings? reminder;
       if (reminderOn || widget.editHabit?.reminder != null) {
         reminder = ReminderSettings(
           time: _reminderTime,
           enabled: reminderOn,
+          mode: _reminderMode,
           daysOfWeek: List.from(_selectedDays),
           customMessage: _customMessage.isNotEmpty ? _customMessage : null,
         );
@@ -782,23 +794,46 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             _scheduleDays.remove(day);
           }
           _scheduleDays.sort();
-          if (_reminderDaysFollowSchedule) {
-            _selectedDays = List.of(_scheduleDays);
-          }
         });
       },
+    );
+  }
+
+  /// Smart (follows the schedule) or Custom days.
+  Widget _buildReminderModeControl() {
+    const labels = {ReminderMode.smart: 'Smart', ReminderMode.custom: 'Custom days'};
+    void choose(ReminderMode? mode) {
+      if (mode != null) setState(() => _reminderMode = mode);
+    }
+
+    if (isCupertino(context)) {
+      return SizedBox(
+        width: double.infinity,
+        child: CupertinoSlidingSegmentedControl<ReminderMode>(
+          key: const Key('reminderMode'),
+          groupValue: _reminderMode,
+          onValueChanged: choose,
+          children: {for (final e in labels.entries) e.key: Text(e.value)},
+        ),
+      );
+    }
+    return SegmentedButton<ReminderMode>(
+      key: const Key('reminderMode'),
+      segments: [for (final e in labels.entries) ButtonSegment(value: e.key, label: Text(e.value))],
+      selected: {_reminderMode},
+      showSelectedIcon: false,
+      onSelectionChanged: (selection) => choose(selection.first),
     );
   }
 
   Widget _buildDayChip(int dayOfWeek, String label) {
     final isSelected = _selectedDays.contains(dayOfWeek);
     return FilterChip(
+      key: Key('reminderDay_$dayOfWeek'),
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
         setState(() {
-          // Reminder days chosen by hand stop following the schedule
-          _reminderDaysFollowSchedule = false;
           if (selected) {
             _selectedDays.add(dayOfWeek);
           } else {

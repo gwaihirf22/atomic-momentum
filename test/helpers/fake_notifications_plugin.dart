@@ -6,7 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 /// Records what would have been shown or scheduled, in place of the OS plugin.
 class FakeNotificationsPlugin extends Fake implements FlutterLocalNotificationsPlugin {
   final List<({int id, String? title, String? body})> shown = [];
-  final Map<int, ({String? title, String? body, tz.TZDateTime at})> scheduled = {};
+  final Map<int, ({String? title, String? body, tz.TZDateTime at, String? payload})> scheduled = {};
 
   @override
   Future<void> show(int id, String? title, String? body, NotificationDetails? notificationDetails,
@@ -27,7 +27,7 @@ class FakeNotificationsPlugin extends Fake implements FlutterLocalNotificationsP
     String? payload,
     DateTimeComponents? matchDateTimeComponents,
   }) async {
-    scheduled[id] = (title: title, body: body, at: scheduledDate);
+    scheduled[id] = (title: title, body: body, at: scheduledDate, payload: payload);
   }
 
   @override
@@ -37,7 +37,7 @@ class FakeNotificationsPlugin extends Fake implements FlutterLocalNotificationsP
 
   @override
   Future<List<PendingNotificationRequest>> pendingNotificationRequests() async => [
-        for (final e in scheduled.entries) PendingNotificationRequest(e.key, e.value.title, e.value.body, null),
+        for (final e in scheduled.entries) PendingNotificationRequest(e.key, e.value.title, e.value.body, e.value.payload),
       ];
 
   // No platform-specific implementation: permission reads as unknown

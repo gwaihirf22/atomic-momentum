@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart' show Locale, WidgetsBinding;
+import 'package:flutter/material.dart' show Locale, TimeOfDay, WidgetsBinding;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/locale/week_start.dart';
 import '../../domain/entities/streak_warning_settings.dart';
@@ -10,6 +10,11 @@ class SettingsProvider extends ChangeNotifier {
   static const _streakWarningLeadHoursKey = 'streakWarningLeadHours';
   static const _streakWarningFirstMissKey = 'streakWarningRemindFirstMiss';
   static const _weekStartKey = 'weekStartDay';
+  static const _reminderHourKey = 'defaultReminderHour';
+  static const _reminderMinuteKey = 'defaultReminderMinute';
+
+  /// New habits remind at this time unless changed.
+  static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
 
   final SharedPreferences _prefs;
   final Locale Function() _deviceLocale;
@@ -34,6 +39,19 @@ class SettingsProvider extends ChangeNotifier {
     } else {
       await _prefs.setInt(_weekStartKey, day);
     }
+    notifyListeners();
+  }
+
+  /// The time new habits' reminders start at.
+  TimeOfDay get defaultReminderTime {
+    final hour = _prefs.getInt(_reminderHourKey);
+    final minute = _prefs.getInt(_reminderMinuteKey);
+    return hour == null || minute == null ? fallbackReminderTime : TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> setDefaultReminderTime(TimeOfDay time) async {
+    await _prefs.setInt(_reminderHourKey, time.hour);
+    await _prefs.setInt(_reminderMinuteKey, time.minute);
     notifyListeners();
   }
 

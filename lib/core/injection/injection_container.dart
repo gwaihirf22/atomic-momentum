@@ -27,6 +27,8 @@ import '../../presentation/providers/settings_provider.dart';
 // Services
 import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
+import '../services/reminder_service.dart';
+import '../migration/smart_reminders_migration.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -65,6 +67,13 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     scheduler: const LocalNotificationStreakWarningScheduler(),
     readSettings: () => sl<SettingsProvider>().streakWarnings,
   ));
+  sl.registerLazySingleton(() => ReminderService(scheduler: LocalNotificationReminderScheduler()));
+  // Habits that never had a reminder get smart ones, once
+  await enableSmartRemindersOnce(
+    repository: sl(),
+    prefs: sharedPreferences,
+    time: sl<SettingsProvider>().defaultReminderTime,
+  );
 
   // Providers
   sl.registerFactory(() => HabitProvider(
@@ -74,6 +83,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     deleteHabitUseCase: sl(),
     seedDefaultHabit: seedDefaultHabit,
     streakWarningService: sl(),
+    reminderService: sl(),
     categoryRepository: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list

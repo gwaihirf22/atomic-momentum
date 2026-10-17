@@ -111,6 +111,23 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         SettingsSection(
+          header: 'Reminders',
+          footer: 'New habits remind you at this time. Change it for any habit when you edit it.',
+          children: [
+            SettingsTile(
+              tileKey: const Key('defaultReminderTime'),
+              icon: CupertinoIcons.alarm_fill,
+              iconColor: CupertinoColors.systemGreen,
+              title: 'Default reminder time',
+              value: settings.defaultReminderTime.format(context),
+              onTap: () async {
+                final time = await pickTimeAdaptive(context, initial: settings.defaultReminderTime);
+                if (time != null) await settings.setDefaultReminderTime(time);
+              },
+            ),
+          ],
+        ),
+        SettingsSection(
           header: 'Streaks',
           footer: "By default you're warned only before a second miss would end a streak.",
           children: [

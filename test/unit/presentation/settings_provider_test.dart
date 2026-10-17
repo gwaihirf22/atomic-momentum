@@ -1,4 +1,4 @@
-import 'dart:ui' show Locale;
+import 'package:flutter/material.dart' show Locale, TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
@@ -38,6 +38,13 @@ void main() {
 
     final reloaded = SettingsProvider(await SharedPreferences.getInstance());
     expect(reloaded.streakWarnings.remindBeforeFirstMiss, isTrue);
+  });
+
+  test('the default reminder time starts at 9:00 and is saved', () async {
+    expect(settings.defaultReminderTime, const TimeOfDay(hour: 9, minute: 0));
+    await settings.setDefaultReminderTime(const TimeOfDay(hour: 19, minute: 15));
+    final reloaded = SettingsProvider(await SharedPreferences.getInstance());
+    expect(reloaded.defaultReminderTime, const TimeOfDay(hour: 19, minute: 15));
   });
 
   group('week start', () {

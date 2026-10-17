@@ -72,9 +72,11 @@ void main() {
     final reminder = find.byKey(const Key('reminderSwitch'));
     await tester.scrollUntilVisible(reminder, 200, scrollable: find.byType(Scrollable).first);
 
+    // New habits remind by default; tapping the label turns it off
+    expect(tester.widget<SwitchListTile>(reminder).value, isTrue);
     await tester.tap(find.text('Remind me about this habit'));
     await tester.pumpAndSettle();
-    expect(tester.widget<SwitchListTile>(reminder).value, isTrue);
+    expect(tester.widget<SwitchListTile>(reminder).value, isFalse);
   });
 
   testWidgets('deleting a habit asks with an iOS alert', (tester) async {

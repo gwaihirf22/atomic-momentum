@@ -21,6 +21,7 @@ import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
 import 'package:atomic_momentum/presentation/widgets/color_picker.dart';
 import 'package:atomic_momentum/presentation/widgets/selectable_swatch.dart';
+import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -129,7 +130,7 @@ void main() {
       expect(saved.scheduledWeekdays, isNull);
     });
 
-    testWidgets('specific weekdays are saved and reminder days follow them', (tester) async {
+    testWidgets('specific weekdays are saved, and smart reminders follow them', (tester) async {
       await pumpScreen(tester, const AddHabitScreen());
 
       // Keep Mon, Wed, Fri: turn off Tue, Thu, Sat, Sun
@@ -138,16 +139,74 @@ void main() {
         await tester.pumpAndSettle();
       }
       expect(find.text('Due Mon, Wed, Fri; other days are rest days'), findsOneWidget);
+      expect(tester.widget<Text>(find.byKey(const Key('reminderSummary'))).data,
+          startsWith('On each due day (Mon, Wed, Fri)'));
 
-      await tester.tap(find.byKey(const Key('reminderSwitch')));
-      await tester.pumpAndSettle();
       await fillNameAndTarget(tester, 'Gym', '1');
       await tester.tap(find.text('Add Habit'));
       await tester.pumpAndSettle();
 
       final saved = habitProvider.habits.single;
       expect(saved.scheduledWeekdays, [1, 3, 5]);
-      expect(saved.reminder!.daysOfWeek, [1, 3, 5]);
+      expect(saved.reminder!.enabled, isTrue);
+      expect(saved.reminder!.mode, ReminderMode.smart);
+    });
+
+    testWidgets('new habits remind by default, at the time set in Settings, in Smart mode', (tester) async {
+      await tester.runAsync(() => get<SettingsProvider>().setDefaultReminderTime(const TimeOfDay(hour: 19, minute: 15)));
+      await pumpScreen(tester, const AddHabitScreen());
+
+      expect(tester.widget<SwitchListTile>(find.byKey(const Key('reminderSwitch'))).value, isTrue);
+      expect(find.textContaining('7:15 PM'), findsOneWidget);
+      expect(find.byKey(const Key('reminderSummary')), findsOneWidget);
+
+      await fillNameAndTarget(tester, 'Walk', '1');
+      await tester.tap(find.text('Add Habit'));
+      await tester.pumpAndSettle();
+
+      final reminder = habitProvider.habits.single.reminder!;
+      expect(reminder.time, const TimeOfDay(hour: 19, minute: 15));
+      expect(reminder.mode, ReminderMode.smart);
+    });
+
+    testWidgets('the smart summary follows the schedule', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      await chooseFrequency(tester, 'Weekly');
+      expect(tester.widget<Text>(find.byKey(const Key('reminderSummary'))).data,
+          startsWith("3 days and 1 day before it's due ("));
+    });
+
+    testWidgets('Custom days shows weekday chips and saves the chosen days', (tester) async {
+      await pumpScreen(tester, const AddHabitScreen());
+      await tester.tap(find.text('Custom days'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('reminderSummary')), findsNothing);
+
+      for (final day in [2, 3, 4, 5, 6, 7]) {
+        await tester.tap(find.byKey(Key('reminderDay_$day')));
+        await tester.pumpAndSettle();
+      }
+      await fillNameAndTarget(tester, 'Swim', '1');
+      await tester.tap(find.text('Add Habit'));
+      await tester.pumpAndSettle();
+
+      final reminder = habitProvider.habits.single.reminder!;
+      expect(reminder.mode, ReminderMode.custom);
+      expect(reminder.daysOfWeek, [1]);
+    });
+
+    testWidgets('a habit with custom reminder days opens in Custom mode', (tester) async {
+      await habitProvider.createHabit(const CreateHabitParams(
+        name: 'Yoga',
+        target: 1,
+        color: HabitColor.purple,
+        categoryId: BuiltInCategoryIds.body,
+        reminder: ReminderSettings(time: TimeOfDay(hour: 6, minute: 0), enabled: true, daysOfWeek: [2, 4]),
+      ));
+      await pumpScreen(tester, AddHabitScreen(editHabit: habitProvider.habits.single));
+
+      expect(find.byKey(const Key('reminderSummary')), findsNothing);
+      expect(find.byKey(const Key('reminderDay_2')), findsOneWidget);
     });
 
     testWidgets('the last weekday cannot be turned off', (tester) async {
