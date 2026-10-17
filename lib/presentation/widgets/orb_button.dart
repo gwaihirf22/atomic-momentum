@@ -16,7 +16,22 @@ class OrbButton extends StatelessWidget {
   /// An arrow after the label, for steps that lead on.
   final bool showArrow;
 
-  const OrbButton({super.key, required this.label, required this.onPressed, this.busy = false, this.showArrow = false});
+  /// Looks greyed out but still answers taps (for a first tap that does
+  /// something else, such as scrolling to what's not been seen yet).
+  final bool dimmed;
+
+  /// What a tap does, for VoiceOver, when it isn't obvious from [label].
+  final String? hint;
+
+  const OrbButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.busy = false,
+    this.showArrow = false,
+    this.dimmed = false,
+    this.hint,
+  });
 
   static const height = 56.0;
 
@@ -28,10 +43,11 @@ class OrbButton extends StatelessWidget {
       button: true,
       enabled: enabled,
       label: label,
+      hint: hint,
       excludeSemantics: true,
       onTap: enabled ? onPressed : null,
       child: Opacity(
-        opacity: enabled || busy ? 1 : 0.5,
+        opacity: (enabled && !dimmed) || busy ? 1 : 0.45,
         child: DecoratedBox(
           decoration: BoxDecoration(gradient: AppPalette.of(context).orb, borderRadius: shape),
           child: Material(

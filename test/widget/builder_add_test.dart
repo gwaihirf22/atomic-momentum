@@ -158,4 +158,66 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('iconSwatch_star')), findsOneWidget, reason: 'the chosen icon always shows');
   });
+
+  group('on a small screen, Next first shows the rest of the step', () {
+    Future<void> openOnSE(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(375, 667);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(const MomentumApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('addHabitOrb')));
+      await tester.pumpAndSettle();
+    }
+
+    double nextOpacity(WidgetTester tester) => tester
+        .widget<Opacity>(find.descendant(of: find.byKey(const Key('builderNext')), matching: find.byType(Opacity)).first)
+        .opacity;
+
+    double scrolled(WidgetTester tester) =>
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position.pixels;
+
+    testWidgets('Next is greyed; its first tap scrolls to the end, the second moves on', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openOnSE(tester);
+      await tester.enterText(find.byKey(const Key('habitNameField')), 'Stretch');
+      await tester.pumpAndSettle();
+      expect(nextOpacity(tester), lessThan(1));
+      expect(tester.getSemantics(find.byKey(const Key('builderNext'))),
+          matchesSemantics(label: 'Next: how often', hint: 'Shows the rest of this step first', isButton: true,
+              hasEnabledState: true, isEnabled: true, hasTapAction: true));
+
+      await next(tester);
+      expect(stepTitle(tester), "What's the habit?", reason: 'the first tap only scrolls');
+      expect(scrolled(tester), greaterThan(0));
+      expect(nextOpacity(tester), 1);
+
+      await next(tester);
+      expect(stepTitle(tester), 'How often?');
+      semantics.dispose();
+    });
+
+    testWidgets('scrolling down by hand turns Next on too', (tester) async {
+      await openOnSE(tester);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -3000));
+      await tester.pumpAndSettle();
+      expect(nextOpacity(tester), 1);
+    });
+
+    testWidgets('a missing name scrolls back up to say so', (tester) async {
+      await openOnSE(tester);
+      await next(tester);
+      await next(tester);
+      expect(scrolled(tester), 0);
+      expect(find.text('Please enter a habit name'), findsOneWidget);
+    });
+  });
+
+  testWidgets('a step that fits on screen has Next ready at once', (tester) async {
+    await openBuilder(tester);
+    final opacity = tester
+        .widget<Opacity>(find.descendant(of: find.byKey(const Key('builderNext')), matching: find.byType(Opacity)).first)
+        .opacity;
+    expect(opacity, 1);
+  });
 }

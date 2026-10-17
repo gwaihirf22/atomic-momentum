@@ -48,12 +48,24 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
   int _step = 0;
   bool _saving = false;
 
+  /// Whether this step has been seen to its end. Until then the button is
+  /// dimmed and its first tap scrolls down, so nothing below is skipped by
+  /// accident on a small screen.
+  bool _seenAll = false;
+
   bool get _isLast => _step == BuilderAddScreen.stepCount - 1;
 
   @override
   void initState() {
     super.initState();
     _draft = widget.draft ?? HabitDraft.start(context, null);
+    _scroll.addListener(_checkSeenAll);
+  }
+
+  void _checkSeenAll() {
+    if (_seenAll || !_scroll.hasClients || !_scroll.position.hasContentDimensions) return;
+    final position = _scroll.position;
+    if (position.pixels >= position.maxScrollExtent - 24) setState(() => _seenAll = true);
   }
 
   @override
@@ -65,12 +77,31 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
 
   void _goTo(int step) {
     FocusScope.of(context).unfocus();
-    setState(() => _step = step);
+    setState(() {
+      _step = step;
+      _seenAll = false;
+    });
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
   Future<void> _next() async {
-    if (!_formKeys[_step].currentState!.validate()) return;
+    if (!_seenAll && _scroll.hasClients) {
+      // First tap: show the rest of the step
+      await _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOutCubic,
+      );
+      if (mounted) setState(() => _seenAll = true);
+      return;
+    }
+    if (!_formKeys[_step].currentState!.validate()) {
+      // The fields that need fixing are near the top of each step
+      if (_scroll.hasClients) {
+        await _scroll.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      }
+      return;
+    }
     if (!_isLast) return _goTo(_step + 1);
 
     setState(() => _saving = true);
@@ -94,6 +125,8 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>(); // rebuild when the appearance changes
+    // A step that fits on screen (or grew shorter) is seen at once
+    if (!_seenAll) WidgetsBinding.instance.addPostFrameCallback((_) => _checkSeenAll());
     final palette = AppPalette.of(context);
 
     return ListenableBuilder(
@@ -162,6 +195,8 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
                     label: _isLast ? 'Add Habit' : _nextLabels[_step],
                     showArrow: !_isLast,
                     busy: _saving,
+                    dimmed: !_seenAll,
+                    hint: _seenAll ? null : 'Shows the rest of this step first',
                     onPressed: _next,
                   ),
                 ),
