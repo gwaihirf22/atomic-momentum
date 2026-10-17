@@ -3,7 +3,10 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
+import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
+import '../domain/entities/habit_notify.dart';
+import '../domain/entities/quiet_hours.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -166,8 +169,9 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         SettingsSection(
-          header: 'Reminders',
-          footer: 'New habits remind you at this time. Change it for any habit when you edit it.',
+          header: 'Notifications',
+          footer: 'New habits remind you at the default time, with this sound. Change either for any habit '
+              'when you edit it. Nothing arrives during quiet hours: late ones come just before, early ones after.',
           children: [
             SettingsTile(
               tileKey: const Key('defaultReminderTime'),
@@ -178,6 +182,74 @@ class SettingsScreen extends StatelessWidget {
               onTap: () async {
                 final time = await pickTimeAdaptive(context, initial: settings.defaultReminderTime);
                 if (time != null) await settings.setDefaultReminderTime(time);
+              },
+            ),
+            SettingsTile(
+              tileKey: const Key('notifySoundSetting'),
+              icon: CupertinoIcons.music_note_2,
+              iconColor: HabitColor.pink.color,
+              title: 'Sound',
+              value: settings.notifySound.label,
+              onTap: () async {
+                final sound = await chooseAdaptive<NotifySound>(
+                  context,
+                  title: 'Sound',
+                  selected: settings.notifySound,
+                  options: [
+                    for (final sound in NotifySound.values)
+                      AdaptiveOption(sound, sound.label, key: Key('notifySound_${sound.name}')),
+                  ],
+                );
+                if (sound == null) return;
+                await settings.setNotifySound(sound);
+                await NotificationService.preview(sound);
+                await resync();
+              },
+            ),
+            SettingsSwitchTile(
+              tileKey: const Key('quietHoursSwitch'),
+              icon: CupertinoIcons.moon_fill,
+              iconColor: HabitColor.indigo.color,
+              title: 'Quiet hours',
+              subtitle: 'Nothing arrives overnight',
+              value: settings.quietHours.enabled,
+              onChanged: (value) async {
+                final quiet = settings.quietHours;
+                await settings.setQuietHours(QuietHours(enabled: value, start: quiet.start, end: quiet.end));
+                await resync();
+              },
+            ),
+            if (settings.quietHours.enabled) ...[
+              for (final (key, title, isStart) in const [('quietStart', 'From', true), ('quietEnd', 'To', false)])
+                SettingsTile(
+                  tileKey: Key(key),
+                  icon: isStart ? CupertinoIcons.moon : CupertinoIcons.sun_max,
+                  iconColor: HabitColor.indigo.color,
+                  title: title,
+                  value: (isStart ? settings.quietHours.start : settings.quietHours.end).format(context),
+                  onTap: () async {
+                    final quiet = settings.quietHours;
+                    final time = await pickTimeAdaptive(context, initial: isStart ? quiet.start : quiet.end);
+                    if (time == null) return;
+                    await settings.setQuietHours(QuietHours(
+                      enabled: true,
+                      start: isStart ? time : quiet.start,
+                      end: isStart ? quiet.end : time,
+                    ));
+                    await resync();
+                  },
+                ),
+            ],
+            SettingsSwitchTile(
+              tileKey: const Key('allowTimeSensitiveSwitch'),
+              icon: CupertinoIcons.exclamationmark_circle_fill,
+              iconColor: HabitColor.red.color,
+              title: 'Time-sensitive alerts',
+              subtitle: 'Let habits you mark come through Focus',
+              value: settings.allowTimeSensitive,
+              onChanged: (value) async {
+                await settings.setAllowTimeSensitive(value);
+                await resync();
               },
             ),
           ],

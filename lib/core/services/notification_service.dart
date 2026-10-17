@@ -289,11 +289,12 @@ class NotificationService {
     required String body,
     int id = testNotificationId,
     String payload = testPayload,
+    NotificationDetails? details,
   }) async {
     if (!isSupported) return false;
 
     try {
-      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: payload);
+      await _notificationsPlugin.show(id, title, body, details ?? _getNotificationDetails(), payload: payload);
       return true;
     } catch (e) {
       debugPrint('NotificationService: Failed to show notification: $e');
@@ -383,6 +384,14 @@ class NotificationService {
     );
     return NotificationDetails(android: android, iOS: darwin, macOS: darwin);
   }
+
+  /// Plays how [sound] will arrive: a notification right away (shown even
+  /// with the app open), so choosing a sound can be heard.
+  static Future<bool> preview(NotifySound sound) => showNow(
+        title: 'Momentum',
+        body: sound == NotifySound.silent ? 'Habits will arrive silently.' : 'This is how habits will sound.',
+        details: detailsFor(sound: sound),
+      );
 
   // Get notification details (styling)
   static NotificationDetails _getNotificationDetails() {

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/habit_goal.dart';
+import '../../domain/entities/habit_notify.dart';
 import '../../domain/entities/habit_schedule.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/reset_frequency.dart';
@@ -43,6 +44,10 @@ class HabitDraft extends ChangeNotifier {
 
   bool tinyShowOnCard = true;
   HabitColor color = HabitColor.blue;
+
+  /// How this habit's notifications arrive: its sound (null: Settings'
+  /// default), time-sensitive, and streak warnings.
+  HabitNotify notify = HabitNotify.standard;
 
   /// Building it up, or breaking it (quit or limit). Set with [setGoal].
   HabitGoal goal = HabitGoal.build;
@@ -86,6 +91,7 @@ class HabitDraft extends ChangeNotifier {
         reminderTime = defaultReminderTime {
     name.text = habit.name;
     goal = habit.goal;
+    notify = habit.notify;
     target.text = habit.target.toString();
     units.text = habit.units;
     color = habit.color;
@@ -275,6 +281,7 @@ class HabitDraft extends ChangeNotifier {
   /// Every value that would be saved, as one comparable string.
   String snapshot() => jsonEncode([
         goal.name,
+        notify.toJson(),
         name.text,
         target.text,
         units.text,
@@ -330,6 +337,7 @@ class HabitDraft extends ChangeNotifier {
         scheduledWeekdays: isBreak ? List.of(allDays) : List.of(scheduleDays),
         twoMinute: twoMinute,
         goal: goal,
+        notify: notify,
       );
 
   /// The edited habit's new values. Only call when editing and [isValid].
@@ -351,6 +359,7 @@ class HabitDraft extends ChangeNotifier {
       scheduledWeekdays: params.scheduledWeekdays,
       twoMinute: params.twoMinute,
       removeTwoMinute: params.twoMinute == null && original!.twoMinute != null,
+      notify: notify,
     );
   }
 

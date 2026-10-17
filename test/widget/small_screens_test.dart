@@ -16,6 +16,7 @@ import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/presentation/habit_form/habit_draft.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
@@ -217,6 +218,12 @@ void main() {
         await tester.tap(find.byKey(const Key('detailMonthToggle')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'Habit page month at $setting');
+      });
+
+      testWidgets('Settings with quiet hours on at $setting', (tester) async {
+        await get<SettingsProvider>().setQuietHours(const QuietHours(enabled: true));
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        expectNothingCutOff(tester, 'Settings with quiet hours at $setting');
       });
 
       testWidgets('Undo after holding a ring at $setting', (tester) async {

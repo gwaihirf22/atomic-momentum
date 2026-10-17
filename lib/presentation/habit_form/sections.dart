@@ -8,6 +8,8 @@ import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/habit_goal.dart';
+import '../../domain/entities/habit_notify.dart';
+import '../../core/services/notification_service.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/two_minute_version.dart';
@@ -598,7 +600,8 @@ class ReminderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weekdays = weekdaysStartingOn(context.watch<SettingsProvider>().firstDayOfWeek);
+    final settings = context.watch<SettingsProvider>();
+    final weekdays = weekdaysStartingOn(settings.firstDayOfWeek);
     return _DraftBuilder(draft, (context) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -666,7 +669,27 @@ class ReminderSection extends StatelessWidget {
               maxLength: HabitDraft.maxMessageLength,
               buildCounter: _noCounter,
             ),
+            _SoundRow(draft),
+            if (settings.allowTimeSensitive)
+              SwitchListTile.adaptive(
+                key: const Key('habitTimeSensitive'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Time-sensitive'),
+                subtitle: const Text('Comes through Focus and Do Not Disturb'),
+                value: draft.notify.timeSensitive,
+                onChanged: (value) => draft.edit(() => draft.notify = draft.notify.copyWith(timeSensitive: value)),
+              ),
           ],
+          // "Don't miss twice" warnings, for a habit being built
+          if (!draft.isBreak && settings.streakWarnings.enabled && draft.frequency.isPeriodic)
+            SwitchListTile.adaptive(
+              key: const Key('habitStreakWarnings'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Streak warnings'),
+              subtitle: const Text("A nudge before a miss would end the streak"),
+              value: draft.notify.streakWarnings,
+              onChanged: (value) => draft.edit(() => draft.notify = draft.notify.copyWith(streakWarnings: value)),
+            ),
         ],
       );
     });
@@ -751,5 +774,49 @@ class StrictnessSection extends StatelessWidget {
         ],
       );
     });
+  }
+}
+
+/// The habit's notification sound: Settings' default, a Momentum tone,
+/// iOS's own, or silent. Choosing one plays it.
+class _SoundRow extends StatelessWidget {
+  final HabitDraft draft;
+
+  const _SoundRow(this.draft);
+
+  static String labelOf(NotifySound? sound, NotifySound fallback) =>
+      sound == null ? 'Default (${fallback.label})' : sound.label;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = context.watch<SettingsProvider>().notifySound;
+    final palette = AppPalette.of(context);
+    return ListTile(
+      key: const Key('habitSound'),
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Sound'),
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(labelOf(draft.notify.sound, fallback), style: TextStyle(color: palette.textSecondary)),
+        const SizedBox(width: 4),
+        Icon(CupertinoIcons.chevron_right, size: 15, color: palette.textSecondary),
+      ]),
+      onTap: () async {
+        // 0: Settings' default; then each sound
+        final choices = [null, ...NotifySound.values];
+        final picked = await chooseAdaptive<int>(
+          context,
+          title: 'Sound',
+          selected: choices.indexOf(draft.notify.sound),
+          options: [
+            for (var i = 0; i < choices.length; i++)
+              AdaptiveOption(i, labelOf(choices[i], fallback), key: Key('habitSound_${choices[i]?.name ?? 'default'}')),
+          ],
+        );
+        if (picked == null) return;
+        final sound = choices[picked];
+        draft.edit(() => draft.notify = draft.notify.copyWith(sound: sound, clearSound: sound == null));
+        await NotificationService.preview(sound ?? fallback);
+      },
+    );
   }
 }
