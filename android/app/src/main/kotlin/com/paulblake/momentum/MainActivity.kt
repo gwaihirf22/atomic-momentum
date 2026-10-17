@@ -1,4 +1,4 @@
-package com.example.workspace
+package com.paulblake.momentum
 
 import io.flutter.embedding.android.FlutterActivity
 

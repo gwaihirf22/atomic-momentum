@@ -64,6 +64,7 @@ dev_dependencies:
   json_serializable: ^6.7.1
   test: ^1.24.6
   flutter_local_notifications_platform_interface: ^7.2.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -106,3 +107,20 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+# App icons: `./flutter/bin/dart run flutter_launcher_icons` regenerates them
+# from assets/branding (app_icon.png is full-bleed; iOS/Android round the
+# corners; macOS icons carry their own shape and margin)
+flutter_launcher_icons:
+  image_path: "assets/branding/app_icon.png"
+  ios: true
+  remove_alpha_ios: true
+  android: true
+  macos:
+    generate: true
+    image_path: "assets/branding/app_icon_macos.png"
+  web:
+    generate: true
+    image_path: "assets/branding/app_icon.png"
+    background_color: "#03142E"
+    theme_color: "#0A84FF"
