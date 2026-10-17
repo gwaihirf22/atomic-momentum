@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/habit_color.dart';
 import 'selectable_swatch.dart';
 import 'package:flutter/cupertino.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 
 /// The colors offered in the full picker: 12 hue families x 6 shades.
@@ -63,8 +64,6 @@ class ColorPalette {
   }
 }
 
-Color _checkColorOn(Color fill) => fill.computeLuminance() > 0.55 ? Colors.black87 : Colors.white;
-
 /// One row: the current color, as many suggestions as fit, and a rainbow
 /// "More colors" swatch that opens the full picker. Always a single row of
 /// 44pt swatches, whatever the screen width.
@@ -87,15 +86,18 @@ class CompactColorPicker extends StatelessWidget {
   }) : super(key: key);
 
   Widget _swatch(BuildContext context, HabitColor color, {required bool selected}) {
+    final palette = AppPalette.of(context);
+    // Shown as the current theme draws it; the stored color is unchanged
+    final fill = palette.habitColor(color.color);
     return SelectableSwatch(
       key: Key('$keyPrefix${color.name}'),
       semanticLabel: '${color.name} color',
       isSelected: selected,
       onTap: () => onChanged(color),
-      fill: color.color,
-      borderColor: selected ? Theme.of(context).colorScheme.onSurface : null,
+      fill: fill,
+      borderColor: selected ? palette.text : null,
       borderWidth: 3,
-      child: selected ? Icon(Icons.check, color: _checkColorOn(color.color), size: 22) : null,
+      child: selected ? Icon(Icons.check, color: palette.onColor(fill), size: 22) : null,
     );
   }
 
@@ -136,8 +138,8 @@ class CompactColorPicker extends StatelessWidget {
               child: Container(
                 width: 22,
                 height: 22,
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, shape: BoxShape.circle),
-                child: Icon(Icons.add, size: 16, color: Theme.of(context).colorScheme.onSurface),
+                decoration: BoxDecoration(color: AppPalette.of(context).surface, shape: BoxShape.circle),
+                child: Icon(Icons.add, size: 16, color: AppPalette.of(context).text),
               ),
             ),
           ),
@@ -234,6 +236,7 @@ class _PaletteGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -250,12 +253,11 @@ class _PaletteGrid extends StatelessWidget {
                     semanticLabel: '${family.colors[i].name} color',
                     isSelected: family.colors[i].value == selectedValue,
                     onTap: () => Navigator.of(context).pop(family.colors[i]),
-                    fill: family.colors[i].color,
-                    borderColor:
-                        family.colors[i].value == selectedValue ? Theme.of(context).colorScheme.onSurface : null,
+                    fill: palette.habitColor(family.colors[i].color),
+                    borderColor: family.colors[i].value == selectedValue ? palette.text : null,
                     borderWidth: 3,
                     child: family.colors[i].value == selectedValue
-                        ? Icon(Icons.check, size: 22, color: _checkColorOn(family.colors[i].color))
+                        ? Icon(Icons.check, size: 22, color: palette.onColor(palette.habitColor(family.colors[i].color)))
                         : null,
                   ),
                 ],
@@ -332,7 +334,7 @@ class _CustomColorTabState extends State<_CustomColorTab> {
                       key: const Key('customColorPreview'),
                       width: 88,
                       height: 88,
-                      decoration: BoxDecoration(color: _color, shape: BoxShape.circle),
+                      decoration: BoxDecoration(color: AppPalette.of(context).habitColor(_color), shape: BoxShape.circle),
                     ),
                   ),
                 ),

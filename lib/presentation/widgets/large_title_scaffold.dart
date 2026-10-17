@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 
 /// A main tab's page with an iOS-style large title: a big header at the top
@@ -56,7 +57,7 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final separator = CupertinoDynamicColor.resolve(CupertinoColors.separator, context);
+    final separator = AppPalette.of(context).separator;
     // Material Scaffold hosts SnackBars; Cupertino scaffolds can't show them
     return Scaffold(
       backgroundColor: widget.backgroundColor,
@@ -127,7 +128,7 @@ class LargeTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = CupertinoDynamicColor.resolve(CupertinoColors.label, context);
+    final label = AppPalette.of(context).text;
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppStyle.screenPadding + 4, 4, AppStyle.screenPadding, 8),
       child: Row(

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 
 /// A habit's icon inside a ring that fills with its progress, the app's core
 /// visual (habit cards and Calendar rows). Done: filled with the habit color
@@ -67,7 +68,7 @@ class HabitProgressRing extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: isDone
-                      ? Icon(Icons.check, key: checkKey, size: 20, color: Colors.white)
+                      ? Icon(Icons.check, key: checkKey, size: 20, color: AppPalette.of(context).onColor(color))
                       : Icon(icon, size: 20, color: color),
                 ),
               ),

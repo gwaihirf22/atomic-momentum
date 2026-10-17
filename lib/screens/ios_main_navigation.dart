@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/services/notification_service.dart';
-import '../core/theme/ios_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../presentation/providers/theme_provider.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
@@ -46,18 +46,18 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.isDarkIn(context);
-        
+        final palette = AppPalette.of(context);
+
         return CupertinoTabScaffold(
           controller: _tabs,
-          backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+          backgroundColor: palette.background,
           tabBar: CupertinoTabBar(
-            backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
-            activeColor: IOSColors.systemBlue,
-            inactiveColor: IOSColors.secondaryLabel,
+            backgroundColor: palette.background,
+            activeColor: palette.accent,
+            inactiveColor: palette.textSecondary,
             border: Border(
               top: BorderSide(
-                color: isDark ? IOSColors.separatorDark : IOSColors.separator,
+                color: palette.separator,
                 width: 0.5,
               ),
             ),

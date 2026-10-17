@@ -1,14 +1,13 @@
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import '../../domain/entities/momentum.dart';
 
-/// Overall momentum as a ring in the logo's electric blue, with the score
-/// inside and a small "momentum" caption.
+/// Overall momentum as a ring in the palette's orb gradient (amber to
+/// orange), with the score inside and a small "momentum" caption.
 class MomentumRing extends StatelessWidget {
-  /// The logo's gradient, cyan to blue.
-  static const gradient = [Color(0xFF7DF3FF), Color(0xFF2F7BFF), Color(0xFF5B5BFF)];
 
   final Momentum momentum;
   final double size;
@@ -22,7 +21,7 @@ class MomentumRing extends StatelessWidget {
         : momentum.isFalling
             ? ', falling'
             : '';
-    final label = CupertinoDynamicColor.resolve(CupertinoColors.label, context);
+    final palette = AppPalette.of(context);
     // Grows with the text size so the score always fits inside
     final ringSize = size * math.max(1.0, MediaQuery.textScalerOf(context).scale(1));
 
@@ -40,21 +39,21 @@ class MomentumRing extends StatelessWidget {
               duration: const Duration(milliseconds: 600),
               curve: Curves.easeOutCubic,
               builder: (context, value, child) => CustomPaint(
-                painter: _GradientRingPainter(fraction: value),
+                painter: _GradientRingPainter(fraction: value, palette: palette),
                 child: child,
               ),
               child: Center(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.bolt, size: 14, color: Color(0xFF2F7BFF)),
+                    Icon(Icons.bolt, size: 14, color: palette.gauge),
                     Text(
                       '${momentum.rounded}',
                       style: TextStyle(
                         fontFamily: 'Sora',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: label,
+                        color: palette.text,
                       ),
                     ),
                   ],
@@ -83,8 +82,9 @@ class MomentumRing extends StatelessWidget {
 
 class _GradientRingPainter extends CustomPainter {
   final double fraction;
+  final AppPalette palette;
 
-  _GradientRingPainter({required this.fraction});
+  _GradientRingPainter({required this.fraction, required this.palette});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -97,12 +97,12 @@ class _GradientRingPainter extends CustomPainter {
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(center, radius, paint..color = MomentumRing.gradient[1].withOpacity(0.15));
+    canvas.drawCircle(center, radius, paint..color = palette.track);
     if (fraction <= 0) return;
     paint.shader = SweepGradient(
       startAngle: 0,
       endAngle: 2 * math.pi,
-      colors: MomentumRing.gradient,
+      colors: [palette.orbStart, palette.gauge, palette.orbEnd],
       transform: const GradientRotation(-math.pi / 2),
     ).createShader(rect);
     canvas.drawArc(Rect.fromCircle(center: center, radius: radius), -math.pi / 2,
@@ -110,5 +110,5 @@ class _GradientRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GradientRingPainter old) => old.fraction != fraction;
+  bool shouldRepaint(_GradientRingPainter old) => old.fraction != fraction || old.palette != palette;
 }

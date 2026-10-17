@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../core/feedback/haptics.dart';
-import '../../core/theme/ios_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../domain/entities/category.dart';
 import '../providers/category_provider.dart';
 import 'category_icons.dart';
@@ -26,7 +26,6 @@ class CategoryRingsBar extends StatefulWidget {
 
   /// Long-pressing any ring (e.g. to manage categories).
   final VoidCallback? onLongPress;
-  final bool isDark;
 
   const CategoryRingsBar({
     Key? key,
@@ -35,7 +34,6 @@ class CategoryRingsBar extends StatefulWidget {
     required this.selectedId,
     required this.onTap,
     this.onLongPress,
-    required this.isDark,
   }) : super(key: key);
 
   @override
@@ -94,7 +92,6 @@ class _CategoryRingsBarState extends State<CategoryRingsBar> {
         category: category,
         stats: widget.stats[category.id],
         isSelected: widget.selectedId == category.id,
-        isDark: widget.isDark,
         onTap: () => widget.onTap(category.id),
         onLongPress: widget.onLongPress,
       );
@@ -163,7 +160,7 @@ class _PageDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurface;
+    final color = AppPalette.of(context).text;
     // Adjustable for VoiceOver: swipe up/down to change page
     return Semantics(
       key: const Key('ringPageDots'),
@@ -199,7 +196,6 @@ class _CategoryRing extends StatelessWidget {
   final Category category;
   final CategoryStats? stats;
   final bool isSelected;
-  final bool isDark;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -207,7 +203,6 @@ class _CategoryRing extends StatelessWidget {
     required this.category,
     required this.stats,
     required this.isSelected,
-    required this.isDark,
     required this.onTap,
     this.onLongPress,
   });
@@ -218,8 +213,9 @@ class _CategoryRing extends StatelessWidget {
     final completed = stats?.completedHabits ?? 0;
     final fraction = total == 0 ? 0.0 : stats!.averageProgress.clamp(0.0, 1.0);
     final percent = (fraction * 100).round();
-    final color = category.color;
-    final labelColor = isDark ? IOSColors.labelDark : IOSColors.label;
+    final palette = AppPalette.of(context);
+    final color = palette.habitColor(category.color);
+    final labelColor = palette.text;
 
     return Semantics(
       key: Key('categoryRing_${category.id}'),
@@ -254,7 +250,7 @@ class _CategoryRing extends StatelessWidget {
                     painter: _RingPainter(
                       fraction: animatedFraction,
                       color: color,
-                      trackColor: color.withOpacity(isDark ? 0.35 : 0.25),
+                      trackColor: color.withOpacity(palette.brightness == Brightness.dark ? 0.35 : 0.25),
                       fillColor: isSelected ? color.withOpacity(0.18) : Colors.transparent,
                       strokeWidth: _strokeWidth,
                     ),

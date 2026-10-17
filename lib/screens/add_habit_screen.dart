@@ -22,7 +22,7 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/selectable_swatch.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'categories_screen.dart';
-import '../core/theme/ios_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../core/exceptions/friendly_error.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/theme/app_style.dart';
@@ -120,12 +120,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   /// The save button, pinned to the bottom of the screen (a "sticky footer")
   /// so it's reachable without scrolling.
   Widget _buildActionBar(BuildContext context) {
-    final theme = Theme.of(context);
+    final palette = AppPalette.of(context);
     return Container(
       key: const Key('habitActionBar'),
       decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        border: Border(top: BorderSide(color: theme.dividerColor, width: 0.5)),
+        color: palette.background,
+        border: Border(top: BorderSide(color: palette.separator, width: 0.5)),
       ),
       child: SafeArea(
         top: false,
@@ -327,7 +327,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           child: Scaffold(
       appBar: isCupertino(context)
           ? CupertinoNavigationBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: AppPalette.of(context).background,
               middle: Text(widget.editHabit != null ? 'Edit Habit' : 'New Habit'),
               // maybePop, so unsaved changes are confirmed first
               leading: CupertinoButton(
@@ -435,7 +435,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(category.icon, size: 16, color: category.color),
+                        Icon(category.icon, size: 16, color: AppPalette.of(context).habitColor(category.color)),
                         const SizedBox(width: 4),
                         Text(category.name),
                       ],
@@ -450,7 +450,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                             : category.id;
                       });
                     },
-                    backgroundColor: isSelected ? category.color.withOpacity(0.2) : null,
+                    backgroundColor: isSelected ? AppPalette.of(context).tint(category.color, alpha: 0.2) : null,
                   );
                 }).toList(),
               ),
@@ -486,8 +486,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     semanticLabel: 'No icon',
                     isSelected: _selectedIcon == null,
                     onTap: () => setState(() => _selectedIcon = null),
-                    fill: CupertinoDynamicColor.resolve(IOSColors.tertiarySystemFill, context),
-                    borderColor: _selectedIcon == null ? Theme.of(context).primaryColor : null,
+                    fill: AppPalette.of(context).raised,
+                    borderColor: _selectedIcon == null ? AppPalette.of(context).accent : null,
                     borderWidth: 3,
                     child: Icon(
                       Icons.close,
@@ -498,21 +498,19 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   ...HabitIcons.library.entries.map((entry) {
                     final iconKey = entry.key;
                     final isSelected = _selectedIcon == iconKey;
+                    final palette = AppPalette.of(context);
+                    final color = palette.habitColor(_selectedColor.color);
                     return SelectableSwatch(
                       key: Key('iconSwatch_$iconKey'),
                       semanticLabel: '$iconKey icon',
                       isSelected: isSelected,
                       onTap: () => setState(() => _selectedIcon = iconKey),
-                      fill: isSelected
-                          ? _selectedColor.color.withOpacity(0.2)
-                          : CupertinoDynamicColor.resolve(IOSColors.secondarySystemFill, context),
-                      borderColor: isSelected ? _selectedColor.color : null,
+                      fill: isSelected ? color.withOpacity(0.2) : palette.raised,
+                      borderColor: isSelected ? color : null,
                       borderWidth: 2,
                       child: Icon(
                         entry.value,
-                        color: isSelected
-                            ? _selectedColor.color
-                            : secondaryLabel(context),
+                        color: isSelected ? color : secondaryLabel(context),
                         size: 22,
                       ),
                     );
@@ -684,7 +682,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     icon: const Icon(Icons.delete_outline),
                     label: const Text('Delete Habit'),
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+                      foregroundColor: AppPalette.of(context).danger,
                       minimumSize: const Size(44, 44),
                     ),
                   ),

@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'app_palette.dart';
 
 /// Shared sizes, so every screen matches the habit cards.
 class AppStyle {
@@ -56,8 +56,5 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-/// iOS's secondary text color, resolved for light or dark.
-Color secondaryLabel(BuildContext context) => CupertinoDynamicColor.resolve(
-      CupertinoColors.secondaryLabel,
-      context,
-    );
+/// The palette's secondary text color.
+Color secondaryLabel(BuildContext context) => AppPalette.of(context).textSecondary;

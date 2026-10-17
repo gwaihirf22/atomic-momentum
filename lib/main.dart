@@ -57,19 +57,20 @@ class MomentumApp extends StatelessWidget {
         view: View.of(context),
         child: Consumer<ThemeProvider>(
           builder: (context, themeProvider, child) {
-            final isDark = themeProvider.isDarkIn(context);
+            final palette = themeProvider.paletteIn(context);
 
             return CupertinoApp(
               title: 'Atomic Momentum',
               debugShowCheckedModeBanner: false,
-              theme: IOSTheme.getTheme(isDark ? Brightness.dark : Brightness.light),
+              theme: IOSTheme.cupertino(palette),
               home: const IOSMainNavigation(),
               // Screens built from Material widgets read Theme.of(context), which
-              // CupertinoApp doesn't provide; without this they stay light in dark mode
+              // CupertinoApp doesn't provide; it also carries the palette
+              // (AppPalette.of) every widget draws with
               // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
               // it no SnackBar can show
               builder: (context, child) => Theme(
-                data: isDark ? IOSTheme.getMaterialDarkTheme() : IOSTheme.getMaterialLightTheme(),
+                data: IOSTheme.material(palette),
                 child: ScaffoldMessenger(child: child!),
               ),
               localizationsDelegates: const [

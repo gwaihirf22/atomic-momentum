@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
-import 'package:atomic_momentum/core/theme/ios_colors.dart';
+import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
@@ -107,7 +107,7 @@ void main() {
 
     final calendarContext = tester.element(find.byKey(const Key('calendarDayTitle')));
     expect(Theme.of(calendarContext).brightness, Brightness.dark);
-    expect(Theme.of(calendarContext).scaffoldBackgroundColor, IOSColors.systemBackgroundDark);
+    expect(Theme.of(calendarContext).scaffoldBackgroundColor, AppPalette.dark.background);
 
     // Day numbers must be readable on the dark background
     final dayText = tester.widget<Text>(find.text('${DateTime.now().day == 15 ? 14 : 15}').first);

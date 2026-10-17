@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 
 /// The "2 min" button: logs a habit's two-minute version for a hard day.
 /// Outlined until done, then filled with a check; tap again to undo. When
@@ -26,7 +27,7 @@ class TwoMinuteButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final onColor = ThemeData.estimateBrightnessForColor(color) == Brightness.dark ? Colors.white : Colors.black;
+    final onColor = AppPalette.of(context).onColor(color);
     final label = Text(
       '2 min',
       style: TextStyle(

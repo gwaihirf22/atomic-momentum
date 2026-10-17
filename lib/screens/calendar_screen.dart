@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../core/feedback/haptics.dart';
 import '../core/theme/app_style.dart';
-import '../core/theme/ios_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../presentation/providers/category_provider.dart';
@@ -116,7 +116,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkIn(context);
+    context.watch<ThemeProvider>(); // rebuild when the appearance changes
+    final palette = AppPalette.of(context);
     final isMonth = _calendarFormat == CalendarFormat.month;
 
     return Consumer2<HabitProvider, CategoryProvider>(
@@ -127,7 +128,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
         return LargeTitleScaffold(
           title: DateFormat.yMMMM().format(_focusedDay),
-          backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+          backgroundColor: palette.background,
           trailing: CupertinoButton(
             key: const Key('calendarFormatToggle'),
             padding: EdgeInsets.zero,
@@ -158,7 +159,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 selected: filterId == null ? null : categoryProvider.resolve(filterId),
                 habitCount: dayHabits.length,
                 onShowAll: () => setState(() => _selectedCategoryId = null),
-                isDark: isDark,
               ),
             ),
             SliverToBoxAdapter(
@@ -171,10 +171,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 selectedId: filterId,
                 onTap: _toggleCategory,
-                isDark: isDark,
               ),
             ),
-            SliverToBoxAdapter(child: _buildCalendar(context, habits, isDark)),
+            SliverToBoxAdapter(child: _buildCalendar(context, habits)),
             SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
             _buildDayHabits(context, dayHabits),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
@@ -200,9 +199,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendar(BuildContext context, List<Habit> habits, bool isDark) {
+  Widget _buildCalendar(BuildContext context, List<Habit> habits) {
     final accent = Theme.of(context).colorScheme.primary;
-    final label = isDark ? IOSColors.labelDark : IOSColors.label;
+    final palette = AppPalette.of(context);
+    final label = palette.text;
     final secondary = secondaryLabel(context);
     final firstTracked = _firstTrackedDay(habits);
     // Rows and day cells grow with the text size, within a seventh of the width
@@ -366,7 +366,7 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textColor = isSelected
-        ? Colors.white
+        ? AppPalette.of(context).onAccent
         : isToday
             ? accent
             : labelColor;
@@ -442,7 +442,7 @@ class _DayHabitRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = habit.color.color;
+    final color = AppPalette.of(context).habitColor(habit.color.color);
     final loggedThatDay = habit.getProgressForDate(day);
     final periodTotal = habit.progressForPeriodContaining(day);
     final isDone = habit.wasCompletedOnDate(day);

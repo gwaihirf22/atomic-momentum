@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 
 /// A group of settings: an inset grouped list on iPhone and Mac (like the
@@ -13,12 +14,19 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     final footerText =
-        footer == null ? null : Text(footer!, style: TextStyle(fontSize: 13, color: secondaryLabel(context)));
+        footer == null ? null : Text(footer!, style: TextStyle(fontSize: 13, color: palette.textSecondary));
 
     if (isCupertino(context)) {
+      // Cupertino's own colors only know light and dark; these follow the palette
       return CupertinoListSection.insetGrouped(
-        header: header == null ? null : Text(header!.toUpperCase()),
+        backgroundColor: palette.background,
+        decoration: BoxDecoration(color: palette.surface, borderRadius: BorderRadius.circular(10)),
+        separatorColor: palette.separator,
+        header: header == null
+            ? null
+            : Text(header!.toUpperCase(), style: TextStyle(fontSize: 13, color: palette.textSecondary)),
         footer: footerText,
         children: children,
       );
@@ -44,11 +52,13 @@ class _SettingsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final fill = palette.habitColor(color);
     return Container(
       width: 29,
       height: 29,
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(7)),
-      child: Icon(icon, size: 18, color: Colors.white),
+      decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(7)),
+      child: Icon(icon, size: 18, color: palette.onColor(fill)),
     );
   }
 }

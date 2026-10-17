@@ -8,7 +8,7 @@ import '../domain/entities/habit.dart';
 import '../domain/entities/category.dart';
 import '../core/feedback/haptics.dart';
 import '../core/exceptions/friendly_error.dart';
-import '../core/theme/ios_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
@@ -115,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        final isDark = themeProvider.isDarkIn(context);
+        final palette = AppPalette.of(context);
         final now = clock.now();
         final dayStart = context.watch<SettingsProvider>().dayStart;
 
@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             return SlidableAutoCloseBehavior(
               child: LargeTitleScaffold(
                 title: 'Habits',
-                backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
+                backgroundColor: palette.background,
                 trailing: _buildAddButton(context),
                 header: LargeTitleHeader(
                   eyebrow: DateFormat.MMMMEEEEd().format(now),
@@ -139,16 +139,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 slivers: [
                   if (habitProvider.isLoading)
-                    SliverFillRemaining(hasScrollBody: false, child: _buildLoadingState(isDark))
+                    SliverFillRemaining(hasScrollBody: false, child: _buildLoadingState(palette))
                   else if (habitProvider.hasError)
-                    SliverFillRemaining(hasScrollBody: false, child: _buildErrorState(habitProvider.error!, isDark))
+                    SliverFillRemaining(hasScrollBody: false, child: _buildErrorState(habitProvider.error!, palette))
                   else ...[
                     SliverToBoxAdapter(
                       child: CategoryFilterHeader(
                         selected: categoryProvider.selectedCategory,
                         habitCount: filteredHabits.length,
                         onShowAll: categoryProvider.clearSelectedCategory,
-                        isDark: isDark,
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -165,16 +164,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             CupertinoPageRoute(builder: (_) => const CategoriesScreen()),
                           );
                         },
-                        isDark: isDark,
                       ),
                     ),
                     if (filteredHabits.isEmpty)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: _buildEmptyState(isDark, categoryProvider.selectedCategory),
+                        child: _buildEmptyState(palette, categoryProvider.selectedCategory),
                       )
                     else
-                      _buildHabitList(filteredHabits, habitProvider, isDark),
+                      _buildHabitList(filteredHabits, habitProvider),
                   ],
                 ],
               ),
@@ -201,35 +199,35 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           });
         });
       },
-      child: const Icon(
+      child: Icon(
         CupertinoIcons.add,
-        color: IOSColors.systemBlue,
+        color: AppPalette.of(context).accent,
         size: 24,
         semanticLabel: 'Add habit',
       ),
     );
   }
 
-  Widget _buildLoadingState(bool isDark) {
+  Widget _buildLoadingState(AppPalette palette) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CupertinoActivityIndicator(
-            color: isDark ? IOSColors.labelDark : IOSColors.label,
+            color: palette.text,
             radius: 20.0,
           ),
           const SizedBox(height: 16),
           Text(
             'Loading your habits...',
-            style: IOSTypography.getHabitSubtitle(isDark),
+            style: IOSTypography.habitSubtitle(palette),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState(String error, bool isDark) {
+  Widget _buildErrorState(String error, AppPalette palette) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -237,19 +235,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Icon(
             CupertinoIcons.exclamationmark_triangle,
             size: 80,
-            color: IOSColors.systemRed,
+            color: palette.danger,
           ),
           const SizedBox(height: 16),
           Text(
             'Something went wrong',
-            style: IOSTypography.getHabitTitle(isDark),
+            style: IOSTypography.habitTitle(palette),
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
               friendlyError(error, fallback: "Your habits couldn't be loaded. Please try again."),
-              style: IOSTypography.getHabitSubtitle(isDark),
+              style: IOSTypography.habitSubtitle(palette),
               textAlign: TextAlign.center,
             ),
           ),
@@ -266,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildEmptyState(bool isDark, Category? selectedCategory) {
+  Widget _buildEmptyState(AppPalette palette, Category? selectedCategory) {
     final isFiltered = selectedCategory != null;
     final title = isFiltered 
         ? 'No ${selectedCategory.name.toLowerCase()} habits yet'
@@ -283,13 +281,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             isFiltered ? selectedCategory.icon : CupertinoIcons.checkmark_circle,
             size: 80,
             color: isFiltered 
-                ? selectedCategory.color.withOpacity(0.5)
-                : IOSColors.systemBlue.withOpacity(0.5),
+                ? palette.habitColor(selectedCategory.color).withOpacity(0.5)
+                : palette.accent.withOpacity(0.5),
           ),
           const SizedBox(height: 16),
           Text(
             title,
-            style: IOSTypography.getHabitTitle(isDark),
+            style: IOSTypography.habitTitle(palette),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
@@ -297,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
               subtitle,
-              style: IOSTypography.getHabitSubtitle(isDark),
+              style: IOSTypography.habitSubtitle(palette),
               textAlign: TextAlign.center,
             ),
           ),
@@ -306,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {
+  Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
       // Every card is built (lists are short; a sliver list builds lazily),

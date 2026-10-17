@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/ios_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../domain/entities/category.dart';
 import 'category_icons.dart';
 
@@ -9,24 +9,23 @@ class CategoryFilterHeader extends StatelessWidget {
   final Category? selected;
   final int habitCount;
   final VoidCallback onShowAll;
-  final bool isDark;
 
   const CategoryFilterHeader({
     Key? key,
     required this.selected,
     required this.habitCount,
     required this.onShowAll,
-    required this.isDark,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final category = selected;
+    final palette = AppPalette.of(context);
     final countText = '$habitCount ${habitCount == 1 ? 'habit' : 'habits'}';
     final labelStyle = TextStyle(
       fontSize: 15,
       fontWeight: FontWeight.w600,
-      color: isDark ? IOSColors.labelDark : IOSColors.label,
+      color: palette.text,
     );
 
     return Padding(
@@ -38,7 +37,7 @@ class CategoryFilterHeader extends StatelessWidget {
         child: Row(
           children: [
             if (category != null) ...[
-              Icon(category.icon, size: 18, color: category.color),
+              Icon(category.icon, size: 18, color: palette.habitColor(category.color)),
               const SizedBox(width: 6),
             ],
             Expanded(

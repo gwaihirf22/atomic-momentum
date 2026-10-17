@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
-import 'package:atomic_momentum/core/theme/ios_colors.dart';
+import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/data/datasources/local_habit_datasource.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -81,12 +81,30 @@ void main() {
       expect(tester.widget<CupertinoApp>(find.byType(CupertinoApp)).theme!.brightness, Brightness.light);
     });
 
-    testWidgets('uses iOS blue as the accent for Material controls, not purple', (tester) async {
+    testWidgets('System uses Sepia by day when chosen, and Dark at night', (tester) async {
+      await get<ThemeProvider>().setDayTheme(AppTheme.sepia);
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+      addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+      await tester.pumpWidget(const MomentumApp());
+      await tester.pumpAndSettle();
+      final context = tester.element(find.text('Habits').first);
+      expect(AppPalette.of(context), AppPalette.sepia);
+      // Sepia is a light theme for the status bar and system controls
+      expect(tester.widget<CupertinoApp>(find.byType(CupertinoApp)).theme!.brightness, Brightness.light);
+
+      tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+      await tester.pumpAndSettle();
+      expect(AppPalette.of(tester.element(find.text('Habits').first)), AppPalette.dark);
+    });
+
+    testWidgets("uses the palette's amber as the accent for Material controls, not purple", (tester) async {
       await tester.pumpWidget(const MomentumApp());
       await tester.pumpAndSettle();
 
       final theme = Theme.of(tester.element(find.text('Habits').first));
-      expect(theme.colorScheme.primary, IOSColors.systemBlue);
+      expect(theme.colorScheme.primary, AppPalette.light.accent);
+      expect(theme.scaffoldBackgroundColor, AppPalette.light.background);
     });
   });
 
@@ -128,7 +146,7 @@ void main() {
   });
 
   group('Settings: appearance', () {
-    testWidgets('offers System, Light and Dark, and saves the choice', (tester) async {
+    testWidgets('offers System, Light, Sepia and Dark, and saves the choice', (tester) async {
       await tester.pumpWidget(MultiProvider(
         providers: [
           ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
@@ -144,12 +162,43 @@ void main() {
           findsOneWidget);
       await tester.tap(find.byKey(const Key('appearanceSetting')));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('appearance_dark')));
+      for (final appearance in Appearance.values) {
+        expect(find.byKey(Key('appearance_${appearance.name}')), findsOneWidget);
+      }
+      await tester.tap(find.byKey(const Key('appearance_sepia')));
       await tester.pumpAndSettle();
 
-      expect(get<ThemeProvider>().themeMode, ThemeMode.dark);
+      expect(get<ThemeProvider>().appearance, Appearance.sepia);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('themeMode'), 'dark');
+      expect(prefs.getString('themeMode'), 'sepia');
+      // The day theme only applies to System
+      expect(find.byKey(const Key('dayThemeSetting')), findsNothing);
+    });
+
+    testWidgets('under System, "In light mode" picks Light or Sepia', (tester) async {
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
+          ChangeNotifierProvider<HabitProvider>.value(value: get<HabitProvider>()),
+          ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
+          ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
+        ],
+        child: const MaterialApp(home: SettingsScreen()),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Light')),
+          findsOneWidget);
+      await tester.tap(find.byKey(const Key('dayThemeSetting')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dayTheme_dark')), findsNothing);
+      await tester.tap(find.byKey(const Key('dayTheme_sepia')));
+      await tester.pumpAndSettle();
+
+      expect(get<ThemeProvider>().dayTheme, AppTheme.sepia);
+      expect((await SharedPreferences.getInstance()).getString('dayTheme'), 'sepia');
+      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Sepia')),
+          findsOneWidget);
     });
   });
 

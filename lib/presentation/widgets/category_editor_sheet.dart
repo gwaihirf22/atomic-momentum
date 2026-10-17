@@ -11,6 +11,7 @@ import 'selectable_swatch.dart';
 import 'unsaved_changes_guard.dart';
 import 'adaptive.dart';
 import 'package:flutter/cupertino.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 
 /// Add a category, or edit [existing] (including deleting it).
@@ -117,7 +118,8 @@ class _CategoryEditorState extends State<_CategoryEditor> {
     final provider = context.watch<CategoryProvider>();
     final nameError =
         CategoryValidator.validateName(_name.text, provider.categories, excludeId: widget.existing?.id);
-    final color = Color(_colorValue);
+    final palette = AppPalette.of(context);
+    final color = palette.habitColor(Color(_colorValue));
     final canDelete = provider.categories.length > 1;
 
     return UnsavedChangesGuard(
@@ -208,7 +210,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
                     semanticLabel: '${CategoryIcons.label(entry.key)} icon',
                     isSelected: entry.key == _iconKey,
                     onTap: () => setState(() => _iconKey = entry.key),
-                    fill: entry.key == _iconKey ? color.withOpacity(0.2) : CupertinoDynamicColor.resolve(CupertinoColors.tertiarySystemFill, context),
+                    fill: entry.key == _iconKey ? color.withOpacity(0.2) : palette.raised,
                     borderColor: entry.key == _iconKey ? color : null,
                     borderWidth: 2,
                     child: Icon(entry.value, size: 22, color: entry.key == _iconKey ? color : secondaryLabel(context)),
@@ -226,7 +228,7 @@ class _CategoryEditorState extends State<_CategoryEditor> {
               TextButton(
                 key: const Key('deleteCategory'),
                 onPressed: canDelete ? _delete : null,
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                style: TextButton.styleFrom(foregroundColor: palette.danger),
                 child: const Text('Delete Category'),
               ),
               if (!canDelete)

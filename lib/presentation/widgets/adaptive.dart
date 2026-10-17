@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import 'package:clock/clock.dart';
 
@@ -45,7 +46,7 @@ Future<T?> showAdaptiveAlert<T>(
                 )
               : TextButton(
                   key: action.key,
-                  style: action.isDestructive ? TextButton.styleFrom(foregroundColor: Colors.red) : null,
+                  style: action.isDestructive ? TextButton.styleFrom(foregroundColor: AppPalette.of(context).danger) : null,
                   onPressed: () => Navigator.of(context).pop(action.value),
                   child: Text(action.label),
                 ),
@@ -204,7 +205,7 @@ Future<DateTime?> _cupertinoPicker(
   return showCupertinoModalPopup<DateTime>(
     context: context,
     builder: (context) {
-      final background = CupertinoDynamicColor.resolve(CupertinoColors.systemBackground, context);
+      final background = AppPalette.of(context).surface;
       return Container(
         color: background,
         child: SafeArea(

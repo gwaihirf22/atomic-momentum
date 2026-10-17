@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
@@ -17,8 +18,6 @@ import 'package:clock/clock.dart';
 /// button for a two-minute version, and a -/+ stepper. Tap the card to edit; swipe left for Edit and Delete (also offered to
 /// VoiceOver as actions).
 class HabitCard extends StatelessWidget {
-  static const flameColor = Colors.deepOrange;
-
   /// Cards narrower than this (on a phone narrower than 390pt) use two rows.
   static const twoRowCardWidth = 358.0;
 
@@ -35,9 +34,6 @@ class HabitCard extends StatelessWidget {
         onTap: () {},
         child: child,
       );
-
-  /// The streak survived one miss; another would end it.
-  static final atRiskColor = Colors.amber.shade800;
 
   final Habit habit;
   final Category category;
@@ -83,14 +79,15 @@ class HabitCard extends StatelessWidget {
 
   /// Momentum, streak and the "2 min" button; wraps onto another line rather
   /// than cutting off "Don't miss twice".
-  Widget _stats({required bool showStats, required bool showTwoMinute, required DateTime now}) {
+  Widget _stats(AppPalette palette, {required bool showStats, required bool showTwoMinute, required DateTime now}) {
+    final color = palette.habitColor(habit.color.color);
     return Wrap(
       spacing: 10,
       runSpacing: 2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (showStats)
-          _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: habit.color.color),
+          _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: color),
         if (habit.streak.current > 0)
           _StreakBadge(
             key: Key('habitStreak_${habit.id}'),
@@ -104,14 +101,14 @@ class HabitCard extends StatelessWidget {
             child: Text(
               "Don't miss twice",
               key: Key('habitAtRisk_${habit.id}'),
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: atRiskColor),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.warning),
             ),
           ),
         if (showTwoMinute)
           TwoMinuteButton(
             key: Key('twoMinute_${habit.id}'),
             description: habit.twoMinute!.description,
-            color: habit.color.color,
+            color: color,
             done: habit.isTwoMinuteOn(now),
             // Reaching the two-minute amount counts by itself
             onChanged: onSetTwoMinute == null ||
@@ -125,8 +122,8 @@ class HabitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = habit.color.color;
+    final palette = AppPalette.of(context);
+    final color = palette.habitColor(habit.color.color);
     final now = clock.now();
     final isRestDay = !habit.isDueOn(now);
     final secondary = secondaryLabel(context);
@@ -135,7 +132,7 @@ class HabitCard extends StatelessWidget {
         (habit.history.values.any((amount) => amount > 0) || habit.twoMinuteDays.isNotEmpty);
     final showTwoMinute = showsTwoMinuteButton(habit, now);
     final hasStatsRow = showStats || showTwoMinute;
-    Widget stats() => _stats(showStats: showStats, showTwoMinute: showTwoMinute, now: now);
+    Widget stats() => _stats(palette, showStats: showStats, showTwoMinute: showTwoMinute, now: now);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -151,16 +148,16 @@ class HabitCard extends StatelessWidget {
               SlidableAction(
                 key: Key('editHabit_${habit.id}'),
                 onPressed: (_) => onEdit(),
-                backgroundColor: Colors.blueGrey,
-                foregroundColor: Colors.white,
+                backgroundColor: palette.textSecondary,
+                foregroundColor: palette.surface,
                 icon: CupertinoIcons.pencil,
                 label: 'Edit',
               ),
               SlidableAction(
                 key: Key('deleteHabit_${habit.id}'),
                 onPressed: (_) => onDelete(),
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: palette.danger,
+                foregroundColor: palette.onColor(palette.danger),
                 icon: CupertinoIcons.trash,
                 label: 'Delete',
               ),
@@ -176,7 +173,7 @@ class HabitCard extends StatelessWidget {
             },
             child: Material(
               key: Key('habitCard_${habit.id}'),
-              color: highlighted ? Color.alphaBlend(color.withValues(alpha: 0.22), theme.cardColor) : theme.cardColor,
+              color: highlighted ? palette.tint(habit.color.color, alpha: 0.22) : palette.surface,
               // Fades in and out rather than flashing
               animationDuration: const Duration(milliseconds: 600),
               child: InkWell(
@@ -353,7 +350,8 @@ class _StreakBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = atRisk ? HabitCard.atRiskColor : HabitCard.flameColor;
+    final palette = AppPalette.of(context);
+    final color = atRisk ? palette.warning : palette.flame;
     return Semantics(
       label: atRisk ? "$label, missed once, don't miss twice" : label,
       excludeSemantics: true,

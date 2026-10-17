@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_palette.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
@@ -31,7 +32,7 @@ class CategoriesScreen extends StatelessWidget {
     return Scaffold(
       appBar: isCupertino(context)
           ? CupertinoNavigationBar(
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              backgroundColor: AppPalette.of(context).background,
               middle: const Text('Categories'),
               trailing: addButton,
             )
@@ -80,11 +81,12 @@ class _CategoryIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Container(
       width: 36,
       height: 36,
-      decoration: BoxDecoration(color: category.color.withOpacity(0.18), shape: BoxShape.circle),
-      child: Icon(category.icon, size: 20, color: category.color),
+      decoration: BoxDecoration(color: palette.tint(category.color, alpha: 0.18), shape: BoxShape.circle),
+      child: Icon(category.icon, size: 20, color: palette.habitColor(category.color)),
     );
   }
 }
@@ -252,7 +254,7 @@ class _DeletedRow extends StatelessWidget {
                 TextButton(
                   key: Key('deletePermanently_${category.id}'),
                   onPressed: () => _deletePermanently(context),
-                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  style: TextButton.styleFrom(foregroundColor: AppPalette.of(context).danger),
                   child: const Text('Delete Permanently'),
                 ),
             ],

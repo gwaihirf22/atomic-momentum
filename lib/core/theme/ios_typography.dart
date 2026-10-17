@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'ios_colors.dart';
+import 'app_palette.dart';
 
+/// iOS's text scale. Styles carry no color: it comes from the palette.
 class IOSTypography {
   static const FontWeight regular = FontWeight.w400;
   static const FontWeight semibold = FontWeight.w600;
@@ -14,120 +15,31 @@ class IOSTypography {
   static const double calloutSize = 16.0;
   static const double caption1Size = 12.0;
 
-  // Light Theme Text Styles
-  static TextStyle get largeTitleLight => const TextStyle(
-        fontSize: largeTitleSize,
-        fontWeight: bold,
-        color: IOSColors.label,
-        letterSpacing: 0.37,
-      );
+  static const largeTitle = TextStyle(fontSize: largeTitleSize, fontWeight: bold, letterSpacing: 0.37);
+  static const title3 = TextStyle(fontSize: title3Size, fontWeight: regular, letterSpacing: 0.38);
+  static const headline = TextStyle(fontSize: headlineSize, fontWeight: semibold, letterSpacing: -0.41);
+  static const body = TextStyle(fontSize: bodySize, fontWeight: regular, letterSpacing: -0.41);
+  static const callout = TextStyle(fontSize: calloutSize, fontWeight: regular, letterSpacing: -0.32);
+  static const caption1 = TextStyle(fontSize: caption1Size, fontWeight: regular, letterSpacing: 0.0);
 
-  static TextStyle get title3Light => const TextStyle(
-        fontSize: title3Size,
-        fontWeight: regular,
-        color: IOSColors.label,
-        letterSpacing: 0.38,
-      );
+  /// Cupertino's text theme in [palette]'s colors.
+  static CupertinoTextThemeData textTheme(AppPalette palette) {
+    TextStyle inText(TextStyle style) => style.copyWith(color: palette.text);
+    return CupertinoTextThemeData(
+      primaryColor: palette.accent,
+      textStyle: inText(body),
+      navTitleTextStyle: inText(headline),
+      navLargeTitleTextStyle: inText(largeTitle),
+      navActionTextStyle: body.copyWith(color: palette.accent),
+      pickerTextStyle: inText(body),
+      dateTimePickerTextStyle: inText(body),
+      tabLabelTextStyle: inText(caption1),
+    );
+  }
 
-  static TextStyle get headlineLight => const TextStyle(
-        fontSize: headlineSize,
-        fontWeight: semibold,
-        color: IOSColors.label,
-        letterSpacing: -0.41,
-      );
+  /// A message's heading (empty and error states).
+  static TextStyle habitTitle(AppPalette palette) => title3.copyWith(color: palette.text);
 
-  static TextStyle get bodyLight => const TextStyle(
-        fontSize: bodySize,
-        fontWeight: regular,
-        color: IOSColors.label,
-        letterSpacing: -0.41,
-      );
-
-  static TextStyle get calloutLight => const TextStyle(
-        fontSize: calloutSize,
-        fontWeight: regular,
-        color: IOSColors.label,
-        letterSpacing: -0.32,
-      );
-
-  static TextStyle get caption1Light => const TextStyle(
-        fontSize: caption1Size,
-        fontWeight: regular,
-        color: IOSColors.label,
-        letterSpacing: 0.0,
-      );
-
-  // Dark Theme Text Styles
-  static TextStyle get largeTitleDark => const TextStyle(
-        fontSize: largeTitleSize,
-        fontWeight: bold,
-        color: IOSColors.labelDark,
-        letterSpacing: 0.37,
-      );
-
-  static TextStyle get title3Dark => const TextStyle(
-        fontSize: title3Size,
-        fontWeight: regular,
-        color: IOSColors.labelDark,
-        letterSpacing: 0.38,
-      );
-
-  static TextStyle get headlineDark => const TextStyle(
-        fontSize: headlineSize,
-        fontWeight: semibold,
-        color: IOSColors.labelDark,
-        letterSpacing: -0.41,
-      );
-
-  static TextStyle get bodyDark => const TextStyle(
-        fontSize: bodySize,
-        fontWeight: regular,
-        color: IOSColors.labelDark,
-        letterSpacing: -0.41,
-      );
-
-  static TextStyle get calloutDark => const TextStyle(
-        fontSize: calloutSize,
-        fontWeight: regular,
-        color: IOSColors.labelDark,
-        letterSpacing: -0.32,
-      );
-
-  static TextStyle get caption1Dark => const TextStyle(
-        fontSize: caption1Size,
-        fontWeight: regular,
-        color: IOSColors.labelDark,
-        letterSpacing: 0.0,
-      );
-
-  // Cupertino Text Themes
-  static CupertinoTextThemeData get lightTextTheme => CupertinoTextThemeData(
-        primaryColor: IOSColors.label,
-        textStyle: bodyLight,
-        navTitleTextStyle: headlineLight,
-        navLargeTitleTextStyle: largeTitleLight,
-        navActionTextStyle: bodyLight.copyWith(color: IOSColors.systemBlue),
-        pickerTextStyle: bodyLight,
-        dateTimePickerTextStyle: bodyLight,
-        tabLabelTextStyle: caption1Light,
-      );
-
-  static CupertinoTextThemeData get darkTextTheme => CupertinoTextThemeData(
-        primaryColor: IOSColors.labelDark,
-        textStyle: bodyDark,
-        navTitleTextStyle: headlineDark,
-        navLargeTitleTextStyle: largeTitleDark,
-        navActionTextStyle: bodyDark.copyWith(color: IOSColors.systemBlue),
-        pickerTextStyle: bodyDark,
-        dateTimePickerTextStyle: bodyDark,
-        tabLabelTextStyle: caption1Dark,
-      );
-
-  // Helper methods for common text styles
-  static TextStyle getHabitTitle(bool isDark) => 
-      isDark ? title3Dark : title3Light;
-
-  static TextStyle getHabitSubtitle(bool isDark) => 
-      isDark ? calloutDark : calloutLight;
-
+  /// A message's explanation (empty and error states).
+  static TextStyle habitSubtitle(AppPalette palette) => callout.copyWith(color: palette.textSecondary);
 }

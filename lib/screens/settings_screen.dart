@@ -2,7 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/theme/app_style.dart';
+import '../core/theme/app_palette.dart';
+import '../domain/entities/habit_color.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -19,13 +20,9 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>(); // rebuild when the appearance changes
-    // iOS Settings style: grouped rows on the grouped background
-    final background = isCupertino(context)
-        ? CupertinoDynamicColor.resolve(CupertinoColors.systemGroupedBackground, context)
-        : Theme.of(context).scaffoldBackgroundColor;
     return LargeTitleScaffold(
       title: 'Settings',
-      backgroundColor: background,
+      backgroundColor: AppPalette.of(context).background,
       header: const LargeTitleHeader(title: 'Settings', titleKey: Key('settingsTitle')),
       slivers: [_buildSettingsList(context)],
     );
@@ -51,26 +48,47 @@ class SettingsScreen extends StatelessWidget {
             SettingsTile(
               tileKey: const Key('appearanceSetting'),
               icon: CupertinoIcons.circle_lefthalf_fill,
-              iconColor: CupertinoColors.systemIndigo,
+              iconColor: HabitColor.indigo.color,
               title: 'Appearance',
-              value: _themeModeLabel(themeProvider.themeMode),
+              value: _appearanceLabel(themeProvider.appearance),
               onTap: () async {
-                final mode = await chooseAdaptive<ThemeMode>(
+                final appearance = await chooseAdaptive<Appearance>(
                   context,
                   title: 'Appearance',
-                  selected: themeProvider.themeMode,
+                  selected: themeProvider.appearance,
                   options: [
-                    for (final mode in [ThemeMode.system, ThemeMode.light, ThemeMode.dark])
-                      AdaptiveOption(mode, _themeModeLabel(mode), key: Key('appearance_${mode.name}')),
+                    for (final appearance in Appearance.values)
+                      AdaptiveOption(appearance, _appearanceLabel(appearance), key: Key('appearance_${appearance.name}')),
                   ],
                 );
-                if (mode != null) await themeProvider.setThemeMode(mode);
+                if (appearance != null) await themeProvider.setAppearance(appearance);
               },
             ),
+            // System is dark at night; this picks its daytime look
+            if (themeProvider.appearance == Appearance.system)
+              SettingsTile(
+                tileKey: const Key('dayThemeSetting'),
+                icon: CupertinoIcons.sun_max_fill,
+                iconColor: HabitColor.amber.color,
+                title: 'In light mode',
+                value: _themeLabel(themeProvider.dayTheme),
+                onTap: () async {
+                  final theme = await chooseAdaptive<AppTheme>(
+                    context,
+                    title: 'In light mode',
+                    selected: themeProvider.dayTheme,
+                    options: [
+                      for (final theme in ThemeProvider.dayThemes)
+                        AdaptiveOption(theme, _themeLabel(theme), key: Key('dayTheme_${theme.name}')),
+                    ],
+                  );
+                  if (theme != null) await themeProvider.setDayTheme(theme);
+                },
+              ),
             SettingsTile(
               tileKey: const Key('dayStartSetting'),
               icon: CupertinoIcons.sunrise_fill,
-              iconColor: CupertinoColors.systemOrange,
+              iconColor: HabitColor.orange.color,
               title: 'My day starts at',
               value: settings.dayStart.format(context),
               onTap: () async {
@@ -86,7 +104,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsTile(
               tileKey: const Key('openCategories'),
               icon: CupertinoIcons.square_grid_2x2_fill,
-              iconColor: CupertinoColors.systemOrange,
+              iconColor: HabitColor.orange.color,
               title: 'Categories',
               subtitle: 'Add, edit, reorder or restore categories',
               onTap: () => Navigator.of(context).push(
@@ -101,7 +119,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsTile(
               tileKey: const Key('weekStartSetting'),
               icon: CupertinoIcons.calendar,
-              iconColor: CupertinoColors.systemRed,
+              iconColor: HabitColor.red.color,
               title: 'Start week on',
               value:
                   settings.weekStartOverride == null ? automaticWeekStart : _dayNames[settings.weekStartOverride! - 1],
@@ -129,7 +147,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsTile(
               tileKey: const Key('defaultReminderTime'),
               icon: CupertinoIcons.alarm_fill,
-              iconColor: CupertinoColors.systemGreen,
+              iconColor: HabitColor.green.color,
               title: 'Default time',
               value: settings.defaultReminderTime.format(context),
               onTap: () async {
@@ -145,7 +163,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsSwitchTile(
               tileKey: const Key('streakWarningsSwitch'),
               icon: Icons.local_fire_department,
-              iconColor: CupertinoColors.systemOrange,
+              iconColor: HabitColor.orange.color,
               title: 'Streak warnings',
               subtitle: 'Before a second miss would end it',
               value: streakWarnings.enabled,
@@ -157,7 +175,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsTile(
               tileKey: const Key('streakWarningLeadTime'),
               icon: CupertinoIcons.clock_fill,
-              iconColor: CupertinoColors.systemBlue,
+              iconColor: HabitColor.blue.color,
               title: 'Warn me',
               value: _leadTimeLabel(streakWarnings.leadTime.inHours),
               enabled: streakWarnings.enabled,
@@ -179,7 +197,7 @@ class SettingsScreen extends StatelessWidget {
             SettingsSwitchTile(
               tileKey: const Key('streakWarningFirstMissSwitch'),
               icon: CupertinoIcons.bell_fill,
-              iconColor: CupertinoColors.systemPurple,
+              iconColor: HabitColor.purple.color,
               title: 'Early nudge',
               subtitle: 'Remind before a first miss, too',
               value: streakWarnings.remindBeforeFirstMiss,
@@ -200,7 +218,7 @@ class SettingsScreen extends StatelessWidget {
               SettingsTile(
                 tileKey: const Key('addSampleHabits'),
                 icon: CupertinoIcons.lab_flask_solid,
-                iconColor: CupertinoColors.systemGrey,
+                iconColor: HabitColor.blueGrey.color,
                 title: 'Add sample habits',
                 subtitle: 'One per built-in category, with a few days of history',
                 showChevron: false,
@@ -220,7 +238,7 @@ class SettingsScreen extends StatelessWidget {
               SettingsTile(
                 tileKey: const Key('openNotificationTester'),
                 icon: CupertinoIcons.bell_fill,
-                iconColor: CupertinoColors.systemGrey,
+                iconColor: HabitColor.blueGrey.color,
                 title: 'Notification tester',
                 subtitle: 'Check permission, send and schedule test notifications',
                 onTap: () => Navigator.of(context).push(
@@ -253,9 +271,16 @@ class SettingsScreen extends StatelessWidget {
     'Sunday',
   ];
 
-  static String _themeModeLabel(ThemeMode mode) => switch (mode) {
-        ThemeMode.system => 'System',
-        ThemeMode.light => 'Light',
-        ThemeMode.dark => 'Dark',
+  static String _appearanceLabel(Appearance appearance) => switch (appearance) {
+        Appearance.system => 'System',
+        Appearance.light => 'Light',
+        Appearance.sepia => 'Sepia',
+        Appearance.dark => 'Dark',
+      };
+
+  static String _themeLabel(AppTheme theme) => switch (theme) {
+        AppTheme.light => 'Light',
+        AppTheme.sepia => 'Sepia',
+        AppTheme.dark => 'Dark',
       };
 }

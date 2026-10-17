@@ -11,6 +11,7 @@ import 'package:atomic_momentum/presentation/widgets/large_title_scaffold.dart';
 import 'package:atomic_momentum/presentation/widgets/momentum_ring.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -89,7 +90,8 @@ void main() {
 
   tearDown(resetDependencies);
 
-  Future<void> pump(WidgetTester tester, Widget screen, {required double width, required double scale}) async {
+  Future<void> pump(WidgetTester tester, Widget screen,
+      {required double width, required double scale, AppPalette palette = AppPalette.light}) async {
     // Tall, so whole screens build; the width is what's under test
     tester.view.physicalSize = Size(width, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -105,7 +107,7 @@ void main() {
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
       ],
       child: MaterialApp(
-        theme: IOSTheme.getMaterialLightTheme().copyWith(platform: TargetPlatform.iOS),
+        theme: IOSTheme.material(palette).copyWith(platform: TargetPlatform.iOS),
         home: screen,
       ),
     ));
@@ -192,6 +194,17 @@ void main() {
     }
   }
 
+  // Colors don't change sizes, but each theme builds its own widgets' colors
+  for (final palette in [AppPalette.sepia, AppPalette.dark]) {
+    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit']) {
+      testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
+        await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);
+        expect(AppPalette.of(tester.element(find.byType(Scaffold).first)), palette);
+        expectNothingCutOff(tester, '$name in ${palette.theme.name}');
+      });
+    }
+  }
+
   testWidgets('the Calendar weekday labels fit their row at 135% text', (tester) async {
     await pump(tester, const CalendarScreen(), width: 375, scale: 1.35);
     final row = tester.widget<TableCalendar<Habit>>(find.byType(TableCalendar<Habit>)).daysOfWeekHeight;
@@ -208,7 +221,7 @@ void main() {
 
     for (final line in Greetings.lines.values.expand((l) => l)) {
       await tester.pumpWidget(MaterialApp(
-        theme: IOSTheme.getMaterialLightTheme().copyWith(platform: TargetPlatform.iOS),
+        theme: IOSTheme.material(AppPalette.light).copyWith(platform: TargetPlatform.iOS),
         home: Scaffold(
           body: LargeTitleHeader(
             eyebrow: 'WEDNESDAY, SEPTEMBER 30',

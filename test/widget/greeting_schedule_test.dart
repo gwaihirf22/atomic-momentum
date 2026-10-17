@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/core/copy/greetings.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -37,7 +38,7 @@ void main() {
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
       ],
       child: MaterialApp(
-        theme: IOSTheme.getMaterialLightTheme().copyWith(platform: TargetPlatform.iOS),
+        theme: IOSTheme.material(AppPalette.light).copyWith(platform: TargetPlatform.iOS),
         home: screen,
       ),
     ));
