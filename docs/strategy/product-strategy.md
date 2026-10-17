@@ -28,7 +28,7 @@ We stand out on three things, in priority order.
 |---|---|---|
 | **Momentum score** | A 0–100 score for each habit, plus an overall one, shown as the main number on the Habits screen | Rises with each completed scheduled period and dips gently on a miss. Rest days don't count. Tuned so that steady practice reaches about 80 in about 66 days, the average time to form a habit (Lally et al., 2009). Calculated from the same per-day history that `StreakCalculator` uses. |
 | **Never miss twice** | One missed period bends the streak and the card says "Don't miss twice". Two misses in a row end it. | This is the cure for losing a streak to one bad day. The streak warning notification becomes "Don't miss twice". |
-| **Two-minute version** | Each habit can have a tiny version, such as "put on running shoes" | Logging it keeps the streak alive and counts partly toward momentum. Book: "make it easy". |
+| **Two-minute version** (done) | Each habit can have a tiny version, such as "put on running shoes", and optionally a minimum amount that counts by itself | Logging it with the card's "2 min" button keeps the day: the streak continues and grows, and momentum gets half credit. Two-minute days are recorded separately, for statistics and rewards. Book: "make it easy". |
 | **Habit stacking** | "After I [habit], I will [habit]." | Finishing one habit prompts the next, in the app or by notification. Leads into Routines. |
 | **Identity** | Each category gets an "I am someone who…" statement | Each completion counts as a "vote" for that identity, a phrase from the book. |
 
@@ -49,6 +49,11 @@ Finishing a step logs it and moves on to the next one.
 - **Momentum trend chart.**
 - **Patterns:** your best days and times.
 - **Weekly review:** a Sunday summary with your wins, the times you didn't miss twice, and next week's focus. Designed to look good when shared as an image.
+- **Statistics** include two-minute days, shown apart from full days.
+- **Rewards** (Paul's idea, built with statistics):
+  - a week straight earns a freeze day; a month straight earns a break day; the user spends them when life gets in the way;
+  - can be turned off in Settings, with a gentle note: try to do your habits, but life gets in the way, and that's okay and how it's meant to work.
+- **Achievements:** separate from rewards, and also shown in statistics.
 - **Celebrations:** satisfying completion animations and haptics. "Make it satisfying" is the book's fourth law.
 - **A visual identity of our own** rather than an imitation of iOS. It looks better, and it hides Flutter's weak spot (see section 3).
 
@@ -116,7 +121,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 
 | Phase | Contents, in order |
 |---|---|
-| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version. 4. Year heatmap and weekly review. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
+| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, weekly review and two-minute days, plus rewards (earned freeze and break days) and achievements. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Pro upgrade and tip jar. |
 | **v2** | Widgets (home screen, lock screen, StandBy), logging from Apple Health, sync between devices, Apple Watch. |
 

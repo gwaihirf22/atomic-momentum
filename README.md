@@ -10,6 +10,7 @@ Built with Flutter for iPhone first, with Android, macOS and web from the same c
 - **Never miss twice:** a streak survives one missed day (the card warns "Don't miss twice"); two misses in a row end it.
 - **Momentum score:** a 0–100 score per habit and overall. It rises with steady practice, gives partial credit, and dips gently on misses.
 - **Smart reminders:** on by default. They follow each habit's schedule, counting down to when it's due, and go quiet once it's done. You can also pick custom days.
+- **Two-minute version:** a tiny version of each habit for hard days ("put on running shoes"). Tap "2 min" on the card to keep the day: the streak continues and momentum gets half credit.
 - **Streak warnings:** a "Don't miss twice" notification before a miss would end a streak.
 - **Calendar:** each day's completion as a ring. You can edit past days to fix a missed log.
 - **Categories:** six built in, fully editable, with filter rings that show today's progress.
@@ -54,7 +55,6 @@ The `swift` branch (checked out at `../atomic-momentum-swift`) holds a SwiftUI f
 ## Roadmap
 
 See [docs/strategy/product-strategy.md](docs/strategy/product-strategy.md). Next up:
-1. Two-minute version of each habit
-2. Year heatmap and weekly review
-3. Onboarding tutorial
-4. App Store readiness
+1. Statistics: year heatmap, weekly review, rewards and achievements
+2. Onboarding tutorial
+3. App Store readiness
