@@ -17,9 +17,22 @@ import 'habit_stepper.dart';
 class HabitCard extends StatelessWidget {
   static const flameColor = Colors.deepOrange;
 
-  /// Below this width inside the card (a phone narrower than 390pt), the
-  /// card uses two rows.
-  static const twoRowWidth = 334.0;
+  /// Cards narrower than this (on a phone narrower than 390pt) use two rows.
+  static const twoRowCardWidth = 358.0;
+
+  /// Two rows for a card [cardWidth] wide: on narrow phones, or with large
+  /// text, so names and details aren't cut off. Calendar rows use it too.
+  static bool useTwoRows(BuildContext context, double cardWidth) =>
+      cardWidth < twoRowCardWidth || MediaQuery.textScalerOf(context).scale(1) > 1.15;
+
+  /// The area around the stepper catches every tap, so a near miss or a
+  /// tap on a greyed-out button never opens Edit.
+  static Widget guardStepper(Widget child) => GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        excludeFromSemantics: true,
+        onTap: () {},
+        child: child,
+      );
 
   /// The streak survived one miss; another would end it.
   static final atRiskColor = Colors.amber.shade800;
@@ -46,9 +59,8 @@ class HabitCard extends StatelessWidget {
   bool get _canAdd => !busy && habit.progress < habit.target;
   bool get _canRemove => !busy && habit.progress > 0;
 
-  String get _progressText => habit.units.isEmpty
-      ? '${habit.progress}/${habit.target}'
-      : '${habit.progress}/${habit.target} ${habit.units}';
+  String get _progressText =>
+      habit.units.isEmpty ? '${habit.progress}/${habit.target}' : '${habit.progress}/${habit.target} ${habit.units}';
 
   /// Momentum and streak; wraps onto another line rather than cutting off
   /// "Don't miss twice".
@@ -129,12 +141,11 @@ class HabitCard extends StatelessWidget {
               child: InkWell(
                 onTap: onEdit,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  // Right and vertical padding live inside the rows, so the
+                  // stepper's tap guard reaches the card's edges
+                  padding: const EdgeInsets.only(left: 12),
                   child: LayoutBuilder(builder: (context, constraints) {
-                    // Narrow phones (under 390pt) and large text get two rows, so
-                    // the name and details have the full width instead of being cut off
-                    final twoRows = constraints.maxWidth < twoRowWidth ||
-                        MediaQuery.textScalerOf(context).scale(1) > 1.15;
+                    final twoRows = useTwoRows(context, constraints.maxWidth + 12);
                     final ring = HabitProgressRing(
                       key: Key('habitIcon_${habit.id}'),
                       icon: habitIcon(habit, category),
@@ -189,27 +200,48 @@ class HabitCard extends StatelessWidget {
                     );
 
                     if (!twoRows) {
-                      return Row(
-                        children: [
-                          ring,
-                          const SizedBox(width: 12),
-                          Expanded(child: details),
-                          const SizedBox(width: 8),
-                          stepper,
-                        ],
+                      // The stepper's guard runs the card's full height on the right
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Center(child: ring)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                child: Align(alignment: Alignment.centerLeft, child: details),
+                              ),
+                            ),
+                            guardStepper(Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
+                              child: Center(child: stepper),
+                            )),
+                          ],
+                        ),
                       );
                     }
                     return Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(children: [ring, const SizedBox(width: 12), Expanded(child: details)]),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10, right: 12),
+                          child: Row(children: [ring, const SizedBox(width: 12), Expanded(child: details)]),
+                        ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             const SizedBox(width: HabitProgressRing.defaultSize + 12),
-                            Expanded(child: showStats ? _stats() : const SizedBox.shrink()),
-                            const SizedBox(width: 8),
-                            stepper,
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: showStats ? _stats() : const SizedBox.shrink(),
+                              ),
+                            ),
+                            guardStepper(Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 0, 12, 10),
+                              child: stepper,
+                            )),
                           ],
                         ),
                       ],

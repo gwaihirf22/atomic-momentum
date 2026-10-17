@@ -442,8 +442,7 @@ class _DayHabitRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           // Same rule as the habit cards: two rows on narrow phones or large text
           child: LayoutBuilder(builder: (context, constraints) {
-            final twoRows =
-                constraints.maxWidth < HabitCard.twoRowWidth || MediaQuery.textScalerOf(context).scale(1) > 1.15;
+            final twoRows = HabitCard.useTwoRows(context, constraints.maxWidth + 24);
             final ring = HabitProgressRing(
               key: Key('dayHabitIcon_${habit.id}'),
               icon: icon,
@@ -500,13 +499,13 @@ class _DayHabitRow extends StatelessWidget {
               ring,
               const SizedBox(width: 12),
               Expanded(child: details),
-              if (stepper != null && !twoRows) ...[const SizedBox(width: 8), stepper],
+              if (stepper != null && !twoRows) ...[const SizedBox(width: 8), HabitCard.guardStepper(stepper)],
             ]);
             if (stepper == null || !twoRows) return topRow;
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
-              children: [topRow, const SizedBox(height: 6), stepper],
+              children: [topRow, const SizedBox(height: 6), HabitCard.guardStepper(stepper)],
             );
           }),
         ),

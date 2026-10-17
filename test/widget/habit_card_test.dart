@@ -237,6 +237,41 @@ void main() {
     expect(find.text('Edit Habit'), findsOneWidget);
   });
 
+  for (final width in [375.0, 402.0]) {
+    testWidgets('at ${width.toInt()}pt, greyed-out buttons and the area around them never open Edit',
+        (tester) async {
+      await pumpHome(tester, width: width);
+      final card = tester.getRect(find.byKey(Key('habitCard_$waterId')));
+      final minus = find.byKey(Key('decrementHabit_$waterId'));
+
+      // Nothing logged yet, so - is greyed out
+      await tester.tap(minus);
+      await tester.pumpAndSettle();
+      expect(find.byType(AddHabitScreen), findsNothing);
+
+      // Just right of +, at the card's edge, level with the stepper
+      final plus = tester.getRect(find.byKey(Key('incrementHabit_$waterId')));
+      await tester.tapAt(Offset(card.right - 3, plus.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddHabitScreen), findsNothing);
+
+      // Fill it up: now + is greyed out too
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byKey(Key('incrementHabit_$waterId')));
+        await tester.pumpAndSettle();
+      }
+      await tester.tap(find.byKey(Key('incrementHabit_$waterId')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddHabitScreen), findsNothing);
+      expect(habitProvider.getHabitById(waterId)!.progress, 3);
+
+      // The name still opens Edit
+      await tester.tap(find.descendant(of: find.byKey(Key('habitCard_$waterId')), matching: find.text('Drink Water')));
+      await tester.pumpAndSettle();
+      expect(find.byType(AddHabitScreen), findsOneWidget);
+    });
+  }
+
   testWidgets('swiping left reveals Edit and Delete; Delete asks first', (tester) async {
     await pumpHome(tester);
 
