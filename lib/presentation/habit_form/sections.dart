@@ -7,6 +7,7 @@ import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit_color.dart';
+import '../../domain/entities/habit_goal.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/two_minute_version.dart';
@@ -602,12 +603,12 @@ class ReminderSection extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (showHeader) const FormSectionHeader('Reminder'),
+          if (showHeader) FormSectionHeader(draft.isBreak ? 'Check-in' : 'Reminder'),
           // The label is part of the switch: tappable, and read with it by VoiceOver
           SwitchListTile.adaptive(
             key: const Key('reminderSwitch'),
             contentPadding: EdgeInsets.zero,
-            title: const Text('Remind me about this habit'),
+            title: Text(draft.isBreak ? 'Check in to log any slips' : 'Remind me about this habit'),
             value: draft.reminderEnabled,
             onChanged: (value) => draft.edit(() => draft.reminderEnabled = value),
           ),
@@ -632,9 +633,9 @@ class ReminderSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            _modeControl(context),
-            const SizedBox(height: 12),
-            if (draft.reminderMode == ReminderMode.smart)
+            // A check-in is simply on the chosen days
+            if (!draft.isBreak) ...[_modeControl(context), const SizedBox(height: 12)],
+            if (draft.reminderMode == ReminderMode.smart && !draft.isBreak)
               Text(
                 "${ReminderPlanner.describeSmart(draft.schedule)}. Skipped once you're done.",
                 key: const Key('reminderSummary'),
@@ -664,6 +665,87 @@ class ReminderSection extends StatelessWidget {
               ),
               maxLength: HabitDraft.maxMessageLength,
               buildCounter: _noCounter,
+            ),
+          ],
+        ],
+      );
+    });
+  }
+}
+
+/// How strict a habit being broken is: quit entirely, or stay at or under a
+/// limit per day, week or month.
+class StrictnessSection extends StatelessWidget {
+  final HabitDraft draft;
+  final bool showHeader;
+
+  const StrictnessSection(this.draft, {super.key, this.showHeader = true});
+
+  static const _periods = [ResetFrequency.daily, ResetFrequency.weekly, ResetFrequency.monthly];
+  static const _periodNames = {
+    ResetFrequency.daily: 'a day',
+    ResetFrequency.weekly: 'a week',
+    ResetFrequency.monthly: 'a month',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return _DraftBuilder(draft, (context) {
+      final limit = draft.goal == HabitGoal.limit;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showHeader) const FormSectionHeader('How strict'),
+          Wrap(
+            spacing: _chipSpacing,
+            runSpacing: _chipSpacing,
+            children: [
+              ChoiceChip(
+                key: const Key('strictQuit'),
+                label: const Text('Quit completely'),
+                selected: !limit,
+                onSelected: (_) => draft.setGoal(HabitGoal.quit),
+              ),
+              ChoiceChip(
+                key: const Key('strictLimit'),
+                label: const Text('Set a limit'),
+                selected: limit,
+                onSelected: (_) => draft.setGoal(HabitGoal.limit),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            limit
+                ? 'A day you stay at or under the limit counts. Going over is a slip.'
+                : 'Every day without it counts. Any slip breaks the day.',
+            style: TextStyle(fontSize: 13, color: palette.textSecondary),
+          ),
+          if (limit) ...[
+            const SizedBox(height: 14),
+            TextFormField(
+              key: const Key('habitTargetField'),
+              controller: draft.target,
+              decoration: const InputDecoration(labelText: 'At most', hintText: 'e.g. 2', errorMaxLines: 2),
+              keyboardType: TextInputType.number,
+              validator: HabitDraft.validateLimit,
+            ),
+            const SizedBox(height: 16),
+            UnitsField(draft),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: _chipSpacing,
+              runSpacing: _chipSpacing,
+              children: [
+                for (final period in _periods)
+                  ChoiceChip(
+                    key: Key('frequency_${period.name}'),
+                    label: Text(_periodNames[period]!),
+                    selected: draft.frequency == period,
+                    onSelected: (_) => draft.edit(() => draft.frequency = period),
+                  ),
+              ],
             ),
           ],
         ],

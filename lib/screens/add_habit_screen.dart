@@ -23,10 +23,11 @@ class AddHabitScreen extends StatefulWidget {
   /// keeps what's entered); otherwise this screen starts its own.
   final HabitDraft? draft;
 
-  /// The "Switch to Story" control, shown at the top.
-  final Widget? styleSwitch;
+  /// The editor's controls (Build | Break, Switch to Story/Builder), shown
+  /// at the top.
+  final Widget? topControls;
 
-  const AddHabitScreen({Key? key, this.editHabit, this.draft, this.styleSwitch}) : super(key: key);
+  const AddHabitScreen({Key? key, this.editHabit, this.draft, this.topControls}) : super(key: key);
 
   @override
   State<AddHabitScreen> createState() => _AddHabitScreenState();
@@ -90,23 +91,24 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      if (widget.styleSwitch != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Align(alignment: AlignmentDirectional.centerEnd, child: widget.styleSwitch),
-                        ),
+                      if (widget.topControls != null)
+                        Padding(padding: const EdgeInsets.only(bottom: 12), child: widget.topControls),
                       FormCard(children: [
                         NameField(_draft),
-                        const SizedBox(height: 16),
-                        TargetField(_draft),
-                        const SizedBox(height: 16),
-                        UnitsField(_draft),
+                        // A habit being broken has a limit (or none) instead of a target
+                        if (!_draft.isBreak) ...[
+                          const SizedBox(height: 16),
+                          TargetField(_draft),
+                          const SizedBox(height: 16),
+                          UnitsField(_draft),
+                        ],
                       ]),
+                      if (_draft.isBreak) FormCard(children: [StrictnessSection(_draft)]),
                       FormCard(children: [CategoryChips(_draft)]),
                       FormCard(children: [ColorRow(_draft)]),
                       FormCard(children: [IconGrid(_draft)]),
-                      FormCard(children: [ScheduleSection(_draft)]),
-                      if (_draft.frequency.isPeriodic) FormCard(children: [TwoMinuteSection(_draft)]),
+                      if (!_draft.isBreak) FormCard(children: [ScheduleSection(_draft)]),
+                      if (_draft.frequency.isPeriodic && !_draft.isBreak) FormCard(children: [TwoMinuteSection(_draft)]),
                       FormCard(children: [ReminderSection(_draft)]),
                       // Another way to delete, besides swiping the habit card
                       if (widget.editHabit != null)

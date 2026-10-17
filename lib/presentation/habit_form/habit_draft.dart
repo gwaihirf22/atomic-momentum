@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_color.dart';
+import '../../domain/entities/habit_goal.dart';
 import '../../domain/entities/habit_schedule.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/two_minute_version.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
+import '../../domain/services/reminder_planner.dart';
 import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/settings_provider.dart';
@@ -41,6 +43,14 @@ class HabitDraft extends ChangeNotifier {
 
   bool tinyShowOnCard = true;
   HabitColor color = HabitColor.blue;
+
+  /// Building it up, or breaking it (quit or limit). Set with [setGoal].
+  HabitGoal goal = HabitGoal.build;
+
+  bool get isBreak => goal.isBreak;
+
+  /// When a habit being broken checks in, by default.
+  static const checkInTime = TimeOfDay(hour: 21, minute: 0);
 
   /// An id, so a habit in an unknown or deleted category keeps it unless changed.
   String categoryId;
@@ -75,6 +85,7 @@ class HabitDraft extends ChangeNotifier {
         categoryId = habit.categoryId,
         reminderTime = defaultReminderTime {
     name.text = habit.name;
+    goal = habit.goal;
     target.text = habit.target.toString();
     units.text = habit.units;
     color = habit.color;
@@ -124,6 +135,33 @@ class HabitDraft extends ChangeNotifier {
 
   bool get isEditing => original != null;
 
+  /// Switches between building and breaking (quit or limit). Going from
+  /// building to breaking sets a break habit's defaults: an evening
+  /// check-in every day, no rest days; going back restores a smart reminder.
+  void setGoal(HabitGoal next) => edit(() {
+        final wasBreak = goal.isBreak;
+        goal = next;
+        if (next.isBreak && !wasBreak) {
+          _buildReminderTime = reminderTime;
+          reminderEnabled = true;
+          reminderMode = ReminderMode.custom;
+          reminderDays = List.of(allDays);
+          reminderTime = checkInTime;
+          if (message.text.trim().isEmpty) message.text = ReminderPlanner.checkInBody;
+          interval = 1;
+          scheduleDays = List.of(allDays);
+          if (!frequency.isPeriodic) frequency = ResetFrequency.daily;
+        } else if (!next.isBreak && wasBreak) {
+          reminderMode = ReminderMode.smart;
+          reminderTime = _buildReminderTime ?? reminderTime;
+          if (message.text == ReminderPlanner.checkInBody) message.clear();
+        }
+        // Quitting is day by day
+        if (next == HabitGoal.quit) frequency = ResetFrequency.daily;
+      });
+
+  TimeOfDay? _buildReminderTime;
+
   /// Changes some values and tells listeners: `draft.edit(() => draft.color = c)`.
   void edit(VoidCallback change) {
     change();
@@ -154,7 +192,7 @@ class HabitDraft extends ChangeNotifier {
   /// that never reset have no streak to keep, so they don't get one.
   TwoMinuteVersion? get twoMinute {
     final description = tiny.text.trim();
-    if (description.isEmpty || !frequency.isPeriodic) return null;
+    if (description.isEmpty || !frequency.isPeriodic || isBreak) return null;
     return TwoMinuteVersion(
       description: description,
       minimum: tinyMinimumApplies ? int.tryParse(tinyMinimum.text.trim()) : null,
@@ -208,7 +246,21 @@ class HabitDraft extends ChangeNotifier {
   }
 
   String? get nameError => validateName(name.text);
-  String? get targetError => validateTarget(target.text);
+  /// A limit is checked like a target; quitting has no amount.
+  String? get targetError => switch (goal) {
+        HabitGoal.build => validateTarget(target.text),
+        HabitGoal.limit => validateLimit(target.text),
+        HabitGoal.quit => null,
+      };
+
+  static String? validateLimit(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Please enter a limit';
+    final number = int.tryParse(text);
+    if (number == null || number <= 0) return 'The limit must be 1 or more (or choose Quit)';
+    if (number > maxTarget) return 'The limit cannot exceed $maxTarget';
+    return null;
+  }
   String? get unitsError => validateUnits(units.text);
 
   /// Only checked while the minimum field is showing.
@@ -222,6 +274,7 @@ class HabitDraft extends ChangeNotifier {
 
   /// Every value that would be saved, as one comparable string.
   String snapshot() => jsonEncode([
+        goal.name,
         name.text,
         target.text,
         units.text,
@@ -263,7 +316,8 @@ class HabitDraft extends ChangeNotifier {
   /// A new habit with these values. Only call when [isValid].
   CreateHabitParams toCreateParams() => CreateHabitParams(
         name: name.text.trim(),
-        target: int.parse(target.text.trim()),
+        // Quitting allows nothing
+        target: goal == HabitGoal.quit ? 0 : int.parse(target.text.trim()),
         units: units.text.trim(),
         color: color,
         categoryId: categoryId,
@@ -271,9 +325,11 @@ class HabitDraft extends ChangeNotifier {
         reminder: reminder,
         icon: icon,
         resetAnchor: anchor,
-        resetInterval: frequency.isPeriodic ? interval : 1,
-        scheduledWeekdays: List.of(scheduleDays),
+        resetInterval: frequency.isPeriodic && !isBreak ? interval : 1,
+        // A habit being broken has no rest days
+        scheduledWeekdays: isBreak ? List.of(allDays) : List.of(scheduleDays),
         twoMinute: twoMinute,
+        goal: goal,
       );
 
   /// The edited habit's new values. Only call when editing and [isValid].

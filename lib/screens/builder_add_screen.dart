@@ -22,10 +22,11 @@ class BuilderAddScreen extends StatefulWidget {
   /// keeps what's entered); otherwise this screen starts its own.
   final HabitDraft? draft;
 
-  /// The "Switch to Story" control, shown at the top.
-  final Widget? styleSwitch;
+  /// The editor's controls (Build | Break, Switch to Story/Builder), shown
+  /// at the top.
+  final Widget? topControls;
 
-  const BuilderAddScreen({super.key, this.draft, this.styleSwitch});
+  const BuilderAddScreen({super.key, this.draft, this.topControls});
 
   static const stepCount = 3;
 
@@ -41,6 +42,19 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
     'A tiny version for hard days, and a nudge at the right time.',
   ];
   static const _nextLabels = ['Next: how often', 'Next: make it easy'];
+
+  // Breaking a habit
+  static const _breakTitles = ['What do you want to break?', 'How strict?', 'Stay honest'];
+  static const _breakSubtitles = [
+    'Name the habit you want less of.',
+    'Quit it, or keep it under a limit.',
+    "The app can't tell when you slip, so a check-in helps you log it.",
+  ];
+  static const _breakNextLabels = ['Next: how strict', 'Next: stay honest'];
+
+  List<String> get _stepTitles => _draft.isBreak ? _breakTitles : _titles;
+  List<String> get _stepSubtitles => _draft.isBreak ? _breakSubtitles : _subtitles;
+  List<String> get _stepNextLabels => _draft.isBreak ? _breakNextLabels : _nextLabels;
 
   late final HabitDraft _draft;
   final _formKeys = [for (var i = 0; i < BuilderAddScreen.stepCount; i++) GlobalKey<FormState>()];
@@ -155,15 +169,12 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (widget.styleSwitch != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Align(alignment: AlignmentDirectional.centerEnd, child: widget.styleSwitch),
-                            ),
+                          if (widget.topControls != null)
+                            Padding(padding: const EdgeInsets.only(bottom: 10), child: widget.topControls),
                           Semantics(
                             header: true,
                             child: Text(
-                              _titles[_step],
+                              _stepTitles[_step],
                               key: const Key('builderStepTitle'),
                               style: TextStyle(
                                 fontFamily: LargeTitleHeader.fontFamily,
@@ -176,11 +187,13 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(_subtitles[_step], style: TextStyle(fontSize: 15, color: palette.textSecondary)),
+                          Text(_stepSubtitles[_step], style: TextStyle(fontSize: 15, color: palette.textSecondary)),
                           const SizedBox(height: 22),
                           ...switch (_step) {
                             0 => _whatStep(),
-                            1 => _howOftenStep(palette),
+                            1 => _draft.isBreak
+                                ? [FormCard(children: [StrictnessSection(_draft, showHeader: false)])]
+                                : _howOftenStep(palette),
                             _ => _makeItEasyStep(),
                           },
                           _ahead(palette),
@@ -192,7 +205,7 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
                 HabitFormActionBar(
                   child: OrbButton(
                     key: Key(_isLast ? 'saveHabitButton' : 'builderNext'),
-                    label: _isLast ? 'Add Habit' : _nextLabels[_step],
+                    label: _isLast ? 'Add Habit' : _stepNextLabels[_step],
                     showArrow: !_isLast,
                     busy: _saving,
                     dimmed: !_seenAll,
@@ -290,7 +303,7 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final pick in QuickPick.all)
+          for (final pick in _draft.isBreak ? QuickPick.breaking : QuickPick.all)
             ChoiceChip(
               key: Key('quickPick_${pick.name}'),
               label: Text(pick.name),
@@ -347,16 +360,21 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
   }
 
   List<Widget> _makeItEasyStep() => [
-        if (_draft.frequency.isPeriodic) FormCard(children: [TwoMinuteSection(_draft)]),
+        if (_draft.frequency.isPeriodic && !_draft.isBreak) FormCard(children: [TwoMinuteSection(_draft)]),
         FormCard(children: [ReminderSection(_draft)]),
       ];
 
   /// What the next steps hold, filled in from what's chosen so far.
   Widget _ahead(AppPalette palette) {
     final upcoming = <(int, String)>[
-      if (_step < 1)
-        (2, 'How often: ${_draft.enteredTarget == null ? 'how much, and which days' : HabitSentence.howOften(_draft)}'),
-      if (_step < 2) (3, 'Make it easy: two-minute version and reminder'),
+      if (_draft.isBreak) ...[
+        if (_step < 1) (2, 'How strict: ${HabitSentence.strictness(_draft)}'),
+        if (_step < 2) (3, 'Stay honest: an evening check-in'),
+      ] else ...[
+        if (_step < 1)
+          (2, 'How often: ${_draft.enteredTarget == null ? 'how much, and which days' : HabitSentence.howOften(_draft)}'),
+        if (_step < 2) (3, 'Make it easy: two-minute version and reminder'),
+      ],
     ];
     if (upcoming.isEmpty) return const SizedBox.shrink();
     return Container(

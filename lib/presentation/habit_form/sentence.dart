@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show TimeOfDay;
 import '../../domain/entities/habit_schedule.dart';
 import '../../domain/entities/reminder_settings.dart';
 import '../../domain/entities/reset_frequency.dart';
+import '../../domain/entities/habit_goal.dart';
 import 'habit_draft.dart';
 
 /// A habit's parts in words, for the Story sentence ("I will drink water 8
@@ -96,4 +97,49 @@ class HabitSentence {
         days: draft.reminderDays,
         formatTime: formatTime,
       );
+
+  // Habits being broken: "I will quit [smoking]" or "I will keep [alcohol]
+  // to [2 drinks] [a day]", "checking in at [9:00 PM]".
+
+  /// "quit" or "keep" (then "to" an amount).
+  static String breakVerb(HabitGoal goal) => goal == HabitGoal.quit ? 'quit' : 'keep';
+
+  /// "a day", "a week", "a month".
+  static String perPeriod(ResetFrequency frequency) => switch (frequency) {
+        ResetFrequency.weekly => 'a week',
+        ResetFrequency.monthly => 'a month',
+        _ => 'a day',
+      };
+
+  /// "checking in at 9:00 PM", "checking in at 9:00 PM on weekdays", or
+  /// "with no check-in".
+  static String checkIn({
+    required bool enabled,
+    required ReminderMode mode,
+    required TimeOfDay time,
+    required List<int> days,
+    required String Function(TimeOfDay) formatTime,
+  }) {
+    final custom = mode == ReminderMode.custom;
+    if (!enabled || (custom && days.isEmpty)) return 'with no check-in';
+    final at = 'checking in at ${formatTime(time)}';
+    if (!custom || days.length == 7) return at;
+    return '$at on ${dayList(List.of(days)..sort())}';
+  }
+
+  static String checkInOf(HabitDraft draft, String Function(TimeOfDay) formatTime) => checkIn(
+        enabled: draft.reminderEnabled,
+        mode: draft.reminderMode,
+        time: draft.reminderTime,
+        days: draft.reminderDays,
+        formatTime: formatTime,
+      );
+
+  /// A habit being broken in a few words: "quit completely" or "at most 2
+  /// drinks a day".
+  static String strictness(HabitDraft draft) {
+    if (draft.goal == HabitGoal.quit) return 'quit completely';
+    final amount = HabitSentence.amount(draft.enteredTarget, draft.units.text);
+    return amount.isEmpty ? 'a limit' : 'at most $amount ${perPeriod(draft.frequency)}';
+  }
 }

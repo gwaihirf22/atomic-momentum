@@ -15,6 +15,8 @@ import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/presentation/habit_form/habit_draft.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
@@ -130,6 +132,14 @@ void main() {
     expect(cut, isEmpty, reason: '$where: cut off: ${cut.join(', ')}');
   }
 
+  /// A habit to break, with a long name and a limit.
+  HabitDraft breakDraft() =>
+      HabitDraft.newHabit(categoryId: 'body', reminderTime: const TimeOfDay(hour: 9, minute: 0))
+        ..setGoal(HabitGoal.limit)
+        ..name.text = 'Scrolling social media late at night'
+        ..target.text = '30'
+        ..units.text = 'minutes';
+
   final screens = <String, Widget Function()>{
     'Habits': () => const HomeScreen(),
     'Calendar': () => const CalendarScreen(),
@@ -144,6 +154,9 @@ void main() {
     'Builder, step 1': () => const BuilderAddScreen(),
     'Story, new': () => const StoryHabitScreen(),
     'Habit editor (with its style switch)': () => const HabitEditorScreen(),
+    'Story, breaking a habit (limit)': () => StoryHabitScreen(draft: breakDraft()),
+    'Builder, breaking a habit': () => BuilderAddScreen(draft: breakDraft()),
+    'One page, breaking a habit': () => AddHabitScreen(draft: breakDraft()),
     'Habit page': () => HabitDetailScreen(habitId: habits.habits.firstWhere((h) => h.name == 'Read').id),
     'Habit editor, editing a long name': () =>
         HabitEditorScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),

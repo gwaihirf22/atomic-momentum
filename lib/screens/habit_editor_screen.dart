@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
 import '../domain/entities/habit.dart';
+import '../domain/entities/habit_goal.dart';
+import '../presentation/widgets/adaptive.dart';
 import '../presentation/habit_form/habit_draft.dart';
 import '../presentation/providers/settings_provider.dart';
 import 'add_habit_screen.dart';
@@ -47,18 +49,54 @@ class _HabitEditorScreenState extends State<HabitEditorScreen> {
     setState(() => _style = _style == AddHabitStyle.story ? AddHabitStyle.builder : AddHabitStyle.story);
   }
 
+  /// Build or Break. Breaking works the other way round, so it's explained
+  /// (and confirmed) each time it's picked.
+  Future<void> _chooseGoal(bool breaking) async {
+    if (breaking == _draft.isBreak) return;
+    if (!breaking) return _draft.setGoal(HabitGoal.build);
+    final ok = await confirmAdaptive(
+      context,
+      title: 'Breaking a habit',
+      message: 'This works the other way round: every day without a slip counts toward your streak. '
+          "The app can't tell when you slip, so log slips honestly. An evening check-in will remind you.",
+      confirmLabel: 'Got it',
+      confirmKey: const Key('breakGotIt'),
+      cancelKey: const Key('breakCancel'),
+    );
+    if (ok && mounted) _draft.setGoal(HabitGoal.quit);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final styleSwitch = StyleSwitch(
-      to: _style == AddHabitStyle.story ? AddHabitStyle.builder : AddHabitStyle.story,
-      onPressed: _switch,
-    );
     final habit = widget.editHabit;
+    final topControls = ListenableBuilder(
+      listenable: _draft,
+      builder: (context, _) => Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          // A habit's goal is set when it's added: changing it would flip
+          // what its history means
+          if (habit == null)
+            GoalPill(breaking: _draft.isBreak, onChanged: _chooseGoal)
+          else if (habit.isBreak)
+            _GoalLabel(goal: habit.goal)
+          else
+            const SizedBox.shrink(),
+          StyleSwitch(
+            to: _style == AddHabitStyle.story ? AddHabitStyle.builder : AddHabitStyle.story,
+            onPressed: _switch,
+          ),
+        ],
+      ),
+    );
     final Widget page = switch (_style) {
-      AddHabitStyle.story => StoryHabitScreen(editHabit: habit, draft: _draft, styleSwitch: styleSwitch),
+      AddHabitStyle.story => StoryHabitScreen(editHabit: habit, draft: _draft, topControls: topControls),
       AddHabitStyle.builder when habit != null =>
-        AddHabitScreen(editHabit: habit, draft: _draft, styleSwitch: styleSwitch),
-      AddHabitStyle.builder => BuilderAddScreen(draft: _draft, styleSwitch: styleSwitch),
+        AddHabitScreen(editHabit: habit, draft: _draft, topControls: topControls),
+      AddHabitStyle.builder => BuilderAddScreen(draft: _draft, topControls: topControls),
     };
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
@@ -117,6 +155,86 @@ class StyleSwitch extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Build | Break: what a new habit is for.
+class GoalPill extends StatelessWidget {
+  final bool breaking;
+  final ValueChanged<bool> onChanged;
+
+  const GoalPill({super.key, required this.breaking, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    Widget segment(String label, bool isBreak, Key key) {
+      final selected = isBreak == breaking;
+      return Semantics(
+        button: true,
+        selected: selected,
+        label: isBreak ? 'Break a habit' : 'Build a habit',
+        excludeSemantics: true,
+        onTap: () => onChanged(isBreak),
+        child: GestureDetector(
+          key: key,
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onChanged(isBreak),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Center(
+              widthFactor: 1,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected ? palette.surface : Colors.transparent,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? palette.text : palette.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      decoration: BoxDecoration(color: palette.raised, borderRadius: BorderRadius.circular(17)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        segment('Build', false, const Key('habitGoalBuild')),
+        segment('Break', true, const Key('habitGoalBreak')),
+      ]),
+    );
+  }
+}
+
+/// Shows that a habit being edited is one being broken (it can't change).
+class _GoalLabel extends StatelessWidget {
+  final HabitGoal goal;
+
+  const _GoalLabel({required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Container(
+      key: const Key('habitGoalLabel'),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(color: palette.raised, borderRadius: BorderRadius.circular(16)),
+      child: Text(
+        goal == HabitGoal.quit ? 'Breaking: quit' : 'Breaking: limit',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.textSecondary),
       ),
     );
   }

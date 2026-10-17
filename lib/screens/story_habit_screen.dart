@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/habit.dart';
+import '../domain/entities/habit_goal.dart';
 import '../domain/entities/reminder_settings.dart';
 import '../presentation/habit_form/habit_draft.dart';
 import '../presentation/habit_form/sections.dart';
@@ -20,7 +21,7 @@ import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'add_habit_screen.dart';
 
 /// The parts of the Story sentence that open a sheet.
-enum StoryPart { name, amount, schedule, reminder, tiny }
+enum StoryPart { name, amount, schedule, reminder, tiny, strictness }
 
 /// Story: a habit written as one sentence, from the Calm design. "I will
 /// [drink water] [8 glasses] [every day], [reminded at 9:00 AM]. On a hard
@@ -33,10 +34,11 @@ class StoryHabitScreen extends StatefulWidget {
   /// keeps what's entered); otherwise this screen starts its own.
   final HabitDraft? draft;
 
-  /// The "Switch to Builder" control, shown at the top.
-  final Widget? styleSwitch;
+  /// The editor's controls (Build | Break, Switch to Story/Builder), shown
+  /// at the top.
+  final Widget? topControls;
 
-  const StoryHabitScreen({super.key, this.editHabit, this.draft, this.styleSwitch});
+  const StoryHabitScreen({super.key, this.editHabit, this.draft, this.topControls});
 
   @override
   State<StoryHabitScreen> createState() => _StoryHabitScreenState();
@@ -90,9 +92,14 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
   Future<void> _openPart(StoryPart part, {bool showErrors = false}) {
     final (title, content) = switch (part) {
       StoryPart.name => ('The habit', <Widget>[NameField(_draft, autofocus: !showErrors), const SizedBox(height: 18), IconGrid(_draft)]),
+      // A habit being broken: quit or limit, its amount and period, in one place
+      StoryPart.amount || StoryPart.schedule || StoryPart.strictness when _draft.isBreak =>
+        ('How strict', <Widget>[StrictnessSection(_draft, showHeader: false)]),
+      StoryPart.strictness => ('How strict', <Widget>[StrictnessSection(_draft, showHeader: false)]),
       StoryPart.amount => ('How much', <Widget>[AmountFields(_draft)]),
       StoryPart.schedule => ('How often', <Widget>[ScheduleSection(_draft, showHeader: false)]),
-      StoryPart.reminder => ('Reminder', <Widget>[ReminderSection(_draft, showHeader: false)]),
+      StoryPart.reminder =>
+        (_draft.isBreak ? 'Check-in' : 'Reminder', <Widget>[ReminderSection(_draft, showHeader: false)]),
       StoryPart.tiny => ('On a hard day', <Widget>[TwoMinuteSection(_draft, showHeader: false, autofocus: !showErrors)]),
     };
     return showModalBottomSheet<void>(
@@ -130,15 +137,9 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text('Tap any underlined part to change it.',
-                                style: TextStyle(fontSize: 13, color: palette.textSecondary)),
-                          ),
-                          if (widget.styleSwitch != null) ...[const SizedBox(width: 10), widget.styleSwitch!],
-                        ],
-                      ),
+                      if (widget.topControls != null) ...[widget.topControls!, const SizedBox(height: 10)],
+                      Text('Tap any underlined part to change it.',
+                          style: TextStyle(fontSize: 13, color: palette.textSecondary)),
                       const SizedBox(height: 18),
                       _StorySentence(draft: _draft, onTap: _openPart),
                       const SizedBox(height: 26),
@@ -300,13 +301,15 @@ class _StorySentence extends StatelessWidget {
               StoryPart.name => 'Habit',
               StoryPart.amount => 'How much',
               StoryPart.schedule => 'How often',
-              StoryPart.reminder => 'Reminder',
+              StoryPart.reminder => draft.isBreak ? 'Check-in' : 'Reminder',
               StoryPart.tiny => 'On a hard day',
+              StoryPart.strictness => 'How strict',
             },
             onTap: () => onTap(part),
           ),
         );
 
+    if (draft.isBreak) return _breakSentence(token, textStyle, localizations);
     final tiny = draft.tiny.text.trim();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,6 +347,35 @@ class _StorySentence extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+
+  /// "I will quit [smoking], checking in at [9:00 PM]." or "I will keep
+  /// [alcohol] to [2 drinks] [a day], checking in at [9:00 PM]."
+  Widget _breakSentence(
+    InlineSpan Function(StoryPart, String, {String? placeholder, IconData? icon, bool accent}) token,
+    TextStyle textStyle,
+    MaterialLocalizations localizations,
+  ) {
+    final limit = draft.goal == HabitGoal.limit;
+    return Text.rich(
+      key: const Key('storySentence'),
+      TextSpan(style: textStyle, children: [
+        const TextSpan(text: 'I will '),
+        token(StoryPart.strictness, HabitSentence.breakVerb(draft.goal)),
+        const TextSpan(text: ' '),
+        token(StoryPart.name, HabitSentence.name(draft.name.text),
+            placeholder: 'name the habit', icon: HabitIcons.of(draft.icon), accent: true),
+        if (limit) ...[
+          const TextSpan(text: ' to '),
+          token(StoryPart.amount, HabitSentence.amount(draft.enteredTarget, draft.units.text), placeholder: 'how much'),
+          const TextSpan(text: ' '),
+          token(StoryPart.schedule, HabitSentence.perPeriod(draft.frequency)),
+        ],
+        const TextSpan(text: ', '),
+        token(StoryPart.reminder, HabitSentence.checkInOf(draft, localizations.formatTimeOfDay)),
+        const TextSpan(text: '.'),
+      ]),
     );
   }
 }

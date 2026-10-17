@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:atomic_momentum/domain/entities/habit_schedule.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/presentation/habit_form/habit_draft.dart';
 import 'package:atomic_momentum/presentation/habit_form/sentence.dart';
 
 /// The words of the Story sentence.
@@ -85,6 +87,40 @@ void main() {
     test('off, or custom with no days, is no reminder', () {
       expect(say(enabled: false), 'with no reminder');
       expect(say(mode: ReminderMode.custom), 'with no reminder');
+    });
+  });
+
+  group('breaking a habit', () {
+    test('quit or keep, per day, week or month', () {
+      expect(HabitSentence.breakVerb(HabitGoal.quit), 'quit');
+      expect(HabitSentence.breakVerb(HabitGoal.limit), 'keep');
+      expect(HabitSentence.perPeriod(ResetFrequency.daily), 'a day');
+      expect(HabitSentence.perPeriod(ResetFrequency.weekly), 'a week');
+      expect(HabitSentence.perPeriod(ResetFrequency.monthly), 'a month');
+    });
+
+    test('the check-in', () {
+      String say({bool enabled = true, List<int> days = const [1, 2, 3, 4, 5, 6, 7]}) => HabitSentence.checkIn(
+            enabled: enabled,
+            mode: ReminderMode.custom,
+            time: const TimeOfDay(hour: 21, minute: 0),
+            days: days,
+            formatTime: (t) => '9:00 PM',
+          );
+      expect(say(), 'checking in at 9:00 PM');
+      expect(say(days: [1, 2, 3, 4, 5]), 'checking in at 9:00 PM on weekdays');
+      expect(say(enabled: false), 'with no check-in');
+    });
+
+    test('how strict, in a few words', () {
+      final draft = HabitDraft.newHabit(categoryId: 'body', reminderTime: const TimeOfDay(hour: 9, minute: 0))
+        ..setGoal(HabitGoal.quit);
+      expect(HabitSentence.strictness(draft), 'quit completely');
+      draft
+        ..setGoal(HabitGoal.limit)
+        ..target.text = '2'
+        ..units.text = 'drinks';
+      expect(HabitSentence.strictness(draft), 'at most 2 drinks a day');
     });
   });
 }
