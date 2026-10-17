@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:atomic_momentum/domain/entities/habit.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
@@ -180,6 +182,13 @@ void main() {
       });
     }
   }
+
+  testWidgets('the Calendar weekday labels fit their row at 135% text', (tester) async {
+    await pump(tester, const CalendarScreen(), width: 375, scale: 1.35);
+    final row = tester.widget<TableCalendar<Habit>>(find.byType(TableCalendar<Habit>)).daysOfWeekHeight;
+    final label = tester.getSize(find.text('Mon').first);
+    expect(label.height, lessThanOrEqualTo(row));
+  });
 
   // Accessibility sizes: layouts may reflow, but nothing may break
   for (final entry in screens.entries) {

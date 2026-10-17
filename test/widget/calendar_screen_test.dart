@@ -92,7 +92,7 @@ void main() {
       matching: find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration),
     );
     expect(circle, findsOneWidget);
-    expect(tester.widget<Text>(find.byKey(const Key('calendarDayTitle'))).data, startsWith('Today · '));
+    expect(tester.widget<Text>(find.byKey(const Key('calendarDayTitle'))).data, equals('Today'));
   });
 
   testWidgets('the category rings and the list follow the selected day', (tester) async {

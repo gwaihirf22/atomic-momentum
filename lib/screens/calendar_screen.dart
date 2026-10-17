@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -193,6 +194,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final label = isDark ? IOSColors.labelDark : IOSColors.label;
     final secondary = secondaryLabel(context);
     final firstTracked = _firstTrackedDay(habits);
+    // Rows and day cells grow with the text size, within a seventh of the width
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final double cellSize = math.min(40.0 * math.max(1.0, textScale), MediaQuery.sizeOf(context).width / 7 - 2);
 
     Widget cell(DateTime utcDay, {required bool isSelected, required bool isToday}) {
       final day = _localDay(utcDay);
@@ -209,6 +213,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         isToday: isToday,
         accent: accent,
         labelColor: label,
+        size: cellSize,
       );
     }
 
@@ -221,7 +226,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       // Follows Settings > Start week on (by default, the device's region)
       startingDayOfWeek: StartingDayOfWeek.values[context.watch<SettingsProvider>().firstDayOfWeek - 1],
-      rowHeight: 48,
+      rowHeight: cellSize + 8,
+      daysOfWeekHeight: 18 * math.max(1.0, textScale),
       headerVisible: false,
       headerStyle: HeaderStyle(
         formatButtonVisible: false,
@@ -279,7 +285,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Semantics(
             header: true,
             child: Text(
-              isToday ? 'Today · $date' : date,
+              // "Today" alone: the full date is in the month and the grid
+              isToday ? 'Today' : date,
               key: const Key('calendarDayTitle'),
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
@@ -330,6 +337,9 @@ class _DayCell extends StatelessWidget {
   final Color accent;
   final Color labelColor;
 
+  /// The ring's diameter (40 at the default text size).
+  final double size;
+
   const _DayCell({
     super.key,
     required this.day,
@@ -338,6 +348,7 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.accent,
     required this.labelColor,
+    this.size = 40,
   });
 
   @override
@@ -352,15 +363,15 @@ class _DayCell extends StatelessWidget {
     // selected day's heading reads out how much was done
     return Center(
       child: SizedBox(
-        width: 40,
-        height: 40,
+        width: size,
+        height: size,
         child: CustomPaint(
           painter:
               fraction == null ? null : RingPainter(fraction: fraction!, color: accent, stroke: 3, trackOpacity: 0.15),
           child: Center(
             child: Container(
-              width: 30,
-              height: 30,
+              width: size * 0.75,
+              height: size * 0.75,
               decoration: isSelected ? BoxDecoration(color: accent, shape: BoxShape.circle) : null,
               alignment: Alignment.center,
               child: Text(
