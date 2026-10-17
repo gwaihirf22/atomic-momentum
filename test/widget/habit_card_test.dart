@@ -21,6 +21,7 @@ import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
+import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/hold_undo_strip.dart';
 import 'package:atomic_momentum/presentation/widgets/recent_periods_bar.dart';
@@ -28,6 +29,7 @@ import 'package:atomic_momentum/screens/home_screen.dart';
 
 import '../helpers/failing_habit_repository.dart';
 import '../helpers/real_fonts.dart';
+import '../helpers/habit_card_actions.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -390,18 +392,23 @@ void main() {
     expect(habitProvider.getHabitById(waterId)!.progress, 2);
   });
 
-  testWidgets('tapping the card opens Edit Habit', (tester) async {
+  testWidgets("tapping the card opens the habit's page; Edit is in the swipe actions", (tester) async {
     await pumpHome(tester);
 
     await tester.tap(find.descendant(of: card(), matching: find.text('Drink Water')));
     await tester.pumpAndSettle();
+    expect(find.byType(HabitDetailScreen), findsOneWidget);
+    expect(find.byType(HabitEditorScreen), findsNothing);
 
+    Navigator.of(tester.element(find.byType(HabitDetailScreen))).pop();
+    await tester.pumpAndSettle();
+    await swipeToEdit(tester, waterId);
     expect(find.byType(HabitEditorScreen), findsOneWidget);
     expect(find.text('Edit Habit'), findsOneWidget);
   });
 
   for (final width in [375.0, 402.0]) {
-    testWidgets('at ${width.toInt()}pt, greyed-out buttons and the area around them never open Edit',
+    testWidgets('at ${width.toInt()}pt, greyed-out buttons and the area around them never open the habit page',
         (tester) async {
       await pumpHome(tester, width: width);
       final card = tester.getRect(find.byKey(Key('habitCard_$waterId')));
@@ -410,13 +417,13 @@ void main() {
       // Nothing logged yet, so - is greyed out
       await tester.tap(minus);
       await tester.pumpAndSettle();
-      expect(find.byType(HabitEditorScreen), findsNothing);
+      expect(find.byType(HabitDetailScreen), findsNothing);
 
       // Just right of +, at the card's edge, level with the stepper
       final plus = tester.getRect(find.byKey(Key('incrementHabit_$waterId')));
       await tester.tapAt(Offset(card.right - 3, plus.center.dy));
       await tester.pumpAndSettle();
-      expect(find.byType(HabitEditorScreen), findsNothing);
+      expect(find.byType(HabitDetailScreen), findsNothing);
 
       // Fill it up: now + is greyed out too
       for (var i = 0; i < 3; i++) {
@@ -425,13 +432,13 @@ void main() {
       }
       await tester.tap(find.byKey(Key('incrementHabit_$waterId')));
       await tester.pumpAndSettle();
-      expect(find.byType(HabitEditorScreen), findsNothing);
+      expect(find.byType(HabitDetailScreen), findsNothing);
       expect(habitProvider.getHabitById(waterId)!.progress, 3);
 
-      // The name still opens Edit
+      // The name still opens the page
       await tester.tap(find.descendant(of: find.byKey(Key('habitCard_$waterId')), matching: find.text('Drink Water')));
       await tester.pumpAndSettle();
-      expect(find.byType(HabitEditorScreen), findsOneWidget);
+      expect(find.byType(HabitDetailScreen), findsOneWidget);
     });
   }
 
@@ -481,8 +488,7 @@ void main() {
 
   testWidgets('the Edit Habit screen has a Delete Habit button at the bottom', (tester) async {
     await pumpHome(tester);
-    await tester.tap(find.descendant(of: card(), matching: find.text('Drink Water')));
-    await tester.pumpAndSettle();
+    await swipeToEdit(tester, waterId);
 
     final delete = find.byKey(const Key('deleteHabitFromForm'));
     await tester.scrollUntilVisible(delete, 300, scrollable: find.byType(Scrollable).first);

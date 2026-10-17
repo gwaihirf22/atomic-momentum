@@ -18,8 +18,9 @@ import 'package:clock/clock.dart';
 
 /// A compact habit row: the icon inside a progress ring (tap it to add one),
 /// the name with progress and schedule, momentum and streak, the "2 min"
-/// button for a two-minute version, and a -/+ stepper. Tap the card to edit; swipe left for Edit and Delete (also offered to
-/// VoiceOver as actions).
+/// button for a two-minute version, and a -/+ stepper. Tap the card for the
+/// habit's page; swipe left for Edit and Delete (also offered to VoiceOver as
+/// actions).
 class HabitCard extends StatelessWidget {
   /// Cards narrower than this (on a phone narrower than 390pt) use two rows.
   static const twoRowCardWidth = 358.0;
@@ -43,6 +44,9 @@ class HabitCard extends StatelessWidget {
 
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  /// Tapping the card: the habit's page. Edit is in the swipe actions.
+  final VoidCallback? onOpen;
   final ValueChanged<int> onSetProgress;
 
   /// Marks (true) or unmarks today's two-minute version.
@@ -63,6 +67,7 @@ class HabitCard extends StatelessWidget {
     required this.category,
     required this.onEdit,
     required this.onDelete,
+    this.onOpen,
     required this.onSetProgress,
     this.onSetTwoMinute,
     this.highlighted = false,
@@ -202,7 +207,7 @@ class HabitCard extends StatelessWidget {
               animationDuration: const Duration(milliseconds: 600),
               child: Stack(children: [
                 InkWell(
-                onTap: onEdit,
+                onTap: onOpen ?? onEdit,
                 child: Padding(
                   // Right and vertical padding live inside the rows, so the
                   // stepper's tap guard reaches the card's edges

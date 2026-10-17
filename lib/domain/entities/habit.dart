@@ -362,6 +362,19 @@ class Habit extends Equatable {
     twoMinute: _twoMinuteLog,
   );
 
+  /// Momentum as it stood at the end of [date]'s day (for trends).
+  Momentum momentumAt(DateTime date) => MomentumCalculator.calculate(
+        history: {
+          for (final entry in history.entries)
+            if (!entry.key.isAfter(date)) entry.key: entry.value,
+        },
+        target: target,
+        schedule: schedule,
+        start: _momentumStart,
+        now: date,
+        twoMinute: _twoMinuteLog,
+      );
+
   TwoMinuteLog get _twoMinuteLog => TwoMinuteLog(days: twoMinuteDays, minimum: twoMinute?.minimum);
 
   /// Creation day, or the earliest logged day if that's earlier (seeded or

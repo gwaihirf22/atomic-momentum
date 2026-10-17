@@ -24,6 +24,7 @@ import '../presentation/widgets/habit_stepper.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
+import 'habit_detail_screen.dart';
 
 /// Any day's habits: a month (or week) of days, each inside a ring that fills
 /// with that day's completion, and the selected day's habits below, which
@@ -382,6 +383,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onSet: (amount, periodTotal) => _setLoggedForDay(habit, day, amount, periodTotal: periodTotal),
             onSetTwoMinute: (done) => _setTwoMinuteForDay(habit, day, done),
             onHold: () => _holdOnDay(habit, day),
+            // The habit's page, on this day
+            onOpen: () => Navigator.of(context).push(CupertinoPageRoute<void>(
+              builder: (_) => HabitDetailScreen(habitId: habit.id, day: day),
+            )),
             holdUndo: _holdUndos[_undoKey(habit, day)],
           );
         },
@@ -474,6 +479,9 @@ class _DayHabitRow extends StatelessWidget {
   /// Holding the ring: finishes [day], or clears its period once done.
   final VoidCallback onHold;
 
+  /// Tapping the row: the habit's page on [day].
+  final VoidCallback onOpen;
+
   /// A held change that can still be undone: covers the row with Undo.
   final HoldUndo? holdUndo;
 
@@ -486,6 +494,7 @@ class _DayHabitRow extends StatelessWidget {
     required this.onSetTwoMinute,
     required this.onHold,
     required this.holdUndo,
+    required this.onOpen,
   });
 
   String _subtitle(int loggedThatDay, int periodTotal) {
@@ -522,7 +531,9 @@ class _DayHabitRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppStyle.cardRadius),
         clipBehavior: Clip.antiAlias,
         child: Stack(children: [
-          Padding(
+          InkWell(
+            onTap: onOpen,
+            child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           // Same rule as the habit cards: two rows on narrow phones or large text
           child: LayoutBuilder(builder: (context, constraints) {
@@ -605,6 +616,7 @@ class _DayHabitRow extends StatelessWidget {
               children: [topRow, const SizedBox(height: 6), HabitCard.guardStepper(stepper)],
             );
           }),
+          ),
         ),
           HoldUndoOverlay(undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
         ]),

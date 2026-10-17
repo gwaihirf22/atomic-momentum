@@ -29,6 +29,7 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/builder_add_screen.dart';
+import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
@@ -143,6 +144,7 @@ void main() {
     'Builder, step 1': () => const BuilderAddScreen(),
     'Story, new': () => const StoryHabitScreen(),
     'Habit editor (with its style switch)': () => const HabitEditorScreen(),
+    'Habit page': () => HabitDetailScreen(habitId: habits.habits.firstWhere((h) => h.name == 'Read').id),
     'Habit editor, editing a long name': () =>
         HabitEditorScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Story, editing a long name with a two-minute version': () =>
@@ -191,6 +193,17 @@ void main() {
           Navigator.of(tester.element(find.byKey(const Key('storySheetDone')))).pop();
           await tester.pumpAndSettle();
         }
+      });
+
+      testWidgets('Habit page, week and month, at $setting', (tester) async {
+        final id = habits.habits.firstWhere((h) => h.name.startsWith('Drink water every')).id;
+        await habits.setWhy(id, 'More energy in the afternoon, fewer headaches, and better sleep at night');
+        await habits.setDayNote(id, DateTime.now(), 'Two glasses before lunch, one after the walk, and tea at night');
+        await pump(tester, HabitDetailScreen(habitId: id), width: width, scale: scale);
+        expectNothingCutOff(tester, 'Habit page at $setting');
+        await tester.tap(find.byKey(const Key('detailMonthToggle')));
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'Habit page month at $setting');
       });
 
       testWidgets('Undo after holding a ring at $setting', (tester) async {
@@ -243,7 +256,7 @@ void main() {
 
   // Colors don't change sizes, but each theme builds its own widgets' colors
   for (final palette in [AppPalette.sepia, AppPalette.dark]) {
-    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit', 'Builder, step 1', 'Story, new']) {
+    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit', 'Builder, step 1', 'Story, new', 'Habit page']) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);
         expect(AppPalette.of(tester.element(find.byType(Scaffold).first)), palette);

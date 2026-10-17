@@ -20,6 +20,7 @@ import '../presentation/widgets/category_rings_bar.dart';
 import '../presentation/widgets/confirm_delete_habit.dart';
 import '../presentation/widgets/habit_card.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
+import 'habit_detail_screen.dart';
 import 'habit_editor_screen.dart';
 import 'categories_screen.dart';
 import 'package:intl/intl.dart';
@@ -298,6 +299,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 habit: habit,
                 category: context.read<CategoryProvider>().resolve(habit.categoryId),
                 onEdit: () => _editHabit(habit),
+                onOpen: () => _openHabit(habit),
                 onDelete: () => _deleteHabit(habit),
                 onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
                 onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
@@ -433,6 +435,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       );
     }
+  }
+
+  /// The habit's page, in this tab (so the tab bar steps aside).
+  void _openHabit(Habit habit) {
+    Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));
   }
 
   void _editHabit(Habit habit) {

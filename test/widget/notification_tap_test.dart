@@ -12,6 +12,8 @@ import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/habit_card.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
+import 'package:atomic_momentum/screens/habit_detail_screen.dart';
+import '../helpers/habit_card_actions.dart';
 
 /// Tapping a reminder or streak warning opens Habits at that habit's card.
 void main() {
@@ -99,13 +101,26 @@ void main() {
 
   testWidgets('an open Edit screen is closed so the card shows', (tester) async {
     await launch(tester);
-    await tester.tap(find.byKey(Key('habitCard_$firstId')));
-    await tester.pumpAndSettle();
+    await swipeToEdit(tester, firstId);
     expect(find.text('Edit Habit'), findsOneWidget);
 
     NotificationService.handleTap('reminder|$lastId');
     await tester.pumpAndSettle();
     expect(find.text('Edit Habit'), findsNothing);
+    expect(card(tester, lastId).highlighted, isTrue);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets("an open habit page is closed so the card shows", (tester) async {
+    await launch(tester);
+    await tester.tap(find.byKey(Key('habitCard_$firstId')));
+    await tester.pumpAndSettle();
+    expect(find.byType(HabitDetailScreen), findsOneWidget);
+
+    NotificationService.handleTap('reminder|$lastId');
+    await tester.pumpAndSettle();
+    expect(find.byType(HabitDetailScreen), findsNothing);
     expect(card(tester, lastId).highlighted, isTrue);
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();

@@ -12,6 +12,7 @@ import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
+import '../helpers/habit_card_actions.dart';
 
 /// Story: a habit written as one sentence, for adding and editing.
 void main() {
@@ -164,8 +165,7 @@ void main() {
     testWidgets('tapping a card edits it as a sentence; changes save', (tester) async {
       await launch(tester);
       final id = await addWater(tester);
-      await tester.tap(find.byKey(Key('habitCard_$id')));
-      await tester.pumpAndSettle();
+      await swipeToEdit(tester, id);
 
       expect(find.byType(StoryHabitScreen), findsOneWidget);
       expect(find.text('drink water'), findsOneWidget);
@@ -185,8 +185,7 @@ void main() {
     testWidgets('a habit can be deleted from its sentence', (tester) async {
       await launch(tester);
       final id = await addWater(tester);
-      await tester.tap(find.byKey(Key('habitCard_$id')));
-      await tester.pumpAndSettle();
+      await swipeToEdit(tester, id);
 
       await tester.tap(find.byKey(const Key('deleteHabitFromForm')));
       await tester.pumpAndSettle();
@@ -210,8 +209,7 @@ void main() {
         categoryId: 'mind',
       ));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(Key('habitCard_${appHabits(tester).habits.single.id}')));
-      await tester.pumpAndSettle();
+      await swipeToEdit(tester, appHabits(tester).habits.single.id);
       expect(find.byType(AddHabitScreen), findsOneWidget);
       expect(find.byType(StoryHabitScreen), findsNothing);
     });

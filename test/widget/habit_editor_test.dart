@@ -12,6 +12,7 @@ import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/builder_add_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
+import '../helpers/habit_card_actions.dart';
 
 /// The habit editor: Story or Builder, switched live at the top of the page
 /// without losing anything entered.
@@ -128,7 +129,7 @@ void main() {
         categoryId: 'body',
       ));
       await tester.pumpAndSettle();
-      await tap(tester, 'habitCard_${appHabits(tester).habits.single.id}');
+      await swipeToEdit(tester, appHabits(tester).habits.single.id);
 
       expect(find.byType(StoryHabitScreen), findsOneWidget);
       await switchStyle(tester);
