@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Atomic Momentum is a habit tracking application:
 - **Flutter app** (primary, long-term): Dart/Flutter for iOS, macOS, Android and web, on `main`. The goal is an App Store and Google Play release. Swift is written only where Apple requires it (widget, Live Activity and Watch extensions inside `ios/`).
 - **SwiftUI app** (fallback): a native Xcode project on the `swift` branch, kept in case the project ever moves to Swift. Currently Xcode's starter template.
-- **Web application** (legacy, complete): HTML/CSS/JavaScript with a Python server; kept for reference.
+- **Web prototype** (retired): the original HTML/JS app with a Python server was removed from `main` on 2026-10-17. It's kept on the tag `legacy-web-prototype` (`git checkout legacy-web-prototype` to look at it).
 
 The project focuses on helping users build and maintain positive daily habits with visual progress tracking, streak monitoring, and category-based organization.
 
@@ -18,7 +18,6 @@ The project focuses on helping users build and maintain positive daily habits wi
 | `main` | The Flutter app. **Commit everyday work here.** | `/Users/paulblake/code/atomic-momentum` (this folder) |
 | `swift` | The SwiftUI app (`AtomicMomentum/` Xcode project), branched from `main` | `/Users/paulblake/code/atomic-momentum-swift` (a git worktree) |
 
-`Claude-code-refactor-experimental` is fully merged into `main` and can be deleted.
 
 The two folders share one repository (one `.git`), so a commit or fetch in either is visible to both. Each folder has its own branch checked out, so you can have the Flutter app and the Xcode project open side by side without switching branches.
 
@@ -81,13 +80,6 @@ tool/device_notification_check.sh "iPhone 17 Pro"
 ./flutter/bin/flutter devices
 ```
 
-### Web Application (Legacy - Complete)
-```bash
-# Start the development server
-python server.py
-# Server runs on http://localhost:8000
-```
-
 ## Architecture Overview
 
 ### Flutter Application Structure (Primary - Clean Architecture)
@@ -135,12 +127,6 @@ python server.py
 4. State updates flow back through providers to UI
 5. All data models support JSON serialization for cross-platform compatibility
 
-### Web Application Structure (Legacy - Complete)
-- **Entry Point**: `templates/index.html` served via `server.py`
-- **Core Logic**: Modular JavaScript in `scripts/` directory
-- **Data Storage**: Browser localStorage (fully implemented)
-- **Status**: Feature complete, used as reference for Flutter implementation
-
 ## Development Practices
 
 ### Product Direction
@@ -170,11 +156,11 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Notifications**: tests use fakes from `test/helpers/` (`FakeStreakWarningScheduler`, `FakeReminderScheduler`, `FakeNotificationsPlugin`)
 - **Fonts and randomness**: widget tests draw text in a square placeholder font; tests about fit load real fonts (`real_fonts.dart`). `test/flutter_test_config.dart` seeds the greeting so layouts are the same every run
 - **Async in widget tests**: don't keep a `Future` alive across calls in app code (chained futures break under the test clock); use a flag and a pending value instead (see `ReminderService.syncAll`)
-- **Status (2026-10-17)**: 596 tests passing, including the notification simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-17)**: 598 tests passing, including the notification simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 - **Storage**: habits are JSON in SharedPreferences via `SharedPreferencesDataSource`; a habit keeps its full per-day `history`, and streak, progress and momentum are derived from it (`Habit.refresh`, `StreakCalculator`, `MomentumCalculator`). Categories live under `categories_v1`
 - **Dates**: day-only dates are built from calendar fields (`DateTime(y, m, d)`), never with `toLocal()`; table_calendar hands over UTC midnights
 - **Notifications**: `NotificationService` wraps flutter_local_notifications. Reminders use payload `reminder|<habitId>` and are found and replaced as a set; streak warnings use ids hashed from `<habitId>-streak-…`. iOS keeps at most 64 pending: reminders get what streak warnings leave (`ReminderService.roomFor`). Warning lead times count on the clock (24h before midnight is midnight the day before, even when clocks change). Permission is asked once at first launch, after the first frame
 - **Adding a screen or sheet**: use `LargeTitleScaffold` for main tabs, the adaptive helpers for dialogs and pickers, and add it to `test/widget/small_screens_test.dart`
-- **Legacy web app** (`templates/`, `scripts/`, `styles/`, `server.py`): the original prototype, kept for reference only; don't change it
+- **Platforms**: iOS and Android are the targets; `macos/` and `web/` are kept for development runs. Linux and Windows runners were removed (recreate with `flutter create --platforms=linux,windows .`)

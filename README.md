@@ -51,10 +51,12 @@ Requirements: Xcode with CocoaPods for iOS and macOS. The minimum iOS is 16.
 | `lib/screens/` | Habits, Calendar, Settings, Add/Edit Habit, Categories |
 | `lib/core/` | Notifications, dependency injection, theme and style, migrations |
 | `test/` | Unit, integration and widget tests, including a small-screen guard |
+| `test/simulation/` | Notification simulator: six weeks of the app on a simulated clock, with saved timelines |
+| `tool/` | `notification_sim.sh` (simulator in four time zones), `device_notification_check.sh` (real notifications on a simulator) |
 | `assets/` | App icon source and the Sora title font |
 | `docs/strategy/product-strategy.md` | Positioning, monetization, platform decision and roadmap |
 
-The `swift` branch (checked out at `../atomic-momentum-swift`) holds a SwiftUI fallback. The HTML/JS web app in `templates/`, `scripts/` and `styles/` is the original prototype, kept for reference.
+The `swift` branch (checked out at `../atomic-momentum-swift`) holds a SwiftUI fallback. The original HTML/JS prototype lives on the git tag `legacy-web-prototype`.
 
 ## Roadmap
 

@@ -1,7 +1,6 @@
 # Miscellaneous
 *.class
 *.log
-*.pyc
 *.swp
 .DS_Store
 .atom/
@@ -51,3 +50,6 @@ coverage/
 
 # Xcode per-user state
 **/xcuserdata/
+
+# Paul's own copy of CLAUDE.md for Codex; stays local
+AGENTS.md
