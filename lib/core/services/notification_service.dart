@@ -83,6 +83,10 @@ class NotificationService {
       // Permission is asked separately (see requestPermission), so startup
       // never waits on the system prompt
       _initialized = true;
+
+      // Opened by tapping a notification while the app wasn't running
+      final launch = await _notificationsPlugin.getNotificationAppLaunchDetails();
+      if (launch?.didNotificationLaunchApp ?? false) handleTap(launch!.notificationResponse?.payload);
       debugPrint('NotificationService: Initialized successfully');
     } catch (e) {
       debugPrint('NotificationService: Failed to initialize: $e');
@@ -157,11 +161,34 @@ class NotificationService {
     }
   }
 
-  // Handle notification tap
-  static void _onNotificationTapped(NotificationResponse response) {
-    debugPrint('NotificationService: Notification tapped: ${response.payload}');
-    // TODO: Handle navigation to habit details or home screen
+  static void _onNotificationTapped(NotificationResponse response) => handleTap(response.payload);
+
+  /// A habit to show because its notification was tapped. The tab bar
+  /// switches to Habits and the Habits screen scrolls to the card and
+  /// highlights it, then clears this.
+  static final focusRequests = ValueNotifier<HabitFocusRequest?>(null);
+
+  /// Turns a tapped notification's payload into a focus request.
+  @visibleForTesting
+  static void handleTap(String? payload) {
+    final habitId = habitIdFromPayload(payload);
+    if (habitId != null) focusRequests.value = HabitFocusRequest(habitId);
   }
+
+  /// The habit a notification is about: reminders carry
+  /// `reminder|<habitId>`, streak warnings the bare id; test notifications
+  /// none.
+  static String? habitIdFromPayload(String? payload) {
+    if (payload == null || payload.isEmpty || payload == testPayload) return null;
+    if (payload.startsWith(reminderPayloadPrefix)) {
+      final id = payload.substring(reminderPayloadPrefix.length);
+      return id.isEmpty ? null : id;
+    }
+    return payload;
+  }
+
+  /// Payload of the developer tester's notifications.
+  static const testPayload = 'test';
 
   /// Payloads of habit reminders start with this, so they can be found and
   /// replaced as a set (see ReminderService).
@@ -279,7 +306,7 @@ class NotificationService {
     if (!isSupported) return false;
 
     try {
-      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: 'test');
+      await _notificationsPlugin.show(id, title, body, _getNotificationDetails(), payload: testPayload);
       return true;
     } catch (e) {
       debugPrint('NotificationService: Failed to show notification: $e');
@@ -301,7 +328,7 @@ class NotificationService {
         'Scheduled ${delay.inSeconds} seconds ago from the notification tester.',
         tz.TZDateTime.from(at, tz.UTC),
         _getNotificationDetails(),
-        payload: 'test',
+        payload: testPayload,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -390,4 +417,12 @@ class NotificationService {
       debugPrint('NotificationService: Failed to cancel all notifications: $e');
     }
   }
+}
+
+/// A request to show a habit on the Habits screen. A new object each time,
+/// so tapping the same habit's notification twice still gets noticed.
+class HabitFocusRequest {
+  final String habitId;
+
+  HabitFocusRequest(this.habitId);
 }

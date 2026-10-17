@@ -23,6 +23,7 @@ import 'add_habit_screen.dart';
 import 'categories_screen.dart';
 import 'package:intl/intl.dart';
 import '../core/copy/greetings.dart';
+import '../core/services/notification_service.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/momentum_ring.dart';
 import 'package:clock/clock.dart';
@@ -57,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scheduleMidnightReset();
+    NotificationService.focusRequests.addListener(_onFocusRequest);
 
     // Load habits when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,6 +68,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       habitProvider.loadHabits().then((_) {
         // Update available categories after habits are loaded
         categoryProvider.updateAvailableCategories(habitProvider.habits);
+        // A notification tap may have launched the app
+        _onFocusRequest();
       });
     });
   }
@@ -73,7 +77,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    NotificationService.focusRequests.removeListener(_onFocusRequest);
     _midnightTimer?.cancel();
+    _highlightTimer?.cancel();
     super.dispose();
   }
 
@@ -303,21 +309,67 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildHabitList(List<Habit> habits, HabitProvider habitProvider, bool isDark) {
     return SliverPadding(
       padding: const EdgeInsets.all(16),
-      sliver: SliverList.builder(
-        itemCount: habits.length,
-        itemBuilder: (context, index) {
-          final habit = habits[index];
-          return HabitCard(
-            habit: habit,
-            category: context.read<CategoryProvider>().resolve(habit.categoryId),
-            onEdit: () => _editHabit(habit),
-            onDelete: () => _deleteHabit(habit),
-            onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
-            onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
-          );
-        },
+      // Every card is built (lists are short; a sliver list builds lazily),
+      // so a tapped notification can scroll to any of them
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final habit in habits)
+              HabitCard(
+                key: _cardKeys.putIfAbsent(habit.id, GlobalKey.new),
+                highlighted: habit.id == _highlightedId,
+                habit: habit,
+                category: context.read<CategoryProvider>().resolve(habit.categoryId),
+                onEdit: () => _editHabit(habit),
+                onDelete: () => _deleteHabit(habit),
+                onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
+                onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
+              ),
+          ],
+        ),
       ),
     );
+  }
+
+  // ---------------------------------------------- notification taps
+
+  final Map<String, GlobalKey> _cardKeys = {};
+  String? _highlightedId;
+  Timer? _highlightTimer;
+
+  /// A notification was tapped: once the tab bar has switched here and the
+  /// habits are loaded, scroll to that habit's card and highlight it.
+  void _onFocusRequest() {
+    if (NotificationService.focusRequests.value == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showRequestedHabit());
+    WidgetsBinding.instance.scheduleFrame();
+  }
+
+  void _showRequestedHabit() {
+    final request = NotificationService.focusRequests.value;
+    if (request == null || !mounted) return;
+    final habits = context.read<HabitProvider>();
+    // Not loaded yet (the app was just launched): loadHabits calls back
+    if (habits.state != HabitProviderState.loaded) return;
+    NotificationService.focusRequests.value = null;
+
+    final habit = habits.getHabitById(request.habitId);
+    if (habit == null) return; // deleted since: the list is enough
+    final categories = context.read<CategoryProvider>();
+    if (!categories.filterHabits([habit]).contains(habit)) categories.clearSelectedCategory();
+
+    setState(() => _highlightedId = habit.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final card = _cardKeys[habit.id]?.currentContext;
+      if (card != null && card.mounted) {
+        Scrollable.ensureVisible(card, alignment: 0.3, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      }
+    });
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _highlightedId = null);
+    });
   }
 
   Future<void> _updateHabitProgress(HabitProvider habitProvider, Habit habit, int newProgress) async {

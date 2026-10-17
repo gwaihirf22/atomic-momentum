@@ -1,14 +1,46 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/services/notification_service.dart';
 import '../core/theme/ios_colors.dart';
 import '../presentation/providers/theme_provider.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'settings_screen.dart';
 
-class IOSMainNavigation extends StatelessWidget {
+class IOSMainNavigation extends StatefulWidget {
   const IOSMainNavigation({Key? key}) : super(key: key);
+
+  @override
+  State<IOSMainNavigation> createState() => _IOSMainNavigationState();
+}
+
+class _IOSMainNavigationState extends State<IOSMainNavigation> {
+  final _tabs = CupertinoTabController();
+  final _habitsNavigator = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.focusRequests.addListener(_showHabits);
+    // A notification tap that launched the app arrives before this screen
+    if (NotificationService.focusRequests.value != null) _showHabits();
+  }
+
+  @override
+  void dispose() {
+    NotificationService.focusRequests.removeListener(_showHabits);
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  /// A notification was tapped: show the Habits list (the Habits screen
+  /// then scrolls to the habit), closing anything open on top of it.
+  void _showHabits() {
+    if (NotificationService.focusRequests.value == null) return;
+    _tabs.index = 0;
+    _habitsNavigator.currentState?.popUntil((route) => route.isFirst);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +49,7 @@ class IOSMainNavigation extends StatelessWidget {
         final isDark = themeProvider.isDarkIn(context);
         
         return CupertinoTabScaffold(
+          controller: _tabs,
           backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
           tabBar: CupertinoTabBar(
             backgroundColor: isDark ? IOSColors.systemBackgroundDark : IOSColors.systemBackground,
@@ -50,6 +83,7 @@ class IOSMainNavigation extends StatelessWidget {
             switch (index) {
               case 0:
                 return CupertinoTabView(
+                  navigatorKey: _habitsNavigator,
                   builder: (context) => const IOSHomeScreen(),
                 );
               case 1:

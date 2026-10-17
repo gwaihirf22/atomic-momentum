@@ -49,6 +49,9 @@ class HabitCard extends StatelessWidget {
   /// Marks (true) or unmarks today's two-minute version.
   final ValueChanged<bool>? onSetTwoMinute;
 
+  /// Briefly tinted in the habit's color, e.g. after tapping its notification.
+  final bool highlighted;
+
   const HabitCard({
     Key? key,
     required this.habit,
@@ -57,6 +60,7 @@ class HabitCard extends StatelessWidget {
     required this.onDelete,
     required this.onSetProgress,
     this.onSetTwoMinute,
+    this.highlighted = false,
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
@@ -172,7 +176,9 @@ class HabitCard extends StatelessWidget {
             },
             child: Material(
               key: Key('habitCard_${habit.id}'),
-              color: theme.cardColor,
+              color: highlighted ? Color.alphaBlend(color.withValues(alpha: 0.22), theme.cardColor) : theme.cardColor,
+              // Fades in and out rather than flashing
+              animationDuration: const Duration(milliseconds: 600),
               child: InkWell(
                 onTap: onEdit,
                 child: Padding(
