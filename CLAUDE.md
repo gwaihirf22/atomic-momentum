@@ -51,6 +51,7 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # but doesn't take clicks. Then:
 ./flutter/bin/flutter run -d "iPhone 17 Pro"
 xcrun simctl io booted screenshot shot.png   # screenshot from the command line
+# After changes, reload BOTH simulators: iPhone 17 Pro and iPhone SE (3rd gen, iOS 18.5)
 
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web
@@ -112,9 +113,11 @@ python server.py
 - **Momentum**: a 0–100 score per habit (`MomentumCalculator`, `Habit.momentum`): an exponential moving average over due periods with partial credit, calibrated to reach 80 in ~66 days of steady practice on any schedule; shown on the card with a 7-day trend arrow
 - **Reset Days**: Weekly/monthly habits reset on a user-chosen weekday/day-of-month (`Habit.resetAnchor`); progress rolls over at local midnight
 - **Streak Warnings**: `StreakWarningPlanner` plans a "Don't miss twice" notification before the miss that would end a streak (default 4 hours ahead, configurable in Settings), plus an optional nudge before a first miss (Settings switch); `StreakWarningService` schedules them
-- **Theme Support**: iOS-native light/dark mode with proper styling
-- **Testing Framework**: Unit, integration and widget tests; see Testing Strategy
-- **Development Tools**: Default habit system, comprehensive debug logging, bypass solutions
+- **Smart Reminders**: `ReminderSettings` (smart or custom days, time, message); `ReminderPlanner` works out times from the schedule (each due day for daily habits; a countdown to the due day for longer periods: 1 day before for every 2–6 days, 3 and 1 day before for weekly to every 3 weeks, 7/3/1 for monthly) and drops reminders once the period is done; `ReminderService` schedules the soonest 48 across habits as one-off notifications (iOS allows 64) and replaces them on load, changes, progress and midnight. New habits remind by default at Settings → Default time; `smart_reminders_migration.dart` switched them on once for older habits
+- **Progress saving**: `HabitProvider.updateHabitProgress` shows a tap instantly and saves in the background, one save at a time, collapsing quick taps; reminder and warning syncs never block taps
+- **Habits header**: `LargeTitleScaffold` gives the main tabs large titles in Sora that hand over to a small bar title on scroll; the Habits greeting (`Greetings`) is random for the time of day, new each time the app opens, and steps down 32→28→24pt to fit two lines; overall momentum shows as a ring (`MomentumRing`)
+- **Look and feel**: adaptive controls (`presentation/widgets/adaptive.dart`: iOS alerts, action sheets and wheel pickers on Apple platforms, Material on Android); Settings is an inset grouped list (`settings_list.dart`); style tokens in `core/theme/app_style.dart`; haptics in `core/feedback/haptics.dart`; appearance is System/Light/Dark (`ThemeProvider`)
+- **Branding**: app name "Momentum", id `com.paulblake.momentum`; icon source `assets/branding/app_icon_source.png`, regenerate with `./flutter/bin/dart run flutter_launcher_icons`
 
 ### Data Flow (Clean Architecture)
 1. UI triggers use cases through providers
@@ -134,7 +137,7 @@ python server.py
 ### Product Direction
 **Read `docs/strategy/product-strategy.md` before planning features.** It holds the positioning ("Momentum, not perfection", built on *Atomic Habits*), monetization (free + one-time Pro + in-app-purchase tip jar), the Flutter-over-Swift decision and the roadmap. v1, in order:
 1. ~~Momentum score + never miss twice~~ (done)
-2. Smart reminders: on by default, following each habit's due days, per-habit control (Edit Habit rework)
+2. ~~Smart reminders: on by default, following each habit's due days, per-habit control~~ (done)
 3. Two-minute version
 4. Year heatmap + weekly review
 5. Onboarding tutorial
@@ -145,7 +148,7 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Our labels are never cut off with "…".** Keep titles short (~20 characters or fewer); explanations go in subtitles and footers, which wrap.
 - **Rows grow taller instead of truncating.** No fixed heights around text; use minimum heights. `CupertinoListTile` truncates titles by default: give text an explicit `maxLines` (see `settings_list.dart`).
 - **User content** (habit and category names) may wrap to 2 lines; only beyond that may it end in "…".
-- **Layouts adapt:** habit cards and Calendar rows switch to two rows below 390pt or above 115% text (`HabitCard.twoRowWidth`); category rings show 4 per page with large text.
+- **Layouts adapt:** habit cards and Calendar rows switch to two rows below 390pt or above 115% text (`HabitCard.useTwoRows`); category rings show 4 per page with large text.
 - **Guard:** `test/widget/small_screens_test.dart` renders every screen with real fonts (`test/helpers/real_fonts.dart`) at 375/390pt and 100%/135% text, and fails on any overflow or text that hits its line limit. Add new screens and sheets to it.
 
 ### Testing Strategy
@@ -153,55 +156,14 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Layout**: `test/unit/` (pure logic, mirrors `lib/`), `test/integration/` (real use cases + SharedPreferences mock), `test/widget/` and `test/widget_test.dart` (screens)
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: pure logic takes a `now`/`clock` parameter so tests can pin dates; integration tests that hit `DateTime.now()` must pick times that work whenever they run
-- **Notifications**: tests swap the platform plugin for `FakeStreakWarningScheduler` (`test/helpers/`)
-- **Status (2026-10-16)**: 526 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Notifications**: tests use fakes from `test/helpers/` (`FakeStreakWarningScheduler`, `FakeReminderScheduler`, `FakeNotificationsPlugin`)
+- **Fonts and randomness**: widget tests draw text in a square placeholder font; tests about fit load real fonts (`real_fonts.dart`). `test/flutter_test_config.dart` seeds the greeting so layouts are the same every run
+- **Async in widget tests**: don't keep a `Future` alive across calls in app code (chained futures break under the test clock); use a flag and a pending value instead (see `ReminderService.syncAll`)
+- **Status (2026-10-16)**: 533 tests passing (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
-
-### Habit Data Structure
-```javascript
-{
-  id: "unique_habit_id",
-  name: "Habit Name",
-  progress: 5,
-  target: 8,
-  color: "#2196F3",
-  category: "Body",
-  resetFrequency: "weekly",
-  history: {}, // Date-based completion tracking
-  streak: 0,
-  lastStreakDate: null,
-  reminderTime: null,
-  reminderEnabled: false
-}
-```
-
-### Storage Service Pattern
-- Use `getHabits()` and `saveHabits()` from `storageService.js`
-- Habit history stored separately via `loadHabitHistory()` and `saveHabitHistory()`
-- All data persistence goes through storage service abstraction
-
-### Theme System
-- Theme state managed in `theme.js`
-- Apply theme changes via `applyTheme()` function
-- Dark/light mode preference stored in localStorage
-
-### Common Development Tasks
-
-#### Adding New Habit Features
-1. Update habit data structure in `main.js` defaultHabits
-2. Modify habit creation/editing logic in form handlers
-3. Update display logic in habit rendering functions
-4. Test with calendar view integration
-
-#### Modifying Calendar Functionality
-1. Calendar logic in `scripts/calendar.js`
-2. Habit completion data retrieved from habit history
-3. Category filtering integrated with main view filters
-4. Day detail popups show habit-specific information
-
-#### Styling Changes
-1. Main styles in `styles/main.css`
-2. Calendar-specific styles in `styles/calendar.css`
-3. Theme variables defined for dark/light mode support
-4. Responsive design considerations for mobile devices
+- **Storage**: habits are JSON in SharedPreferences via `SharedPreferencesDataSource`; a habit keeps its full per-day `history`, and streak, progress and momentum are derived from it (`Habit.refresh`, `StreakCalculator`, `MomentumCalculator`). Categories live under `categories_v1`
+- **Dates**: day-only dates are built from calendar fields (`DateTime(y, m, d)`), never with `toLocal()`; table_calendar hands over UTC midnights
+- **Notifications**: `NotificationService` wraps flutter_local_notifications. Reminders use payload `reminder|<habitId>` and are found and replaced as a set; streak warnings use ids hashed from `<habitId>-streak-…`. Permission is asked once at first launch, after the first frame
+- **Adding a screen or sheet**: use `LargeTitleScaffold` for main tabs, the adaptive helpers for dialogs and pickers, and add it to `test/widget/small_screens_test.dart`
+- **Legacy web app** (`templates/`, `scripts/`, `styles/`, `server.py`): the original prototype, kept for reference only; don't change it

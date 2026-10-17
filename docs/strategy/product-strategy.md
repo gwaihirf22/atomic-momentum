@@ -116,7 +116,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 
 | Phase | Contents, in order |
 |---|---|
-| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders: reminders on by default for new habits, following the days a habit is due, with per-habit control in a reworked Edit Habit. 3. Two-minute version. 4. Year heatmap and weekly review. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
+| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version. 4. Year heatmap and weekly review. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Pro upgrade and tip jar. |
 | **v2** | Widgets (home screen, lock screen, StandBy), logging from Apple Health, sync between devices, Apple Watch. |
 

@@ -1,132 +1,60 @@
-# Atomic Momentum
+# Momentum (Atomic Momentum)
 
-A habit tracking app that helps you build consistency in your daily routines through intelligent tracking, visual progress indicators, and motivational features.
+A habit tracker built on the ideas in *Atomic Habits*: **momentum, not perfection**. It rewards showing up instead of punishing a missed day.
 
-## 📋 Project Overview
+Built with Flutter for iPhone first, with Android, macOS and web from the same code.
 
-Atomic Momentum is a habit tracking application designed to help users build and maintain positive daily habits. The app provides a clean, intuitive interface for tracking progress, viewing habit history, and receiving motivational feedback based on habit streaks.
+## What it does
 
-This project was initially planned as a Flutter mobile application, but is currently implemented as a web application with equivalent functionality to accommodate development constraints.
+- **Habits with flexible schedules:** daily, chosen weekdays, every N days or weeks, monthly (on the day you choose), or a lifetime total. Log progress with the ring or the −/+ stepper.
+- **Never miss twice:** a streak survives one missed day (the card warns "Don't miss twice"); two misses in a row end it.
+- **Momentum score:** a 0–100 score per habit and overall. It rises with steady practice, gives partial credit, and dips gently on misses.
+- **Smart reminders:** on by default. They follow each habit's schedule, counting down to when it's due, and go quiet once it's done. You can also pick custom days.
+- **Streak warnings:** a "Don't miss twice" notification before a miss would end a streak.
+- **Calendar:** each day's completion as a ring. You can edit past days to fix a missed log.
+- **Categories:** six built in, fully editable, with filter rings that show today's progress.
+- **Native feel:** iOS controls, large titles, light/dark/system appearance and haptics. Designed for screens down to the iPhone SE and for large text sizes.
 
-## 🚀 Features
+## Run it
 
-### ✅ Core Functionality
-- [x] Track multiple habits with visual progress bars
-- [x] Increment/decrement progress with simple +/- buttons
-- [x] Add, edit, and delete habits
-- [x] Customize habits with name, target goal, color, and emoji icon
-- [x] Set weekly reset frequency for habits
-- [x] View complete/incomplete habits at a glance
-- [x] Light/dark theme support
-- [x] Organize habits by categories
-- [x] Filter habits by category in main view and calendar
+Flutter is bundled in `./flutter` (git-ignored; see below).
 
-### 🔥 Habit Streaks & Motivation
-- [x] Track consecutive completion streaks for each habit
-- [x] Visual streak indicators (🔥 + count) next to habit names
-- [x] Motivational messages when streaks continue or break
+```bash
+./flutter/bin/flutter pub get
 
-### 🗖️ Calendar View
-- [x] Monthly calendar view with habit completion indicators
-- [x] Navigate between months to review past performance
-- [x] Daily detail view showing which habits were completed on selected day
-- [x] Filter calendar by habit categories
-- [x] Category-based filtering synchronized with main view
+# iPhone simulator (Xcode 27: start the device from Xcode's DeviceHub first)
+./flutter/bin/flutter run -d "iPhone 17 Pro"
 
-### 🔔 Notifications & Reminders
-- [x] Set time-based reminders for individual habits
-- [x] Global toggle for all notifications in settings
-- [x] Permission request with proper browser support detection
-- [x] Custom notification testing environment (notifications-test.html)
+# Other targets
+./flutter/bin/flutter run -d macos
+./flutter/bin/flutter run -d chrome --web-port=8080 --web-hostname=localhost
 
-### 📂 Data Management
-- [x] Persistent storage via localStorage
-- [x] Automatic daily/weekly habit reset
-- [x] Comprehensive habit history tracking
-- [x] Records daily snapshots of habit completion status
-
-## ⚙️ Technical Details
-
-The application uses the following technologies:
-
-- Frontend: HTML, CSS, JavaScript (Vanilla)
-- Backend: Python SimpleHTTPServer
-- Data Storage: localStorage (browser-based)
-- Notifications: Web Notifications API
-
-## ▶️ Getting Started
-
-1. Clone this repository:
-```
-git clone https://github.com/yourusername/atomic-momentum.git
+# Tests and analysis
+./flutter/bin/flutter test
+./flutter/bin/flutter analyze
 ```
 
-2. Navigate to the project directory:
-```
-cd atomic-momentum
-```
+Requirements: Xcode with CocoaPods for iOS and macOS. The minimum iOS is 16.
 
-3. Run the server:
-```
-python server.py
-```
+## Project layout
 
-4. Open your browser to `http://localhost:5000`
+| Path | What's there |
+|---|---|
+| `lib/domain/` | Entities (Habit, HabitSchedule, StreakData, Momentum, ReminderSettings), use cases, and pure logic: streaks, momentum, reminder and warning planning |
+| `lib/data/` | SharedPreferences storage and repositories |
+| `lib/presentation/` | Providers (state) and shared widgets |
+| `lib/screens/` | Habits, Calendar, Settings, Add/Edit Habit, Categories |
+| `lib/core/` | Notifications, dependency injection, theme and style, migrations |
+| `test/` | Unit, integration and widget tests, including a small-screen guard |
+| `assets/` | App icon source and the Sora title font |
+| `docs/strategy/product-strategy.md` | Positioning, monetization, platform decision and roadmap |
 
-### 💡 Running on Replit
+The `swift` branch (checked out at `../atomic-momentum-swift`) holds a SwiftUI fallback. The HTML/JS web app in `templates/`, `scripts/` and `styles/` is the original prototype, kept for reference.
 
-The application is configured to run on Replit with minimal setup. Simply:
+## Roadmap
 
-1. Click "Run" in the Replit environment
-2. Access the application via the provided URL
-
-## 📂 Project Structure
-
-- `scripts/`: Contains JavaScript files like main.js, calendar.js, etc.
-- `styles/`: Contains CSS files for modular styling
-- `docs/`: Contains project documentation
-  - `BUG_TRACKER.md`: Tracks known bugs and fixes
-  - `ROADMAP.md`: High-level vision, feature backlog, and dev priorities
-
-### 🖼️ Screenshots (To Be Updated)
-
-| Feature | Screenshot |
-|---------|------------|
-| Dashboard | |
-| Calendar View | |
-| Edit Habit Modal | |
-
-Screenshots will be added in future updates.
-
-## 🚣 Next Steps & Future Development
-
-See the `docs/ROADMAP.md` for detailed priorities.
-
-### 📌 High Priority
-- [ ] Implement proper multi-file structure (separate JS, CSS, HTML)
-- [ ] Consider backend data storage instead of localStorage
-- [ ] Add user authentication for multi-user support
-- [ ] Improve mobile responsiveness and touch interaction
-
-### 🌟 Feature Enhancements
-- [x] Implement habit categories and organization
-- [ ] Add statistics and insights based on habit history
-- [ ] Create data visualization for long-term habit tracking
-- [ ] Add social sharing or accountability features
-- [ ] Create export/import functionality for habit data
-
-### 🛠 Technical Improvements
-- [ ] Implement the full Flutter mobile app version for native experience
-- [ ] Write automated tests for core functionality
-- [ ] Improve accessibility for screen readers and keyboard navigation
-- [ ] Optimize performance for large habit histories
-
-### 🐞 Bug Tracker
-
-For known issues and polish tasks, check out the `docs/BUG_TRACKER.md`
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-Last updated: April 2024
+See [docs/strategy/product-strategy.md](docs/strategy/product-strategy.md). Next up:
+1. Two-minute version of each habit
+2. Year heatmap and weekly review
+3. Onboarding tutorial
+4. App Store readiness
