@@ -6,6 +6,11 @@ import 'ios_typography.dart';
 
 /// The Cupertino and Material themes, both built from one [AppPalette].
 class IOSTheme {
+  static OutlineInputBorder _fieldBorder(Color color, {double width = 1}) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppStyle.controlRadius),
+        borderSide: BorderSide(color: color, width: width),
+      );
+
   static CupertinoThemeData cupertino(AppPalette palette) => CupertinoThemeData(
         brightness: palette.brightness,
         primaryColor: palette.accent,
@@ -70,6 +75,31 @@ class IOSTheme {
         actionTextColor: palette.brightness == Brightness.dark ? AppPalette.light.accent : palette.orbStart,
       ),
       dividerColor: palette.separator,
+      // Form fields: filled, without outlines, as in the Charged design
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: palette.raised,
+        labelStyle: TextStyle(color: palette.textSecondary),
+        floatingLabelStyle: TextStyle(color: palette.accent),
+        hintStyle: TextStyle(color: palette.textSecondary.withValues(alpha: 0.7)),
+        suffixStyle: TextStyle(color: palette.textSecondary),
+        helperStyle: TextStyle(color: palette.textSecondary),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: _fieldBorder(Colors.transparent),
+        enabledBorder: _fieldBorder(Colors.transparent),
+        focusedBorder: _fieldBorder(palette.accent, width: 1.5),
+        errorBorder: _fieldBorder(palette.danger),
+        focusedErrorBorder: _fieldBorder(palette.danger, width: 1.5),
+        errorStyle: TextStyle(color: palette.danger),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: palette.raised,
+        selectedColor: Color.alphaBlend(palette.accent.withValues(alpha: 0.22), palette.surface),
+        checkmarkColor: palette.text,
+        labelStyle: TextStyle(color: palette.text),
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
     );
   }
 }
