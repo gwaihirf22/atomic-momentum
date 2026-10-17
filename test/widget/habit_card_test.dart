@@ -272,6 +272,22 @@ void main() {
     });
   }
 
+  testWidgets('quick taps all count: + is never locked while a save is running', (tester) async {
+    await pumpHome(tester);
+    final plus = find.byKey(Key('incrementHabit_$waterId'));
+
+    // One frame between taps: no waiting for saves to finish
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(plus);
+      await tester.pump();
+    }
+    expect(find.descendant(of: card(), matching: find.textContaining('3/3 glasses')), findsOneWidget);
+
+    await tester.pumpAndSettle();
+    final saved = await tester.runAsync(() => get<LocalHabitDataSource>().getHabits());
+    expect(saved!.single.progress, 3);
+  });
+
   testWidgets('swiping left reveals Edit and Delete; Delete asks first', (tester) async {
     await pumpHome(tester);
 

@@ -300,7 +300,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           return HabitCard(
             habit: habit,
             category: context.read<CategoryProvider>().resolve(habit.categoryId),
-            busy: habitProvider.isPerformingOperation,
             onEdit: () => _editHabit(habit),
             onDelete: () => _deleteHabit(habit),
             onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),

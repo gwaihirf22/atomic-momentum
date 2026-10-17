@@ -409,6 +409,7 @@ void main() {
         // With today done, the streak ends only if tomorrow and the day after
         // are both missed
         await habitProvider.updateHabitProgress(id, 1);
+        await pumpEventQueue(); // warnings are rescheduled in the background
         expect(habitProvider.getHabitById(id)!.streak.current, 4);
         expect(
           scheduler.scheduled[id]!.at,

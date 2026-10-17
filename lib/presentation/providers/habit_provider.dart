@@ -168,50 +168,68 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
+  // Progress changes are shown at once and saved in the background, one
+  // save at a time: taps never wait on storage or notifications, and quick
+  // repeated taps collapse into one save of the latest value.
+  final Map<String, int> _unsavedProgress = {};
+  final Map<String, Habit> _lastSaved = {};
+  bool _savingProgress = false;
+
+  /// Sets today's progress. The change shows immediately; returns false if
+  /// saving fails (the habit then goes back to what's stored).
   Future<bool> updateHabitProgress(String habitId, int newProgress) async {
-    try {
-      _setOperationInProgress(true);
-      
-      // TEMPORARY FIX: Try to update progress directly in the local list first
-      final habitIndex = _habits.indexWhere((habit) => habit.id == habitId);
-      if (habitIndex >= 0) {
-        final currentHabit = _habits[habitIndex];
-        
-        // Create updated habit directly
-        final updatedHabit = currentHabit.updateProgress(newProgress);
-        
-        // Show the change immediately so taps feel instant
-        _habits[habitIndex] = updatedHabit;
-        notifyListeners();
-
-        try {
-          final savedHabit = await _updateHabitUseCase.updateProgress(habitId, newProgress);
-          _replaceHabit(savedHabit);
-          await _streakWarnings?.sync(savedHabit);
-          // Finishing it drops its remaining reminders for the period
-          await _reminders?.syncAll(_habits);
-        } catch (saveError) {
-          // Roll back: never show progress that isn't actually stored
-          _replaceHabit(currentHabit);
-          _error = 'Could not save progress: $saveError';
-          notifyListeners();
-          return false;
-        }
-
-        return true;
-      } else {
-        _error = 'Habit not found: $habitId';
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _error = e.toString();
+    final index = _habits.indexWhere((habit) => habit.id == habitId);
+    if (index < 0) {
+      _error = 'Habit not found: $habitId';
       notifyListeners();
       return false;
-    } finally {
-      _setOperationInProgress(false);
     }
+
+    final current = _habits[index];
+    _lastSaved.putIfAbsent(habitId, () => current);
+    _habits[index] = current.updateProgress(newProgress);
+    notifyListeners();
+
+    _unsavedProgress[habitId] = newProgress;
+    // A save already running picks this up when it finishes
+    if (_savingProgress) return true;
+    return _saveProgress();
   }
+
+  Future<bool> _saveProgress() async {
+    _savingProgress = true;
+    var allSaved = true;
+    try {
+      while (_unsavedProgress.isNotEmpty) {
+        final habitId = _unsavedProgress.keys.first;
+        final progress = _unsavedProgress.remove(habitId)!;
+        try {
+          final saved = await _updateHabitUseCase.updateProgress(habitId, progress);
+          // A newer tap is waiting: keep showing it rather than this save
+          if (!_unsavedProgress.containsKey(habitId)) {
+            _lastSaved.remove(habitId);
+            _replaceHabit(saved);
+          }
+          _streakWarnings?.sync(saved);
+        } catch (saveError) {
+          // Roll back: never show progress that isn't actually stored
+          _unsavedProgress.remove(habitId);
+          final stored = _lastSaved.remove(habitId);
+          if (stored != null) _replaceHabit(stored);
+          _error = 'Could not save progress: $saveError';
+          notifyListeners();
+          allSaved = false;
+        }
+      }
+    } finally {
+      _savingProgress = false;
+    }
+    // Finishing a habit drops its remaining reminders; not awaited, so taps
+    // never wait on notifications
+    _reminders?.syncAll(_habits);
+    return allSaved;
+  }
+
 
   Future<bool> incrementHabitProgress(String habitId, [int amount = 1]) async {
     try {

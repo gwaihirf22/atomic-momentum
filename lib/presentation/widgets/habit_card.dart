@@ -40,8 +40,6 @@ class HabitCard extends StatelessWidget {
   final Habit habit;
   final Category category;
 
-  /// True while a progress change is being saved.
-  final bool busy;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final ValueChanged<int> onSetProgress;
@@ -50,14 +48,14 @@ class HabitCard extends StatelessWidget {
     Key? key,
     required this.habit,
     required this.category,
-    required this.busy,
     required this.onEdit,
     required this.onDelete,
     required this.onSetProgress,
   }) : super(key: key);
 
-  bool get _canAdd => !busy && habit.progress < habit.target;
-  bool get _canRemove => !busy && habit.progress > 0;
+  // Never locked while saving: taps show at once and save in the background
+  bool get _canAdd => habit.progress < habit.target;
+  bool get _canRemove => habit.progress > 0;
 
   String get _progressText =>
       habit.units.isEmpty ? '${habit.progress}/${habit.target}' : '${habit.progress}/${habit.target} ${habit.units}';
