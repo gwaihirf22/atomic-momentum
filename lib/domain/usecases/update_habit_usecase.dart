@@ -81,6 +81,26 @@ class UpdateHabitUseCase {
     }
   }
 
+  /// Why the person keeps the habit (see [Habit.setWhy]).
+  Future<Habit> setWhy(String habitId, String text) => _change(habitId, (habit) => habit.setWhy(text));
+
+  /// The note on [date] (see [Habit.setDayNote]).
+  Future<Habit> setDayNote(String habitId, DateTime date, String text) =>
+      _change(habitId, (habit) => habit.setDayNote(date, text));
+
+  Future<Habit> _change(String habitId, Habit Function(Habit) change) async {
+    try {
+      final updatedHabit = change(await _getHabitById(habitId));
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } on ArgumentError catch (e) {
+      throw ValidationException(e.message.toString());
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to update habit: $e');
+    }
+  }
+
   /// Set what was logged on several days at once (see [Habit.setDays]).
   Future<Habit> setDays(String habitId, Map<DateTime, int> amounts) async {
     try {

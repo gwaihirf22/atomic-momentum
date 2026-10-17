@@ -61,4 +61,18 @@ void main() {
     expect(await clear && await undo, isTrue);
     expect(await stored(), 2);
   });
+
+  test('a why and a day note are saved', () async {
+    expect(await habits.setWhy(id, 'Learn more'), isTrue);
+    expect(await habits.setDayNote(id, today, 'Two chapters on the train'), isTrue);
+    final saved = (await get<GetHabitsUseCase>().call()).single;
+    expect(saved.why, 'Learn more');
+    expect(saved.dayNotes, {today: 'Two chapters on the train'});
+  });
+
+  test('typing past the target is stored', () async {
+    expect(await habits.setDays(id, {today: 5}), isTrue);
+    expect(await stored(), 5);
+    expect(habits.habits.single.isCompleted, isTrue);
+  });
 }

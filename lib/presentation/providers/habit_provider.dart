@@ -185,6 +185,16 @@ class HabitProvider extends ChangeNotifier {
     );
   }
 
+  /// Why the person keeps the habit; shows at once and saves behind.
+  Future<bool> setWhy(String habitId, String text) =>
+      _applyNow(habitId, (habit) => habit.setWhy(text), (pending) => pending.why = text);
+
+  /// The note on [date]; empty removes it. Shows at once and saves behind.
+  Future<bool> setDayNote(String habitId, DateTime date, String text) {
+    final day = DateTime(date.year, date.month, date.day);
+    return _applyNow(habitId, (habit) => habit.setDayNote(day, text), (pending) => pending.notes[day] = text);
+  }
+
   /// Marks (or unmarks) the two-minute version as done today, or in the
   /// period containing [date]. Shows immediately and saves in the background
   /// like progress; returns false if saving fails.
@@ -244,6 +254,10 @@ class HabitProvider extends ChangeNotifier {
           }
           for (final entry in pending.twoMinute.entries) {
             saved = await _updateHabitUseCase.setTwoMinuteForDate(habitId, entry.key, entry.value);
+          }
+          if (pending.why != null) saved = await _updateHabitUseCase.setWhy(habitId, pending.why!);
+          for (final entry in pending.notes.entries) {
+            saved = await _updateHabitUseCase.setDayNote(habitId, entry.key, entry.value);
           }
           if (saved == null) continue;
           // A newer tap is waiting: keep showing it rather than this save
@@ -462,4 +476,9 @@ class _PendingChange {
 
   /// Day -> done, in the order they were tapped.
   final Map<DateTime, bool> twoMinute = {};
+
+  String? why;
+
+  /// Day -> note text ('' removes it).
+  final Map<DateTime, String> notes = {};
 }

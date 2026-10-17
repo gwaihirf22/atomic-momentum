@@ -28,6 +28,8 @@ class HabitModel extends Habit {
     super.scheduledWeekdays,
     super.twoMinute,
     super.twoMinuteDays,
+    super.why,
+    super.dayNotes,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -53,6 +55,8 @@ class HabitModel extends Habit {
         scheduledWeekdays: habit.scheduledWeekdays,
         twoMinute: habit.twoMinute,
         twoMinuteDays: habit.twoMinuteDays,
+        why: habit.why,
+        dayNotes: habit.dayNotes,
       );
     } catch (e) {
       rethrow;
@@ -82,6 +86,8 @@ class HabitModel extends Habit {
         scheduledWeekdays: scheduledWeekdays,
         twoMinute: twoMinute,
         twoMinuteDays: twoMinuteDays,
+        why: why,
+        dayNotes: dayNotes,
       );
       
       return habitDomain;
@@ -144,6 +150,8 @@ class HabitModel extends Habit {
           ? TwoMinuteVersion.fromJson(json['twoMinute'] as Map<String, dynamic>)
           : null,
       twoMinuteDays: Habit.twoMinuteDaysFromJson(json['twoMinuteDays']),
+      why: json['why'] is String ? json['why'] as String : '',
+      dayNotes: Habit.dayNotesFromJson(json['dayNotes']),
     );
   }
 
@@ -183,6 +191,8 @@ class HabitModel extends Habit {
         'scheduledWeekdays': scheduledWeekdays,
         'twoMinute': twoMinute?.toJson(),
         if (twoMinuteDays.isNotEmpty) 'twoMinuteDays': Habit.twoMinuteDaysToJson(twoMinuteDays),
+        if (why.isNotEmpty) 'why': why,
+        if (dayNotes.isNotEmpty) 'dayNotes': Habit.dayNotesToJson(dayNotes),
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': clock.now().toIso8601String(),
       };

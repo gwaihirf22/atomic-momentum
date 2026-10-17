@@ -81,7 +81,8 @@ class HabitValidator {
       errors.add("Progress cannot be negative");
     }
     
-    if (progress > target * 2) {
+    // Going past the target is fine ("10/8"), up to Habit.maxOverTarget times it
+    if (progress > target * Habit.maxOverTarget) {
       errors.add("Progress seems unusually high compared to target");
     }
   }
@@ -118,7 +119,7 @@ class HabitValidator {
     
     // Check for unrealistic progress values in history
     final invalidEntries = history.entries.where((entry) => 
-      entry.value < 0 || entry.value > target * 2
+      entry.value < 0 || entry.value > target * Habit.maxOverTarget
     );
     
     if (invalidEntries.isNotEmpty) {

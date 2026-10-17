@@ -50,9 +50,10 @@ void main() {
     expect(restored.isCompleted, isTrue);
   });
 
-  test('a period can not go over its target, nor a day into the future', () {
+  test('a period can go past its target, but not past ten times it, nor into the future', () {
     final habit = weekly({jan(15): 2});
-    expect(() => at(() => habit.setDays({jan(16): 2})), throwsArgumentError);
+    expect(at(() => habit.setDays({jan(16): 2})).progress, 4);
+    expect(() => at(() => habit.setDays({jan(16): 29})), throwsArgumentError);
     expect(() => at(() => habit.setDays({jan(18): 1})), throwsArgumentError);
     expect(() => at(() => habit.setDays({jan(16): -1})), throwsArgumentError);
   });

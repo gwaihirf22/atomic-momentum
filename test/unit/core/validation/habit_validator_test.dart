@@ -63,8 +63,13 @@ void main() {
         expect(result.errors, contains('Progress cannot be negative'));
       });
 
+      test('going past the target is fine, up to ten times it', () {
+        expect(HabitValidator.validate(TestData.createTestHabit(progress: 25, target: 10)).isValid, isTrue);
+        expect(HabitValidator.validate(TestData.createTestHabit(progress: 100, target: 10)).isValid, isTrue);
+      });
+
       test('should return invalid result for unusually high progress', () {
-        final habit = TestData.createTestHabit(progress: 25, target: 10);
+        final habit = TestData.createTestHabit(progress: 101, target: 10);
         final result = HabitValidator.validate(habit);
 
         expect(result.isValid, isFalse);

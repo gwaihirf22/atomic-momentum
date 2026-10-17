@@ -142,7 +142,15 @@ void main() {
         final habit = TestData.createTestHabit(target: 10);
 
         expect(() => habit.updateProgress(-1), throwsArgumentError);
-        expect(() => habit.updateProgress(15), throwsArgumentError);
+        expect(() => habit.updateProgress(101), throwsArgumentError, reason: 'more than ten times the target');
+      });
+
+      test('updateProgress may go past the target ("10/8" counts as done)', () {
+        final habit = TestData.createTestHabit(target: 10, progress: 0).updateProgress(15);
+        expect(habit.progress, 15);
+        expect(habit.isCompleted, isTrue);
+        expect(habit.progressPercentage, 1.0, reason: 'rings stay full, never past it');
+        expect(habit.streak.current, greaterThan(0));
       });
 
       test('resetProgress should set progress to 0', () {
@@ -463,12 +471,14 @@ void main() {
         expect(edited.setProgressForDate(daysAgo(2), 0).streak.current, 0);
       });
 
-      test('setProgressForDate rejects future dates, negatives and over-target totals', () {
+      test('setProgressForDate rejects future dates, negatives and totals past ten times the target', () {
         final habit = TestData.createTestHabit(target: 3);
 
         expect(() => habit.setProgressForDate(today.add(const Duration(days: 1)), 1), throwsArgumentError);
         expect(() => habit.setProgressForDate(daysAgo(1), -1), throwsArgumentError);
-        expect(() => habit.setProgressForDate(daysAgo(1), 4), throwsArgumentError);
+        expect(() => habit.setProgressForDate(daysAgo(1), 31), throwsArgumentError);
+        expect(habit.setProgressForDate(daysAgo(1), 4).wasCompletedOnDate(daysAgo(1)), isTrue,
+            reason: 'past the target is fine');
       });
 
       test('setProgressForDate for today updates current progress', () {

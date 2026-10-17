@@ -44,6 +44,22 @@ class Habit extends Equatable {
   /// [history] so two-minute days stay visible, and count, after later edits.
   final Set<DateTime> twoMinuteDays;
 
+  /// Why the person keeps this habit, in their words; empty for none.
+  final String why;
+
+  /// A short note on any day (date-only keys).
+  final Map<DateTime, String> dayNotes;
+
+  static const maxWhyLength = 300;
+  static const maxDayNoteLength = 200;
+
+  /// A period's total may go past the target (typing "10" for 8 glasses),
+  /// up to this many times it, which still catches a mistyped extra zero.
+  static const maxOverTarget = 10;
+
+  /// The most a period can hold.
+  int get maxPeriodTotal => target * maxOverTarget;
+
   Habit({
     required this.id,
     required this.name,
@@ -63,6 +79,8 @@ class Habit extends Equatable {
     this.scheduledWeekdays,
     this.twoMinute,
     this.twoMinuteDays = const {},
+    this.why = '',
+    this.dayNotes = const {},
   });
 
   static int _idCounter = 0;
@@ -148,8 +166,8 @@ class Habit extends Equatable {
   /// each day, so today's entry becomes whatever the earlier days of this
   /// period don't already account for.
   Habit updateProgress(int newProgress) {
-    if (newProgress < 0 || newProgress > target) {
-      throw ArgumentError('Progress must be between 0 and $target');
+    if (newProgress < 0 || newProgress > maxPeriodTotal) {
+      throw ArgumentError('Progress must be between 0 and $maxPeriodTotal');
     }
 
     final now = clock.now();
@@ -186,8 +204,8 @@ class Habit extends Equatable {
     }
 
     final updated = copyWith(history: newHistory);
-    if (updated.progressForPeriodContaining(day) > target) {
-      throw ArgumentError('Total for this period would exceed the target of $target');
+    if (updated.progressForPeriodContaining(day) > maxPeriodTotal) {
+      throw ArgumentError('Total for this period would go past $maxPeriodTotal');
     }
 
     return updated._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
@@ -212,8 +230,8 @@ class Habit extends Equatable {
     }
     final updated = copyWith(history: newHistory);
     for (final day in amounts.keys) {
-      if (updated.progressForPeriodContaining(day) > target) {
-        throw ArgumentError('Total for this period would exceed the target of $target');
+      if (updated.progressForPeriodContaining(day) > maxPeriodTotal) {
+        throw ArgumentError('Total for this period would go past $maxPeriodTotal');
       }
     }
     return updated._recalculated(now).copyWith(lastUpdatedDate: now, metadata: metadata.updateModifiedDate());
@@ -230,6 +248,28 @@ class Habit extends Equatable {
       for (var day = start; day.isBefore(end) && !day.isAfter(today); day = DateTime(day.year, day.month, day.day + 1))
         day: history[day] ?? 0,
     };
+  }
+
+  /// Why the person keeps this habit; empty clears it.
+  Habit setWhy(String text) {
+    final trimmed = text.trim();
+    if (trimmed.length > maxWhyLength) throw ArgumentError('Keep it under $maxWhyLength characters');
+    return copyWith(why: trimmed, metadata: metadata.updateModifiedDate());
+  }
+
+  /// The note on [date]; empty removes it. Days can't be in the future.
+  Habit setDayNote(DateTime date, String text) {
+    final day = _dateOnly(date);
+    if (day.isAfter(_dateOnly(clock.now()))) throw ArgumentError('Cannot add a note to a future day');
+    final trimmed = text.trim();
+    if (trimmed.length > maxDayNoteLength) throw ArgumentError('Keep notes under $maxDayNoteLength characters');
+    final notes = Map<DateTime, String>.from(dayNotes);
+    if (trimmed.isEmpty) {
+      notes.remove(day);
+    } else {
+      notes[day] = trimmed;
+    }
+    return copyWith(dayNotes: notes, metadata: metadata.updateModifiedDate());
   }
 
   /// Marks (or unmarks) the two-minute version as done in the period
@@ -275,7 +315,8 @@ class Habit extends Equatable {
   Habit _recalculated(DateTime now) {
     final periodProgress = progressForPeriodContaining(now);
     return copyWith(
-      progress: periodProgress > target ? target : periodProgress,
+      // May be past the target: "10/8" counts as done
+      progress: periodProgress,
       streak: StreakCalculator.calculate(
         history: history,
         target: target,
@@ -391,6 +432,8 @@ class Habit extends Equatable {
           interval: newInterval),
       twoMinute: removeTwoMinute ? null : (twoMinute ?? this.twoMinute),
       twoMinuteDays: updated.twoMinuteDays,
+      why: updated.why,
+      dayNotes: updated.dayNotes,
     );
 
     // A new target, frequency or reset day changes how history adds up
@@ -486,6 +529,8 @@ class Habit extends Equatable {
     List<int>? scheduledWeekdays,
     TwoMinuteVersion? twoMinute,
     Set<DateTime>? twoMinuteDays,
+    String? why,
+    Map<DateTime, String>? dayNotes,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -506,6 +551,8 @@ class Habit extends Equatable {
       scheduledWeekdays: scheduledWeekdays ?? this.scheduledWeekdays,
       twoMinute: twoMinute ?? this.twoMinute,
       twoMinuteDays: twoMinuteDays ?? this.twoMinuteDays,
+      why: why ?? this.why,
+      dayNotes: dayNotes ?? this.dayNotes,
     );
   }
 
@@ -536,7 +583,27 @@ class Habit extends Equatable {
       'scheduledWeekdays': scheduledWeekdays,
       'twoMinute': twoMinute?.toJson(),
       'twoMinuteDays': twoMinuteDaysToJson(twoMinuteDays),
+      if (why.isNotEmpty) 'why': why,
+      if (dayNotes.isNotEmpty) 'dayNotes': dayNotesToJson(dayNotes),
     };
+  }
+
+  static String _dayKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Notes keyed by 'yyyy-MM-dd'.
+  static Map<String, String> dayNotesToJson(Map<DateTime, String> notes) => {
+        for (final day in notes.keys.toList()..sort()) _dayKey(day): notes[day]!,
+      };
+
+  static Map<DateTime, String> dayNotesFromJson(dynamic json) {
+    if (json is! Map) return const {};
+    final notes = <DateTime, String>{};
+    json.forEach((key, value) {
+      final day = key is String ? DateTime.tryParse(key) : null;
+      if (day != null && value is String && value.isNotEmpty) notes[_dateOnly(day)] = value;
+    });
+    return notes;
   }
 
   /// Days as sorted 'yyyy-MM-dd' strings.
@@ -587,6 +654,8 @@ class Habit extends Equatable {
           ? TwoMinuteVersion.fromJson(json['twoMinute'] as Map<String, dynamic>)
           : null,
       twoMinuteDays: twoMinuteDaysFromJson(json['twoMinuteDays']),
+      why: json['why'] is String ? json['why'] as String : '',
+      dayNotes: dayNotesFromJson(json['dayNotes']),
     );
   }
 
@@ -610,6 +679,8 @@ class Habit extends Equatable {
         scheduledWeekdays,
         twoMinute,
         twoMinuteDays,
+        why,
+        dayNotes,
       ];
 
   @override
