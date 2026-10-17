@@ -100,7 +100,32 @@ class SettingsScreen extends StatelessWidget {
         ),
         SettingsSection(
           header: 'Habits',
+          footer: 'Your new habit style is used for adding habits, and in Story for editing them too.',
           children: [
+            SettingsTile(
+              tileKey: const Key('addHabitStyleSetting'),
+              icon: CupertinoIcons.wand_stars,
+              iconColor: HabitColor.deepOrange.color,
+              title: 'New habit style',
+              value: _styleLabel(settings.addHabitStyle),
+              onTap: () async {
+                final style = await chooseAdaptive<AddHabitStyle>(
+                  context,
+                  title: 'New habit style',
+                  selected: settings.addHabitStyle,
+                  options: [
+                    for (final style in AddHabitStyle.values)
+                      AdaptiveOption(
+                        style,
+                        _styleLabel(style),
+                        subtitle: _styleDescription(style),
+                        key: Key('addHabitStyle_${style.name}'),
+                      ),
+                  ],
+                );
+                if (style != null) await settings.setAddHabitStyle(style);
+              },
+            ),
             SettingsTile(
               tileKey: const Key('openCategories'),
               icon: CupertinoIcons.square_grid_2x2_fill,
@@ -276,6 +301,16 @@ class SettingsScreen extends StatelessWidget {
         Appearance.light => 'Light',
         Appearance.sepia => 'Sepia',
         Appearance.dark => 'Dark',
+      };
+
+  static String _styleLabel(AddHabitStyle style) => switch (style) {
+        AddHabitStyle.builder => 'Builder',
+        AddHabitStyle.story => 'Story',
+      };
+
+  static String _styleDescription(AddHabitStyle style) => switch (style) {
+        AddHabitStyle.builder => 'Three quick steps',
+        AddHabitStyle.story => 'Write it as one sentence',
       };
 
   static String _themeLabel(AppTheme theme) => switch (theme) {

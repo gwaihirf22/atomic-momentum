@@ -62,22 +62,53 @@ class NameField extends StatelessWidget {
   final HabitDraft draft;
   final bool autofocus;
 
-  const NameField(this.draft, {super.key, this.autofocus = false});
+  /// Larger, in the display font, led by the habit's icon (Builder's first step).
+  final bool prominent;
+
+  const NameField(this.draft, {super.key, this.autofocus = false, this.prominent = false});
 
   @override
   Widget build(BuildContext context) {
-    return TextFormField(
+    final field = TextFormField(
       key: const Key('habitNameField'),
       controller: draft.name,
       autofocus: autofocus,
       textCapitalization: TextCapitalization.sentences,
-      decoration: const InputDecoration(
-        labelText: 'Habit Name',
+      style: prominent ? const TextStyle(fontFamily: 'Sora', fontSize: 19, fontWeight: FontWeight.w600) : null,
+      decoration: InputDecoration(
+        labelText: prominent ? null : 'Habit Name',
         hintText: 'e.g. Drink water',
         errorMaxLines: 2,
+        prefixIcon: prominent ? _IconChip(draft) : null,
       ),
       validator: HabitDraft.validateName,
     );
+    if (!prominent) return field;
+    return Semantics(label: 'Habit name', child: field);
+  }
+}
+
+/// The habit's icon in a chip tinted with its color.
+class _IconChip extends StatelessWidget {
+  final HabitDraft draft;
+
+  const _IconChip(this.draft);
+
+  @override
+  Widget build(BuildContext context) {
+    return _DraftBuilder(draft, (context) {
+      final palette = AppPalette.of(context);
+      final icon = HabitIcons.of(draft.icon) ?? Icons.edit_outlined;
+      return Padding(
+        padding: const EdgeInsets.only(left: 10, right: 8),
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(color: palette.tint(draft.color.color), borderRadius: BorderRadius.circular(11)),
+          child: Icon(icon, size: 20, color: palette.habitColor(draft.color.color)),
+        ),
+      );
+    });
   }
 }
 

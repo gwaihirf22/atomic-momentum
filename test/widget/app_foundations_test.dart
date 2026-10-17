@@ -175,6 +175,33 @@ void main() {
       expect(find.byKey(const Key('dayThemeSetting')), findsNothing);
     });
 
+    testWidgets('New habit style offers Builder and Story, each explained, and saves the choice', (tester) async {
+      await tester.pumpWidget(MultiProvider(
+        providers: [
+          ChangeNotifierProvider<ThemeProvider>.value(value: get<ThemeProvider>()),
+          ChangeNotifierProvider<HabitProvider>.value(value: get<HabitProvider>()),
+          ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
+          ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
+        ],
+        child: const MaterialApp(home: SettingsScreen()),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Builder')),
+          findsOneWidget);
+      await tester.tap(find.byKey(const Key('addHabitStyleSetting')));
+      await tester.pumpAndSettle();
+      expect(find.text('Three quick steps'), findsOneWidget);
+      expect(find.text('Write it as one sentence'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('addHabitStyle_story')));
+      await tester.pumpAndSettle();
+
+      expect(get<SettingsProvider>().addHabitStyle, AddHabitStyle.story);
+      expect((await SharedPreferences.getInstance()).getString('addHabitStyle'), 'story');
+      expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Story')),
+          findsOneWidget);
+    });
+
     testWidgets('under System, "In light mode" picks Light or Sepia', (tester) async {
       await tester.pumpWidget(MultiProvider(
         providers: [

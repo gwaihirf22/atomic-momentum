@@ -5,6 +5,15 @@ import '../../core/copy/greetings.dart';
 import '../../core/locale/week_start.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 
+/// How a new habit is set up (and, in Story, edited).
+enum AddHabitStyle {
+  /// Three quick steps; edits happen on one page.
+  builder,
+
+  /// One sentence with blanks to fill in, for adding and editing.
+  story,
+}
+
 /// App-wide preferences persisted in SharedPreferences.
 class SettingsProvider extends ChangeNotifier {
   static const _streakWarningEnabledKey = 'streakWarningEnabled';
@@ -15,6 +24,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _reminderMinuteKey = 'defaultReminderMinute';
   static const _dayStartHourKey = 'dayStartHour';
   static const _dayStartMinuteKey = 'dayStartMinute';
+  static const _addHabitStyleKey = 'addHabitStyle';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -69,6 +79,17 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setDayStart(TimeOfDay time) async {
     await _prefs.setInt(_dayStartHourKey, time.hour);
     await _prefs.setInt(_dayStartMinuteKey, time.minute);
+    notifyListeners();
+  }
+
+  /// Builder until the person picks Story.
+  AddHabitStyle get addHabitStyle {
+    final saved = _prefs.getString(_addHabitStyleKey);
+    return AddHabitStyle.values.where((s) => s.name == saved).firstOrNull ?? AddHabitStyle.builder;
+  }
+
+  Future<void> setAddHabitStyle(AddHabitStyle style) async {
+    await _prefs.setString(_addHabitStyleKey, style.name);
     notifyListeners();
   }
 

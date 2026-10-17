@@ -73,4 +73,20 @@ void main() {
       expect((await forRegion(const Locale('en', 'US'))).firstDayOfWeek, DateTime.sunday);
     });
   });
+
+  test('new habits start in Builder; Story is saved when chosen', () async {
+    expect(settings.addHabitStyle, AddHabitStyle.builder);
+    var notified = false;
+    settings.addListener(() => notified = true);
+
+    await settings.setAddHabitStyle(AddHabitStyle.story);
+
+    expect(notified, isTrue);
+    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.story);
+  });
+
+  test('an unknown saved style falls back to Builder', () async {
+    SharedPreferences.setMockInitialValues({'addHabitStyle': 'wizard'});
+    expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.builder);
+  });
 }

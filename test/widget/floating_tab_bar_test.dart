@@ -10,7 +10,7 @@ import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/floating_tab_bar.dart';
-import 'package:atomic_momentum/screens/add_habit_screen.dart';
+import 'package:atomic_momentum/screens/builder_add_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
@@ -81,15 +81,14 @@ void main() {
     await tester.tap(find.byKey(const Key('addHabitOrb')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(AddHabitScreen), findsOneWidget);
+    expect(find.byType(BuilderAddScreen), findsOneWidget);
     expect(barShown(tester), isFalse, reason: 'New Habit covers the bar, so Save is never under it');
-    final save = tester.getRect(find.byKey(const Key('saveHabitButton')));
+    final save = tester.getRect(find.byKey(const Key('builderNext')));
     expect(save.bottom, lessThanOrEqualTo(844));
 
-    // Cancel on iPhone, the close button on Android
-    await Navigator.of(tester.element(find.byType(AddHabitScreen))).maybePop();
+    await Navigator.of(tester.element(find.byType(BuilderAddScreen))).maybePop();
     await tester.pumpAndSettle();
-    expect(find.byType(AddHabitScreen), findsNothing);
+    expect(find.byType(BuilderAddScreen), findsNothing);
     expect(barShown(tester), isTrue);
   });
 
@@ -99,7 +98,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('addHabitOrb')));
     await tester.pumpAndSettle();
-    expect(find.byType(AddHabitScreen), findsOneWidget);
+    expect(find.byType(BuilderAddScreen), findsOneWidget);
   });
 
   testWidgets('tapping the current tab goes back to its first page', (tester) async {

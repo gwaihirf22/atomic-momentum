@@ -28,7 +28,9 @@ import 'package:atomic_momentum/presentation/widgets/color_picker.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
+import 'package:atomic_momentum/screens/builder_add_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
+import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
@@ -137,6 +139,10 @@ void main() {
     'Edit habit (two-minute version)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Categories': () => const CategoriesScreen(),
+    'Builder, step 1': () => const BuilderAddScreen(),
+    'Story, new': () => const StoryHabitScreen(),
+    'Story, editing a long name with a two-minute version': () =>
+        StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
   };
 
   for (final width in [375.0, 390.0]) {
@@ -157,6 +163,30 @@ void main() {
         await tester.tap(find.byKey(Key('calendarDay_${now.year}-${now.month}-$day')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'Calendar past day at $setting');
+      });
+
+      testWidgets('Builder steps 2 and 3 at $setting', (tester) async {
+        await pump(tester, const BuilderAddScreen(), width: width, scale: scale);
+        await tester.enterText(find.byKey(const Key('habitNameField')), 'Drink water every morning');
+        await tester.tap(find.byKey(const Key('builderNext')));
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'Builder step 2 at $setting');
+        await tester.enterText(find.byKey(const Key('habitTargetField')), '8');
+        await tester.enterText(find.byKey(const Key('habitUnitsField')), 'glasses');
+        await tester.tap(find.byKey(const Key('builderNext')));
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'Builder step 3 at $setting');
+      });
+
+      testWidgets('Story sheets at $setting', (tester) async {
+        await pump(tester, const StoryHabitScreen(), width: width, scale: scale);
+        for (final part in ['storyName', 'storyAmount', 'storySchedule', 'storyReminder', 'storyTiny']) {
+          await tester.tap(find.byKey(Key(part)));
+          await tester.pumpAndSettle();
+          expectNothingCutOff(tester, '$part sheet at $setting');
+          Navigator.of(tester.element(find.byKey(const Key('storySheetDone')))).pop();
+          await tester.pumpAndSettle();
+        }
       });
 
       testWidgets('Category editor at $setting', (tester) async {
@@ -198,7 +228,7 @@ void main() {
 
   // Colors don't change sizes, but each theme builds its own widgets' colors
   for (final palette in [AppPalette.sepia, AppPalette.dark]) {
-    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit']) {
+    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit', 'Builder, step 1', 'Story, new']) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);
         expect(AppPalette.of(tester.element(find.byType(Scaffold).first)), palette);

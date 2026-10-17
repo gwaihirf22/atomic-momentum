@@ -88,9 +88,38 @@ Future<bool> confirmAdaptive(
 class AdaptiveOption<T> {
   final T value;
   final String label;
+
+  /// A short line under the label, explaining the choice.
+  final String? subtitle;
   final Key? key;
 
-  const AdaptiveOption(this.value, this.label, {this.key});
+  const AdaptiveOption(this.value, this.label, {this.key, this.subtitle});
+}
+
+/// A choice's label, with its explanation under it when it has one.
+class _OptionLabel extends StatelessWidget {
+  final String label;
+  final String? subtitle;
+
+  const _OptionLabel(this.label, {this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    if (subtitle == null) return Text(label);
+    final base = DefaultTextStyle.of(context).style;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, textAlign: TextAlign.center),
+        const SizedBox(height: 2),
+        Text(
+          subtitle!,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: (base.fontSize ?? 17) * 0.78, color: secondaryLabel(context)),
+        ),
+      ],
+    );
+  }
 }
 
 /// Picks one of a few options: an action sheet on iPhone and Mac, a dialog
@@ -114,7 +143,10 @@ Future<T?> chooseAdaptive<T>(
               key: option.key,
               isDefaultAction: option.value == selected,
               onPressed: () => Navigator.of(context).pop(option.value),
-              child: Text(option.value == selected ? '${option.label}  ✓' : option.label),
+              child: _OptionLabel(
+                option.value == selected ? '${option.label}  ✓' : option.label,
+                subtitle: option.subtitle,
+              ),
             ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -140,7 +172,7 @@ Future<T?> chooseAdaptive<T>(
             onPressed: () => Navigator.of(context).pop(option.value),
             child: Row(
               children: [
-                Expanded(child: Text(option.label)),
+                Expanded(child: _OptionLabel(option.label, subtitle: option.subtitle)),
                 if (option.value == selected) Icon(Icons.check, color: Theme.of(context).colorScheme.primary),
               ],
             ),
