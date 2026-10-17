@@ -4,10 +4,15 @@ import 'dart:math';
 enum DayPart { morning, afternoon, evening, night }
 
 /// The Habits screen's greeting: a line picked at random for the time of
-/// day, encouraging and now and then a little cheeky. The pick is fixed for
-/// that part of the day, so it doesn't change every time the screen redraws.
+/// day, encouraging and now and then a little cheeky. A new one is picked
+/// each time the app is opened (see HomeScreen), never the same line twice
+/// in a row.
 class Greetings {
   const Greetings._();
+
+  /// Source of the picks; tests seed it (test/flutter_test_config.dart) so
+  /// layouts are the same on every run.
+  static Random random = Random();
 
   static DayPart partOf(DateTime time) {
     final hour = time.hour;
@@ -60,12 +65,10 @@ class Greetings {
     ],
   };
 
-  /// The greeting for [now]: random within its part of the day, the same
-  /// all through that part of that day.
-  static String forTime(DateTime now) {
-    final part = partOf(now);
-    final options = lines[part]!;
-    final seed = (now.year * 10000 + now.month * 100 + now.day) * 10 + part.index;
-    return options[Random(seed).nextInt(options.length)];
+  /// A random greeting for [now]'s part of the day, other than [avoid]
+  /// (the one just shown).
+  static String pick(DateTime now, {Random? random, String? avoid}) {
+    final options = lines[partOf(now)]!.where((line) => line != avoid).toList();
+    return options[(random ?? Greetings.random).nextInt(options.length)];
   }
 }

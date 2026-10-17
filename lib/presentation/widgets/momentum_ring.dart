@@ -23,6 +23,8 @@ class MomentumRing extends StatelessWidget {
             ? ', falling'
             : '';
     final label = CupertinoDynamicColor.resolve(CupertinoColors.label, context);
+    // Grows with the text size so the score always fits inside
+    final ringSize = size * math.max(1.0, MediaQuery.textScalerOf(context).scale(1));
 
     return Semantics(
       label: 'Overall momentum ${momentum.rounded}$trend',
@@ -31,8 +33,8 @@ class MomentumRing extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            width: size,
-            height: size,
+            width: ringSize,
+            height: ringSize,
             child: TweenAnimationBuilder<double>(
               tween: Tween(end: momentum.score / 100),
               duration: const Duration(milliseconds: 600),

@@ -35,6 +35,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Timer? _midnightTimer;
 
+  // Picked when the app opens or comes back, so it stays put while in use
+  String? _greeting;
+  DayPart? _greetingPart;
+
+  String _greetingFor(DateTime now) {
+    final part = Greetings.partOf(now);
+    if (_greeting == null || part != _greetingPart) {
+      _greeting = Greetings.pick(now, avoid: _greeting);
+      _greetingPart = part;
+    }
+    return _greeting!;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +77,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The day may have rolled over while the app was in the background
     if (state == AppLifecycleState.resumed) {
+      // Back in the app: a fresh greeting
+      setState(() => _greeting = Greetings.pick(DateTime.now(), avoid: _greeting));
       context.read<HabitProvider>().resetHabitsIfNeeded();
       _scheduleMidnightReset();
     }
@@ -100,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 trailing: _buildAddButton(context),
                 header: LargeTitleHeader(
                   eyebrow: DateFormat.MMMMEEEEd().format(now),
-                  title: Greetings.forTime(now),
+                  title: _greetingFor(now),
                   titleKey: const Key('habitsGreeting'),
                   accessory: momentum == null
                       ? null

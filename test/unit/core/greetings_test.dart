@@ -12,16 +12,24 @@ void main() {
     expect(at(2), DayPart.night);
   });
 
-  test('a greeting suits the time of day and stays put through that part of the day', () {
-    final early = Greetings.forTime(DateTime(2026, 10, 16, 7, 5));
-    expect(Greetings.lines[DayPart.morning], contains(early));
-    expect(Greetings.forTime(DateTime(2026, 10, 16, 11, 59)), early);
-    expect(Greetings.lines[DayPart.evening], contains(Greetings.forTime(DateTime(2026, 10, 16, 19))));
+  test('a greeting suits the time of day', () {
+    for (var i = 0; i < 20; i++) {
+      expect(Greetings.lines[DayPart.morning], contains(Greetings.pick(DateTime(2026, 10, 16, 7, 5))));
+      expect(Greetings.lines[DayPart.evening], contains(Greetings.pick(DateTime(2026, 10, 16, 19))));
+    }
   });
 
-  test('greetings vary from day to day', () {
-    final picks = {for (var d = 1; d <= 30; d++) Greetings.forTime(DateTime(2026, 10, d, 9))};
-    expect(picks.length, greaterThan(3));
+  test('never repeats the line just shown, and varies', () {
+    final evening = DateTime(2026, 10, 16, 19);
+    var last = Greetings.pick(evening);
+    final seen = {last};
+    for (var i = 0; i < 50; i++) {
+      final next = Greetings.pick(evening, avoid: last);
+      expect(next, isNot(last));
+      seen.add(next);
+      last = next;
+    }
+    expect(seen.length, greaterThan(3));
   });
 
   test('every greeting is short enough for the large title', () {

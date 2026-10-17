@@ -100,6 +100,31 @@ class LargeTitleHeader extends StatelessWidget {
 
   const LargeTitleHeader({super.key, this.eyebrow, required this.title, this.accessory, this.titleKey});
 
+  /// Title sizes to try, largest first: a longer title steps down so it fits
+  /// in [maxTitleLines] lines, and wraps further only at the smallest size.
+  static const titleSizes = [32.0, 28.0, 24.0];
+  static const maxTitleLines = 2;
+
+  /// The largest of [titleSizes] at which [title] fits in [maxTitleLines]
+  /// lines of [width] (with the device's text size applied).
+  static double fittingSize(
+    BuildContext context,
+    String title,
+    TextStyle Function(double size) styleAt,
+    double width,
+  ) {
+    for (final size in titleSizes) {
+      final painter = TextPainter(
+        text: TextSpan(text: title, style: styleAt(size)),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: maxTitleLines,
+      )..layout(maxWidth: width);
+      if (!painter.didExceedMaxLines) return size;
+    }
+    return titleSizes.last;
+  }
+
   @override
   Widget build(BuildContext context) {
     final label = CupertinoDynamicColor.resolve(CupertinoColors.label, context);
@@ -124,19 +149,24 @@ class LargeTitleHeader extends StatelessWidget {
                   ),
                 Semantics(
                   header: true,
-                  child: Text(
-                    title,
-                    key: titleKey,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: fontFamily,
-                      fontSize: 32,
-                      height: 1.15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.6,
-                      color: label,
-                    ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      TextStyle styleAt(double size) => TextStyle(
+                            fontFamily: fontFamily,
+                            fontSize: size,
+                            height: 1.15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.6,
+                            color: label,
+                          );
+                      final size = fittingSize(context, title, styleAt, constraints.maxWidth);
+                      return Text(
+                        title,
+                        key: titleKey,
+                        // Wraps if it must: never cut off
+                        style: styleAt(size),
+                      );
+                    },
                   ),
                 ),
               ],

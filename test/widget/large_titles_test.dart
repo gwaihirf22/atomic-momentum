@@ -69,6 +69,22 @@ void main() {
       expect(find.text(DateFormat.MMMMEEEEd().format(now).toUpperCase()), findsOneWidget);
     });
 
+    testWidgets('a new greeting each time the app is opened again', (tester) async {
+      await pump(tester, const HomeScreen());
+      String greeting() => tester.widget<Text>(find.byKey(const Key('habitsGreeting'))).data!;
+      final first = greeting();
+
+      // Same greeting while in use
+      await tester.pumpAndSettle();
+      expect(greeting(), first);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(greeting(), isNot(first));
+      expect(Greetings.lines[Greetings.partOf(DateTime.now())], contains(greeting()));
+    });
+
     testWidgets('shows overall momentum once something is logged', (tester) async {
       final id = await addHabit('Stretch');
       await pump(tester, const HomeScreen());

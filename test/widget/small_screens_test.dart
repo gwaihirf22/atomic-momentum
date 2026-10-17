@@ -5,6 +5,10 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/core/copy/greetings.dart';
+import 'package:atomic_momentum/domain/entities/momentum.dart';
+import 'package:atomic_momentum/presentation/widgets/large_title_scaffold.dart';
+import 'package:atomic_momentum/presentation/widgets/momentum_ring.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
@@ -188,6 +192,57 @@ void main() {
     final row = tester.widget<TableCalendar<Habit>>(find.byType(TableCalendar<Habit>)).daysOfWeekHeight;
     final label = tester.getSize(find.text('Mon').first);
     expect(label.height, lessThanOrEqualTo(row));
+  });
+
+  testWidgets('every greeting fits the Habits header at 375pt and 135% text', (tester) async {
+    tester.view.physicalSize = const Size(375, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.35 * sfWidthAllowance;
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    for (final line in Greetings.lines.values.expand((l) => l)) {
+      await tester.pumpWidget(MaterialApp(
+        theme: IOSTheme.getMaterialLightTheme().copyWith(platform: TargetPlatform.iOS),
+        home: Scaffold(
+          body: LargeTitleHeader(
+            eyebrow: 'WEDNESDAY, SEPTEMBER 30',
+            title: line,
+            accessory: const MomentumRing(momentum: Momentum(score: 100, trend: 5)),
+          ),
+        ),
+      ));
+      expectNothingCutOff(tester, 'greeting "$line"');
+    }
+  });
+
+  testWidgets('a long greeting steps down in size to fit two lines; a short one stays large', (tester) async {
+    tester.view.physicalSize = const Size(375, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    Future<double> sizeOf(String line) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: LargeTitleHeader(
+            title: line,
+            titleKey: const Key('t'),
+            accessory: const MomentumRing(momentum: Momentum(score: 72, trend: 2)),
+          ),
+        ),
+      ));
+      return tester.widget<Text>(find.byKey(const Key('t'))).style!.fontSize!;
+    }
+
+    expect(await sizeOf('Still up?'), LargeTitleHeader.titleSizes.first);
+    final long = await sizeOf('Quiet hours, big wins, and an early night ahead');
+    expect(long, lessThan(LargeTitleHeader.titleSizes.first));
+    // Two lines at most, unless even the smallest size needs more (then it wraps)
+    final lines = tester.getSize(find.byKey(const Key('t'))).height / (long * 1.15);
+    if (long > LargeTitleHeader.titleSizes.last) {
+      expect(lines, lessThanOrEqualTo(LargeTitleHeader.maxTitleLines + 0.1));
+    }
+    expectNothingCutOff(tester, 'long title');
   });
 
   // Accessibility sizes: layouts may reflow, but nothing may break
