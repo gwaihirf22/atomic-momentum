@@ -193,6 +193,17 @@ void main() {
         }
       });
 
+      testWidgets('Undo after holding a ring at $setting', (tester) async {
+        await pump(tester, const HomeScreen(), width: width, scale: scale);
+        final id = habits.habits.firstWhere((h) => h.name.startsWith('Drink water every')).id;
+        await tester.longPress(find.byKey(Key('habitIcon_$id')));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byKey(Key('undoHold_$id')), findsOneWidget);
+        expectNothingCutOff(tester, 'Undo strip at $setting');
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+      });
+
       testWidgets('Category editor at $setting', (tester) async {
         await pump(tester, const CategoriesScreen(), width: width, scale: scale);
         await tester.tap(find.text('Personal growth').first);

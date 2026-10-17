@@ -130,6 +130,24 @@ void main() {
     expect(habit.getProgressForDate(today), 0, reason: 'only that day changes');
   });
 
+  testWidgets("holding a done day's ring clears it, and Undo brings it back", (tester) async {
+    await habitProvider.updateProgressForDate(id, yesterday, 2);
+    await pumpCalendar(tester);
+    await showMonthOf(tester, yesterday);
+    await tester.tap(dayCell(yesterday));
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byKey(Key('dayHabitIcon_$id')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(habitProvider.habits.single.getProgressForDate(yesterday), 0);
+    expect(find.text('Cleared'), findsOneWidget);
+
+    await tester.tap(find.byKey(Key('undoDayHold_$id')));
+    await tester.pumpAndSettle();
+    expect(habitProvider.habits.single.getProgressForDate(yesterday), 2);
+    expect(find.byKey(Key('undoDayHold_$id')), findsNothing);
+  });
+
   testWidgets("future days can be looked at but not logged", (tester) async {
     await pumpCalendar(tester);
     await showMonthOf(tester, tomorrow);

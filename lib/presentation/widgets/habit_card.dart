@@ -9,6 +9,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/services/recent_periods.dart';
 import 'habit_icons.dart';
+import 'hold_undo_strip.dart';
 import 'recent_periods_bar.dart';
 import 'habit_progress_ring.dart';
 import 'habit_stepper.dart';
@@ -50,6 +51,12 @@ class HabitCard extends StatelessWidget {
   /// Briefly tinted in the habit's color, e.g. after tapping its notification.
   final bool highlighted;
 
+  /// Holding the ring: finishes the habit, or clears it when it's done.
+  final VoidCallback? onHold;
+
+  /// A held change that can still be undone: covers the card with Undo.
+  final HoldUndo? holdUndo;
+
   const HabitCard({
     Key? key,
     required this.habit,
@@ -59,10 +66,16 @@ class HabitCard extends StatelessWidget {
     required this.onSetProgress,
     this.onSetTwoMinute,
     this.highlighted = false,
+    this.onHold,
+    this.holdUndo,
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
   bool get _canAdd => habit.progress < habit.target;
+
+  /// Holding a done habit's ring clears its period; one that never resets
+  /// has no period to clear.
+  bool get _canClear => habit.isCompleted && habit.resetFrequency.isPeriodic;
   bool get _canRemove => habit.progress > 0;
 
   String get _progressText =>
@@ -175,7 +188,8 @@ class HabitCard extends StatelessWidget {
           child: Semantics(
             // Swipe actions are hard to reach with VoiceOver; offer them as actions
             customSemanticsActions: {
-              if (_canAdd) const CustomSemanticsAction(label: 'Mark done'): () => onSetProgress(habit.target),
+              if (onHold != null && _canAdd) const CustomSemanticsAction(label: 'Mark done'): onHold!,
+              if (onHold != null && _canClear) const CustomSemanticsAction(label: 'Clear'): onHold!,
               const CustomSemanticsAction(label: 'Edit'): onEdit,
               const CustomSemanticsAction(label: 'Delete'): onDelete,
               if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
@@ -186,7 +200,8 @@ class HabitCard extends StatelessWidget {
               color: highlighted ? palette.tint(habit.color.color, alpha: 0.22) : palette.surface,
               // Fades in and out rather than flashing
               animationDuration: const Duration(milliseconds: 600),
-              child: InkWell(
+              child: Stack(children: [
+                InkWell(
                 onTap: onEdit,
                 child: Padding(
                   // Right and vertical padding live inside the rows, so the
@@ -203,7 +218,8 @@ class HabitCard extends StatelessWidget {
                       dimmed: isRestDay,
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                       onTap: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
-                      onLongPress: _canAdd ? () => onSetProgress(habit.target) : null,
+                      onLongPress: _canAdd || _canClear ? onHold : null,
+                      longPressHint: _canAdd ? 'Finish' : 'Clear',
                     );
                     final details = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,6 +314,9 @@ class HabitCard extends StatelessWidget {
                   }),
                 ),
               ),
+                // Holding the ring changed it: undo for a few seconds
+                HoldUndoOverlay(undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoHold_${habit.id}')),
+              ]),
             ),
           ),
         ),

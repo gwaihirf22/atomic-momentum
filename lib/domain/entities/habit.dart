@@ -193,6 +193,45 @@ class Habit extends Equatable {
     return updated._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
   }
 
+  /// Sets what was logged on several days at once (0 clears a day), then
+  /// checks that no period goes over the target. Clearing a whole period and
+  /// putting it back (undo) both use it.
+  Habit setDays(Map<DateTime, int> amounts) {
+    final now = clock.now();
+    final today = _dateOnly(now);
+    final newHistory = Map<DateTime, int>.from(history);
+    for (final entry in amounts.entries) {
+      final day = _dateOnly(entry.key);
+      if (day.isAfter(today)) throw ArgumentError('Cannot log progress for a future date');
+      if (entry.value < 0) throw ArgumentError('Progress cannot be negative');
+      if (entry.value == 0) {
+        newHistory.remove(day);
+      } else {
+        newHistory[day] = entry.value;
+      }
+    }
+    final updated = copyWith(history: newHistory);
+    for (final day in amounts.keys) {
+      if (updated.progressForPeriodContaining(day) > target) {
+        throw ArgumentError('Total for this period would exceed the target of $target');
+      }
+    }
+    return updated._recalculated(now).copyWith(lastUpdatedDate: now, metadata: metadata.updateModifiedDate());
+  }
+
+  /// What was logged on each day of the period containing [date], from its
+  /// start up to [date]'s period end or today (0 for days with nothing), so
+  /// [setDays] can put it back exactly.
+  Map<DateTime, int> periodDays(DateTime date) {
+    final today = _dateOnly(clock.now());
+    final start = resetFrequency.isPeriodic ? schedule.periodStart(date) : _dateOnly(date);
+    final end = resetFrequency.isPeriodic ? schedule.nextPeriodStart(date) : today.add(const Duration(days: 1));
+    return {
+      for (var day = start; day.isBefore(end) && !day.isAfter(today); day = DateTime(day.year, day.month, day.day + 1))
+        day: history[day] ?? 0,
+    };
+  }
+
   /// Marks (or unmarks) the two-minute version as done in the period
   /// containing [date], which can't be in the future. Unmarking clears every
   /// "2 min" day of that period.

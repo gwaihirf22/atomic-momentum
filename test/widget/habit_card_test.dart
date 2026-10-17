@@ -22,6 +22,7 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
+import 'package:atomic_momentum/presentation/widgets/hold_undo_strip.dart';
 import 'package:atomic_momentum/presentation/widgets/recent_periods_bar.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 
@@ -77,8 +78,11 @@ void main() {
   final now = DateTime.now();
   DateTime daysAgo(int n) => DateTime(now.year, now.month, now.day - n);
 
-  group('holding the ring finishes the habit', () {
-    testWidgets('a long press logs the whole target, with the "done" haptic', (tester) async {
+  group('holding the ring', () {
+    Finder ring() => find.byKey(Key('habitIcon_$waterId'));
+    Finder undo() => find.byKey(Key('undoHold_$waterId'));
+
+    testWidgets('finishes the habit, with a firm haptic and Undo over the card', (tester) async {
       final haptics = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
         if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
@@ -88,29 +92,95 @@ void main() {
       await habitProvider.updateHabitProgress(waterId, 1);
       await pumpHome(tester);
 
-      await tester.longPress(find.byKey(Key('habitIcon_$waterId')));
-      await tester.pumpAndSettle();
+      await tester.longPress(ring());
+      await tester.pump(const Duration(milliseconds: 300));
 
-      final habit = habitProvider.habits.single;
-      expect(habit.progress, 3);
-      expect(habit.isCompleted, isTrue);
-      expect(find.descendant(of: card(), matching: find.textContaining('3/3 glasses')), findsOneWidget);
-      expect(haptics.last, 'HapticFeedbackType.mediumImpact');
+      expect(habitProvider.habits.single.progress, 3);
+      expect(habitProvider.habits.single.isCompleted, isTrue);
+      expect(haptics.last, 'HapticFeedbackType.heavyImpact');
+      expect(undo(), findsOneWidget);
+      expect(find.text('Marked done'), findsOneWidget);
+      await tester.pump(HoldUndo.duration);
+      await tester.pumpAndSettle();
     });
 
-    testWidgets('a finished habit has nothing to hold for', (tester) async {
+    testWidgets('Undo puts back exactly what was there', (tester) async {
+      await habitProvider.updateHabitProgress(waterId, 1);
+      await pumpHome(tester);
+      await tester.longPress(ring());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(undo());
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.single.progress, 1);
+      expect(undo(), findsNothing);
+    });
+
+    testWidgets('after the countdown the strip goes and the change stays', (tester) async {
+      await pumpHome(tester);
+      await tester.longPress(ring());
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(undo(), findsOneWidget);
+
+      await tester.pump(HoldUndo.duration);
+      await tester.pumpAndSettle();
+      expect(undo(), findsNothing);
+      expect(habitProvider.habits.single.isCompleted, isTrue);
+    });
+
+    testWidgets('while Undo shows, tapping the card does not open Edit', (tester) async {
+      await pumpHome(tester);
+      await tester.longPress(ring());
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Marked done'));
+      await tester.pumpAndSettle();
+      expect(find.byType(HabitEditorScreen), findsNothing);
+      await tester.pump(HoldUndo.duration);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('on a finished habit, clears it; Undo brings it back', (tester) async {
       await habitProvider.updateHabitProgress(waterId, 3);
       await pumpHome(tester);
-      await tester.longPress(find.byKey(Key('habitIcon_$waterId')));
+
+      await tester.longPress(ring());
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(habitProvider.habits.single.progress, 0);
+      expect(find.text('Cleared'), findsOneWidget);
+
+      await tester.tap(undo());
       await tester.pumpAndSettle();
       expect(habitProvider.habits.single.progress, 3);
     });
 
-    testWidgets('VoiceOver can finish it too: "Mark done", and holding the ring', (tester) async {
+    testWidgets('clearing a weekly habit empties the whole week, and Undo restores every day', (tester) async {
+      await habitProvider.createHabit(const CreateHabitParams(
+        name: 'Swim',
+        target: 2,
+        color: HabitColor.teal,
+        categoryId: BuiltInCategoryIds.body,
+        resetFrequency: ResetFrequency.weekly,
+      ));
+      final swim = habitProvider.habits.firstWhere((h) => h.name == 'Swim');
+      // The week starts today (its reset day), so log twice today
+      await habitProvider.updateHabitProgress(swim.id, 2);
+      await pumpHome(tester);
+
+      await tester.longPress(find.byKey(Key('habitIcon_${swim.id}')));
+      await tester.pump(const Duration(milliseconds: 300));
+      final cleared = habitProvider.habits.firstWhere((h) => h.id == swim.id);
+      expect(cleared.progressForPeriodContaining(DateTime.now()), 0);
+
+      await tester.tap(find.byKey(Key('undoHold_${swim.id}')));
+      await tester.pumpAndSettle();
+      expect(habitProvider.habits.firstWhere((h) => h.id == swim.id).progress, 2);
+    });
+
+    testWidgets('VoiceOver: "Mark done", then "Clear", and the ring says what holding does', (tester) async {
       final semantics = tester.ensureSemantics();
       await pumpHome(tester);
 
-      expect(tester.getSemantics(find.byKey(Key('habitIcon_$waterId'))),
+      expect(tester.getSemantics(ring()),
           matchesSemantics(
             label: 'Drink Water, Body, 0/3 glasses',
             hint: 'Adds one',
@@ -120,14 +190,25 @@ void main() {
             hasLongPressAction: true,
           ));
 
-      final cardNode = tester.getSemantics(card());
-      final markDone = cardNode.getSemanticsData().customSemanticsActionIds!
-          .map(CustomSemanticsAction.getAction)
-          .firstWhere((action) => action!.label == 'Mark done')!;
-      tester.binding.pipelineOwner.semanticsOwner!
-          .performAction(cardNode.id, SemanticsAction.customAction, CustomSemanticsAction.getIdentifier(markDone));
-      await tester.pumpAndSettle();
+      Future<void> perform(String label) async {
+        final cardNode = tester.getSemantics(card());
+        final action = cardNode.getSemanticsData().customSemanticsActionIds!
+            .map(CustomSemanticsAction.getAction)
+            .firstWhere((action) => action!.label == label)!;
+        tester.binding.pipelineOwner.semanticsOwner!
+            .performAction(cardNode.id, SemanticsAction.customAction, CustomSemanticsAction.getIdentifier(action));
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+
+      await perform('Mark done');
       expect(habitProvider.habits.single.isCompleted, isTrue);
+      await tester.pump(HoldUndo.duration);
+      await tester.pumpAndSettle();
+
+      await perform('Clear');
+      expect(habitProvider.habits.single.progress, 0);
+      await tester.pump(HoldUndo.duration);
+      await tester.pumpAndSettle();
       semantics.dispose();
     });
   });

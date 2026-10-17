@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ import '../presentation/widgets/habit_card.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
+import '../presentation/widgets/hold_undo_strip.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
 
@@ -102,6 +104,56 @@ class _CalendarScreenState extends State<CalendarScreen> {
         SnackBar(content: Text("Couldn't update ${habit.name} for that day. Please try again.")),
       );
     }
+  }
+
+  // Holding a ring: finish the day, or clear its period once done; either
+  // can be undone for a few seconds
+
+  final Map<String, HoldUndo> _holdUndos = {};
+  final Map<String, Timer> _holdTimers = {};
+
+  static String _undoKey(Habit habit, DateTime day) => '${habit.id}@${day.year}-${day.month}-${day.day}';
+
+  Future<void> _holdOnDay(Habit habit, DateTime day) async {
+    final provider = context.read<HabitProvider>();
+    final before = habit.periodDays(day);
+    final finishing = !habit.wasCompletedOnDate(day);
+    final logged = habit.getProgressForDate(day);
+    Haptics.held();
+    final saving = finishing
+        // That day gets whatever the period still needs
+        ? provider.setDays(habit.id, {day: logged + habit.target - habit.progressForPeriodContaining(day)})
+        : provider.setDays(habit.id, {for (final d in before.keys) d: 0});
+    final key = _undoKey(habit, day);
+    _holdTimers[key]?.cancel();
+    setState(() => _holdUndos[key] = HoldUndo(
+          message: finishing ? 'Marked done' : 'Cleared',
+          finished: finishing,
+          onUndo: () {
+            _endUndo(key);
+            Haptics.selection();
+            provider.setDays(habit.id, before);
+          },
+        ));
+    _holdTimers[key] = Timer(HoldUndo.duration, () => _endUndo(key));
+    if (await saving || !mounted) return;
+    _endUndo(key);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Couldn't update ${habit.name} for that day. Please try again.")),
+    );
+  }
+
+  void _endUndo(String key) {
+    _holdTimers.remove(key)?.cancel();
+    if (mounted && _holdUndos.containsKey(key)) setState(() => _holdUndos.remove(key));
+  }
+
+  @override
+  void dispose() {
+    for (final timer in _holdTimers.values) {
+      timer.cancel();
+    }
+    super.dispose();
   }
 
   Future<void> _setTwoMinuteForDay(Habit habit, DateTime day, bool done) async {
@@ -329,6 +381,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             isEditable: isEditable,
             onSet: (amount, periodTotal) => _setLoggedForDay(habit, day, amount, periodTotal: periodTotal),
             onSetTwoMinute: (done) => _setTwoMinuteForDay(habit, day, done),
+            onHold: () => _holdOnDay(habit, day),
+            holdUndo: _holdUndos[_undoKey(habit, day)],
           );
         },
       ),
@@ -417,6 +471,12 @@ class _DayHabitRow extends StatelessWidget {
   /// Marks (true) or unmarks the two-minute version on [day].
   final ValueChanged<bool> onSetTwoMinute;
 
+  /// Holding the ring: finishes [day], or clears its period once done.
+  final VoidCallback onHold;
+
+  /// A held change that can still be undone: covers the row with Undo.
+  final HoldUndo? holdUndo;
+
   const _DayHabitRow({
     required this.habit,
     required this.day,
@@ -424,6 +484,8 @@ class _DayHabitRow extends StatelessWidget {
     required this.isEditable,
     required this.onSet,
     required this.onSetTwoMinute,
+    required this.onHold,
+    required this.holdUndo,
   });
 
   String _subtitle(int loggedThatDay, int periodTotal) {
@@ -450,6 +512,7 @@ class _DayHabitRow extends StatelessWidget {
     final showTwoMinute = isEditable && habit.twoMinute != null && habit.schedule.isPeriodic && !isDone;
     final canAdd = isEditable && periodTotal < habit.target;
     final canRemove = isEditable && loggedThatDay > 0;
+    final canClear = isEditable && isDone && habit.schedule.isPeriodic;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
@@ -458,7 +521,8 @@ class _DayHabitRow extends StatelessWidget {
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(AppStyle.cardRadius),
         clipBehavior: Clip.antiAlias,
-        child: Padding(
+        child: Stack(children: [
+          Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           // Same rule as the habit cards: two rows on narrow phones or large text
           child: LayoutBuilder(builder: (context, constraints) {
@@ -472,8 +536,9 @@ class _DayHabitRow extends StatelessWidget {
               checkKey: const Key('completedBadge'),
               semanticLabel: '${habit.name}, $subtitle',
               onTap: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
-              // Holding finishes the period: that day gets whatever's left
-              onLongPress: canAdd ? () => onSet(loggedThatDay + habit.target - periodTotal, periodTotal) : null,
+              // Holding finishes the period (that day gets whatever's left), or clears it
+              onLongPress: canAdd || canClear ? onHold : null,
+              longPressHint: canAdd ? 'Finish' : 'Clear',
             );
             final details = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -541,6 +606,8 @@ class _DayHabitRow extends StatelessWidget {
             );
           }),
         ),
+          HoldUndoOverlay(undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
+        ]),
       ),
     );
   }

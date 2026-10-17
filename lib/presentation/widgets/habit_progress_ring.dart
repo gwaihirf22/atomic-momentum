@@ -20,8 +20,11 @@ class HabitProgressRing extends StatelessWidget {
   final String semanticLabel;
   final VoidCallback? onTap;
 
-  /// Holding the ring: logs whatever's left, so the habit is done.
+  /// Holding the ring (finishing it, or clearing it once done).
   final VoidCallback? onLongPress;
+
+  /// What holding does, for VoiceOver.
+  final String longPressHint;
   final double size;
 
   /// Key for the check shown when done (tests look for it).
@@ -37,6 +40,7 @@ class HabitProgressRing extends StatelessWidget {
     required this.semanticLabel,
     this.onTap,
     this.onLongPress,
+    this.longPressHint = 'Finish',
     this.size = defaultSize,
     this.checkKey,
   });
@@ -47,7 +51,7 @@ class HabitProgressRing extends StatelessWidget {
       button: onTap != null,
       label: isDone ? '$semanticLabel, done' : semanticLabel,
       hint: onTap != null ? 'Adds one' : null,
-      onLongPressHint: onLongPress != null ? 'Finish' : null,
+      onLongPressHint: onLongPress != null ? longPressHint : null,
       excludeSemantics: true,
       onTap: onTap,
       onLongPress: onLongPress,

@@ -19,6 +19,7 @@ import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
 import '../presentation/widgets/confirm_delete_habit.dart';
 import '../presentation/widgets/habit_card.dart';
+import '../presentation/widgets/hold_undo_strip.dart';
 import 'habit_editor_screen.dart';
 import 'categories_screen.dart';
 import 'package:intl/intl.dart';
@@ -80,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     NotificationService.focusRequests.removeListener(_onFocusRequest);
     _midnightTimer?.cancel();
     _highlightTimer?.cancel();
+    for (final timer in _holdTimers.values) {
+      timer.cancel();
+    }
     super.dispose();
   }
 
@@ -297,6 +301,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onDelete: () => _deleteHabit(habit),
                 onSetProgress: (progress) => _updateHabitProgress(habitProvider, habit, progress),
                 onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
+                onHold: () => _hold(habitProvider, habit),
+                holdUndo: _holdUndos[habit.id],
               ),
           ],
         ),
@@ -342,6 +348,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _highlightTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) setState(() => _highlightedId = null);
     });
+  }
+
+  // ---------------------------------------------- holding a ring
+
+  final Map<String, HoldUndo> _holdUndos = {};
+  final Map<String, Timer> _holdTimers = {};
+
+  /// Holding a habit's ring finishes it, or clears its period once it's
+  /// done. Either can be undone for a few seconds, so a hold by accident
+  /// costs nothing.
+  Future<void> _hold(HabitProvider habitProvider, Habit habit) async {
+    final now = clock.now();
+    final before = habit.periodDays(now);
+    final finishing = !habit.isCompleted;
+    Haptics.held();
+    // The change shows at once (saving carries on behind), and so does Undo
+    final saving = finishing
+        ? habitProvider.updateHabitProgress(habit.id, habit.target)
+        : habitProvider.setDays(habit.id, {for (final day in before.keys) day: 0});
+    _offerUndo(
+      habit.id,
+      HoldUndo(
+        message: finishing ? 'Marked done' : 'Cleared',
+        finished: finishing,
+        onUndo: () {
+          _endUndo(habit.id);
+          Haptics.selection();
+          habitProvider.setDays(habit.id, before);
+        },
+      ),
+    );
+    if (await saving || !mounted) return;
+    _endUndo(habit.id);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Couldn't update ${habit.name}.")));
+  }
+
+  void _offerUndo(String habitId, HoldUndo undo) {
+    _holdTimers[habitId]?.cancel();
+    setState(() => _holdUndos[habitId] = undo);
+    _holdTimers[habitId] = Timer(HoldUndo.duration, () => _endUndo(habitId));
+  }
+
+  void _endUndo(String habitId) {
+    _holdTimers.remove(habitId)?.cancel();
+    if (mounted && _holdUndos.containsKey(habitId)) setState(() => _holdUndos.remove(habitId));
   }
 
   Future<void> _updateHabitProgress(HabitProvider habitProvider, Habit habit, int newProgress) async {

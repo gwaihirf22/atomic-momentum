@@ -167,6 +167,24 @@ class HabitProvider extends ChangeNotifier {
     );
   }
 
+  /// Sets what was logged on several days at once: clearing a period, or
+  /// putting one back (undo). Shows immediately and saves in the background
+  /// like progress.
+  Future<bool> setDays(String habitId, Map<DateTime, int> amounts) {
+    return _applyNow(
+      habitId,
+      (habit) => habit.setDays(amounts),
+      (pending) {
+        // Setting today replaces a waiting progress change (which sets today)
+        final now = clock.now();
+        if (amounts.keys.any((d) => d.year == now.year && d.month == now.month && d.day == now.day)) {
+          pending.progress = null;
+        }
+        pending.days.addAll(amounts);
+      },
+    );
+  }
+
   /// Marks (or unmarks) the two-minute version as done today, or in the
   /// period containing [date]. Shows immediately and saves in the background
   /// like progress; returns false if saving fails.
@@ -218,6 +236,9 @@ class HabitProvider extends ChangeNotifier {
         final pending = _unsaved.remove(habitId)!;
         try {
           Habit? saved;
+          if (pending.days.isNotEmpty) {
+            saved = await _updateHabitUseCase.setDays(habitId, pending.days);
+          }
           if (pending.progress != null) {
             saved = await _updateHabitUseCase.updateProgress(habitId, pending.progress!);
           }
@@ -435,6 +456,8 @@ class HabitProvider extends ChangeNotifier {
 
 /// Changes to one habit waiting to be saved.
 class _PendingChange {
+  /// Days set directly (clearing or restoring a period), applied first.
+  final Map<DateTime, int> days = {};
   int? progress;
 
   /// Day -> done, in the order they were tapped.

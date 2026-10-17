@@ -81,6 +81,21 @@ class UpdateHabitUseCase {
     }
   }
 
+  /// Set what was logged on several days at once (see [Habit.setDays]).
+  Future<Habit> setDays(String habitId, Map<DateTime, int> amounts) async {
+    try {
+      final habit = await _getHabitById(habitId);
+      final updatedHabit = habit.setDays(amounts);
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } on ArgumentError catch (e) {
+      throw ValidationException(e.message.toString());
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to update habit history: $e');
+    }
+  }
+
   /// Set what was logged on a past [date] (or today). Progress and streak
   /// are recomputed, so filling in a missed day restores the streak.
   Future<Habit> updateHistoryForDate(String habitId, DateTime date, int progress) async {
