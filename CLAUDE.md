@@ -62,8 +62,9 @@ xcrun simctl io booted screenshot shot.png   # screenshot from the command line
 # Notification simulator in four time zones (after changing reminders, warnings or dates)
 tool/notification_sim.sh
 
-# Real notifications on a simulator (by hand, on both iPhones)
-./flutter/bin/flutter test integration_test -d "iPhone 17 Pro"
+# Real notifications on a simulator (by hand, on both iPhones); leaves the app installed with its data.
+# Never use `flutter test integration_test`: it uninstalls the app afterwards, deleting its habits.
+tool/device_notification_check.sh "iPhone 17 Pro"
 
 # Generate test coverage
 ./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
@@ -164,7 +165,7 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Imports**: always `package:atomic_momentum/...`, never relative `../lib/` paths (relative imports load libraries twice and make coverage report ~0%)
 - **Time**: app code reads the time with `clock.now()` from package:clock, never `DateTime.now()` (a guard test enforces it), so tests can run the app under `withClock`. Pure logic also takes a `now` parameter
 - **Notification simulator** (`test/simulation/`): six weeks of the real app on a simulated clock, against a simulated iOS notification center (delivers as time passes, applies iOS's 64 limit). Every delivery is checked (nothing missing or extra versus the app's plan, nothing for a finished period, right times, warnings only with a streak at stake, no duplicates). Each scenario's timeline is saved in `test/simulation/goldens/`: review diffs, update with `./flutter/bin/flutter test test/simulation --update-goldens`. After changing reminders, warnings or dates, run `tool/notification_sim.sh` (UTC, New York, London, Lord Howe: clock changes). Add a scenario for each new kind of notification
-- **On-device check**: `./flutter/bin/flutter test integration_test -d <simulator>` schedules real notifications seconds ahead and confirms iOS delivers them; run by hand on both simulators when notification code changes
+- **On-device check**: `tool/device_notification_check.sh "<simulator>"` schedules real notifications seconds ahead and confirms iOS delivers them, then reinstalls the real app; run by hand on both simulators when notification code changes. Not `flutter test integration_test`, which uninstalls the app and its data
 - **Notifications**: tests use fakes from `test/helpers/` (`FakeStreakWarningScheduler`, `FakeReminderScheduler`, `FakeNotificationsPlugin`)
 - **Fonts and randomness**: widget tests draw text in a square placeholder font; tests about fit load real fonts (`real_fonts.dart`). `test/flutter_test_config.dart` seeds the greeting so layouts are the same every run
 - **Async in widget tests**: don't keep a `Future` alive across calls in app code (chained futures break under the test clock); use a flag and a pending value instead (see `ReminderService.syncAll`)

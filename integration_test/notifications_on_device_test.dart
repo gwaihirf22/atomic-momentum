@@ -11,9 +11,10 @@ import 'package:atomic_momentum/domain/services/streak_warning_planner.dart';
 /// real iOS notification center, with times a few seconds ahead.
 ///
 /// Run by hand on each simulator (Momentum must be allowed to notify):
-///   ./flutter/bin/flutter test integration_test -d "iPhone 17 Pro"
-/// It replaces the app's pending reminders; the app reschedules them the
-/// next time it opens.
+///   tool/device_notification_check.sh "iPhone 17 Pro"
+/// Not `flutter test integration_test`: that uninstalls the app afterwards,
+/// deleting its habits. The script puts the real app back and opens it,
+/// which reschedules the reminders this check clears.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
