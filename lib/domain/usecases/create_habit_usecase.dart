@@ -53,58 +53,6 @@ class CreateHabitUseCase {
     }
   }
 
-  /// Create multiple habits at once
-  Future<List<Habit>> createMultiple(List<CreateHabitParams> paramsList) async {
-    try {
-      final habits = <Habit>[];
-
-      // Validate all parameters first
-      for (int i = 0; i < paramsList.length; i++) {
-        _validateParams(paramsList[i]);
-      }
-
-      // Check for duplicate names within the list
-      final names = paramsList.map((params) => params.name.toLowerCase().trim()).toList();
-      final duplicates = names.where((name) => names.where((n) => n == name).length > 1).toSet();
-      if (duplicates.isNotEmpty) {
-        throw ValidationException('Duplicate habit names found: ${duplicates.join(', ')}');
-      }
-
-      // Create habits
-      for (final params in paramsList) {
-        final habit = Habit.create(
-          name: params.name.trim(),
-          target: params.target,
-          units: params.units,
-          color: params.color,
-          categoryId: params.categoryId,
-          resetFrequency: params.resetFrequency ?? ResetFrequency.daily,
-          reminder: params.reminder,
-          icon: params.icon,
-          resetAnchor: params.resetAnchor,
-          resetInterval: params.resetInterval,
-          scheduledWeekdays: params.scheduledWeekdays,
-          twoMinute: params.twoMinute,
-        );
-        habits.add(habit);
-      }
-
-      // Validate all habits
-      final validationResult = HabitValidator.validateHabits(habits);
-      if (!validationResult.isValid) {
-        throw ValidationException('Invalid habits: ${validationResult.errors.join(', ')}');
-      }
-
-      // Save all habits
-      await _repository.saveHabits(habits);
-
-      return habits;
-    } catch (e) {
-      if (e is ValidationException || e is StorageException) rethrow;
-      throw StorageException('Failed to create habits: $e');
-    }
-  }
-
   void _validateParams(CreateHabitParams params) {
     if (params.name.trim().isEmpty) {
       throw ValidationException('Habit name cannot be empty');

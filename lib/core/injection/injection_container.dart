@@ -106,22 +106,3 @@ Future<void> resetDependencies() async {
 
 /// Get dependency
 T get<T extends Object>() => sl.get<T>();
-
-/// Check if dependency is registered
-bool isRegistered<T extends Object>() => sl.isRegistered<T>();
-
-/// Register singleton for testing
-void registerSingleton<T extends Object>(T instance) {
-  if (sl.isRegistered<T>()) {
-    sl.unregister<T>();
-  }
-  sl.registerSingleton<T>(instance);
-}
-
-/// Register factory for testing
-void registerFactory<T extends Object>(T Function() factory) {
-  if (sl.isRegistered<T>()) {
-    sl.unregister<T>();
-  }
-  sl.registerFactory<T>(factory);
-}

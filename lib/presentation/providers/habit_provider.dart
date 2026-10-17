@@ -8,7 +8,6 @@ import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
-import '../../core/services/notification_service.dart';
 import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../core/logging/log.dart';
@@ -84,20 +83,7 @@ class HabitProvider extends ChangeNotifier {
 
   bool get isLoading => _state == HabitProviderState.loading;
   bool get hasError => _state == HabitProviderState.error;
-  bool get hasHabits => _habits.isNotEmpty;
   bool get isPerformingOperation => _isPerformingOperation;
-
-  List<Habit> getCompletedHabits() {
-    return _habits.where((habit) => habit.isCompleted).toList();
-  }
-
-  List<Habit> getIncompleteHabits() {
-    return _habits.where((habit) => !habit.isCompleted).toList();
-  }
-
-  List<Habit> getHabitsWithActiveStreaks() {
-    return _habits.where((habit) => habit.streak.current > 0).toList();
-  }
 
   Habit? getHabitById(String id) {
     try {
@@ -106,12 +92,6 @@ class HabitProvider extends ChangeNotifier {
       return null;
     }
   }
-
-  // Statistics
-  int get totalHabits => _habits.length;
-  int get completedHabitsCount => getCompletedHabits().length;
-  double get completionPercentage => 
-    totalHabits > 0 ? (completedHabitsCount / totalHabits) * 100 : 0.0;
 
   // Actions
   Future<void> loadHabits() async {
@@ -271,40 +251,6 @@ class HabitProvider extends ChangeNotifier {
   }
 
 
-  Future<bool> incrementHabitProgress(String habitId, [int amount = 1]) async {
-    try {
-      _setOperationInProgress(true);
-      
-      final updatedHabit = await _updateHabitUseCase.incrementProgress(habitId, amount);
-      _updateHabitInList(updatedHabit);
-      
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
-
-  Future<bool> decrementHabitProgress(String habitId, [int amount = 1]) async {
-    try {
-      _setOperationInProgress(true);
-      
-      final updatedHabit = await _updateHabitUseCase.decrementProgress(habitId, amount);
-      _updateHabitInList(updatedHabit);
-      
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
-
   Future<bool> updateHabitDetails(String habitId, UpdateHabitParams params) async {
     try {
       _setOperationInProgress(true);
@@ -323,46 +269,11 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> resetHabitProgress(String habitId) async {
-    try {
-      _setOperationInProgress(true);
-      
-      final updatedHabit = await _updateHabitUseCase.resetProgress(habitId);
-      _updateHabitInList(updatedHabit);
-      
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
-
-  Future<bool> markHabitCompleted(String habitId) async {
-    try {
-      _setOperationInProgress(true);
-      
-      final updatedHabit = await _updateHabitUseCase.markCompleted(habitId);
-      _updateHabitInList(updatedHabit);
-      
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
-
   Future<bool> deleteHabit(String habitId) async {
     try {
       _setOperationInProgress(true);
       
-      // Cancel notifications for this habit before deleting
-      await NotificationService.cancelHabitReminder(habitId);
+      // Its streak warnings go now; its reminders go with the resync below
       await _streakWarnings?.cancel(habitId);
       
       await _deleteHabitUseCase(habitId);
@@ -520,10 +431,6 @@ class HabitProvider extends ChangeNotifier {
     return added;
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
 
 /// Changes to one habit waiting to be saved.

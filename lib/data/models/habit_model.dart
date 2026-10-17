@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/reset_frequency.dart';
@@ -208,28 +207,6 @@ class HabitModel extends Habit {
     return json;
   }
 
-  /// Create from legacy JSON format (for migration)
-  factory HabitModel.fromLegacyJson(Map<String, dynamic> json) {
-    // Handle old web app format
-    if (json.containsKey('lastUpdatedDate') && json['lastUpdatedDate'] is! String) {
-      // Convert legacy date format if needed
-      json['lastUpdatedDate'] = clock.now().toIso8601String();
-    }
-
-    // Add missing fields with defaults
-    json.putIfAbsent('resetFrequency', () => 'daily');
-    json.putIfAbsent('history', () => <String, dynamic>{});
-    json.putIfAbsent('streak', () => StreakData.empty().toJson());
-    json.putIfAbsent('metadata', () => HabitMetadata.create().toJson());
-
-    // Convert color if it's just a hex string
-    if (json['color'] is String) {
-      json['color'] = HabitColor.fromHex(json['color'] as String).toJson();
-    }
-
-    return HabitModel.fromJson(json);
-  }
-
   /// Validate model integrity
   bool isValid() {
     try {
@@ -253,48 +230,4 @@ class HabitModelException implements Exception {
   
   @override
   String toString() => 'HabitModelException: $message';
-}
-
-/// Utility class for batch operations on HabitModels
-class HabitModelUtils {
-  /// Convert list of domain habits to models
-  static List<HabitModel> fromDomainList(List<Habit> habits) {
-    return habits.map((habit) => HabitModel.fromDomain(habit)).toList();
-  }
-
-  /// Convert list of models to domain habits
-  static List<Habit> toDomainList(List<HabitModel> models) {
-    return models.map((model) => model.toDomain()).toList();
-  }
-
-  /// Validate a list of habit models
-  static List<HabitModel> validateList(List<HabitModel> models) {
-    return models.where((model) => model.isValid()).toList();
-  }
-
-  /// Serialize list to JSON string
-  static String serializeList(List<HabitModel> models) {
-    final data = {
-      'habits': models.map((model) => model.toJson()).toList(),
-      'version': '2.0.0',
-      'exportedAt': clock.now().toIso8601String(),
-      'count': models.length,
-    };
-    
-    return jsonEncode(data);
-  }
-
-  /// Deserialize list from JSON string
-  static List<HabitModel> deserializeList(String jsonString) {
-    try {
-      final data = jsonDecode(jsonString) as Map<String, dynamic>;
-      final habitsList = data['habits'] as List<dynamic>;
-      
-      return habitsList
-          .map((habitJson) => HabitModel.fromJson(habitJson as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      throw HabitModelException('Failed to deserialize habits list: $e');
-    }
-  }
 }

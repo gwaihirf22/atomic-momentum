@@ -34,25 +34,3 @@ class ValidationException extends AppException {
   @override
   String toString() => 'ValidationException: $message${code != null ? ' (Code: $code)' : ''}';
 }
-
-class NetworkException extends AppException {
-  const NetworkException(
-    super.message, {
-    super.code,
-    super.originalError,
-  });
-
-  @override
-  String toString() => 'NetworkException: $message${code != null ? ' (Code: $code)' : ''}';
-}
-
-class DataMigrationException extends AppException {
-  const DataMigrationException(
-    super.message, {
-    super.code,
-    super.originalError,
-  });
-
-  @override
-  String toString() => 'DataMigrationException: $message${code != null ? ' (Code: $code)' : ''}';
-}

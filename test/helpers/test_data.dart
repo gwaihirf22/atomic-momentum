@@ -61,37 +61,6 @@ class TestData {
     ));
   }
 
-  static Habit get waterHabit => createTestHabit(
-    id: 'water_habit',
-    name: 'Drink Water',
-    progress: 6,
-    target: 8,
-    color: HabitColor.blue,
-    categoryId: BuiltInCategoryIds.body,
-  );
-
-  static Habit get exerciseHabit => createTestHabit(
-    id: 'exercise_habit',
-    name: 'Exercise',
-    progress: 1,
-    target: 1,
-    color: HabitColor.orange,
-    categoryId: BuiltInCategoryIds.body,
-  );
-
-  static Habit get readingHabit => createTestHabit(
-    id: 'reading_habit',
-    name: 'Read',
-    progress: 30,
-    target: 30,
-    color: HabitColor.green,
-    categoryId: BuiltInCategoryIds.mind,
-    reminder: ReminderSettings.daily(
-      time: const TimeOfDay(hour: 20, minute: 0),
-      customMessage: 'Time to read!',
-    ),
-  );
-
   static StreakData get sampleStreak => StreakData(
     current: 5,
     longest: 12,
@@ -105,30 +74,9 @@ class TestData {
     ],
   );
 
-  static Map<DateTime, int> get sampleHistory => {
-    testDate: 8,
-    yesterday: 6,
-    testDate.subtract(const Duration(days: 2)): 4,
-    testDate.subtract(const Duration(days: 3)): 7,
-    testDate.subtract(const Duration(days: 4)): 8,
-  };
-
   static ReminderSettings get morningReminder => ReminderSettings.daily(
     time: const TimeOfDay(hour: 8, minute: 0),
     customMessage: 'Good morning! Time for your habit.',
-  );
-
-  static ReminderSettings get weekdayReminder => ReminderSettings.weekdays(
-    time: const TimeOfDay(hour: 17, minute: 30),
-    customMessage: 'Weekday reminder!',
-  );
-
-  static HabitMetadata get sampleMetadata => HabitMetadata(
-    createdDate: testDate.subtract(const Duration(days: 30)),
-    lastModifiedDate: testDate,
-    version: 2,
-    icon: 'water_drop',
-    customFields: {'notes': 'Test habit for water tracking'},
   );
 
   // JSON test data
@@ -174,25 +122,5 @@ class TestData {
       'icon': 'test_icon',
       'customFields': {},
     },
-  };
-
-  // Invalid data for testing error cases
-  static Map<String, dynamic> get invalidHabitJsonData => {
-    'id': '', // Invalid empty ID
-    'name': '', // Invalid empty name
-    'progress': -1, // Invalid negative progress
-    'target': 0, // Invalid zero target
-    'color': {
-      'value': 'invalid', // Invalid color value
-      'hex': 'not_a_color',
-      'name': '',
-    },
-    'category': 'invalid_category',
-    'lastUpdatedDate': 'invalid_date',
-    'resetFrequency': 'invalid_frequency',
-    'history': 'not_a_map',
-    'streak': 'not_an_object',
-    'reminder': 'not_an_object',
-    'metadata': 'not_an_object',
   };
 }

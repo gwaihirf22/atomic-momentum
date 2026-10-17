@@ -8,8 +8,8 @@ import 'package:clock/clock.dart' as system_clock show clock;
 /// Delivers habit reminders. Separated from [ReminderService] so tests can
 /// substitute a fake for the platform notification plugin.
 abstract class ReminderScheduler {
-  /// Cancels every reminder scheduled earlier, including the weekly
-  /// repeating ones older versions set for [habitIds].
+  /// Cancels every reminder scheduled earlier ([habitIds] are the habits
+  /// being resynced).
   Future<void> cancelAll(Iterable<String> habitIds);
 
   Future<void> schedule(PlannedReminder reminder);
@@ -18,16 +18,8 @@ abstract class ReminderScheduler {
 class LocalNotificationReminderScheduler implements ReminderScheduler {
   LocalNotificationReminderScheduler();
 
-  // Older versions' repeating reminders only need clearing once per launch
-  final _legacyCleared = <String>{};
-
   @override
-  Future<void> cancelAll(Iterable<String> habitIds) async {
-    await NotificationService.cancelPendingReminders();
-    for (final id in habitIds) {
-      if (_legacyCleared.add(id)) await NotificationService.cancelHabitReminder(id);
-    }
-  }
+  Future<void> cancelAll(Iterable<String> habitIds) => NotificationService.cancelPendingReminders();
 
   @override
   Future<void> schedule(PlannedReminder reminder) {

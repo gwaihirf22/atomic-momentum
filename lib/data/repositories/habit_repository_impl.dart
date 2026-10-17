@@ -4,7 +4,6 @@ import '../datasources/local_habit_datasource.dart';
 import '../models/habit_model.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../core/validation/habit_validator.dart';
-import 'package:clock/clock.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
   final LocalHabitDataSource _localDataSource;
@@ -42,10 +41,6 @@ class HabitRepositoryImpl implements HabitRepository {
         orElse: () => null,
       );
       
-      if (foundHabit != null) {
-      } else {
-      }
-      
       return foundHabit;
     } catch (e) {
       throw StorageException('Failed to get habit by ID: $e');
@@ -72,198 +67,12 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
-  Future<void> saveHabits(List<Habit> habits) async {
-    try {
-      // Validate all habits before saving
-      final validationResult = HabitValidator.validateHabits(habits);
-      if (!validationResult.isValid) {
-        throw ValidationException('Invalid habits data: ${validationResult.errors.join(', ')}');
-      }
-
-      final habitModels = habits.map((habit) => HabitModel.fromDomain(habit)).toList();
-      await _localDataSource.saveHabits(habitModels);
-    } catch (e) {
-      if (e is ValidationException) rethrow;
-      throw StorageException('Failed to save habits: $e');
-    }
-  }
-
-  @override
   Future<void> deleteHabit(String id) async {
     try {
-      final exists = await habitExists(id);
-      if (!exists) {
-        throw StorageException('Habit with ID $id does not exist');
-      }
-
       await _localDataSource.deleteHabit(id);
     } catch (e) {
       if (e is StorageException) rethrow;
       throw StorageException('Failed to delete habit: $e');
-    }
-  }
-
-  @override
-  Future<void> deleteHabits(List<String> ids) async {
-    try {
-      if (ids.isEmpty) return;
-
-      // Verify all habits exist before deleting
-      for (final id in ids) {
-        final exists = await habitExists(id);
-        if (!exists) {
-          throw StorageException('Habit with ID $id does not exist');
-        }
-      }
-
-      await _localDataSource.deleteHabits(ids);
-    } catch (e) {
-      if (e is StorageException) rethrow;
-      throw StorageException('Failed to delete habits: $e');
-    }
-  }
-
-  @override
-  Future<void> updateHabitProgress(String id, int progress) async {
-    try {
-      final habit = await getHabitById(id);
-      if (habit == null) {
-        throw StorageException('Habit with ID $id not found');
-      }
-
-      final updatedHabit = habit.updateProgress(progress);
-      await saveHabit(updatedHabit);
-    } catch (e) {
-      if (e is StorageException || e is ValidationException) rethrow;
-      throw StorageException('Failed to update habit progress: $e');
-    }
-  }
-
-  @override
-  Future<Map<DateTime, int>> getHabitHistory(String id) async {
-    try {
-      final habit = await getHabitById(id);
-      if (habit == null) {
-        throw StorageException('Habit with ID $id not found');
-      }
-
-      return habit.history;
-    } catch (e) {
-      if (e is StorageException) rethrow;
-      throw StorageException('Failed to get habit history: $e');
-    }
-  }
-
-  @override
-  Future<void> saveHabitHistory(String id, DateTime date, int progress) async {
-    try {
-      final habit = await getHabitById(id);
-      if (habit == null) {
-        throw StorageException('Habit with ID $id not found');
-      }
-
-      final updatedHistory = Map<DateTime, int>.from(habit.history);
-      final targetDate = DateTime(date.year, date.month, date.day);
-      updatedHistory[targetDate] = progress;
-
-      final updatedHabit = habit.copyWith(
-        history: updatedHistory,
-        lastUpdatedDate: clock.now(),
-        metadata: habit.metadata.updateModifiedDate(),
-      );
-
-      await saveHabit(updatedHabit);
-    } catch (e) {
-      if (e is StorageException || e is ValidationException) rethrow;
-      throw StorageException('Failed to save habit history: $e');
-    }
-  }
-
-  @override
-  Future<void> clearAllHabits() async {
-    try {
-      await _localDataSource.clearAllHabits();
-    } catch (e) {
-      throw StorageException('Failed to clear all habits: $e');
-    }
-  }
-
-  @override
-  Future<int> getHabitCount() async {
-    try {
-      final habits = await getHabits();
-      return habits.length;
-    } catch (e) {
-      throw StorageException('Failed to get habit count: $e');
-    }
-  }
-
-  @override
-  Future<bool> habitExists(String id) async {
-    try {
-      return await _localDataSource.habitExists(id);
-    } catch (e) {
-      throw StorageException('Failed to check habit existence: $e');
-    }
-  }
-
-  @override
-  Future<List<Habit>> getHabitsNeedingReset() async {
-    try {
-      final habits = await getHabits();
-      final now = clock.now();
-      
-      return habits.where((habit) => habit.shouldReset(now)).toList();
-    } catch (e) {
-      throw StorageException('Failed to get habits needing reset: $e');
-    }
-  }
-
-  @override
-  Future<List<Habit>> getHabitsWithReminders() async {
-    try {
-      final habits = await getHabits();
-      return habits.where((habit) => habit.hasReminder).toList();
-    } catch (e) {
-      throw StorageException('Failed to get habits with reminders: $e');
-    }
-  }
-
-  @override
-  Future<String> backupHabits() async {
-    try {
-      return await _localDataSource.backupData();
-    } catch (e) {
-      throw StorageException('Failed to backup habits: $e');
-    }
-  }
-
-  @override
-  Future<void> restoreHabits(String jsonData) async {
-    try {
-      await _localDataSource.restoreData(jsonData);
-    } catch (e) {
-      throw StorageException('Failed to restore habits: $e');
-    }
-  }
-
-  // Additional utility methods for enhanced functionality
-
-  Future<List<Habit>> getCompletedHabitsForDate(DateTime date) async {
-    try {
-      final habits = await getHabits();
-      return habits.where((habit) => habit.wasCompletedOnDate(date)).toList();
-    } catch (e) {
-      throw StorageException('Failed to get completed habits for date: $e');
-    }
-  }
-
-  Future<List<Habit>> getActiveStreakHabits() async {
-    try {
-      final habits = await getHabits();
-      return habits.where((habit) => habit.streak.current > 0).toList();
-    } catch (e) {
-      throw StorageException('Failed to get active streak habits: $e');
     }
   }
 }

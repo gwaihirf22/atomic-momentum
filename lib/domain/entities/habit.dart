@@ -111,6 +111,7 @@ class Habit extends Equatable {
   
   double get progressPercentage => target > 0 ? (progress / target).clamp(0.0, 1.0) : 0.0;
   
+
   bool get hasReminder => reminder != null && reminder!.enabled;
 
   DateTime get resetAnchor => resetAnchorDate ?? metadata.createdDate;
@@ -163,14 +164,6 @@ class Habit extends Equatable {
           lastUpdatedDate: now,
           metadata: metadata.updateModifiedDate(),
         );
-  }
-
-  Habit incrementProgress([int amount = 1]) {
-    return updateProgress((progress + amount).clamp(0, target));
-  }
-
-  Habit decrementProgress([int amount = 1]) {
-    return updateProgress((progress - amount).clamp(0, target));
   }
 
   /// Records what was logged on a past (or today's) [date] and recomputes

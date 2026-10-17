@@ -237,23 +237,6 @@ class NotificationService {
     }
   }
 
-  /// Cancels the weekly repeating reminders earlier versions scheduled.
-  static Future<void> cancelHabitReminder(String habitId) async {
-    if (!_initialized) return;
-
-    try {
-      // Cancel all possible day combinations for this habit
-      for (int dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
-        final notificationId = _getNotificationId(habitId, dayOfWeek);
-        await _notificationsPlugin.cancel(notificationId);
-      }
-
-      debugPrint('NotificationService: Cancelled reminders for habit $habitId');
-    } catch (e) {
-      debugPrint('NotificationService: Failed to cancel reminders for $habitId: $e');
-    }
-  }
-
   // Schedule a one-off warning that a habit's streak is at stake
   static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning) async {
     if (!_initialized) return;
@@ -397,35 +380,6 @@ class NotificationService {
     );
   }
 
-  // Generate unique notification ID for habit + day combination
-  static int _getNotificationId(String habitId, int dayOfWeek) {
-    // Use hash of habit ID + day to create unique but consistent ID
-    final combined = '$habitId-$dayOfWeek';
-    return combined.hashCode.abs() % 2147483647; // Keep within int32 range
-  }
-
-  /// Next [dayOfWeek] at [timeOfDay] after [now], in [now]'s timezone.
-  @visibleForTesting
-  static tz.TZDateTime nextOccurrence({
-    required int dayOfWeek,
-    required TimeOfDay timeOfDay,
-    required tz.TZDateTime now,
-  }) {
-    final daysUntilTarget = (dayOfWeek - now.weekday) % 7;
-    final todayAtTime = tz.TZDateTime(
-        now.location, now.year, now.month, now.day, timeOfDay.hour, timeOfDay.minute);
-    // If it's today but the time has passed, use next week
-    final daysAhead = daysUntilTarget == 0 && todayAtTime.isBefore(now) ? 7 : daysUntilTarget;
-
-    // Build from calendar fields rather than adding 24h blocks, which would
-    // shift the wall-clock time across a daylight-saving change
-    final scheduledDate = tz.TZDateTime(now.location, now.year, now.month,
-        now.day + daysAhead, timeOfDay.hour, timeOfDay.minute);
-
-    return scheduledDate;
-  }
-
-
   // Get all pending notifications (for debugging)
   static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     if (!_initialized) return [];
@@ -435,18 +389,6 @@ class NotificationService {
     } catch (e) {
       debugPrint('NotificationService: Failed to get pending notifications: $e');
       return [];
-    }
-  }
-
-  // Cancel all notifications
-  static Future<void> cancelAllNotifications() async {
-    if (!_initialized) return;
-
-    try {
-      await _notificationsPlugin.cancelAll();
-      debugPrint('NotificationService: Cancelled all notifications');
-    } catch (e) {
-      debugPrint('NotificationService: Failed to cancel all notifications: $e');
     }
   }
 }

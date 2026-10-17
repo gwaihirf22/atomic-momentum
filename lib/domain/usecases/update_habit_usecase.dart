@@ -38,30 +38,6 @@ class UpdateHabitUseCase {
     }
   }
 
-  /// Increment habit progress
-  Future<Habit> incrementProgress(String habitId, [int amount = 1]) async {
-    try {
-      final habit = await _getHabitById(habitId);
-      final newProgress = (habit.progress + amount).clamp(0, habit.target);
-      return await updateProgress(habitId, newProgress);
-    } catch (e) {
-      if (e is ValidationException || e is StorageException) rethrow;
-      throw StorageException('Failed to increment habit progress: $e');
-    }
-  }
-
-  /// Decrement habit progress
-  Future<Habit> decrementProgress(String habitId, [int amount = 1]) async {
-    try {
-      final habit = await _getHabitById(habitId);
-      final newProgress = (habit.progress - amount).clamp(0, habit.target);
-      return await updateProgress(habitId, newProgress);
-    } catch (e) {
-      if (e is ValidationException || e is StorageException) rethrow;
-      throw StorageException('Failed to decrement habit progress: $e');
-    }
-  }
-
   /// Update habit details
   Future<Habit> updateDetails(String habitId, UpdateHabitParams params) async {
     try {
@@ -102,20 +78,6 @@ class UpdateHabitUseCase {
     } catch (e) {
       if (e is ValidationException || e is StorageException) rethrow;
       throw StorageException('Failed to update habit details: $e');
-    }
-  }
-
-  /// Reset habit progress
-  Future<Habit> resetProgress(String habitId) async {
-    try {
-      final habit = await _getHabitById(habitId);
-      final resetHabit = habit.resetProgress();
-      
-      await _repository.saveHabit(resetHabit);
-      return resetHabit;
-    } catch (e) {
-      if (e is StorageException) rethrow;
-      throw StorageException('Failed to reset habit progress: $e');
     }
   }
 
@@ -176,17 +138,6 @@ class UpdateHabitUseCase {
       return resetHabits;
     } catch (e) {
       throw StorageException('Failed to reset habits: $e');
-    }
-  }
-
-  /// Mark habit as completed for today
-  Future<Habit> markCompleted(String habitId) async {
-    try {
-      final habit = await _getHabitById(habitId);
-      return await updateProgress(habitId, habit.target);
-    } catch (e) {
-      if (e is ValidationException || e is StorageException) rethrow;
-      throw StorageException('Failed to mark habit as completed: $e');
     }
   }
 

@@ -60,40 +60,10 @@ class ReminderSettings extends Equatable {
     );
   }
 
-  factory ReminderSettings.weekdays({
-    required TimeOfDay time,
-    String? customMessage,
-  }) {
-    return ReminderSettings(
-      time: time,
-      enabled: true,
-      daysOfWeek: const [1, 2, 3, 4, 5], // Monday-Friday
-      customMessage: customMessage,
-    );
-  }
-
-  bool shouldRemindToday(DateTime date) {
-    if (!enabled) return false;
-    
-    final weekday = date.weekday; // 1-7, Monday-Sunday
-    return daysOfWeek.contains(weekday);
-  }
-
   String get timeString {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
-  }
-
-  String get daysString {
-    if (daysOfWeek.length == 7) return 'Daily';
-    if (daysOfWeek.length == 5 && 
-        daysOfWeek.every((day) => day >= 1 && day <= 5)) {
-      return 'Weekdays';
-    }
-    
-    const dayNames = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return daysOfWeek.map((day) => dayNames[day]).join(', ');
   }
 
   ReminderSettings copyWith({

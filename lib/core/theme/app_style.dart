@@ -11,8 +11,6 @@ class AppStyle {
   /// Steppers, pills and other controls inside a card.
   static const double controlRadius = 12;
 
-  static const double smallRadius = 8;
-
   /// Side margin for screen content.
   static const double screenPadding = 16;
 

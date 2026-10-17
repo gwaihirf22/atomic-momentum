@@ -145,34 +145,6 @@ void main() {
         expect(() => habit.updateProgress(15), throwsArgumentError);
       });
 
-      test('incrementProgress should increase progress correctly', () {
-        final habit = TestData.createTestHabit(progress: 5, target: 10);
-        
-        final updated1 = habit.incrementProgress();
-        expect(updated1.progress, 6);
-
-        final updated2 = habit.incrementProgress(3);
-        expect(updated2.progress, 8);
-
-        // Should clamp to target
-        final updated3 = habit.incrementProgress(10);
-        expect(updated3.progress, 10);
-      });
-
-      test('decrementProgress should decrease progress correctly', () {
-        final habit = TestData.createTestHabit(progress: 8, target: 10);
-        
-        final updated1 = habit.decrementProgress();
-        expect(updated1.progress, 7);
-
-        final updated2 = habit.decrementProgress(3);
-        expect(updated2.progress, 5);
-
-        // Should clamp to 0
-        final updated3 = habit.decrementProgress(10);
-        expect(updated3.progress, 0);
-      });
-
       test('resetProgress should set progress to 0', () {
         final habit = TestData.createTestHabit(progress: 8);
         final reset = habit.resetProgress();
