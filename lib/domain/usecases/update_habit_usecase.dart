@@ -1,3 +1,4 @@
+import 'dart:isolate';
 import '../entities/habit_notify.dart';
 import '../entities/health_link.dart';
 import '../entities/habit.dart';
@@ -183,24 +184,39 @@ class UpdateHabitUseCase {
     try {
       final at = now ?? clock.now();
       final habits = await _repository.getHabits();
-      final all = <Habit>[];
-      final changed = <Habit>[];
-
-      for (final habit in habits) {
-        final refreshedHabit = habit.refresh(at);
-        all.add(refreshedHabit);
-        if (habit.shouldReset(at) ||
-            refreshedHabit.progress != habit.progress ||
-            refreshedHabit.streak != habit.streak) {
-          changed.add(refreshedHabit);
-        }
-      }
-      await _repository.saveHabits(changed);
-
-      return (all: all, changed: changed);
+      // A year or more of history is worked out off the main isolate, so the
+      // app keeps drawing while it launches
+      final days = habits.fold(0, (sum, h) => sum + h.history.length);
+      final result = days >= refreshInBackgroundFrom ? await Isolate.run(() => _refresh(habits, at)) : _refresh(habits, at);
+      await _repository.saveHabits(result.changed);
+      return result;
     } catch (e) {
       throw StorageException('Failed to reset habits: $e');
     }
+  }
+
+  /// History days across habits from which [refreshAll] runs in the background.
+  static const refreshInBackgroundFrom = 1500;
+
+  /// Each habit brought up to date for [at], with what's read straight after
+  /// a launch (streak, momentum, period totals) already worked out.
+  static ({List<Habit> all, List<Habit> changed}) _refresh(List<Habit> habits, DateTime at) {
+    final all = <Habit>[];
+    final changed = <Habit>[];
+    for (final habit in habits) {
+      final refreshedHabit = habit.refresh(at);
+      refreshedHabit
+        ..momentum
+        ..progressForPeriodContaining(at)
+        ..trackedFrom;
+      all.add(refreshedHabit);
+      if (habit.shouldReset(at) ||
+          refreshedHabit.progress != habit.progress ||
+          refreshedHabit.streak != habit.streak) {
+        changed.add(refreshedHabit);
+      }
+    }
+    return (all: all, changed: changed);
   }
 
   Future<Habit> _getHabitById(String habitId) async {

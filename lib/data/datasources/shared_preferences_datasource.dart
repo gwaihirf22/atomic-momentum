@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'local_habit_datasource.dart';
 import '../models/habit_model.dart';
@@ -29,7 +30,12 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
   /// How many times the stored list has been decoded (for tests).
   int decodes = 0;
 
-  List<HabitModel> _load() {
+  /// Stored JSON at least this long (a year or so of history) is decoded
+  /// off the main isolate, so the app keeps drawing (the launch intro) while
+  /// it loads. Smaller stays where it is (quicker, and simpler in tests).
+  static const isolateThreshold = 64 * 1024;
+
+  Future<List<HabitModel>> _load() async {
     final stored = _prefs.getString(_habitsKey);
     if (stored == null || stored.isEmpty) {
       _readFrom = stored;
@@ -39,6 +45,14 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
     }
     if (identical(stored, _readFrom) || stored == _readFrom) return _models;
     decodes++;
+    final decoded = stored.length >= isolateThreshold ? await Isolate.run(() => _decode(stored)) : _decode(stored);
+    _readFrom = stored;
+    _models = decoded.models;
+    _json = decoded.json;
+    return _models;
+  }
+
+  static ({List<HabitModel> models, Map<String, Map<String, dynamic>> json}) _decode(String stored) {
     final list = jsonDecode(stored) as List<dynamic>;
     final models = <HabitModel>[];
     final json = <String, Map<String, dynamic>>{};
@@ -48,17 +62,14 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
       models.add(model);
       json[model.id] = map;
     }
-    _readFrom = stored;
-    _models = models;
-    _json = json;
-    return models;
+    return (models: models, json: json);
   }
 
   @override
   Future<List<HabitModel>> getHabits() async {
     try {
       // Validity depends on the clock (nothing dated well in the future)
-      return _load().where((habit) => habit.isValid()).toList();
+      return (await _load()).where((habit) => habit.isValid()).toList();
     } catch (e) {
       throw StorageException('Failed to load habits: $e');
     }
@@ -71,7 +82,7 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
   Future<void> saveHabits(List<HabitModel> changed) async {
     if (changed.isEmpty) return;
     try {
-      final models = List.of(_load().where((habit) => habit.isValid()));
+      final models = List.of((await _load()).where((habit) => habit.isValid()));
       final json = Map.of(_json);
       for (final habit in changed) {
         final index = models.indexWhere((h) => h.id == habit.id);

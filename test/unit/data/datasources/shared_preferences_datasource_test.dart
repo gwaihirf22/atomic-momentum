@@ -8,6 +8,7 @@ import 'package:atomic_momentum/data/models/habit_model.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 
 /// Habits are decoded once and written in one go: a year of history isn't
 /// decoded and re-encoded on every tap.
@@ -66,6 +67,22 @@ void main() {
     await source.deleteHabit(run.id);
     expect(storedNames(), ['Read']);
     expect(() => source.deleteHabit('nope'), throwsA(isA<StorageException>()));
+  });
+
+  test('a large history is decoded in the background and comes back whole', () async {
+    final big = {for (var i = 0; i < 3000; i++) DateTime(2020, 1, 1 + i): 1};
+    await prefs.setString(
+      SharedPreferencesDataSource.habitsKey,
+      jsonEncode([habit('Read', history: big).toCompactJson()]),
+    );
+    expect(prefs.getString(SharedPreferencesDataSource.habitsKey)!.length,
+        greaterThan(SharedPreferencesDataSource.isolateThreshold));
+    final loaded = (await source.getHabits()).single;
+    expect(loaded.history, hasLength(3000));
+    // Constants and enums made in another isolate are still the same ones
+    expect(identical(loaded.resetFrequency, ResetFrequency.daily), isTrue);
+    expect(loaded.color, HabitColor.blue);
+    expect(loaded.schedule.periodStart(DateTime(2026, 1, 1, 12)), DateTime(2026, 1, 1));
   });
 
   test('corrupt data is a storage error, not a crash', () async {
