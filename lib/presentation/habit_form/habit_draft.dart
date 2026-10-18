@@ -28,7 +28,7 @@ import '../providers/settings_provider.dart';
 class HabitDraft extends ChangeNotifier {
   static const allDays = [1, 2, 3, 4, 5, 6, 7];
   static const maxInterval = 30;
-  static const maxTarget = 1000;
+  static const maxTarget = Habit.maxTarget;
   static const maxUnitsLength = 20;
   static const maxMessageLength = 100;
 

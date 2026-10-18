@@ -1,5 +1,7 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import '../../core/injection/injection_container.dart';
 import '../../core/services/health_source.dart';
 import '../../core/theme/app_palette.dart';
@@ -35,6 +37,39 @@ class _HealthSectionState extends State<HealthSection> {
 
   HabitDraft get _draft => widget.draft;
 
+  /// What Health holds today per metric, for the preview (read once each).
+  final _today = <HealthMetric, Future<int?>>{};
+
+  @override
+  void initState() {
+    super.initState();
+    // A link that came with the habit (a quick pick, or editing): ask for
+    // access, or drop a new habit's link where this phone can't fill it in
+    _availability.then((availability) {
+      final link = _draft.health;
+      if (!mounted || link == null) return;
+      final usable = availability == HealthAvailability.available && link.metric.availableOn(isAndroid: _source.isAndroid);
+      if (usable) {
+        _source.requestAccess(read: {link.metric}, write: {if (link.logsToHealth) link.metric});
+      } else if (!_draft.isEditing) {
+        _draft.setHealth(null);
+      }
+    });
+  }
+
+  bool _available(HealthMetric metric) => metric.availableOn(isAndroid: _source.isAndroid);
+
+  HealthMetric? get _suggestion =>
+      HealthMetric.suggestFor(_draft.name.text, _draft.units.text, available: _available);
+
+  /// Today's amount of [metric] in Health, or null if it couldn't be read.
+  Future<int?> _todayIn(HealthMetric metric) => _today.putIfAbsent(metric, () async {
+        final now = clock.now();
+        final day = DateTime(now.year, now.month, now.day);
+        final values = await _source.dailyValues(metric, day, day);
+        return values[day];
+      });
+
   Future<void> _turnOn(HealthAvailability availability) async {
     if (availability == HealthAvailability.needsHealthConnect) {
       final install = await confirmAdaptive(
@@ -47,14 +82,16 @@ class _HealthSectionState extends State<HealthSection> {
       if (install) await _source.installHealthConnect();
       return;
     }
-    final metric = HealthMetric.values.firstWhere((m) => m.availableOn(isAndroid: _source.isAndroid));
-    await _choose(metric);
+    await _choose(_suggestion ?? HealthMetric.values.firstWhere(_available));
   }
 
   Future<void> _choose(HealthMetric metric, {bool? logToHealth}) async {
     _draft.setHealth(metric, logToHealth: logToHealth);
     final link = _draft.health!;
     await _source.requestAccess(read: {metric}, write: {if (link.logsToHealth) metric});
+    // Read again now that access may have been given
+    _today.remove(metric);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -88,6 +125,11 @@ class _HealthSectionState extends State<HealthSection> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (widget.showHeader) FormSectionHeader(name, trailing: const InfoButton(topic: InfoTopic.health)),
+        if (link == null && _suggestion != null && availability == HealthAvailability.available)
+          _Suggestion(
+            text: '${_suggestion!.label} from $name?',
+            onLink: () => _choose(_suggestion!),
+          ),
         SwitchListTile.adaptive(
           key: const Key('healthSwitch'),
           contentPadding: EdgeInsets.zero,
@@ -122,6 +164,22 @@ class _HealthSectionState extends State<HealthSection> {
             key: const Key('healthNote'),
             style: TextStyle(fontSize: 13, color: palette.textSecondary),
           ),
+          if (!unavailable)
+            FutureBuilder<int?>(
+              key: ValueKey(link.metric),
+              future: _todayIn(link.metric),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) return const SizedBox(height: 22);
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    _preview(link.metric, snapshot.data, name),
+                    key: const Key('healthPreview'),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: palette.text),
+                  ),
+                );
+              },
+            ),
           if (link.metric.writable)
             SwitchListTile.adaptive(
               key: const Key('healthLogSwitch'),
@@ -138,6 +196,16 @@ class _HealthSectionState extends State<HealthSection> {
     );
   }
 
+  /// "Apple Health shows 4,512 steps today", so a wrong link is plain to see.
+  static String _preview(HealthMetric metric, int? value, String name) {
+    final when = metric == HealthMetric.sleepHours ? 'last night' : 'today';
+    if (value == null || value == 0) {
+      return '$name has no ${metric.label.toLowerCase()} for $when yet. If that\'s wrong, check permissions.';
+    }
+    final amount = NumberFormat.decimalPattern().format(value);
+    return '$name shows $amount ${metric.unit} $when.';
+  }
+
   static String _note(HealthMetric metric) => switch (metric) {
         HealthMetric.steps => 'Counts your steps each day.',
         HealthMetric.exerciseMinutes => 'Counts exercise minutes each day.',
@@ -146,4 +214,35 @@ class _HealthSectionState extends State<HealthSection> {
         HealthMetric.mindfulMinutes => 'Counts mindful minutes each day.',
         HealthMetric.water => 'Counts water in 250 ml glasses.',
       };
+}
+
+/// "Exercise from Apple Health?" with Link: a suggestion from the habit's
+/// name, never linked without a tap.
+class _Suggestion extends StatelessWidget {
+  final String text;
+  final VoidCallback onLink;
+
+  const _Suggestion({required this.text, required this.onLink});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Container(
+      key: const Key('healthSuggestion'),
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+      decoration: BoxDecoration(color: palette.goldTint, borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        Icon(CupertinoIcons.heart_fill, size: 16, color: palette.danger),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text, style: TextStyle(fontSize: 14, color: palette.text))),
+        TextButton(
+          key: const Key('healthSuggestionLink'),
+          onPressed: onLink,
+          style: TextButton.styleFrom(foregroundColor: palette.accent, minimumSize: const Size(44, 44)),
+          child: const Text('Link'),
+        ),
+      ]),
+    );
+  }
 }

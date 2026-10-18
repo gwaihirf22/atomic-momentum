@@ -218,9 +218,8 @@ class UpdateHabitUseCase {
       if (params.target! < 0) {
         throw ValidationException('Target must be greater than 0');
       }
-      // The habit's own link decides its cap (checked by the form); this is the outer bound
-      if (params.target! > Habit.maxStepsTarget) {
-        throw ValidationException('Target cannot exceed ${Habit.maxStepsTarget}');
+      if (params.target! > Habit.maxTarget) {
+        throw ValidationException('Target cannot exceed ${Habit.maxTarget}');
       }
     }
   }

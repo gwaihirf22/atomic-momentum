@@ -1,6 +1,7 @@
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/habit_goal.dart';
+import '../../domain/entities/health_link.dart';
 import '../../domain/entities/reset_frequency.dart';
 import 'habit_draft.dart';
 
@@ -21,6 +22,9 @@ class QuickPick {
   final HabitGoal goal;
   final ResetFrequency frequency;
 
+  /// Comes filled in from Health (where the phone has it).
+  final HealthMetric? health;
+
   const QuickPick({
     required this.name,
     required this.target,
@@ -32,6 +36,7 @@ class QuickPick {
     this.tinyMinimum,
     this.goal = HabitGoal.build,
     this.frequency = ResetFrequency.daily,
+    this.health,
   });
 
   static const all = [
@@ -44,6 +49,7 @@ class QuickPick {
       categoryId: BuiltInCategoryIds.body,
       tiny: 'Fill one glass',
       tinyMinimum: 1,
+      health: HealthMetric.water,
     ),
     QuickPick(
       name: 'Read',
@@ -57,21 +63,43 @@ class QuickPick {
     ),
     QuickPick(
       name: 'Walk',
-      target: 20,
-      units: 'minutes',
+      target: 8000,
+      units: 'steps',
       icon: 'walk',
       color: HabitColor.green,
       categoryId: BuiltInCategoryIds.body,
       tiny: 'Put on your shoes',
+      health: HealthMetric.steps,
+    ),
+    QuickPick(
+      name: 'Run',
+      target: 30,
+      units: 'minutes',
+      icon: 'run',
+      color: HabitColor.orange,
+      categoryId: BuiltInCategoryIds.body,
+      tiny: 'Run to the corner',
+      health: HealthMetric.exerciseMinutes,
     ),
     QuickPick(
       name: 'Meditate',
-      target: 1,
-      units: 'session',
+      target: 10,
+      units: 'minutes',
       icon: 'meditation',
       color: HabitColor.purple,
       categoryId: BuiltInCategoryIds.spirit,
       tiny: 'Take three slow breaths',
+      health: HealthMetric.mindfulMinutes,
+    ),
+    QuickPick(
+      name: 'Sleep',
+      target: 7,
+      units: 'hours',
+      icon: 'sleep',
+      color: HabitColor.indigo,
+      categoryId: BuiltInCategoryIds.body,
+      tiny: 'In bed by ten',
+      health: HealthMetric.sleepHours,
     ),
     QuickPick(
       name: 'Stretch',
@@ -168,6 +196,10 @@ class QuickPick {
       draft.interval = 1;
       draft.scheduleDays = List.of(HabitDraft.allDays);
     });
+    // Linked here; the Health section asks for access, or unlinks where
+    // the phone doesn't have it
+    draft.setHealth(health);
+    if (health != null) draft.target.text = '$target';
   }
 
   /// Whether [draft] is (still) this pick, judged by its name.

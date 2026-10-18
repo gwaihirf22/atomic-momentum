@@ -75,11 +75,10 @@ class Habit extends Equatable {
   static const maxDayNoteLength = 200;
   static const maxQuotes = 10;
 
-  /// The largest target a habit can have: 1000, or 100,000 for steps.
-  static const maxTarget = 1000;
-  static const maxStepsTarget = 100000;
-  static int maxTargetFor(HealthLink? health) =>
-      health?.metric == HealthMetric.steps ? maxStepsTarget : maxTarget;
+  /// The largest target a habit can have (20,000 steps is a real goal; +
+  /// and − step by the target's size, see StepSize).
+  static const maxTarget = 100000;
+  static int maxTargetFor(HealthLink? health) => maxTarget;
 
   /// A period's total may go past the target (typing "10" for 8 glasses),
   /// up to this many times it, which still catches a mistyped extra zero.

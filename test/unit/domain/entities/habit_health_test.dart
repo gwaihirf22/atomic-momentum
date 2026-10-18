@@ -32,16 +32,28 @@ void main() {
     expect(habit.updateDetails(removeHealth: true).health, isNull);
   });
 
-  test('only writable metrics log back; steps allow a 100,000 target', () {
+  test('only writable metrics log back; any habit allows a 100,000 target', () {
     expect(link.logsToHealth, isTrue);
     expect(link.copyWith(metric: HealthMetric.steps).logsToHealth, isFalse);
     expect(Habit.maxTargetFor(link.copyWith(metric: HealthMetric.steps)), 100000);
-    expect(Habit.maxTargetFor(link), 1000);
-    expect(Habit.maxTargetFor(null), 1000);
+    expect(Habit.maxTargetFor(null), 100000);
   });
 
   test('which metrics Health Connect has', () {
     expect(HealthMetric.mindfulMinutes.availableOn(isAndroid: true), isFalse);
     expect(HealthMetric.values.every((m) => m.availableOn(isAndroid: false)), isTrue);
+  });
+
+  test('a habit\'s name suggests what to link it to', () {
+    expect(HealthMetric.suggestFor('Run', ''), HealthMetric.exerciseMinutes);
+    expect(HealthMetric.suggestFor('Morning walk', 'minutes'), HealthMetric.steps);
+    expect(HealthMetric.suggestFor('Gym', ''), HealthMetric.exerciseMinutes);
+    expect(HealthMetric.suggestFor('Workout', 'workouts'), HealthMetric.workouts);
+    expect(HealthMetric.suggestFor('Workout', 'minutes'), HealthMetric.exerciseMinutes);
+    expect(HealthMetric.suggestFor('Sleep 8 hours', ''), HealthMetric.sleepHours);
+    expect(HealthMetric.suggestFor('Meditate', ''), HealthMetric.mindfulMinutes);
+    expect(HealthMetric.suggestFor('Drink water', 'glasses'), HealthMetric.water);
+    expect(HealthMetric.suggestFor('Read', 'pages'), isNull);
+    expect(HealthMetric.suggestFor('Meditate', '', available: (m) => m.android), isNull, reason: 'not on Android');
   });
 }

@@ -43,6 +43,31 @@ enum HealthMetric {
   bool availableOn({required bool isAndroid}) => !isAndroid || android;
 
   static HealthMetric? fromName(Object? name) => values.where((m) => m.name == name).firstOrNull;
+
+  static const _hints = {
+    steps: ['walk', 'step', 'stroll', 'hike'],
+    exerciseMinutes: ['run', 'jog', 'gym', 'exercise', 'yoga', 'swim', 'cycl', 'bike', 'cardio', 'train', 'lift', 'pilates'],
+    workouts: ['workout'],
+    sleepHours: ['sleep', 'bed early', 'bedtime'],
+    mindfulMinutes: ['meditat', 'mindful', 'breath'],
+    water: ['water', 'hydrat'],
+  };
+
+  /// What a habit called [name] (counting in [units]) is most likely
+  /// about, for suggesting a link; null if nothing fits. [available]
+  /// limits it to what this phone has.
+  static HealthMetric? suggestFor(String name, String units, {bool Function(HealthMetric)? available}) {
+    final text = '${name.toLowerCase()} ${units.toLowerCase()}';
+    // "workout" wins over the "out"-less hints; units decide between minutes and counts
+    for (final metric in [workouts, steps, exerciseMinutes, sleepHours, mindfulMinutes, water]) {
+      if (available != null && !available(metric)) continue;
+      if (_hints[metric]!.any(text.contains)) {
+        if (metric == workouts && text.contains('minute')) return exerciseMinutes;
+        return metric;
+      }
+    }
+    return null;
+  }
 }
 
 /// A habit filled in from Health: which [metric], whether logging it also

@@ -1,3 +1,5 @@
+import 'package:atomic_momentum/domain/entities/health_link.dart';
+import '../helpers/fake_health_source.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -71,6 +73,36 @@ void main() {
     await next(tester);
     expect(find.text('Please enter a target number'), findsOneWidget);
     expect(stepTitle(tester), 'How often?');
+  });
+
+  testWidgets('a Health quick pick comes linked, and asks for access', (tester) async {
+    await openBuilder(tester);
+    final fake = FakeHealthSource.install();
+    fake.values[HealthMetric.steps] = {DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day): 4512};
+    await tester.tap(find.byKey(const Key('quickPick_Walk')));
+    await tester.pumpAndSettle();
+    await next(tester);
+    expect(fake.accessRequests.any((asked) => asked.contains(HealthMetric.steps)), isTrue);
+    await tester.ensureVisible(find.byKey(const Key('healthPreview')));
+    expect(find.text('Apple Health shows 4,512 steps today.'), findsOneWidget);
+    await next(tester);
+    await tester.tap(find.byKey(const Key('saveHabitButton')));
+    await tester.pumpAndSettle();
+    final walk = appHabits(tester).habits.single;
+    expect(walk.target, 8000);
+    expect(walk.health?.metric, HealthMetric.steps);
+  });
+
+  testWidgets('without Health on the phone, a Health quick pick is just a habit', (tester) async {
+    await openBuilder(tester);
+    await tester.tap(find.byKey(const Key('quickPick_Walk')));
+    await tester.pumpAndSettle();
+    await next(tester);
+    await next(tester);
+    await tester.tap(find.byKey(const Key('saveHabitButton')));
+    await tester.pumpAndSettle();
+    expect(appHabits(tester).habits.single.health, isNull);
+    expect(appHabits(tester).habits.single.target, 8000);
   });
 
   testWidgets('a quick pick fills every step, and finishing saves it', (tester) async {

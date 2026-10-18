@@ -14,6 +14,12 @@
 
 - **Writing.** Water and mindful minutes can also log back. Each + writes the amount added to Health. A − takes back what the app wrote that day, newest first. If what's being removed came from Health itself (another app, or the Watch), the app says "That came from Apple Health. Change it there." and Health's number comes back.
 
+## Choosing the right link
+- **Suggestions.** The editor suggests a metric from the habit's name: "Run", "Gym" or "Yoga" suggest Exercise, "Walk" suggests Steps, and so on. Nothing is linked without a tap.
+- **Live preview.** Once a metric is chosen, the editor shows what Health holds today ("Apple Health shows 4,512 steps today"), or that it has nothing yet. A wrong link is visible before saving.
+- **Quick picks come linked:** Walk (8,000 steps), Run (30 min exercise), Meditate (10 mindful minutes, iPhone), Sleep (7 hours) and Drink water (8 glasses). Where the phone can't fill them in, they're plain habits.
+- **Targets** go to 100,000 for every habit; + and − step by the target's size.
+
 ## Rules
 - **The higher number wins.** For each day, the app keeps the higher of what was logged and what Health says. Health never lowers a day, and taps still count on days Health missed.
 - **Window.** Each sync looks at the last 7 days, never before the day the habit was linked and never before it started counting. Values are clamped so no period goes past what it can hold (10 × the target).
@@ -50,6 +56,5 @@
 
 ## Later
 - Accounts and sync between devices (Pro). History stays the source of truth, and the per-day "higher wins" rule merges cleanly. This phone's own state (last sync, write log, permissions) stays local. Change timestamps per day will be needed first.
-- Quick picks that come linked (Walk 8,000 steps, Sleep 7 hours).
 - Background delivery (filling in without opening the app), and a badge on habit cards.
 - **From the other session's year simulation:** raising a target re-scores all past days. Health-linked targets can be raised too, so the same question applies.

@@ -216,4 +216,43 @@ void main() {
       expect(health.logged, isEmpty);
     });
   });
+
+  group('choosing the right link', () {
+    testWidgets('a habit called Run suggests Exercise, and the preview shows today\'s minutes', (tester) async {
+      health.values[HealthMetric.exerciseMinutes] = {today: 34};
+      await pump(tester, const AddHabitScreen());
+      await tester.enterText(find.byKey(const Key('habitNameField')), 'Run');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('healthSuggestion')));
+      expect(find.text('Exercise from Apple Health?'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('healthSuggestionLink')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('healthSuggestion')), findsNothing);
+      expect(find.text('Apple Health shows 34 minutes today.'), findsOneWidget);
+
+      // A wrong link reads as nothing, and says so
+      await tester.tap(find.byKey(const Key('healthMetric_workouts')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('has no workouts for today yet'), findsOneWidget);
+    });
+
+    testWidgets('a habit not about health suggests nothing', (tester) async {
+      await pump(tester, const AddHabitScreen());
+      await tester.enterText(find.byKey(const Key('habitNameField')), 'Read');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('healthSuggestion')), findsNothing);
+    });
+
+    testWidgets('a target of 20,000 is fine without Health', (tester) async {
+      health.available = HealthAvailability.unsupported;
+      await pump(tester, const AddHabitScreen());
+      await tester.enterText(find.byKey(const Key('habitNameField')), 'Steps');
+      await tester.enterText(find.byKey(const Key('habitTargetField')), '20000');
+      await tester.ensureVisible(find.byKey(const Key('saveHabitButton')));
+      await tester.tap(find.byKey(const Key('saveHabitButton')));
+      await tester.pumpAndSettle();
+      expect(habits.habits.single.target, 20000);
+      expect(habits.habits.single.health, isNull);
+    });
+  });
 }
