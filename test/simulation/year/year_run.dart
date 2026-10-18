@@ -228,7 +228,8 @@ class YearRun {
 
   static MomentumLevel _level(double score) {
     final s = score.round();
-    if (s >= 90) return MomentumLevel.unstoppable;
+    if (s >= 90) return MomentumLevel.atomic;
+    if (s >= 80) return MomentumLevel.unstoppable;
     if (s >= 70) return MomentumLevel.strong;
     if (s >= 40) return MomentumLevel.rolling;
     return MomentumLevel.building;

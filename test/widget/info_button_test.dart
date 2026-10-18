@@ -100,7 +100,8 @@ void main() {
     expect(find.textContaining('Momentum · Building'), findsOneWidget);
     await tap(tester, find.byKey(const Key('info_momentum_tile')));
     expect(sheet(InfoTopic.momentum), findsOneWidget);
-    expect(find.textContaining('Unstoppable · 90+'), findsOneWidget);
+    expect(find.textContaining('Unstoppable · 80–89'), findsOneWidget);
+    expect(find.textContaining('Atomic · 90+'), findsOneWidget);
     await close(tester, InfoTopic.momentum);
   });
 

@@ -40,7 +40,8 @@ enum MomentumLevel {
   building('Building', 0),
   rolling('Rolling', 40),
   strong('Strong', 70),
-  unstoppable('Unstoppable', 90);
+  unstoppable('Unstoppable', 80),
+  atomic('Atomic', 90);
 
   final String label;
 

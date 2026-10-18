@@ -202,7 +202,7 @@ class _Example extends StatelessWidget {
   }
 }
 
-/// The four momentum levels as a bar, with [score] marked when given.
+/// The five momentum levels as a bar, with [score] marked when given.
 class _Levels extends StatelessWidget {
   final double? score;
 
@@ -212,7 +212,7 @@ class _Levels extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     const levels = MomentumLevel.values;
-    const shades = [0.3, 0.5, 0.75, 1.0];
+    const shades = [0.25, 0.4, 0.6, 0.8, 1.0];
     Color shade(int i) => palette.tint(palette.gauge, alpha: shades[i]);
     int to(int i) => i + 1 < levels.length ? levels[i + 1].from : 101;
     final current = score == null ? null : MomentumLevel.of(score!);
