@@ -27,12 +27,18 @@ enum PeriodMark {
 class RecentPeriod {
   /// The local midnight the period began.
   final DateTime start;
+
+  /// The local midnight the next period begins.
+  final DateTime end;
   final PeriodMark mark;
 
   /// How much was done, 0 to 1 (a two-minute day counts half).
   final double fraction;
 
-  const RecentPeriod(this.start, this.mark, this.fraction);
+  const RecentPeriod(this.start, this.end, this.mark, this.fraction);
+
+  /// A single day (not every few days, a week or a month).
+  bool get isOneDay => end == DateTime(start.year, start.month, start.day + 1);
 
   @override
   String toString() => 'RecentPeriod($start, $mark, $fraction)';
@@ -41,31 +47,36 @@ class RecentPeriod {
 /// A habit's last [count] periods, oldest first, ending with the one under
 /// way at [now]: days for daily habits (rest days included), weeks or months
 /// for longer ones. Empty for habits that never reset.
-List<RecentPeriod> recentPeriods(Habit habit, DateTime now, {int count = 7}) {
+List<RecentPeriod> recentPeriods(Habit habit, DateTime now, {int count = 7}) =>
+    periodsBack(habit, now, (starts) => starts.length < count);
+
+/// A habit's periods back from the one under way at [now] for as long as
+/// [more] says (given the starts so far, newest first), oldest first.
+List<RecentPeriod> periodsBack(Habit habit, DateTime now, bool Function(List<DateTime> starts) more) {
   final schedule = habit.schedule;
   if (!schedule.isPeriodic) return const [];
 
-  var start = schedule.periodStart(now);
-  final starts = [start];
-  while (starts.length < count) {
-    start = schedule.periodStart(start.subtract(const Duration(hours: 12)));
-    starts.insert(0, start);
+  // Newest first while walking back (one date sum a period), then turned round
+  final starts = [schedule.periodStart(now)];
+  while (more(starts)) {
+    starts.add(schedule.periodStart(starts.last.subtract(const Duration(hours: 12))));
   }
-
   final tracked = habit.trackedFrom;
-  final current = starts.last;
-  return [
-    for (final start in starts) _markFor(habit, start, isCurrent: start == current, tracked: tracked),
-  ];
+  final periods = <RecentPeriod>[];
+  var end = schedule.nextPeriodStart(starts.first);
+  for (var i = 0; i < starts.length; i++) {
+    periods.add(_markFor(habit, starts[i], end, isCurrent: i == 0, tracked: tracked));
+    end = starts[i];
+  }
+  return periods.reversed.toList();
 }
 
-RecentPeriod _markFor(Habit habit, DateTime start, {required bool isCurrent, required DateTime tracked}) {
-  final schedule = habit.schedule;
-  final fraction = habit.fractionDoneOn(start);
-  if (!schedule.nextPeriodStart(start).isAfter(tracked)) return RecentPeriod(start, PeriodMark.untracked, 0);
-  if (!habit.isDueOn(start)) return RecentPeriod(start, PeriodMark.rest, fraction);
-  if (habit.wasCompletedOnDate(start)) return RecentPeriod(start, PeriodMark.done, 1);
-  if (habit.isTwoMinuteOn(start)) return RecentPeriod(start, PeriodMark.twoMinute, fraction);
-  if (isCurrent) return RecentPeriod(start, PeriodMark.current, fraction);
-  return RecentPeriod(start, fraction > 0 ? PeriodMark.partial : PeriodMark.missed, fraction);
+RecentPeriod _markFor(Habit habit, DateTime start, DateTime end, {required bool isCurrent, required DateTime tracked}) {
+  if (!end.isAfter(tracked)) return RecentPeriod(start, end, PeriodMark.untracked, 0);
+  final outcome = habit.periodOutcome(start, end);
+  if (!habit.isDueOn(start)) return RecentPeriod(start, end, PeriodMark.rest, outcome.fraction);
+  if (outcome.completed) return RecentPeriod(start, end, PeriodMark.done, 1);
+  if (outcome.twoMinute) return RecentPeriod(start, end, PeriodMark.twoMinute, outcome.fraction);
+  if (isCurrent) return RecentPeriod(start, end, PeriodMark.current, outcome.fraction);
+  return RecentPeriod(start, end, outcome.fraction > 0 ? PeriodMark.partial : PeriodMark.missed, outcome.fraction);
 }

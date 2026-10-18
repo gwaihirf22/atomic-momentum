@@ -736,6 +736,23 @@ class Habit extends Equatable {
     return ((target - progressForPeriodContaining(date)) / target).clamp(0.0, 1.0);
   }
 
+  /// How the period from [start] to [end] went, read from what's already
+  /// worked out (no date sums): as [wasCompletedOnDate], [isTwoMinuteOn] and
+  /// [fractionDoneOn] say, for statistics over many periods.
+  ({bool completed, bool twoMinute, double fraction}) periodOutcome(DateTime start, DateTime end) {
+    final total = _periodTotals[start] ?? 0;
+    if (isBreak) {
+      final completed = end.isAfter(_momentumStart) && total <= target;
+      return (completed: completed, twoMinute: false, fraction: completed ? 1.0 : 0.0);
+    }
+    final completed = total >= target;
+    final minimum = twoMinute?.minimum;
+    final tiny = !completed && (_twoMinutePeriods.contains(start) || (minimum != null && minimum > 0 && total >= minimum));
+    if (target <= 0) return (completed: completed, twoMinute: tiny, fraction: 0.0);
+    final fraction = (total / target).clamp(0.0, 1.0);
+    return (completed: completed, twoMinute: tiny, fraction: fraction < TwoMinuteLog.credit && tiny ? TwoMinuteLog.credit : fraction);
+  }
+
   /// Completed, or kept with the two-minute version: either keeps a streak.
   bool wasKeptOnDate(DateTime date) => wasCompletedOnDate(date) || isTwoMinuteOn(date);
 

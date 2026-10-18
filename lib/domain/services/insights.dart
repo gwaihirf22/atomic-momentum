@@ -121,7 +121,7 @@ class Insights {
     for (final habit in habits) {
       for (final period in periods(habit, now)) {
         if (period.mark == PeriodMark.untracked || period.mark == PeriodMark.rest) continue;
-        if (_isOneDay(habit, period.start)) {
+        if (period.isOneDay) {
           add(period.start, period);
         } else if (period.mark == PeriodMark.done || period.mark == PeriodMark.twoMinute) {
           final day = keptOn(habit, period);
@@ -170,8 +170,9 @@ class Insights {
       var streak = 0;
       PeriodMark? previous;
       var streakBeforeMiss = 0;
+      final rangeStart = habit.schedule.periodStart(first);
       for (final period in habitPeriods) {
-        final inRange = !period.start.isBefore(habit.schedule.periodStart(first));
+        final inRange = !period.start.isBefore(rangeStart);
         final mark = period.mark;
         if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
           final missedBefore = previous == PeriodMark.missed || previous == PeriodMark.partial;
@@ -194,11 +195,12 @@ class Insights {
   /// The kept share on each weekday, for habits done day by day, over days
   /// that ended between [from] and [now].
   static WeekdayPattern weekdays(List<Habit> habits, {required DateTime from, required DateTime now}) {
+    final first = _date(from);
     final kept = List<int>.filled(8, 0);
     final due = List<int>.filled(8, 0);
     for (final habit in habits) {
       for (final period in periods(habit, now)) {
-        if (period.start.isBefore(_date(from)) || !_isOneDay(habit, period.start)) continue;
+        if (period.start.isBefore(first) || !period.isOneDay) continue;
         final mark = period.mark;
         if (mark == PeriodMark.untracked || mark == PeriodMark.rest || mark == PeriodMark.current) continue;
         final weekday = period.start.weekday;
@@ -233,29 +235,17 @@ class Insights {
     final schedule = habit.schedule;
     if (!schedule.isPeriodic) return const [];
     final cached = _cache[habit] ??= {};
-    return cached[schedule.periodStart(now)] ??= () {
-      final first = schedule.periodStart(habit.trackedFrom);
-      var start = schedule.periodStart(now);
-      var count = 1;
-      while (start.isAfter(first)) {
-        start = schedule.periodStart(start.subtract(const Duration(hours: 12)));
-        count++;
-      }
-      return recentPeriods(habit, now, count: count);
-    }();
+    final first = schedule.periodStart(habit.trackedFrom);
+    return cached[schedule.periodStart(now)] ??= periodsBack(habit, now, (starts) => starts.last.isAfter(first));
   }
-
-  static bool _isOneDay(Habit habit, DateTime start) =>
-      habit.schedule.nextPeriodStart(start) == DateTime(start.year, start.month, start.day + 1);
 
   /// The day a kept period was kept: a day's own day; for a longer period,
   /// when its running total reached the target (or the two-minute minimum),
   /// or the "2 min" button was used. A habit being broken keeps a period on
   /// its last day.
   static DateTime keptOn(Habit habit, RecentPeriod period) {
-    if (_isOneDay(habit, period.start)) return period.start;
-    final schedule = habit.schedule;
-    final end = schedule.nextPeriodStart(period.start);
+    if (period.isOneDay) return period.start;
+    final end = period.end;
     final lastDay = DateTime(end.year, end.month, end.day - 1);
     if (habit.isBreak) return lastDay;
     final goal = period.mark == PeriodMark.done ? habit.target : (habit.twoMinute?.minimum ?? 0);
