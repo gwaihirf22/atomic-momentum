@@ -21,6 +21,8 @@ import '../presentation/help/explainers.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
+import '../presentation/share/share_cards.dart';
+import '../presentation/share/share_sheet.dart';
 import '../presentation/widgets/achievement_widgets.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/heatmap.dart';
@@ -219,6 +221,22 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return LargeTitleScaffold(
       title: habit.name,
       backgroundColor: palette.background,
+      trailing: habit.resetFrequency.isPeriodic
+          ? CupertinoButton(
+              key: const Key('detailShare'),
+              padding: EdgeInsets.zero,
+              minSize: 44,
+              onPressed: () => showShareSheet(
+                context,
+                card: (look, hideName) =>
+                    StreakShareCard(habit: habit, look: look, now: clock.now(), hideName: hideName),
+                fileName: 'momentum-streak.png',
+                canHideName: true,
+                hideNameByDefault: habit.isBreak,
+              ),
+              child: const Icon(CupertinoIcons.share, semanticLabel: 'Share streak'),
+            )
+          : null,
       header: _Header(habit: habit, category: category, color: color),
       slivers: [
         SliverPadding(

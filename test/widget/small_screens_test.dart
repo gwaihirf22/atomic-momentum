@@ -44,6 +44,8 @@ import 'package:atomic_momentum/presentation/help/explainers.dart';
 import 'package:atomic_momentum/presentation/widgets/achievement_widgets.dart';
 import 'package:atomic_momentum/screens/achievements_screen.dart';
 import 'package:atomic_momentum/screens/heatmap_screen.dart';
+import 'package:atomic_momentum/presentation/share/share_cards.dart';
+import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
 import '../helpers/real_fonts.dart';
@@ -173,6 +175,27 @@ void main() {
     'Momentum explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.momentum, momentum: 72)),
     'Achievements': () => const AchievementsScreen(),
     'Every day (full screen)': () => const HeatmapScreen(),
+    'Share preview, hiding a name': () => Scaffold(
+          body: ShareSheet(
+            card: (look, hideName) => AchievementShareCard(
+              achievement: Achievement(
+                id: 'clean_30_x',
+                kind: AchievementKind.clean,
+                title: '30 days without late night snacking',
+                badge: '30',
+                unit: 'DAYS',
+                message: "A whole month without a slip. That's a real change.",
+                habitName: 'Late night snacking after dinner',
+                earnedOn: DateTime(2026, 10, 17),
+              ),
+              look: look,
+              hideName: hideName,
+            ),
+            fileName: 'x.png',
+            styles: ShareStyle.values,
+            canHideName: true,
+          ),
+        ),
     'Achievement celebration, a long name': () => Scaffold(
           body: AchievementSheet(
             isNew: true,
@@ -326,6 +349,7 @@ void main() {
       'Momentum explainer',
       'Achievement celebration, a long name',
       'Every day (full screen)',
+      'Share preview, hiding a name',
     ]) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);

@@ -15,6 +15,8 @@ import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/achievement_widgets.dart';
+import '../presentation/share/share_cards.dart';
+import '../presentation/share/share_sheet.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/heatmap.dart';
@@ -192,28 +194,31 @@ class _Heading extends StatelessWidget {
   final InfoTopic? info;
   final double? momentum;
 
-  const _Heading(this.text, {this.info, this.momentum});
+  /// Shares what the card shows.
+  final VoidCallback? onShare;
+  final String shareLabel;
+
+  const _Heading(this.text, {this.info, this.momentum, this.onShare, this.shareLabel = 'Share'});
+
+  /// A 44pt button that overhangs the heading rather than pushing the card down.
+  static Widget _overhang(Widget button) => SizedBox(
+        width: 44,
+        height: 24,
+        child: OverflowBox(minWidth: 44, maxWidth: 44, minHeight: 44, maxHeight: 44, child: button),
+      );
 
   @override
   Widget build(BuildContext context) {
     final heading = StatCardHeading(text);
-    if (info == null) return heading;
+    if (info == null && onShare == null) return heading;
     return Row(children: [
       Expanded(child: heading),
-      // Its 44pt target overhangs the heading rather than pushing the card down
       Transform.translate(
         offset: const Offset(10, 0),
-        child: SizedBox(
-          width: 44,
-          height: 24,
-          child: OverflowBox(
-            minWidth: 44,
-            maxWidth: 44,
-            minHeight: 44,
-            maxHeight: 44,
-            child: InfoButton(topic: info!, momentum: momentum),
-          ),
-        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (onShare != null) _overhang(ShareIconButton(key: Key('share_$text'), label: shareLabel, onPressed: onShare!)),
+          if (info != null) _overhang(InfoButton(topic: info!, momentum: momentum)),
+        ]),
       ),
     ]);
   }
@@ -281,7 +286,18 @@ class _MomentumCard extends StatelessWidget {
     return StatCard(
       key: const Key('insightsMomentum'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        _Heading('Momentum', info: InfoTopic.momentum, momentum: overall.score),
+        _Heading(
+          'Momentum',
+          info: InfoTopic.momentum,
+          momentum: overall.score,
+          shareLabel: "Share this month's momentum",
+          onShare: () => showShareSheet(
+            context,
+            card: (look, _) => MomentumShareCard(months: months, overall: overall, look: look),
+            fileName: 'momentum.png',
+            styles: const [ShareStyle.charged, ShareStyle.light, ShareStyle.sepia],
+          ),
+        ),
         const SizedBox(height: 12),
         Row(children: [
           MomentumRing(momentum: overall, size: 84),
@@ -405,6 +421,25 @@ class _DaysCard extends StatelessWidget {
                 label: chosen?.name ?? 'All habits',
                 icon: CupertinoIcons.chevron_down,
                 onPressed: () => _pickHabit(context),
+              ),
+            ),
+            ShareIconButton(
+              key: const Key('share_Every day'),
+              label: 'Share the last 6 months',
+              onPressed: () => showShareSheet(
+                context,
+                card: (look, hideName) => HeatmapShareCard(
+                  days: data.days,
+                  weekStart: weekStart,
+                  look: look,
+                  title: 'Last 6 months',
+                  subtitle: '${data.timesKept} times kept · ${data.perfectDays} perfect days',
+                  caption: chosen == null ? 'All habits' : (hideName ? 'One habit' : chosen.name),
+                ),
+                fileName: 'momentum-every-day.png',
+                styles: const [ShareStyle.charged, ShareStyle.light, ShareStyle.sepia],
+                canHideName: chosen != null,
+                hideNameByDefault: chosen?.isBreak ?? false,
               ),
             ),
             HeatmapExpandButton(habitId: habitId),

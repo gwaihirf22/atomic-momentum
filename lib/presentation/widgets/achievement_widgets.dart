@@ -5,6 +5,8 @@ import '../../core/feedback/haptics.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/services/achievements.dart';
 import 'large_title_scaffold.dart';
+import '../share/share_cards.dart';
+import '../share/share_sheet.dart';
 import 'orb_button.dart';
 
 /// A round medal with a number and a word under it ("21 DAYS"). Earned
@@ -281,9 +283,23 @@ class AchievementSheet extends StatelessWidget {
           ],
           const SizedBox(height: 22),
           OrbButton(
+            key: const Key('achievementShare'),
+            label: 'Share',
+            onPressed: () => showShareSheet(
+              context,
+              card: (look, hideName) => AchievementShareCard(achievement: a, look: look, hideName: hideName),
+              fileName: 'momentum-achievement.png',
+              canHideName: a.habitName != null,
+              // Habits being broken are often private
+              hideNameByDefault: a.kind == AchievementKind.clean,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextButton(
             key: const Key('achievementDone'),
-            label: 'Done',
             onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(foregroundColor: palette.text, minimumSize: const Size.fromHeight(48)),
+            child: const Text('Done', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
           ),
         ]),
       ),
