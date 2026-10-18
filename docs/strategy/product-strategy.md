@@ -1,6 +1,6 @@
 # Atomic Momentum: product strategy
 
-*Decided October 16, 2026.*
+*Decided October 16, 2026. Progress marks updated October 18, 2026.* Smaller follow-ups and loose ends are in [../future-improvements.md](../future-improvements.md).
 
 The core habit tracker is built: habits, categories, flexible schedules, streaks, the Calendar and streak warnings. This document covers four things:
 - what will make the app stand out;
@@ -26,9 +26,9 @@ We stand out on three things, in priority order.
 
 | Feature | What the user sees | Notes |
 |---|---|---|
-| **Momentum score** | A 0–100 score for each habit, plus an overall one, shown as the main number on the Habits screen | Rises with each completed scheduled period and dips gently on a miss. Rest days don't count. Tuned so that steady practice reaches about 80 in about 66 days, the average time to form a habit (Lally et al., 2009). Calculated from the same per-day history that `StreakCalculator` uses. |
-| **Never miss twice** | One missed period bends the streak and the card says "Don't miss twice". Two misses in a row end it. | This is the cure for losing a streak to one bad day. The streak warning notification becomes "Don't miss twice". |
-| **Two-minute version** (done) | Each habit can have a tiny version, such as "put on running shoes", and optionally a minimum amount that counts by itself | Logging it with the card's "2 min" button keeps the day: the streak continues and grows, and momentum gets half credit. Two-minute days are recorded separately, for statistics and rewards. Book: "make it easy". |
+| **Momentum score** (done) | A 0–100 score for each habit, plus an overall one, shown as the main number on the Habits screen | Rises with each completed scheduled period and dips gently on a miss. Rest days don't count. Tuned so that steady practice reaches about 80 in about 66 days, the average time to form a habit (Lally et al., 2009). Calculated from the same per-day history that `StreakCalculator` uses. Named in five levels: Building 0–39, Rolling 40–69, Strong 70–79, Unstoppable 80–89 (from "habit formed"), Atomic 90+. |
+| **Never miss twice** (done) | One missed period bends the streak and the card says "Don't miss twice". Two misses in a row end it. | This is the cure for losing a streak to one bad day. The streak warning notification becomes "Don't miss twice". |
+| **Two-minute version** (done) | Each habit can have a tiny version, such as "put on running shoes", and optionally a minimum amount that counts by itself | Logging it with the card's "2 min" button keeps the day: the streak continues and grows, and momentum never drops for it (it holds, or lifts toward 50). Two-minute days are recorded separately, for statistics and rewards. Book: "make it easy". |
 | **Habit stacking** | "After I [habit], I will [habit]." | Finishing one habit prompts the next, in the app or by notification. Leads into Routines. |
 | **Identity** | Each category gets an "I am someone who…" statement | Each completion counts as a "vote" for that identity, a phrase from the book. |
 
@@ -45,17 +45,26 @@ Finishing a step logs it and moves on to the next one.
 
 ### Pillar C: insight and beauty
 
-- **Year heatmap:** a grid of the year, for each habit and for everything combined.
-- **Momentum trend chart.**
-- **Patterns:** your best days and times.
-- **Weekly review:** a Sunday summary with your wins, the times you didn't miss twice, and next week's focus. Designed to look good when shared as an image.
-- **Statistics** include two-minute days, shown apart from full days.
-- **Rewards** (Paul's idea, built with statistics):
+- **Year heatmap** (done): Insights shows the last 6 months, for each habit or all of them; its full-screen view holds the whole history, scrolls sideways and pinch-zooms. Each habit's page has its own.
+- **Momentum trend chart** (done): 6 months on Insights with the 80 line, and a 30-day line on each habit's page.
+- **Patterns:** your best days (done: "Your week" on Insights) and times (not yet).
+- **Weekly review** (not yet): a Sunday summary with your wins, the times you didn't miss twice, and next week's focus. Designed to look good when shared as an image.
+- **Statistics** include two-minute days, shown apart from full days (done).
+- **Rewards** (not yet; Paul's idea, built with statistics):
   - a week straight earns a freeze day; a month straight earns a break day; the user spends them when life gets in the way;
   - can be turned off in Settings, with a gentle note: try to do your habits, but life gets in the way, and that's okay and how it's meant to work.
-- **Achievements:** separate from rewards, and also shown in statistics.
-- **Celebrations:** satisfying completion animations and haptics. "Make it satisfying" is the book's fourth law.
-- **A visual identity of our own** rather than an imitation of iOS. It looks better, and it hides Flutter's weak spot (see section 3).
+- **Achievements** (done): streak milestones, habit formed, comebacks, perfect weeks, two-minute days and more. Separate from rewards, shown on Insights and each habit's page, and celebrated when earned.
+- **Sharing** (done): designed cards (an achievement, a streak, the heatmap, momentum, a quote) in four styles, sent as pictures.
+- **Celebrations:** satisfying completion animations and haptics. "Make it satisfying" is the book's fourth law. (Haptics and the achievement celebration are done.)
+- **A visual identity of our own** (done) rather than an imitation of iOS. It looks better, and it hides Flutter's weak spot (see section 3). It includes the Charged, Light and Sepia themes, a floating tab bar, Sora titles, the intro on launch, and a choice of app icon.
+
+### Built beyond the original plan
+
+- **Breaking a habit:** quit, or keep it under a limit. A day counts as kept while it's under the limit, and the app checks in daily instead of reminding.
+- **Inspire:** a fifth tab with the quote of the day from a public-domain library, the person's own quotes, and quotes kept with a habit. Design: [../design/inspire.md](../design/inspire.md).
+- **Apple Health and Health Connect:** habits fill in from steps, exercise, sleep and water, and water is logged back. Design: [../design/health.md](../design/health.md).
+- **App icon choice:** Match system, Charged or Light (Settings → App icon).
+- **An intro on launch:** "Building … Atomic Momentum".
 
 ### Deliberately later
 
@@ -82,7 +91,7 @@ A stingy free tier kills word of mouth.
 **Atomic Momentum Pro** is a single purchase of about $9.99–14.99, priced the same on both stores. It includes:
 - unlimited routines and timers, with Live Activities;
 - insights across your full history: year heatmaps, trends, the weekly review archive and CSV export;
-- themes and alternate app icons;
+- themes and alternate app icons (both are free in the app today; decide before launch, see [../future-improvements.md](../future-improvements.md));
 - **later:** backup and syncing between devices. Sync is the feature people most reliably pay for, but with Android in the picture it needs a server.
 
 **The tip jar ("buy me a coffee")** is built from *in-app purchases*, such as Small, Medium and Large coffee, in Settings. Don't use a Buy Me a Coffee link:
@@ -98,7 +107,7 @@ For the code, use RevenueCat's `purchases_flutter`, which is the simplest for on
 **Why:**
 - **Android matters.** A SwiftUI app would mean writing the Android app a second time.
 - **The lead features are ordinary app screens:** the method features, charts, heatmaps and animations. Flutter does these well and they look the same on both phones.
-- **Nothing is wasted.** The existing logic and tests (371 at the time of this decision, over 600 since) carry over unchanged.
+- **Nothing is wasted.** The existing logic and tests (371 at the time of this decision, over 1,300 by October 18) carry over unchanged.
 
 **What needs Swift (and Android's native code) anyway:** these are small native add-ons inside the Flutter project, not a rewrite. They share data with the app through an App Group.
 
@@ -121,7 +130,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 
 | Phase | Contents, in order |
 |---|---|
-| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, weekly review and two-minute days, plus rewards (earned freeze and break days) and achievements. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
+| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); weekly review and rewards (earned freeze and break days) still to come. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Pro upgrade and tip jar. |
 | **v2** | Widgets (home screen, lock screen, StandBy), sync between devices (accounts, Pro), Apple Watch. Logging from Apple Health was brought forward and is done. |
 
