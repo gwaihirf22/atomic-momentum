@@ -294,6 +294,7 @@ void main() {
       'Builder, step 1',
       'Story, new',
       'Habit page',
+      'Insights',
       'Momentum explainer',
     ]) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {

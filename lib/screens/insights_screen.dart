@@ -1,23 +1,79 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../core/locale/week_start.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
+import '../domain/entities/habit.dart';
+import '../domain/entities/momentum.dart';
+import '../domain/services/insights.dart';
+import '../presentation/help/explainers.dart';
+import '../presentation/providers/habit_provider.dart';
+import '../presentation/providers/settings_provider.dart';
+import '../presentation/providers/theme_provider.dart';
+import '../presentation/widgets/adaptive.dart';
+import '../presentation/widgets/break_wording.dart';
+import '../presentation/widgets/heatmap.dart';
+import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
+import '../presentation/widgets/momentum_chart.dart';
+import '../presentation/widgets/momentum_ring.dart';
+import '../presentation/widgets/stat_card.dart';
+import 'habit_detail_screen.dart';
 
-/// Statistics' home. Until statistics is built, it says what's coming.
-class InsightsScreen extends StatelessWidget {
+/// How far back Insights looks.
+enum InsightsRange {
+  half('6 months', 26),
+  year('Year', 53);
+
+  final String label;
+
+  /// Weeks shown on the heatmap (and counted in the cards).
+  final int weeks;
+
+  const InsightsRange(this.label, this.weeks);
+}
+
+/// Statistics' home: momentum over the months, every day as a heatmap,
+/// two-minute days, the strongest and hardest weekdays, and each habit.
+class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
 
-  static const _coming = [
-    (CupertinoIcons.square_grid_4x3_fill, 'Year heatmap', 'Every day of the year at a glance'),
-    (CupertinoIcons.calendar_today, 'Weekly review', 'What went well, and what to adjust'),
-    (CupertinoIcons.timer, 'Two-minute days', 'How often the small version kept you going'),
-    (CupertinoIcons.gift_fill, 'Rewards', 'Earn freeze and break days by keeping streaks'),
-  ];
+  @override
+  State<InsightsScreen> createState() => _InsightsScreenState();
+}
+
+class _InsightsScreenState extends State<InsightsScreen> {
+  var _range = InsightsRange.half;
+
+  /// One habit on the heatmap, or null for all.
+  String? _habitId;
+  DateTime? _selected;
+
+  _InsightsData? _data;
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeProvider>(); // rebuild when the appearance changes
     final palette = AppPalette.of(context);
+    final weekStart = context.watch<SettingsProvider>().firstDayOfWeek;
+    final provider = context.watch<HabitProvider>();
+    final habits = provider.habits.where((h) => h.schedule.isPeriodic).toList();
+    if (_habitId != null && !habits.any((h) => h.id == _habitId)) _habitId = null;
+
+    final now = clock.now();
+    final data = _data = _InsightsData.of(
+      habits: habits,
+      now: now,
+      range: _range,
+      habitId: _habitId,
+      weekStart: weekStart,
+      previous: _data,
+    );
+    final overall = provider.overallMomentum;
+
     return LargeTitleScaffold(
       title: 'Insights',
       backgroundColor: palette.background,
@@ -26,56 +82,751 @@ class InsightsScreen extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(AppStyle.screenPadding, 8, AppStyle.screenPadding, 16),
           sliver: SliverList.list(
-            children: [
-              Text(
-                'Coming next',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: palette.textSecondary),
-              ),
-              const SizedBox(height: 8),
-              DecoratedBox(
-                key: const Key('insightsComingSoon'),
-                decoration: BoxDecoration(
-                  color: palette.surface,
-                  borderRadius: BorderRadius.circular(AppStyle.cardRadius),
-                ),
-                child: Column(
-                  children: [
-                    for (final (icon, title, subtitle) in _coming)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: palette.goldTint,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(icon, size: 19, color: palette.gold),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(title,
-                                      style:
-                                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: palette.text)),
-                                  Text(subtitle, style: TextStyle(fontSize: 13, color: palette.textSecondary)),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+            children: overall == null
+                ? [_EmptyState(palette: palette)]
+                : [
+                    _MomentumCard(overall: overall, data: data),
+                    const SizedBox(height: 14),
+                    _DaysCard(
+                      data: data,
+                      habits: habits,
+                      habitId: _habitId,
+                      range: _range,
+                      weekStart: weekStart,
+                      selected: _selected,
+                      onRange: (range) => setState(() => _range = range),
+                      onHabit: (id) => setState(() {
+                        _habitId = id;
+                        _selected = null;
+                      }),
+                      onSelect: (day) => setState(() => _selected = day == _selected ? null : day),
+                    ),
+                    const SizedBox(height: 14),
+                    _TwoMinuteCard(data: data, habits: habits, range: _range),
+                    const SizedBox(height: 14),
+                    _WeekCard(data: data, weekStart: weekStart),
+                    const SizedBox(height: 14),
+                    _HabitsCard(habits: habits),
                   ],
-                ),
-              ),
-            ],
           ),
         ),
       ],
     );
   }
+}
+
+/// What the page shows, worked out once for a set of habits, day, range
+/// and choice of habit (kept while none of them change).
+class _InsightsData {
+  final List<Habit> habits;
+  final DateTime today;
+  final InsightsRange range;
+  final String? habitId;
+  final int weekStart;
+
+  final List<DayRecord> days;
+  final List<MonthMomentum> months;
+  final KeptSummary kept;
+  final WeekdayPattern weekdays;
+  final int perfectDays;
+  final int timesKept;
+  final int longestStreak;
+  final int formed;
+
+  _InsightsData._({
+    required this.habits,
+    required this.today,
+    required this.range,
+    required this.habitId,
+    required this.weekStart,
+    required this.days,
+    required this.months,
+    required this.kept,
+    required this.weekdays,
+    required this.perfectDays,
+    required this.timesKept,
+    required this.longestStreak,
+    required this.formed,
+  });
+
+  static _InsightsData of({
+    required List<Habit> habits,
+    required DateTime now,
+    required InsightsRange range,
+    required String? habitId,
+    required int weekStart,
+    _InsightsData? previous,
+  }) {
+    final today = DateTime(now.year, now.month, now.day);
+    if (previous != null &&
+        previous.today == today &&
+        previous.range == range &&
+        previous.habitId == habitId &&
+        previous.weekStart == weekStart &&
+        previous.habits.length == habits.length &&
+        [for (var i = 0; i < habits.length; i++) identical(previous.habits[i], habits[i])].every((same) => same)) {
+      return previous;
+    }
+
+    final thisWeek = DateTime(today.year, today.month, today.day - (today.weekday - weekStart + 7) % 7);
+    final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (range.weeks - 1));
+    final chosen = habitId == null ? habits : habits.where((h) => h.id == habitId).toList();
+    final days = Insights.days(chosen, from: from, to: today, now: now);
+    final chosenKept = Insights.kept(chosen, from: from, now: now);
+    return _InsightsData._(
+      habits: habits,
+      today: today,
+      range: range,
+      habitId: habitId,
+      weekStart: weekStart,
+      days: days,
+      months: Insights.momentumByMonth(habits, now),
+      kept: Insights.kept(habits, from: from, now: now),
+      weekdays: Insights.weekdays(habits, from: from, now: now),
+      perfectDays: days.where((d) => d.perfect).length,
+      timesKept: chosenKept.kept,
+      longestStreak: Insights.longestStreak(chosen),
+      formed: Insights.formed(habits),
+    );
+  }
+}
+
+/// A card's heading with an (i) at the end.
+class _Heading extends StatelessWidget {
+  final String text;
+  final InfoTopic? info;
+  final double? momentum;
+
+  const _Heading(this.text, {this.info, this.momentum});
+
+  @override
+  Widget build(BuildContext context) {
+    final heading = StatCardHeading(text);
+    if (info == null) return heading;
+    return Row(children: [
+      Expanded(child: heading),
+      // Its 44pt target overhangs the heading rather than pushing the card down
+      Transform.translate(
+        offset: const Offset(10, 0),
+        child: SizedBox(
+          width: 44,
+          height: 24,
+          child: OverflowBox(
+            minWidth: 44,
+            maxWidth: 44,
+            minHeight: 44,
+            maxHeight: 44,
+            child: InfoButton(topic: info!, momentum: momentum),
+          ),
+        ),
+      ),
+    ]);
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  final AppPalette palette;
+
+  const _EmptyState({required this.palette});
+
+  @override
+  Widget build(BuildContext context) => StatCard(
+        key: const Key('insightsEmpty'),
+        padding: const EdgeInsets.all(20),
+        child: Column(children: [
+          Icon(CupertinoIcons.chart_bar_alt_fill, size: 44, color: palette.gauge),
+          const SizedBox(height: 12),
+          Text(
+            'Your insights start here',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontFamily: LargeTitleHeader.fontFamily,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: palette.text),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Log a few days of a habit, and your momentum, every day at a glance and your strongest days show here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 15, height: 1.4, color: palette.textSecondary),
+          ),
+        ]),
+      );
+}
+
+class _MomentumCard extends StatelessWidget {
+  final Momentum overall;
+  final _InsightsData data;
+
+  const _MomentumCard({required this.overall, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final months = data.months;
+    final current = months.last;
+    final before = months.length > 1 ? months[months.length - 2] : null;
+    final change =
+        current.score != null && before?.score != null ? (current.score!.round() - before!.score!.round()) : null;
+    final lastMonth = before == null ? '' : DateFormat.MMMM().format(before.month);
+
+    final comparison = switch (change) {
+      null => 'Your first month of momentum.',
+      0 => 'The same as in $lastMonth.',
+      > 0 => 'Up from ${before!.score!.round()} in $lastMonth.',
+      _ => 'Down from ${before!.score!.round()} in $lastMonth.',
+    };
+    final formed = switch (data.formed) {
+      0 => '80 is the mark where a habit has formed.',
+      1 => '1 habit is past 80, the mark where a habit has formed.',
+      final n => '$n habits are past 80, the mark where a habit has formed.',
+    };
+
+    return StatCard(
+      key: const Key('insightsMomentum'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _Heading('Momentum', info: InfoTopic.momentum, momentum: overall.score),
+        const SizedBox(height: 12),
+        Row(children: [
+          MomentumRing(momentum: overall, size: 84),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(DateFormat.MMMM().format(current.month),
+                  style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+              Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                    text: '${overall.rounded}',
+                    style: TextStyle(
+                        fontFamily: LargeTitleHeader.fontFamily,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: palette.text),
+                  ),
+                  if (change != null && change != 0)
+                    TextSpan(
+                      text: ' ${change > 0 ? '+' : ''}$change',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: change > 0 ? palette.good : palette.textSecondary,
+                      ),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$comparison $formed',
+                key: const Key('insightsMonthCompare'),
+                style: TextStyle(fontSize: 13, height: 1.35, color: palette.textSecondary),
+              ),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        MomentumChart(key: const Key('insightsMomentumChart'), months: months),
+      ]),
+    );
+  }
+}
+
+class _DaysCard extends StatelessWidget {
+  final _InsightsData data;
+  final List<Habit> habits;
+  final String? habitId;
+  final InsightsRange range;
+  final int weekStart;
+  final DateTime? selected;
+  final ValueChanged<InsightsRange> onRange;
+  final ValueChanged<String?> onHabit;
+  final ValueChanged<DateTime> onSelect;
+
+  const _DaysCard({
+    required this.data,
+    required this.habits,
+    required this.habitId,
+    required this.range,
+    required this.weekStart,
+    required this.selected,
+    required this.onRange,
+    required this.onHabit,
+    required this.onSelect,
+  });
+
+  Future<void> _pickHabit(BuildContext context) async {
+    const all = '';
+    final picked = await chooseAdaptive<String>(
+      context,
+      title: 'Show',
+      options: [
+        const AdaptiveOption(all, 'All habits', key: Key('insightsHabit_all')),
+        for (final habit in habits) AdaptiveOption(habit.id, habit.name, key: Key('insightsPick_${habit.id}')),
+      ],
+    );
+    if (picked != null) onHabit(picked == all ? null : picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final chosen = habitId == null ? null : habits.firstWhere((h) => h.id == habitId);
+    final shades = Heatmap.shades(palette);
+    final record = selected == null ? null : data.days.where((d) => d.day == selected).firstOrNull;
+    final kept = data.days.where((d) => !d.isEmpty && d.level > 0).length;
+
+    Widget swatch(Color color, {bool outlined = false}) => Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+            border: outlined ? Border.all(color: palette.text, width: 1.5) : null,
+          ),
+        );
+
+    Widget stat(String value, String label, Key key) => Expanded(
+          child: Semantics(
+            label: '$value $label',
+            excludeSemantics: true,
+            child: Column(key: key, children: [
+              Text(value,
+                  style: TextStyle(
+                      fontFamily: LargeTitleHeader.fontFamily,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: palette.text)),
+              Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+            ]),
+          ),
+        );
+
+    return StatCard(
+      key: const Key('insightsDays'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        StatCardHeading(
+          'Every day',
+          action: PillButton(
+            key: const Key('insightsHabitPicker'),
+            label: chosen?.name ?? 'All habits',
+            icon: CupertinoIcons.chevron_down,
+            onPressed: () => _pickHabit(context),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _RangeSwitch(range: range, onChanged: onRange),
+        const SizedBox(height: 12),
+        Heatmap(
+          key: const Key('insightsHeatmap'),
+          days: data.days,
+          weekStart: weekStart,
+          selected: selected,
+          onSelect: onSelect,
+          semanticLabel:
+              '${chosen?.name ?? 'All habits'}, ${range == InsightsRange.half ? 'last 6 months' : 'last year'}: '
+              'something kept on $kept days, ${data.perfectDays} perfect days',
+        ),
+        const SizedBox(height: 8),
+        if (record != null)
+          Text(
+            _summary(record),
+            key: const Key('heatmapDaySummary'),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: palette.text),
+          )
+        else
+          Text('Tap a day to see it.', style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 14,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('Less ', style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+              for (final color in shades) ...[swatch(color), const SizedBox(width: 3)],
+              Text('More', style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+            ]),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              swatch(shades.last, outlined: true),
+              const SizedBox(width: 5),
+              Text('Perfect day', style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+            ]),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Divider(height: 0.5, thickness: 0.5, color: palette.separator),
+        ),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          stat('${data.timesKept}', 'times kept', const Key('insightsTimesKept')),
+          stat('${data.perfectDays}', 'perfect days', const Key('insightsPerfectDays')),
+          stat('${data.longestStreak}', 'longest streak', const Key('insightsLongestStreak')),
+        ]),
+      ]),
+    );
+  }
+
+  static String _summary(DayRecord record) {
+    final date = DateFormat.MMMEd().format(record.day);
+    if (record.isEmpty) return '$date: nothing due';
+    final kept = record.done + record.twoMinute;
+    return [
+      '$date: $kept of ${record.due} kept',
+      if (record.perfect) 'perfect day',
+      if (record.twoMinute > 0) '${record.twoMinute} with 2 min',
+    ].join(' · ');
+  }
+}
+
+/// 6 months | Year.
+class _RangeSwitch extends StatelessWidget {
+  final InsightsRange range;
+  final ValueChanged<InsightsRange> onChanged;
+
+  const _RangeSwitch({required this.range, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: palette.raised, borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        for (final option in InsightsRange.values)
+          Expanded(
+            child: Semantics(
+              button: true,
+              selected: option == range,
+              label: option.label,
+              excludeSemantics: true,
+              onTap: () => onChanged(option),
+              child: GestureDetector(
+                key: Key('insightsRange_${option.name}'),
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(option),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  constraints: const BoxConstraints(minHeight: 34),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: option == range ? palette.surface : null,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Text(
+                    option.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: option == range ? FontWeight.w700 : FontWeight.w600,
+                      color: option == range ? palette.text : palette.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+class _TwoMinuteCard extends StatelessWidget {
+  final _InsightsData data;
+  final List<Habit> habits;
+  final InsightsRange range;
+
+  const _TwoMinuteCard({required this.data, required this.habits, required this.range});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final kept = data.kept;
+    final anyTiny = habits.any((h) => h.twoMinute != null && !h.isBreak);
+
+    Widget box(String value, String label, Color background, Color valueColor, Key key) => Expanded(
+          child: Container(
+            key: key,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: background, borderRadius: BorderRadius.circular(16)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(value,
+                  style: TextStyle(
+                      fontFamily: LargeTitleHeader.fontFamily,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: valueColor)),
+              Text(label, style: TextStyle(fontSize: 13, height: 1.3, color: palette.text)),
+            ]),
+          ),
+        );
+
+    final share = kept.total == 0 ? null : (full: kept.full / kept.total, tiny: kept.twoMinute / kept.total);
+    String percent(double value) => '${(value * 100).round()}%';
+
+    return StatCard(
+      key: const Key('insightsTwoMinute'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const _Heading('Two-minute days', info: InfoTopic.twoMinute),
+        Text(range == InsightsRange.half ? 'Last 6 months' : 'Last 12 months',
+            style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+        const SizedBox(height: 12),
+        if (!anyTiny && kept.twoMinute == 0)
+          Text(
+            "Give a habit a two-minute version for hard days, and the days it keeps you going are counted here.",
+            key: const Key('insightsTwoMinuteHint'),
+            style: TextStyle(fontSize: 14, height: 1.4, color: palette.textSecondary),
+          )
+        else ...[
+          IntrinsicHeight(
+            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              box('${kept.twoMinute}', 'hard days you still showed up', palette.raised, palette.text,
+                  const Key('insightsTwoMinuteDays')),
+              const SizedBox(width: 10),
+              box('${kept.streaksSaved}', kept.streaksSaved == 1 ? 'streak they saved' : 'streaks they saved',
+                  palette.goldTint, palette.gold, const Key('insightsStreaksSaved')),
+            ]),
+          ),
+          if (share != null) ...[
+            const SizedBox(height: 12),
+            Semantics(
+              label: 'Full days ${percent(share.full)}, two-minute ${percent(share.tiny)}, '
+                  'missed ${percent(1 - share.full - share.tiny)}',
+              excludeSemantics: true,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: SizedBox(
+                    height: 12,
+                    child: Row(children: [
+                      if (kept.full > 0) Expanded(flex: kept.full, child: ColoredBox(color: palette.gauge)),
+                      if (kept.twoMinute > 0)
+                        Expanded(
+                            flex: kept.twoMinute, child: ColoredBox(color: palette.tint(palette.gauge, alpha: 0.5))),
+                      if (kept.missed > 0) Expanded(flex: kept.missed, child: ColoredBox(color: palette.track)),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(spacing: 14, runSpacing: 4, children: [
+                  _Legend(palette.gauge, 'Full days ${percent(share.full)}'),
+                  _Legend(palette.tint(palette.gauge, alpha: 0.5), 'Two-minute ${percent(share.tiny)}'),
+                  _Legend(palette.track, 'Missed ${percent(1 - share.full - share.tiny)}'),
+                ]),
+              ]),
+            ),
+          ],
+        ],
+      ]),
+    );
+  }
+}
+
+class _Legend extends StatelessWidget {
+  final Color color;
+  final String text;
+
+  const _Legend(this.color, this.text);
+
+  @override
+  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 5),
+        Text(text, style: TextStyle(fontSize: 12, color: AppPalette.of(context).textSecondary)),
+      ]);
+}
+
+class _WeekCard extends StatelessWidget {
+  final _InsightsData data;
+  final int weekStart;
+
+  const _WeekCard({required this.data, required this.weekStart});
+
+  /// A weekday's bar from 0 to 1. Rates are usually close together, so the
+  /// bars start a little below the lowest; the percentages say the rest.
+  static double _scaled(WeekdayPattern pattern, int day) {
+    final rates = pattern.rates.values;
+    final floor = (rates.reduce((a, b) => a < b ? a : b) - 0.15).clamp(0.0, 1.0);
+    return floor >= 1 ? 1 : ((pattern.rates[day]! - floor) / (1 - floor)).clamp(0.0, 1.0);
+  }
+
+  /// "Tuesdays".
+  static String plural(int weekday) => '${DateFormat.EEEE().format(DateTime(2024, 1, weekday))}s';
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final pattern = data.weekdays;
+    final best = pattern.best;
+    final hardest = pattern.hardest;
+
+    return StatCard(
+      key: const Key('insightsWeek'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const StatCardHeading('Your week'),
+        const SizedBox(height: 12),
+        if (pattern.isEmpty)
+          Text(
+            'After a few weeks of daily habits, your strongest and hardest days show here.',
+            key: const Key('insightsWeekHint'),
+            style: TextStyle(fontSize: 14, height: 1.4, color: palette.textSecondary),
+          )
+        else ...[
+          Semantics(
+            label: [
+              for (final day in weekdaysStartingOn(weekStart))
+                '${DateFormat.EEEE().format(DateTime(2024, 1, day))} ${(pattern.rates[day]! * 100).round()}%',
+            ].join(', '),
+            excludeSemantics: true,
+            child: MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.3,
+              child: SizedBox(
+                height: 104,
+                child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  for (final day in weekdaysStartingOn(weekStart))
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                          Text(
+                            '${(pattern.rates[day]! * 100).round()}%',
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: day == best ? palette.text : palette.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            height: 8 + 54 * _scaled(pattern, day),
+                            decoration: BoxDecoration(
+                              color: day == best
+                                  ? palette.gauge
+                                  : day == hardest
+                                      ? palette.tint(palette.gauge, alpha: 0.3)
+                                      : palette.raised,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'MTWTFSS'[day - 1],
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: palette.textSecondary),
+                          ),
+                        ]),
+                      ),
+                    ),
+                ]),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            best == hardest
+                ? 'Every day of the week goes about the same.'
+                : '${plural(best!)} are your strongest day. ${plural(hardest!)} are the hardest'
+                    '${pattern.rates[hardest]! < 0.7 ? ': a two-minute version could help there.' : '.'}',
+            key: const Key('insightsWeekSummary'),
+            style: TextStyle(fontSize: 13, height: 1.4, color: palette.textSecondary),
+          ),
+        ],
+      ]),
+    );
+  }
+}
+
+class _HabitsCard extends StatelessWidget {
+  final List<Habit> habits;
+
+  const _HabitsCard({required this.habits});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final sorted = [...habits]..sort((a, b) => b.momentum.score.compareTo(a.momentum.score));
+
+    return StatCard(
+      key: const Key('insightsHabits'),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const StatCardHeading('Habits'),
+        const SizedBox(height: 6),
+        for (final habit in sorted) _HabitRow(habit: habit, palette: palette),
+      ]),
+    );
+  }
+}
+
+class _HabitRow extends StatelessWidget {
+  final Habit habit;
+  final AppPalette palette;
+
+  const _HabitRow({required this.habit, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = palette.habitColor(habit.color.color);
+    final streak = habit.streak.current;
+    final sub = streak == 0
+        ? 'No streak right now'
+        : habit.isBreak
+            ? BreakWording.streak(habit, streak)
+            : habit.schedule.streakLabel(streak);
+    final momentum = habit.momentum;
+
+    return Semantics(
+      button: true,
+      label: '${habit.name}, $sub, momentum ${momentum.rounded}, ${momentum.level.label}',
+      excludeSemantics: true,
+      onTap: () => _open(context),
+      child: InkWell(
+        key: Key('insightsHabit_${habit.id}'),
+        onTap: () => _open(context),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: palette.separator, width: 0.5))),
+          child: Row(children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration:
+                  BoxDecoration(color: palette.tint(habit.color.color), borderRadius: BorderRadius.circular(11)),
+              alignment: Alignment.center,
+              child: Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  habit.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: palette.text),
+                ),
+                Text(sub, style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('${momentum.rounded}',
+                  style: TextStyle(
+                      fontFamily: LargeTitleHeader.fontFamily,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: palette.text)),
+              Text(momentum.level.label,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: palette.gauge)),
+            ]),
+            const SizedBox(width: 6),
+            Icon(CupertinoIcons.chevron_right, size: 14, color: palette.textSecondary),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  void _open(BuildContext context) =>
+      Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));
 }

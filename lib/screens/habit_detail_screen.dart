@@ -14,18 +14,21 @@ import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/services/habit_stats.dart';
+import '../domain/services/insights.dart';
 import '../presentation/habit_form/sentence.dart';
 import '../presentation/help/explainers.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/habit_icons.dart';
+import '../presentation/widgets/heatmap.dart';
 import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
 import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
+import '../presentation/widgets/stat_card.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'habit_editor_screen.dart';
 
@@ -250,6 +253,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             if (stats.bars.isNotEmpty) ...[
               const SizedBox(height: 14),
               _TrendCard(habit: habit, stats: stats, color: color),
+              const SizedBox(height: 14),
+              _HeatmapCard(habit: habit, weekStart: weekStart, selected: _day, onSelect: _select),
             ],
             const SizedBox(height: 14),
             _WhyCard(why: habit.why, onTap: () => _editWhy(habit)),
@@ -264,7 +269,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             const SizedBox(height: 18),
             // The habit's basics and its notifications live in the editor
             Center(
-              child: _PillButton(
+              child: PillButton(
                 key: const Key('detailEdit'),
                 label: 'Edit habit & notifications',
                 icon: CupertinoIcons.chevron_right,
@@ -280,80 +285,6 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 }
 
-/// A card on the habit page.
-class _Card extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry padding;
-
-  const _Card({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: padding,
-        decoration: BoxDecoration(
-          color: AppPalette.of(context).surface,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: child,
-      );
-}
-
-/// A card's heading, with an optional action on the right.
-class _CardHeading extends StatelessWidget {
-  final String text;
-  final Widget? action;
-
-  const _CardHeading(this.text, {this.action});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final heading = Semantics(
-      header: true,
-      child: Text(text, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: palette.text)),
-    );
-    if (action == null) return heading;
-    // Side by side when they fit; with large text the action moves under it
-    return Wrap(
-      alignment: WrapAlignment.spaceBetween,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 8,
-      runSpacing: 2,
-      children: [heading, action!],
-    );
-  }
-}
-
-/// A small rounded button for a card's heading ("Show month", "Add note").
-class _PillButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final IconData? icon;
-
-  const _PillButton({super.key, required this.label, required this.onPressed, this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    return TextButton(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: palette.text,
-        backgroundColor: palette.raised,
-        minimumSize: const Size(44, 36),
-        tapTargetSize: MaterialTapTargetSize.padded,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        shape: const StadiumBorder(),
-        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        // Wraps rather than overflowing with large text
-        Flexible(child: Text(label, textAlign: TextAlign.center)),
-        if (icon != null) ...[const SizedBox(width: 4), Icon(icon, size: 12)],
-      ]),
-    );
-  }
-}
 
 class _Header extends StatelessWidget {
   final Habit habit;
@@ -461,7 +392,7 @@ class _DayCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       // Full width (a Stack would size the card to its content)
       child: Stack(fit: StackFit.passthrough, children: [
-        _Card(
+        StatCard(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
           child: Column(
             children: [
@@ -700,14 +631,14 @@ class _DaysCard extends StatelessWidget {
             ? 'This week'
             : 'Week of ${DateFormat.MMMd().format(weekOf)}';
 
-    return _Card(
+    return StatCard(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: _CardHeading(
+            child: StatCardHeading(
               heading,
               action: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
                 if (showMonth) ...[
@@ -726,7 +657,7 @@ class _DaysCard extends StatelessWidget {
                         : () => onMonth(DateTime(month.year, month.month + 1)),
                   ),
                 ],
-                _PillButton(
+                PillButton(
                   key: const Key('detailMonthToggle'),
                   label: showMonth ? 'Show week' : 'Show month',
                   icon: showMonth ? CupertinoIcons.chevron_up : CupertinoIcons.chevron_down,
@@ -1005,7 +936,7 @@ class _Tile extends StatelessWidget {
       hint: info?.buttonLabel,
       onTap: info == null ? null : explain,
       excludeSemantics: true,
-      child: _Card(
+      child: StatCard(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1080,6 +1011,42 @@ class _SparklinePainter extends CustomPainter {
   bool shouldRepaint(_SparklinePainter old) => old.values != values || old.color != color;
 }
 
+/// The last six months of this habit, day by day; tapping a day shows it.
+class _HeatmapCard extends StatelessWidget {
+  final Habit habit;
+  final int weekStart;
+  final DateTime selected;
+  final ValueChanged<DateTime> onSelect;
+
+  const _HeatmapCard({required this.habit, required this.weekStart, required this.selected, required this.onSelect});
+
+  static const weeks = 26;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final thisWeek = DateTime(today.year, today.month, today.day - (today.weekday - weekStart + 7) % 7);
+    final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (weeks - 1));
+    final days = Insights.days([habit], from: from, to: today, now: now);
+    final kept = days.where((d) => !d.isEmpty && d.level > 0).length;
+    return StatCard(
+      key: const Key('detailHeatmap'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const StatCardHeading('Last 6 months'),
+        const SizedBox(height: 12),
+        Heatmap(
+          days: days,
+          weekStart: weekStart,
+          selected: selected,
+          onSelect: onSelect,
+          semanticLabel: '${habit.name}, last 6 months: something done on $kept days',
+        ),
+      ]),
+    );
+  }
+}
+
 /// The last 8 weeks (or months) as bars.
 class _TrendCard extends StatelessWidget {
   final Habit habit;
@@ -1102,13 +1069,13 @@ class _TrendCard extends StatelessWidget {
           ? '${stats.barsLabel}: ${stats.bars.map((b) => b.label).join(', ')} days kept'
           : '${stats.barsLabel}: $kept of ${stats.bars.length} with progress',
       excludeSemantics: true,
-      child: _Card(
+      child: StatCard(
         key: const Key('detailTrend'),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _CardHeading(
+            StatCardHeading(
               stats.barsLabel,
               action: daily ? Text(habit.isBreak ? 'days on track' : 'days kept', style: TextStyle(fontSize: 13, color: palette.textSecondary)) : null,
             ),
@@ -1235,15 +1202,15 @@ class _NotesCard extends StatelessWidget {
     final days = habit.dayNotes.keys.toList()..sort((a, b) => b.compareTo(a));
     final hasSelected = habit.dayNotes.containsKey(selected);
     final whose = selected == today ? 'today' : DateFormat.MMMd().format(selected);
-    return _Card(
+    return StatCard(
       key: const Key('detailNotes'),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _CardHeading(
+          StatCardHeading(
             'Notes',
-            action: _PillButton(
+            action: PillButton(
               key: const Key('detailAddNote'),
               label: hasSelected ? 'Edit note for $whose' : 'Add note for $whose',
               onPressed: onAdd,

@@ -41,7 +41,7 @@ void main() {
   Finder bar() => find.byType(FloatingTabBar);
   bool barShown(WidgetTester tester) => find.byKey(const Key('tab_habits')).hitTestable().evaluate().isNotEmpty;
 
-  testWidgets('each tab shows its screen; Insights says what is coming', (tester) async {
+  testWidgets('each tab shows its screen; Insights says what will show once habits are tracked', (tester) async {
     await launch(tester);
     for (final (tab, screen) in [
       ('calendar', CalendarScreen),
@@ -52,10 +52,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(screen).hitTestable(), findsOneWidget, reason: tab);
     }
-    expect(find.byKey(const Key('insightsComingSoon')), findsNothing, reason: 'Insights is offstage now');
+    expect(find.byKey(const Key('insightsEmpty')), findsNothing, reason: 'Insights is offstage now');
     await tester.tap(find.byKey(const Key('tab_insights')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('insightsComingSoon')), findsOneWidget);
+    expect(find.byKey(const Key('insightsEmpty')), findsOneWidget);
     await tester.tap(find.byKey(const Key('tab_habits')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
