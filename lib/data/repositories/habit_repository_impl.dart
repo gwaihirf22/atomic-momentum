@@ -67,6 +67,22 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
+  Future<void> saveHabits(List<Habit> habits) async {
+    try {
+      for (final habit in habits) {
+        final validationResult = HabitValidator.validate(habit);
+        if (!validationResult.isValid) {
+          throw ValidationException('Invalid habit data: ${validationResult.errors.join(', ')}');
+        }
+      }
+      await _localDataSource.saveHabits([for (final habit in habits) HabitModel.fromDomain(habit)]);
+    } catch (e) {
+      if (e is ValidationException) rethrow;
+      throw StorageException('Failed to save habits: $e');
+    }
+  }
+
+  @override
   Future<void> deleteHabit(String id) async {
     try {
       await _localDataSource.deleteHabit(id);

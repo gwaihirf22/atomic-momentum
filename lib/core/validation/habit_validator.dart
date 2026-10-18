@@ -6,6 +6,8 @@ import '../../domain/entities/two_minute_version.dart';
 import 'package:clock/clock.dart';
 
 class HabitValidator {
+  static final _invalidName = RegExp(r'[<>]');
+
   static ValidationResult validate(Habit habit) {
     final errors = <String>[];
     final warnings = <String>[];
@@ -67,7 +69,7 @@ class HabitValidator {
     }
     
     // Check for invalid characters
-    if (trimmedName.contains(RegExp(r'[<>]'))) {
+    if (trimmedName.contains(_invalidName)) {
       errors.add("Habit name contains invalid characters");
     }
   }

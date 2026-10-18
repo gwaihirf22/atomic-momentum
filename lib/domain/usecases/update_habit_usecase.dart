@@ -174,23 +174,30 @@ class UpdateHabitUseCase {
   /// whose period rolled over (progress becomes the new period's total, an
   /// expired streak drops to 0), and any whose stored streak was worked out
   /// by an older rule. Returns the saved habits.
-  Future<List<Habit>> resetHabitsIfNeeded([DateTime? now]) async {
+  Future<List<Habit>> resetHabitsIfNeeded([DateTime? now]) async => (await refreshAll(now)).changed;
+
+  /// Every habit brought up to date for [now], with the ones that changed
+  /// saved in one write: all of them (for a launch to show), and which
+  /// changed.
+  Future<({List<Habit> all, List<Habit> changed})> refreshAll([DateTime? now]) async {
     try {
       final at = now ?? clock.now();
       final habits = await _repository.getHabits();
-      final resetHabits = <Habit>[];
+      final all = <Habit>[];
+      final changed = <Habit>[];
 
       for (final habit in habits) {
         final refreshedHabit = habit.refresh(at);
-        final changed = habit.shouldReset(at) ||
+        all.add(refreshedHabit);
+        if (habit.shouldReset(at) ||
             refreshedHabit.progress != habit.progress ||
-            refreshedHabit.streak != habit.streak;
-        if (!changed) continue;
-        await _repository.saveHabit(refreshedHabit);
-        resetHabits.add(refreshedHabit);
+            refreshedHabit.streak != habit.streak) {
+          changed.add(refreshedHabit);
+        }
       }
+      await _repository.saveHabits(changed);
 
-      return resetHabits;
+      return (all: all, changed: changed);
     } catch (e) {
       throw StorageException('Failed to reset habits: $e');
     }

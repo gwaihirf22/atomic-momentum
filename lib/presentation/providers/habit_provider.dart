@@ -105,13 +105,15 @@ class HabitProvider extends ChangeNotifier {
       _error = null;
 
       // Zero out progress for habits whose day/week/month has rolled over
+      // (saved in one write), and show those habits as they now are
+      List<Habit>? refreshed;
       try {
-        await _updateHabitUseCase.resetHabitsIfNeeded();
+        refreshed = (await _updateHabitUseCase.refreshAll()).all;
       } catch (e) {
         logWarning('Period reset failed, loading habits anyway: $e');
       }
 
-      final habits = await _getHabitsUseCase();
+      final habits = refreshed ?? await _getHabitsUseCase();
       _habits = habits;
       
       // Seed example habits into empty storage (development convenience)

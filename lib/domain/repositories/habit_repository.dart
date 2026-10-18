@@ -10,6 +10,9 @@ abstract class HabitRepository {
   /// Save a habit (create or update)
   Future<void> saveHabit(Habit habit);
 
+  /// Save several habits at once (create or update), in one write
+  Future<void> saveHabits(List<Habit> habits);
+
   /// Delete a habit by ID
   Future<void> deleteHabit(String id);
 }

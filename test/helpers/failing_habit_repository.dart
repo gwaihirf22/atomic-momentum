@@ -14,4 +14,10 @@ class FailingHabitRepository extends HabitRepositoryImpl {
     if (failSaves) throw StorageException('Disk full');
     return super.saveHabit(habit);
   }
+
+  @override
+  Future<void> saveHabits(List<Habit> habits) async {
+    if (failSaves) throw StorageException('Disk full');
+    return super.saveHabits(habits);
+  }
 }
