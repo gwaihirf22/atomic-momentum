@@ -40,6 +40,6 @@ void main() {
     await tester.tap(find.text('Habits').last);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
-    expect(find.byKey(const Key('addHabitOrb')), findsOneWidget);
+    expect(find.byKey(const Key('addHabitButton')), findsOneWidget);
   });
 }

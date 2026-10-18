@@ -121,6 +121,11 @@ void main() {
 
   testWidgets('another day of the week can be chosen and logged', (tester) async {
     await openFromCard(tester);
+    // On the week's first day yesterday is only in the month (or last month)
+    if (find.byKey(Key(dayKey(yesterday))).evaluate().isEmpty) {
+      await tap(tester, 'detailMonthToggle');
+      if (yesterday.month != today.month) await tap(tester, 'detailPrevMonth');
+    }
     await tap(tester, dayKey(yesterday));
     expect(find.text('TODAY'), findsNothing);
     expect(number(tester), '0');

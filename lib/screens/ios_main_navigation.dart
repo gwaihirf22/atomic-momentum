@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +14,7 @@ import 'insights_screen.dart';
 import 'settings_screen.dart';
 
 /// The app's main screen: four tabs, each with its own navigation stack,
-/// under the floating tab bar with the "+" orb in the middle.
+/// under the floating tab bar, whose Habits tab turns into "+" for adding.
 class IOSMainNavigation extends StatefulWidget {
   const IOSMainNavigation({Key? key}) : super(key: key);
 
@@ -35,7 +36,12 @@ class IOSMainNavigation extends StatefulWidget {
 
 class _IOSMainNavigationState extends State<IOSMainNavigation> {
   static const _tabs = [
-    FloatingTab(label: 'Habits', icon: CupertinoIcons.checkmark_circle, activeIcon: CupertinoIcons.checkmark_circle_fill),
+    FloatingTab(
+      label: 'Habits',
+      icon: CupertinoIcons.checkmark_circle,
+      activeIcon: CupertinoIcons.checkmark_circle_fill,
+      addLabel: 'Add habit',
+    ),
     FloatingTab(label: 'Calendar', icon: CupertinoIcons.calendar, activeIcon: CupertinoIcons.calendar),
     FloatingTab(label: 'Insights', icon: CupertinoIcons.chart_bar, activeIcon: CupertinoIcons.chart_bar_fill),
     FloatingTab(label: 'Settings', icon: CupertinoIcons.settings, activeIcon: CupertinoIcons.settings_solid),
@@ -47,6 +53,11 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
   late final _observers = [for (var i = 0; i < _tabs.length; i++) _StackObserver(() => _stackChanged(i))];
 
   int _index = 0;
+
+  /// When the current tab was chosen: Habits' "+" ignores a tap right after
+  /// arriving, so a quick double-tap from another tab doesn't open Add.
+  DateTime? _selectedAt;
+  static const _addGuard = Duration(milliseconds: 400);
 
   /// Tabs are built the first time they're shown, then kept.
   final _opened = <int>{0};
@@ -88,7 +99,14 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
     setState(() {
       _index = index;
       _opened.add(index);
+      _selectedAt = clock.now();
     });
+  }
+
+  void _add() {
+    final at = _selectedAt;
+    if (at != null && clock.now().difference(at) < _addGuard) return;
+    IOSMainNavigation.addHabit(context);
   }
 
   /// A notification was tapped: show the Habits list (the Habits screen
@@ -150,9 +168,8 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
                 child: FloatingTabBar(
                   tabs: _tabs,
                   currentIndex: _index,
-                  orbAfter: 2,
                   onTap: _select,
-                  onAdd: () => IOSMainNavigation.addHabit(context),
+                  onAdd: _add,
                 ),
               ),
             ),

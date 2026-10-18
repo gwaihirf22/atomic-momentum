@@ -28,7 +28,7 @@ void main() {
   tearDown(resetDependencies);
 
   HabitProvider appHabits(WidgetTester tester) =>
-      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('addHabitOrb'), skipOffstage: false)), listen: false);
+      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('tab_habits'), skipOffstage: false)), listen: false);
 
   Future<void> tap(WidgetTester tester, String key) async {
     await tester.tap(find.byKey(Key(key)));
@@ -41,7 +41,7 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MomentumApp());
     await tester.pumpAndSettle();
-    await tap(tester, 'addHabitOrb');
+    await tap(tester, 'addHabitButton');
   }
 
   Future<void> chooseBreak(WidgetTester tester) async {

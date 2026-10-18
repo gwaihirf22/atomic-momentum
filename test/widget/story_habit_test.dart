@@ -25,7 +25,7 @@ void main() {
   tearDown(resetDependencies);
 
   HabitProvider appHabits(WidgetTester tester) =>
-      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('addHabitOrb'), skipOffstage: false)), listen: false);
+      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('tab_habits'), skipOffstage: false)), listen: false);
 
   Future<void> launch(WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 1400);
@@ -37,7 +37,7 @@ void main() {
 
   Future<void> openStory(WidgetTester tester) async {
     await launch(tester);
-    await tester.tap(find.byKey(const Key('addHabitOrb')));
+    await tester.tap(find.byKey(const Key('addHabitButton')));
     await tester.pumpAndSettle();
     expect(find.byType(StoryHabitScreen), findsOneWidget);
   }

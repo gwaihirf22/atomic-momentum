@@ -26,7 +26,7 @@ void main() {
   tearDown(resetDependencies);
 
   HabitProvider appHabits(WidgetTester tester) =>
-      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('addHabitOrb'), skipOffstage: false)), listen: false);
+      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('tab_habits'), skipOffstage: false)), listen: false);
 
   Future<void> launch(WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 1600);
@@ -52,7 +52,7 @@ void main() {
     testWidgets('a new habit starts in Story, with a small switch to Builder', (tester) async {
       final semantics = tester.ensureSemantics();
       await launch(tester);
-      await tap(tester, 'addHabitOrb');
+      await tap(tester, 'addHabitButton');
       expect(find.byType(StoryHabitScreen), findsOneWidget);
       expect(switchLabel(tester), 'Switch to Builder');
       expect(tester.getSize(find.byKey(const Key('switchHabitStyle'))).height, greaterThanOrEqualTo(44));
@@ -63,7 +63,7 @@ void main() {
 
     testWidgets('what Story has goes to Builder, and back, and then saves', (tester) async {
       await launch(tester);
-      await tap(tester, 'addHabitOrb');
+      await tap(tester, 'addHabitButton');
 
       await tap(tester, 'storyName');
       await tester.enterText(find.byKey(const Key('habitNameField')), 'Drink water');
@@ -99,7 +99,7 @@ void main() {
 
     testWidgets("a Builder quick pick reads as Story's sentence", (tester) async {
       await launch(tester);
-      await tap(tester, 'addHabitOrb');
+      await tap(tester, 'addHabitButton');
       await switchStyle(tester);
       await tap(tester, 'quickPick_Read');
       await switchStyle(tester);
@@ -110,7 +110,7 @@ void main() {
 
     testWidgets('switching alone is not a change: closing does not ask', (tester) async {
       await launch(tester);
-      await tap(tester, 'addHabitOrb');
+      await tap(tester, 'addHabitButton');
       await switchStyle(tester);
       await switchStyle(tester);
       await Navigator.of(tester.element(find.byType(StoryHabitScreen))).maybePop();
@@ -149,7 +149,7 @@ void main() {
 
     testWidgets('a new habit starts in Builder, with a switch to Story', (tester) async {
       await launch(tester);
-      await tap(tester, 'addHabitOrb');
+      await tap(tester, 'addHabitButton');
       expect(find.byType(BuilderAddScreen), findsOneWidget);
       expect(switchLabel(tester), 'Switch to Story');
     });

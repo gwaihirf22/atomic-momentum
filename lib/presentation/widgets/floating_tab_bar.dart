@@ -11,21 +11,25 @@ class FloatingTab {
   final IconData icon;
   final IconData activeIcon;
 
-  const FloatingTab({required this.label, required this.icon, required this.activeIcon});
+  /// When set, the tab turns into a "+" with this label while it's selected,
+  /// and tapping it then adds (Habits: "Add habit").
+  final String? addLabel;
+
+  const FloatingTab({required this.label, required this.icon, required this.activeIcon, this.addLabel});
 }
 
 /// The main tab bar: a rounded, translucent bar floating above the content
-/// (which scrolls under it, blurred), with the orb (the app's main "+") in
-/// the middle. Built by hand rather than with CupertinoTabBar, which can't
-/// float or hold the orb; it works the same on iOS 16 and later.
+/// (which scrolls under it, blurred). The Habits tab doubles as the app's
+/// "+": selected, it becomes a small amber orb, and a tap adds a habit.
+/// Built by hand rather than with CupertinoTabBar, which can't float; it
+/// works the same on iOS 16 and later.
 class FloatingTabBar extends StatelessWidget {
   /// The bar's height (labels are capped at [maxLabelScale], as iOS caps tab
   /// bar labels, so it never grows).
   static const height = 66.0;
-  static const orbSize = 58.0;
 
-  /// How far the orb rises above the bar.
-  static const orbRise = 13.0;
+  /// The "+" orb a tab with an add state shows while selected.
+  static const addOrbSize = 34.0;
   static const sideMargin = 16.0;
   static const maxLabelScale = 1.35;
 
@@ -36,15 +40,14 @@ class FloatingTabBar extends StatelessWidget {
 
   /// How much of the bottom of the screen the bar covers, so the end of a
   /// scrolling list can clear it.
-  static double coveredHeight(double safeBottom) => bottomGap(safeBottom) + height + orbRise;
+  static double coveredHeight(double safeBottom) => bottomGap(safeBottom) + height;
 
   final List<FloatingTab> tabs;
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final VoidCallback onAdd;
 
-  /// The orb sits after this many tabs.
-  final int orbAfter;
+  /// A tap on the selected tab that has an add state.
+  final VoidCallback onAdd;
 
   const FloatingTabBar({
     super.key,
@@ -52,7 +55,6 @@ class FloatingTabBar extends StatelessWidget {
     required this.currentIndex,
     required this.onTap,
     required this.onAdd,
-    required this.orbAfter,
   });
 
   @override
@@ -60,21 +62,11 @@ class FloatingTabBar extends StatelessWidget {
     final palette = AppPalette.of(context);
     final shape = BorderRadius.circular(height / 2);
 
-    Widget tab(int index) => Expanded(
-          child: _TabButton(
-            key: Key('tab_${tabs[index].label.toLowerCase()}'),
-            tab: tabs[index],
-            selected: index == currentIndex,
-            onTap: () => onTap(index),
-          ),
-        );
-
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: maxLabelScale,
       child: SizedBox(
         height: height,
         child: Stack(
-          clipBehavior: Clip.none,
           children: [
             Positioned.fill(
               child: DecoratedBox(
@@ -101,9 +93,16 @@ class FloatingTabBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Row(
                 children: [
-                  for (var i = 0; i < orbAfter; i++) tab(i),
-                  _Orb(onTap: onAdd),
-                  for (var i = orbAfter; i < tabs.length; i++) tab(i),
+                  for (var i = 0; i < tabs.length; i++)
+                    Expanded(
+                      child: _TabButton(
+                        key: Key('tab_${tabs[i].label.toLowerCase()}'),
+                        tab: tabs[i],
+                        selected: i == currentIndex,
+                        onTap: () => onTap(i),
+                        onAdd: onAdd,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -118,22 +117,43 @@ class _TabButton extends StatelessWidget {
   final FloatingTab tab;
   final bool selected;
   final VoidCallback onTap;
+  final VoidCallback onAdd;
 
-  const _TabButton({super.key, required this.tab, required this.selected, required this.onTap});
+  const _TabButton({super.key, required this.tab, required this.selected, required this.onTap, required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final adding = selected && tab.addLabel != null;
     final color = selected ? palette.accent : palette.textSecondary;
     void tap() {
       Haptics.selection();
-      onTap();
+      adding ? onAdd() : onTap();
     }
+
+    final Widget icon = adding
+        ? Container(
+            key: const Key('addHabitButton'),
+            width: FloatingTabBar.addOrbSize,
+            height: FloatingTabBar.addOrbSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: palette.orb,
+              boxShadow: [BoxShadow(color: palette.orbShadow, blurRadius: 10, offset: const Offset(0, 3))],
+            ),
+            child: const Icon(CupertinoIcons.add, size: 22, color: AppPalette.onOrb),
+          )
+        : SizedBox(
+            key: ValueKey(selected),
+            height: FloatingTabBar.addOrbSize,
+            child: Icon(selected ? tab.activeIcon : tab.icon, size: 24, color: color),
+          );
 
     return Semantics(
       button: true,
       selected: selected,
-      label: tab.label,
+      label: adding ? tab.addLabel : tab.label,
+      hint: adding ? 'Adds a new habit' : null,
       onTap: tap,
       excludeSemantics: true,
       child: GestureDetector(
@@ -144,62 +164,27 @@ class _TabButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(selected ? tab.activeIcon : tab.icon, size: 24, color: color),
-              const SizedBox(height: 3),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                switchInCurve: Curves.easeOutBack,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                ),
+                child: icon,
+              ),
+              const SizedBox(height: 2),
               // Shrinks rather than being cut off in a narrow slot
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  tab.label,
+                  adding ? tab.addLabel! : tab.label,
                   maxLines: 1,
                   style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w600, color: color),
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The amber "+" that adds a habit, raised out of the bar.
-class _Orb extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _Orb({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    void tap() {
-      Haptics.selection();
-      onTap();
-    }
-
-    return Semantics(
-      button: true,
-      label: 'Add habit',
-      onTap: tap,
-      excludeSemantics: true,
-      child: GestureDetector(
-        key: const Key('addHabitOrb'),
-        behavior: HitTestBehavior.opaque,
-        onTap: tap,
-        child: Transform.translate(
-          offset: const Offset(0, -FloatingTabBar.orbRise),
-          child: Container(
-            width: FloatingTabBar.orbSize,
-            height: FloatingTabBar.orbSize,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: palette.orb,
-              // A ring in the page color separates it from the bar
-              border: Border.all(color: palette.background, width: 3),
-              boxShadow: [BoxShadow(color: palette.orbShadow, blurRadius: 22, offset: const Offset(0, 8))],
-            ),
-            child: const Icon(CupertinoIcons.add, size: 26, color: AppPalette.onOrb),
           ),
         ),
       ),

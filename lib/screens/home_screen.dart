@@ -249,8 +249,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ? 'No ${selectedCategory.name.toLowerCase()} habits yet'
         : 'No habits yet';
     final subtitle = isFiltered
-        ? 'Tap the + button to add a ${selectedCategory.name.toLowerCase()} habit, or tap Show all to see all habits'
-        : 'Tap the + button to add your first habit';
+        ? 'Tap + below to add a ${selectedCategory.name.toLowerCase()} habit, or tap Show all to see all habits'
+        : 'Tap + below to add your first habit';
     
     return Center(
       child: Column(

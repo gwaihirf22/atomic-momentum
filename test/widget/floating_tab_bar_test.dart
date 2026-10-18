@@ -18,8 +18,8 @@ import 'package:atomic_momentum/screens/settings_screen.dart';
 
 import '../helpers/real_fonts.dart';
 
-/// The floating tab bar: tabs, the "+" orb, hiding on pushed pages, and
-/// content that clears it.
+/// The floating tab bar: four tabs, Habits doubling as "+", hiding on pushed
+/// pages, and content that clears it.
 void main() {
   setUp(() async {
     await resetDependencies();
@@ -76,9 +76,22 @@ void main() {
     expect(barShown(tester), isTrue, reason: 'back on the first page');
   });
 
-  testWidgets('the orb opens New Habit over the bar, and closing it comes back', (tester) async {
+  testWidgets('four tabs and no orb; selected, Habits turns into "Add habit"', (tester) async {
     await launch(tester);
-    await tester.tap(find.byKey(const Key('addHabitOrb')));
+    expect(find.byKey(const Key('addHabitOrb')), findsNothing);
+    expect(find.descendant(of: bar(), matching: find.byType(GestureDetector)), findsNWidgets(4));
+    expect(find.descendant(of: bar(), matching: find.text('Add habit')), findsOneWidget);
+    expect(find.descendant(of: bar(), matching: find.text('Habits')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('tab_calendar')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('addHabitButton')), findsNothing);
+    expect(find.descendant(of: bar(), matching: find.text('Habits')), findsOneWidget);
+  });
+
+  testWidgets('"+" opens New Habit over the bar, and closing it comes back', (tester) async {
+    await launch(tester);
+    await tester.tap(find.byKey(const Key('addHabitButton')));
     await tester.pumpAndSettle();
 
     expect(find.byType(HabitEditorScreen), findsOneWidget);
@@ -92,11 +105,20 @@ void main() {
     expect(barShown(tester), isTrue);
   });
 
-  testWidgets('the orb works from any tab', (tester) async {
+  testWidgets('from another tab, Habits only switches; a quick second tap does not add', (tester) async {
     await launch(tester);
     await tester.tap(find.byKey(const Key('tab_calendar')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('addHabitOrb')));
+
+    await tester.tap(find.byKey(const Key('tab_habits')));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tab_habits')));
+    await tester.pumpAndSettle();
+    expect(find.byType(HabitEditorScreen), findsNothing, reason: 'a double-tap from Calendar');
+
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.byKey(const Key('addHabitButton')));
     await tester.pumpAndSettle();
     expect(find.byType(HabitEditorScreen), findsOneWidget);
   });
@@ -132,8 +154,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final card = tester.getRect(find.byKey(Key('habitCard_$last')));
-    final barTop = tester.getRect(bar()).top - FloatingTabBar.orbRise;
-    expect(card.bottom, lessThanOrEqualTo(barTop), reason: 'the last card is above the bar and orb');
+    expect(card.bottom, lessThanOrEqualTo(tester.getRect(bar()).top), reason: 'the last card is above the bar');
   });
 
   testWidgets('messages show above the bar', (tester) async {
@@ -143,18 +164,29 @@ void main() {
     await tester.pumpAndSettle();
 
     final message = tester.getRect(find.byType(SnackBar));
-    expect(message.bottom, lessThanOrEqualTo(tester.getRect(bar()).top - FloatingTabBar.orbRise));
+    expect(message.bottom, lessThanOrEqualTo(tester.getRect(bar()).top));
   });
 
-  testWidgets('VoiceOver reads the tabs and the orb', (tester) async {
+  testWidgets('VoiceOver reads Habits as "Add habit" while it is selected', (tester) async {
     final semantics = tester.ensureSemantics();
     await launch(tester);
     expect(
       tester.getSemantics(find.byKey(const Key('tab_habits'))),
-      matchesSemantics(label: 'Habits', isButton: true, isSelected: true, hasSelectedState: true, hasTapAction: true),
+      matchesSemantics(
+        label: 'Add habit',
+        hint: 'Adds a new habit',
+        isButton: true,
+        isSelected: true,
+        hasSelectedState: true,
+        hasTapAction: true,
+      ),
     );
-    expect(tester.getSemantics(find.byKey(const Key('addHabitOrb'))),
-        matchesSemantics(label: 'Add habit', isButton: true, hasTapAction: true));
+    await tester.tap(find.byKey(const Key('tab_settings')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getSemantics(find.byKey(const Key('tab_habits'))),
+      matchesSemantics(label: 'Habits', isButton: true, hasSelectedState: true, hasTapAction: true),
+    );
     semantics.dispose();
   });
 
@@ -167,10 +199,17 @@ void main() {
         addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
         await launch(tester, size: const Size(375, 667), bottomInset: 0);
 
-        expect(tester.takeException(), isNull);
-        expect(tester.getSize(bar()).height, FloatingTabBar.height);
-        for (final p in tester.renderObjectList<RenderParagraph>(find.descendant(of: bar(), matching: find.byType(RichText)))) {
-          expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
+        // With Habits selected ("Add habit"), then with another tab
+        for (final tab in [null, 'calendar']) {
+          if (tab != null) {
+            await tester.tap(find.byKey(Key('tab_$tab')));
+            await tester.pumpAndSettle();
+          }
+          expect(tester.takeException(), isNull);
+          expect(tester.getSize(bar()).height, FloatingTabBar.height);
+          for (final p in tester.renderObjectList<RenderParagraph>(find.descendant(of: bar(), matching: find.byType(RichText)))) {
+            expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
+          }
         }
         for (final tab in ['habits', 'calendar', 'insights', 'settings']) {
           final size = tester.getSize(find.byKey(Key('tab_$tab')));

@@ -25,14 +25,14 @@ void main() {
     addTearDown(tester.view.reset);
     await tester.pumpWidget(const MomentumApp());
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('addHabitOrb')));
+    await tester.tap(find.byKey(const Key('addHabitButton')));
     await tester.pumpAndSettle();
     expect(find.byType(BuilderAddScreen), findsOneWidget);
   }
 
   // The app's own provider (get<HabitProvider>() makes a new one)
   HabitProvider appHabits(WidgetTester tester) =>
-      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('addHabitOrb'), skipOffstage: false)), listen: false);
+      Provider.of<HabitProvider>(tester.element(find.byKey(const Key('tab_habits'), skipOffstage: false)), listen: false);
 
   String stepTitle(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('builderStepTitle'))).data!;
 
@@ -135,7 +135,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(BuilderAddScreen), findsNothing, reason: 'nothing to lose');
 
-    await tester.tap(find.byKey(const Key('addHabitOrb')));
+    await tester.tap(find.byKey(const Key('addHabitButton')));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('habitNameField')), 'Stretch');
     await next(tester);
@@ -166,7 +166,7 @@ void main() {
       addTearDown(tester.view.reset);
       await tester.pumpWidget(const MomentumApp());
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('addHabitOrb')));
+      await tester.tap(find.byKey(const Key('addHabitButton')));
       await tester.pumpAndSettle();
     }
 
