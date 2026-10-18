@@ -234,3 +234,16 @@ class TabBarInset extends InheritedWidget {
   @override
   bool updateShouldNotify(TabBarInset oldWidget) => oldWidget.height != height;
 }
+
+/// Whether the floating bar has faded away (on Inspire, after a few seconds
+/// untouched), so a page can let its own controls go quiet with it.
+class TabBarFade extends InheritedWidget {
+  final bool faded;
+
+  const TabBarFade({super.key, required this.faded, required super.child});
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<TabBarFade>()?.faded ?? false;
+
+  @override
+  bool updateShouldNotify(TabBarFade oldWidget) => oldWidget.faded != faded;
+}

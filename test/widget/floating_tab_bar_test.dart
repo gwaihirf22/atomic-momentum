@@ -9,6 +9,7 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/floating_tab_bar.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
@@ -267,6 +268,45 @@ void main() {
       await tester.pumpAndSettle();
       await tester.pump(IOSMainNavigation.barFadeDelay * 2);
       expect(barVisible(tester), isTrue);
+    });
+
+    testWidgets('the quote\'s buttons fade with the bar, and a touch brings them back without pressing one',
+        (tester) async {
+      await launch(tester);
+      await openInspire(tester);
+      double actions() => tester.widget<AnimatedOpacity>(find.byKey(const Key('inspireActionsFade'))).opacity;
+      expect(actions(), 1);
+
+      await tester.pump(IOSMainNavigation.barFadeDelay + const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+      expect(actions(), 0);
+      expect(find.byKey(const Key('quoteSave')).hitTestable(), findsNothing);
+      expect(find.byKey(const Key('inspireAnother')).hitTestable(), findsNothing);
+
+      // Tapping where Save was only wakes the page
+      final quotes = get<QuoteProvider>();
+      await tester.tap(find.byKey(const Key('quoteSave')), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(quotes.savedIds, isEmpty);
+      expect(actions(), 1);
+      expect(barVisible(tester), isTrue);
+
+      await tester.tap(find.byKey(const Key('quoteSave')));
+      await tester.pumpAndSettle();
+      expect(quotes.savedIds, hasLength(1));
+    });
+
+    testWidgets('the quote and its buttons scroll clear of the bar on a small phone', (tester) async {
+      await launch(tester, size: const Size(375, 667), bottomInset: 0);
+      await openInspire(tester);
+      final barTop = tester.getRect(bar()).top;
+      await tester.drag(find.byType(InspireScreen), const Offset(0, -2000));
+      await tester.pumpAndSettle();
+      // The page ends where the bar begins, not a bar's height above it
+      final another = tester.getRect(find.byKey(const Key('inspireAnother')));
+      expect(another.bottom, lessThanOrEqualTo(barTop));
+      expect(another.bottom, greaterThan(barTop - 80));
+      expect(find.byKey(const Key('quoteSave')).hitTestable(), findsOneWidget);
     });
 
     testWidgets('swiping between tabs still works while the bar is faded', (tester) async {

@@ -331,6 +331,8 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
               onPointerDown: (_) => _wakeBar(),
               child: TabBarInset(
               height: FloatingTabBar.coveredHeight(safeBottom),
+              child: TabBarFade(
+              faded: faded,
               child: LayoutBuilder(builder: (context, constraints) {
                 _width = constraints.maxWidth;
                 return RawGestureDetector(
@@ -380,6 +382,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
                   ),
                 );
               }),
+              ),
               ),
             ),
           ),

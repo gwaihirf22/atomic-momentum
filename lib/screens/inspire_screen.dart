@@ -194,7 +194,6 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
                 ),
               ),
             ),
-            SizedBox(height: barInset),
           ],
         ),
       ),
@@ -244,22 +243,52 @@ class _TodaysQuote extends StatelessWidget {
         const SizedBox(height: 18),
         QuoteByline(quote, size: 16),
         const SizedBox(height: 36),
-        Center(child: QuoteActions(quote: quote, saved: saved)),
-        const SizedBox(height: 16),
-        Center(
-          child: TextButton.icon(
-            key: const Key('inspireAnother'),
-            onPressed: onAnother,
-            icon: const Icon(CupertinoIcons.arrow_2_circlepath, size: 17),
-            label: const Text('Another quote'),
-            style: TextButton.styleFrom(
-              foregroundColor: palette.textSecondary,
-              minimumSize: const Size(44, 44),
-              textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
+        // Fade with the tab bar, leaving only the words; a touch brings them back
+        _FadesWithBar(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(child: QuoteActions(quote: quote, saved: saved)),
+              const SizedBox(height: 16),
+              Center(
+                child: TextButton.icon(
+                  key: const Key('inspireAnother'),
+                  onPressed: onAnother,
+                  icon: const Icon(CupertinoIcons.arrow_2_circlepath, size: 17),
+                  label: const Text('Another quote'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: palette.textSecondary,
+                    minimumSize: const Size(44, 44),
+                    textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Fades out (and takes no taps) while the floating tab bar has faded.
+class _FadesWithBar extends StatelessWidget {
+  final Widget child;
+
+  const _FadesWithBar({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final faded = TabBarFade.of(context);
+    return IgnorePointer(
+      ignoring: faded,
+      child: AnimatedOpacity(
+        key: const Key('inspireActionsFade'),
+        opacity: faded ? 0 : 1,
+        duration: Duration(milliseconds: faded ? 600 : 200),
+        curve: Curves.easeOut,
+        child: child,
+      ),
     );
   }
 }
