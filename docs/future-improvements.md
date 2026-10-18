@@ -6,12 +6,11 @@ Things to do that aren't on the product roadmap, or that are smaller than a road
 
 ## Performance with a long history
 
-- **Compact settled history** (checkpoint plus recent days, the rest archived and unpacked only when needed). Design: [design/history-compaction.md](design/history-compaction.md). Decide after the profile-mode measurements below.
-- **Measure profile mode, what ships.** Use `tool/perf_check.sh <android device> [years]` on a quiet machine, plus an iPhone profile build.
-  - Debug simulator runs are much slower than release and swing with machine load. One run at a load average of about 150 took about 13 s to show a year of habits.
-  - Use the profile numbers to decide on compaction and on the intro's hold.
-- **The first achievements check after loading** runs on the main isolate, after the frame. With a cold year it can hitch in debug. Move it off-thread if it shows up just after the intro.
-- **The intro's hold** (`IntroScreen.maxHold`, 4 s) covers loading on a cold launch. Revisit it once profile numbers are in: if a year loads well under 4 s in release, leave it.
+- **Compact settled history** (checkpoint plus recent days, the rest archived and unpacked only when needed). Design: [design/history-compaction.md](design/history-compaction.md).
+  - **Not urgent:** in profile mode a year loads in about 0.5 s and two years in about 0.8 s (see Done).
+  - Worth doing before long-time users reach several years, since the load grows with every day.
+- **Measure an iPhone profile build** too. So far only the Android emulator has been measured in profile mode. Debug simulator runs are much slower and swing with machine load (one run at a load average of about 150 took about 13 s).
+- **The first launch frame** takes 57–134 ms in profile mode (it varies between runs): the first content frame, with the first achievements check right after it, on the main isolate. Move the check off-thread if it shows as a hitch just after the intro.
 
 ## App icon, launch and intro
 
@@ -47,4 +46,5 @@ Things to do that aren't on the product roadmap, or that are smaller than a road
 ## Done
 
 - **Loading a year off the main isolate** (`2cafdc0`), with decode-once storage and cached statistics (`76f7dc2`, `3ee1b35`, `e60195e`).
-- **The intro waits out a stalled start** (`9e858f5`) and **holds until habits load** (`d469056`).
+- **The intro waits out a stalled start** (`9e858f5`) and **holds until habits load** (`d469056`). The 4 s hold (`IntroScreen.maxHold`) is never reached in release, since habits load well inside the 2.4 s intro.
+- **Profile-mode launch, measured** (Android emulator, quiet machine, `tool/perf_check.sh`): from start to habits on screen took 536 ms with a year of history and 838 ms with two.
