@@ -43,9 +43,34 @@ Future<void> _load(BuildContext context) async {
     confirmKey: const Key('loadYearConfirm'),
   );
   if (!confirmed || !context.mounted) return;
-  await YearOfUse.load(get<SharedPreferences>(), clock.now());
-  if (!context.mounted) return;
-  await _reload(context);
+  final navigator = Navigator.of(context, rootNavigator: true);
+  // A few seconds' work: say so, and keep taps out until it's done
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    useRootNavigator: true,
+    builder: (_) => const PopScope(
+      canPop: false,
+      child: Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              CupertinoActivityIndicator(radius: 14),
+              SizedBox(height: 12),
+              Text('Loading a year…', key: Key('loadingYear')),
+            ]),
+          ),
+        ),
+      ),
+    ),
+  );
+  try {
+    await YearOfUse.load(get<SharedPreferences>(), clock.now());
+    if (context.mounted) await _reload(context);
+  } finally {
+    navigator.pop();
+  }
   if (context.mounted) _say(context, 'Loaded a year of use');
 }
 

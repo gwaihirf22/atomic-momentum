@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'package:clock/clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/datasources/shared_preferences_datasource.dart';
@@ -145,16 +146,24 @@ class YearOfUse {
     if (!hasBackup(prefs)) {
       await prefs.setString(backupKey, jsonEncode({for (final key in keys) key: _read(prefs, key)}));
     }
-    final habits = build(personaEnding(now), now);
-    await prefs.setString(
-      SharedPreferencesDataSource.habitsKey,
-      jsonEncode([for (final h in habits) HabitModel.fromDomain(h).toCompactJson()]),
-    );
-    final earned = Achievements.earned(habits, now);
-    await prefs.setStringList(AchievementStore.key, [for (final a in earned) a.id]..sort());
+    // A year takes a few seconds to build: off the main thread, so the app
+    // keeps drawing
+    final year = await Isolate.run(() => _stored(now));
+    await prefs.setString(SharedPreferencesDataSource.habitsKey, year.habits);
+    await prefs.setStringList(AchievementStore.key, year.seen);
     for (final key in [QuoteRepositoryImpl.mineKey, QuoteRepositoryImpl.savedKey, QuoteRepositoryImpl.chosenTodayKey]) {
       await prefs.remove(key);
     }
+  }
+
+  /// The year ending [now] as stored: the habits' JSON, and its
+  /// achievements' ids (all filed as seen).
+  static ({String habits, List<String> seen}) _stored(DateTime now) {
+    final habits = build(personaEnding(now), now);
+    return (
+      habits: jsonEncode([for (final h in habits) HabitModel.fromDomain(h).toCompactJson()]),
+      seen: [for (final a in Achievements.earned(habits, now)) a.id]..sort(),
+    );
   }
 
   /// Puts the person's own data back as it was, and forgets the backup.
