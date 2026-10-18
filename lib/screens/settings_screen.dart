@@ -9,6 +9,7 @@ import '../domain/entities/habit_notify.dart';
 import '../domain/entities/quiet_hours.dart';
 import '../domain/entities/quote.dart';
 import '../domain/entities/streak_warning_settings.dart';
+import '../presentation/dev/year_of_use_tiles.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
@@ -360,6 +361,7 @@ class SettingsScreen extends StatelessWidget {
                     ));
                 },
               ),
+              ...yearOfUseTiles(context),
               SettingsTile(
                 tileKey: const Key('openNotificationTester'),
                 icon: CupertinoIcons.bell_fill,

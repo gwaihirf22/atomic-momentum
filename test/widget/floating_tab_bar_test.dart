@@ -221,8 +221,9 @@ void main() {
 
       await tester.tap(find.byKey(const Key('tab_settings')));
       await tester.pumpAndSettle();
-      // To the end of Settings, clear of the bar
-      await tester.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -5000));
+      // Down to the switch, clear of the bar
+      await tester.scrollUntilVisible(find.byKey(const Key('inspireTabSwitch')), 200,
+          scrollable: find.byType(Scrollable).hitTestable().first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('inspireTabSwitch')));
       await tester.pumpAndSettle();

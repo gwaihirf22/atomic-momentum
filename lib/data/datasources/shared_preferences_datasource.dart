@@ -9,6 +9,9 @@ class SharedPreferencesDataSource implements LocalHabitDataSource {
   final SharedPreferences _prefs;
   
   static const String _habitsKey = 'atomic_momentum_habits_v2';
+
+  /// Where habits are kept (for the developer tools that back them up).
+  static const habitsKey = _habitsKey;
   
   const SharedPreferencesDataSource(this._prefs);
 
