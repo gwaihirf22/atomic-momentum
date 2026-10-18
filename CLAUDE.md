@@ -176,7 +176,7 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Notifications**: tests use fakes from `test/helpers/` (`FakeStreakWarningScheduler`, `FakeReminderScheduler`, `FakeNotificationsPlugin`)
 - **Fonts and randomness**: widget tests draw text in a square placeholder font; tests about fit load real fonts (`real_fonts.dart`). `test/flutter_test_config.dart` seeds the greeting so layouts are the same every run
 - **Async in widget tests**: don't keep a `Future` alive across calls in app code (chained futures break under the test clock); use a flag and a pending value instead (see `ReminderService.syncAll`)
-- **Status (2026-10-18)**: 1258 tests passing, including the notification simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
+- **Status (2026-10-18)**: 1265 tests passing, including the notification simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
 - **Storage**: habits are JSON in SharedPreferences via `SharedPreferencesDataSource`; a habit keeps its full per-day `history`, and streak, progress and momentum are derived from it (`Habit.refresh`, `StreakCalculator`, `MomentumCalculator`). Categories live under `categories_v1`; quotes of the person's own under `quotes_mine_v1`, saved quote ids under `quotes_saved_v1`; Health's last sync `health_last_sync_v1` and the app's own Health writes `health_writes_v1` (this phone's, never synced)
