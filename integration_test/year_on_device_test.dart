@@ -149,9 +149,16 @@ void main() {
         final h = habits.getHabitById(id)!;
         final r = ref.habits[name]!;
         Future<bool> missed(String what) async {
-          problem(at, '$name: $what by tapping the card did nothing');
+          final sheet = find.byKey(const Key('achievementSheet')).evaluate().isNotEmpty;
+          final onHabits = find.byKey(const Key('addHabitButton')).evaluate().isNotEmpty;
+          problem(at, '$name: $what by tapping the card did nothing'
+              '${sheet ? ' (a sheet was open)' : ''}${onHabits ? '' : ' (not on Habits)'}');
+          await binding.takeScreenshot('miss_${at.toIso8601String().substring(0, 10)}_${name.replaceAll(' ', '_')}');
           return false;
         }
+
+        // A celebration from the visit's earlier actions would take the tap
+        await closeSheets();
 
         switch (action) {
           case SetTotal(:final total) when h.target == 1 && total == 1 && h.progress == 0 && !h.isBreak:
@@ -331,6 +338,11 @@ void main() {
           // Back to the top, where the momentum ring is
           if (byCards) await toTop();
           await closeSheets();
+          // The cards are on Habits, wherever the visit ended
+          if (find.byKey(const Key('addHabitButton')).evaluate().isEmpty) {
+            await showTab('habits');
+            await toTop();
+          }
           checkCards(now);
         }
         final next = DateTime(day.date.year, day.date.month, day.date.day + 1);
