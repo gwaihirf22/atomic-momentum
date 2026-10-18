@@ -1,3 +1,6 @@
+import 'package:intl/intl.dart' show NumberFormat;
+import '../../domain/entities/habit.dart';
+import '../../domain/services/step_size.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_style.dart';
@@ -51,4 +54,14 @@ class HabitStepper extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What + or − does, for its tooltip and VoiceOver: [one] ("Add one") for
+/// steps of 1, otherwise the amount ("Add 1,000 steps").
+String stepTooltip(Habit habit, {required bool adding, required String one}) {
+  final step = StepSize.forTarget(habit.target);
+  if (step == 1) return one;
+  final amount = NumberFormat.decimalPattern().format(step);
+  final units = habit.units.isEmpty ? '' : ' ${habit.units}';
+  return '${adding ? 'Add' : 'Remove'} $amount$units';
 }

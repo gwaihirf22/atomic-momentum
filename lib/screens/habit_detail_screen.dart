@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../domain/services/step_size.dart';
+import '../presentation/widgets/habit_stepper.dart';
 import '../core/feedback/haptics.dart';
 import '../core/locale/week_start.dart';
 import '../core/theme/app_palette.dart';
@@ -516,10 +518,10 @@ class _DayCard extends StatelessWidget {
                   _RoundButton(
                     key: const Key('detailMinus'),
                     icon: Icons.remove_rounded,
-                    label: 'Remove one',
+                    label: stepTooltip(habit, adding: false, one: 'Remove one'),
                     color: color,
                     filled: false,
-                    onPressed: logged > 0 ? () => onSet(logged - 1) : null,
+                    onPressed: logged > 0 ? () => onSet(StepSize.down(logged, habit.target)) : null,
                   ),
                   if (showTwoMinute)
                     // The "2 min" button with its (i), kept together when the row wraps
@@ -541,10 +543,10 @@ class _DayCard extends StatelessWidget {
                   _RoundButton(
                     key: const Key('detailPlus'),
                     icon: Icons.add_rounded,
-                    label: 'Add one',
+                    label: stepTooltip(habit, adding: true, one: 'Add one'),
                     color: color,
                     filled: true,
-                    onPressed: canAdd ? () => onSet(logged + 1) : null,
+                    onPressed: canAdd ? () => onSet(StepSize.up(logged, habit.target)) : null,
                   ),
                 ],
               ),

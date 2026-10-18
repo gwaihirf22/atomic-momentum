@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../domain/services/step_size.dart';
 import '../core/feedback/haptics.dart';
 import '../core/theme/app_style.dart';
 import '../core/theme/app_palette.dart';
@@ -687,7 +688,7 @@ class _DayHabitRow extends StatelessWidget {
                     isDone: isDone && !habit.isBreak,
                     checkKey: const Key('completedBadge'),
                     semanticLabel: '${habit.name}, $subtitle',
-                    onTap: canAdd && !habit.isBreak ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                    onTap: canAdd && !habit.isBreak ? () => onSet(StepSize.up(loggedThatDay, habit.target), periodTotal) : null,
                     // Holding finishes the period (that day gets whatever's left), or clears it
                     onLongPress: canHold ? onHold : null,
                     longPressHint: canAdd ? 'Finish' : 'Clear',
@@ -738,10 +739,14 @@ class _DayHabitRow extends StatelessWidget {
                           color: color,
                           removeKey: Key('decrementDay_${habit.id}'),
                           addKey: Key('incrementDay_${habit.id}'),
-                          removeTooltip: habit.isBreak ? 'Remove a slip from this day' : 'Remove one from this day',
-                          addTooltip: habit.isBreak ? 'Log a slip on this day' : 'Add one to this day',
-                          onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
-                          onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                          removeTooltip: habit.isBreak
+                              ? 'Remove a slip from this day'
+                              : '${stepTooltip(habit, adding: false, one: 'Remove one')} from this day',
+                          addTooltip: habit.isBreak
+                              ? 'Log a slip on this day'
+                              : '${stepTooltip(habit, adding: true, one: 'Add one')} to this day',
+                          onRemove: canRemove ? () => onSet(StepSize.down(loggedThatDay, habit.target), periodTotal) : null,
+                          onAdd: canAdd ? () => onSet(StepSize.up(loggedThatDay, habit.target), periodTotal) : null,
                         );
 
                   final topRow = Row(children: [

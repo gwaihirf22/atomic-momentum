@@ -8,6 +8,7 @@ import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/services/recent_periods.dart';
+import '../../domain/services/step_size.dart';
 import 'habit_icons.dart';
 import 'break_wording.dart';
 import 'hold_undo_strip.dart';
@@ -236,7 +237,7 @@ class HabitCard extends StatelessWidget {
                       dimmed: isRestDay,
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                       // A tap on the ring never logs a slip by accident
-                      onTap: _canAdd && !habit.isBreak ? () => onSetProgress(habit.progress + 1) : null,
+                      onTap: _canAdd && !habit.isBreak ? () => onSetProgress(StepSize.up(habit.progress, habit.target)) : null,
                       onLongPress: _canHold ? onHold : null,
                       longPressHint: _canAdd ? 'Finish' : 'Clear',
                     );
@@ -281,10 +282,10 @@ class HabitCard extends StatelessWidget {
                       color: color,
                       removeKey: Key('decrementHabit_${habit.id}'),
                       addKey: Key('incrementHabit_${habit.id}'),
-                      removeTooltip: habit.isBreak ? 'Remove a slip' : 'Remove one',
-                      addTooltip: habit.isBreak ? 'Log a slip' : 'Add one',
-                      onRemove: _canRemove ? () => onSetProgress(habit.progress - 1) : null,
-                      onAdd: _canAdd ? () => onSetProgress(habit.progress + 1) : null,
+                      removeTooltip: habit.isBreak ? 'Remove a slip' : stepTooltip(habit, adding: false, one: 'Remove one'),
+                      addTooltip: habit.isBreak ? 'Log a slip' : stepTooltip(habit, adding: true, one: 'Add one'),
+                      onRemove: _canRemove ? () => onSetProgress(StepSize.down(habit.progress, habit.target)) : null,
+                      onAdd: _canAdd ? () => onSetProgress(StepSize.up(habit.progress, habit.target)) : null,
                     );
 
                     if (!twoRows) {
