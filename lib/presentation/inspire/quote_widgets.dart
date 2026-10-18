@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ import '../widgets/adaptive.dart';
 import '../widgets/large_title_scaffold.dart';
 import '../widgets/orb_button.dart';
 import '../widgets/settings_list.dart';
+import '../widgets/unsaved_changes_guard.dart';
 
 /// "— Epictetus" with the source under it, as quotes are signed everywhere.
 class QuoteByline extends StatelessWidget {
@@ -361,7 +363,11 @@ Future<Quote?> showMyQuoteSheet(BuildContext context, {Quote? editing}) {
   return showModalBottomSheet<Quote>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
+    // Below the notch, so the Back button can be reached
+    useSafeArea: true,
+    // A drag would close it without asking about a quote half typed; Back
+    // and tapping outside do ask
+    enableDrag: false,
     backgroundColor: AppPalette.of(context).surface,
     builder: (_) => MyQuoteSheet(editing: editing),
   );
@@ -385,6 +391,26 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
   final _authorFocus = FocusNode();
   String? _error;
   bool _saving = false;
+
+  bool get _hasChanges {
+    final editing = widget.editing;
+    return _text.text != (editing?.text ?? '') ||
+        _author.text != (editing?.author ?? '') ||
+        _source.text != (editing?.source ?? '') ||
+        _family != (editing?.family ?? QuoteFamily.mine) ||
+        !setEquals(_themes, {...?editing?.themes});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuilds, so leaving asks once something's typed
+    for (final controller in [_text, _author, _source]) {
+      controller.addListener(_onEdited);
+    }
+  }
+
+  void _onEdited() => setState(() {});
 
   @override
   void dispose() {
@@ -438,133 +464,161 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
           child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: palette.textSecondary)),
         );
 
-    return Padding(
-      // Rides above the keyboard
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Semantics(
-                header: true,
-                child: Text(
-                  widget.editing == null ? 'Add a quote' : 'Edit quote',
-                  style: TextStyle(
-                    fontFamily: LargeTitleHeader.fontFamily,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: palette.text,
+    return UnsavedChangesGuard(
+      hasChanges: _hasChanges && !_saving,
+      child: Padding(
+        // Rides above the keyboard
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Semantics(
+                      button: true,
+                      label: 'Back',
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        key: const Key('myQuoteBack'),
+                        // maybePop, so a quote half typed is confirmed first
+                        onTap: () => Navigator.of(context).maybePop(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(color: palette.raised, shape: BoxShape.circle),
+                          child: Icon(CupertinoIcons.chevron_left, size: 20, color: palette.text),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Semantics(
+                        header: true,
+                        child: Text(
+                          widget.editing == null ? 'Add a quote' : 'Edit quote',
+                          style: TextStyle(
+                            fontFamily: LargeTitleHeader.fontFamily,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: palette.text,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 6),
+                Text(
+                  'From a book you love, a friend, anywhere. Only you see it.',
+                  style: TextStyle(fontSize: 14, color: palette.textSecondary),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  key: const Key('myQuoteText'),
+                  controller: _text,
+                  autofocus: widget.editing == null,
+                  maxLength: Quote.maxTextLength,
+                  minLines: 3,
+                  maxLines: 8,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: 'Quote', errorText: _error, errorMaxLines: 2),
+                  onChanged: (_) {
+                    if (_error != null) setState(() => _error = null);
+                  },
+                ),
+                const SizedBox(height: 8),
+                // Names already in the library are offered, so quotes by one
+                // author find each other
+                RawAutocomplete<String>(
+                  textEditingController: _author,
+                  focusNode: _authorFocus,
+                  optionsBuilder: (value) {
+                    final typed = value.text.trim().toLowerCase();
+                    if (typed.isEmpty) return const [];
+                    return authors.where((a) => a.toLowerCase().contains(typed) && a.toLowerCase() != typed).take(5);
+                  },
+                  fieldViewBuilder: (context, controller, focusNode, onSubmitted) => TextField(
+                    key: const Key('myQuoteAuthor'),
+                    controller: controller,
+                    focusNode: focusNode,
+                    maxLength: Quote.maxAuthorLength,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Who said it (optional)'),
                   ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'From a book you love, a friend, anywhere. Only you see it.',
-                style: TextStyle(fontSize: 14, color: palette.textSecondary),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                key: const Key('myQuoteText'),
-                controller: _text,
-                autofocus: widget.editing == null,
-                maxLength: Quote.maxTextLength,
-                minLines: 3,
-                maxLines: 8,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: 'Quote', errorText: _error, errorMaxLines: 2),
-                onChanged: (_) {
-                  if (_error != null) setState(() => _error = null);
-                },
-              ),
-              const SizedBox(height: 8),
-              // Names already in the library are offered, so quotes by one
-              // author find each other
-              RawAutocomplete<String>(
-                textEditingController: _author,
-                focusNode: _authorFocus,
-                optionsBuilder: (value) {
-                  final typed = value.text.trim().toLowerCase();
-                  if (typed.isEmpty) return const [];
-                  return authors
-                      .where((a) => a.toLowerCase().contains(typed) && a.toLowerCase() != typed)
-                      .take(5);
-                },
-                fieldViewBuilder: (context, controller, focusNode, onSubmitted) => TextField(
-                  key: const Key('myQuoteAuthor'),
-                  controller: controller,
-                  focusNode: focusNode,
-                  maxLength: Quote.maxAuthorLength,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Who said it (optional)'),
-                ),
-                optionsViewBuilder: (context, onSelected, options) => Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    color: palette.raised,
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(12),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 220, maxWidth: 320),
-                      child: ListView(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        children: [
-                          for (final name in options)
-                            InkWell(
-                              key: Key('authorSuggestion_$name'),
-                              onTap: () => onSelected(name),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Text(name, style: TextStyle(fontSize: 15, color: palette.text)),
+                  optionsViewBuilder: (context, onSelected, options) => Align(
+                    alignment: Alignment.topLeft,
+                    child: Material(
+                      color: palette.raised,
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 220, maxWidth: 320),
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          children: [
+                            for (final name in options)
+                              InkWell(
+                                key: Key('authorSuggestion_$name'),
+                                onTap: () => onSelected(name),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  child: Text(name, style: TextStyle(fontSize: 15, color: palette.text)),
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                key: const Key('myQuoteSource'),
-                controller: _source,
-                maxLength: Quote.maxSourceLength,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Where it\'s from (optional)', hintText: 'A book, a talk…'),
-              ),
-              label('FILE UNDER'),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final family in QuoteFamily.values)
-                    QuoteChoiceChip(
-                      key: Key('myQuoteFamily_${family.name}'),
-                      label: family.label,
-                      selected: _family == family,
-                      onTap: () => setState(() => _family = family),
-                    ),
-                ],
-              ),
-              label('THEMES'),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final theme in QuoteTheme.values)
-                    QuoteChoiceChip(
-                      key: Key('myQuoteTheme_${theme.name}'),
-                      label: theme.label,
-                      selected: _themes.contains(theme),
-                      onTap: () => setState(() => _themes.contains(theme) ? _themes.remove(theme) : _themes.add(theme)),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              OrbButton(key: const Key('myQuoteSave'), label: 'Save', busy: _saving, onPressed: _saving ? null : _save),
-            ],
+                const SizedBox(height: 8),
+                TextField(
+                  key: const Key('myQuoteSource'),
+                  controller: _source,
+                  maxLength: Quote.maxSourceLength,
+                  textCapitalization: TextCapitalization.words,
+                  decoration:
+                      const InputDecoration(labelText: 'Where it\'s from (optional)', hintText: 'A book, a talk…'),
+                ),
+                label('FILE UNDER'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final family in QuoteFamily.values)
+                      QuoteChoiceChip(
+                        key: Key('myQuoteFamily_${family.name}'),
+                        label: family.label,
+                        selected: _family == family,
+                        onTap: () => setState(() => _family = family),
+                      ),
+                  ],
+                ),
+                label('THEMES'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final theme in QuoteTheme.values)
+                      QuoteChoiceChip(
+                        key: Key('myQuoteTheme_${theme.name}'),
+                        label: theme.label,
+                        selected: _themes.contains(theme),
+                        onTap: () =>
+                            setState(() => _themes.contains(theme) ? _themes.remove(theme) : _themes.add(theme)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                OrbButton(
+                    key: const Key('myQuoteSave'), label: 'Save', busy: _saving, onPressed: _saving ? null : _save),
+              ],
+            ),
           ),
         ),
       ),

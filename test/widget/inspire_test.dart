@@ -107,6 +107,42 @@ void main() {
       expect(find.text('— Aslan'), findsOneWidget);
     });
 
+    testWidgets('Back leaves "Add a quote", asking first once something is typed', (tester) async {
+      for (final family in QuoteFamily.values.where((f) => f != QuoteFamily.mine)) {
+        await settings.setQuoteFamily(family, false);
+      }
+      await pump(tester, const InspireScreen());
+      Future<void> open() async {
+        await tester.tap(find.byKey(const Key('inspireAddFirst')));
+        await tester.pumpAndSettle();
+      }
+
+      // Nothing typed: closes at once
+      await open();
+      await tester.tap(find.byKey(const Key('myQuoteBack')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('myQuoteText')), findsNothing);
+
+      // Typed: asks, and Keep Editing keeps the words
+      await open();
+      await tester.enterText(find.byKey(const Key('myQuoteText')), 'Courage, dear heart.');
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('myQuoteBack')));
+      await tester.pumpAndSettle();
+      expect(find.text('Discard changes?'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('keepEditing')));
+      await tester.pumpAndSettle();
+      expect(find.text('Courage, dear heart.'), findsOneWidget);
+
+      // Discard closes without saving
+      await tester.tap(find.byKey(const Key('myQuoteBack')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('discardChanges')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('myQuoteText')), findsNothing);
+      expect(quotes.mine, isEmpty);
+    });
+
     testWidgets('"Another quote" shows a different one, and keeps it', (tester) async {
       await pump(tester, const InspireScreen());
       final first = today();
