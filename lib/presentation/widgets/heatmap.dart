@@ -54,7 +54,12 @@ class _Layout {
 
   /// The column each month starts in (the week holding its 1st, or the
   /// first column for the month already under way), with the month.
-  List<(int, DateTime)> monthStarts() {
+  /// Worked out once per layout: labels and year lines read it on every frame.
+  late final List<(int, DateTime)> _monthStarts = _findMonthStarts();
+
+  List<(int, DateTime)> monthStarts() => _monthStarts;
+
+  List<(int, DateTime)> _findMonthStarts() {
     final starts = <(int, DateTime)>[(0, DateTime(first.year, first.month))];
     for (var c = 0; c < columns; c++) {
       final week = weekOf(c);
@@ -346,23 +351,39 @@ class ZoomableHeatmapState extends State<ZoomableHeatmap> {
     }
   }
 
+  /// The layout and VoiceOver's month summaries, worked out once per set of
+  /// days (not on every pinch move).
+  _Layout? _layout;
+  List<({int fromColumn, int toColumn, String label})> _months = const [];
+
+  _Layout _layoutFor(List<DayRecord> days, int weekStart) {
+    final layout = _layout;
+    if (layout != null && identical(layout.days, days) && layout.weekStart == weekStart) return layout;
+    _months = _monthSummaries(_layout = _Layout(days, weekStart));
+    return _layout!;
+  }
+
+  static final _monthFull = DateFormat.MMMM();
+  static final _monthShort = DateFormat.MMM();
+  static final _monthAndYear = DateFormat.yMMMM();
+
   @override
   Widget build(BuildContext context) {
     if (widget.days.isEmpty) return const SizedBox.shrink();
     final palette = AppPalette.of(context);
-    final layout = _Layout(widget.days, widget.weekStart);
+    final layout = _layoutFor(widget.days, widget.weekStart);
     final cell = _cell;
     final gridHeight = _Layout.height(cell);
     const monthHeight = ZoomableHeatmap.monthHeight;
     final labelStyle = TextStyle(fontSize: 11, height: 1, color: palette.textSecondary);
     // Full month names when there's room, and the year where it starts
     String monthName(DateTime month, bool first) {
-      final name = cell >= 12 ? DateFormat.MMMM().format(month) : DateFormat.MMM().format(month);
+      final name = cell >= 12 ? _monthFull.format(month) : _monthShort.format(month);
       return first || month.month == 1 ? '$name ${month.year}' : name;
     }
 
     final labels = _monthLabels(layout, cell, monthName, charWidth: 6.5);
-    final months = _monthSummaries(layout);
+    final months = _months;
 
     return MediaQuery.withNoTextScaling(
       child: Listener(
@@ -400,15 +421,18 @@ class ZoomableHeatmapState extends State<ZoomableHeatmap> {
                               final day = layout.dayAt(details.localPosition, cell);
                               if (day != null) widget.onSelect!(day);
                             },
-                      child: ExcludeSemantics(
-                        child: CustomPaint(
-                          size: Size(layout.width(cell), gridHeight),
-                          painter: _HeatmapPainter(
-                            layout: layout,
-                            cell: cell,
-                            palette: palette,
-                            selected: widget.selected,
-                            yearLines: true,
+                      // Its own layer: scrolling moves it rather than painting every square again
+                      child: RepaintBoundary(
+                        child: ExcludeSemantics(
+                          child: CustomPaint(
+                            size: Size(layout.width(cell), gridHeight),
+                            painter: _HeatmapPainter(
+                              layout: layout,
+                              cell: cell,
+                              palette: palette,
+                              selected: widget.selected,
+                              yearLines: true,
+                            ),
                           ),
                         ),
                       ),
@@ -451,7 +475,7 @@ class ZoomableHeatmapState extends State<ZoomableHeatmap> {
     final counted = records.where((r) => !r.isEmpty).length;
     final kept = records.where((r) => !r.isEmpty && r.level > 0).length;
     final perfect = records.where((r) => r.perfect).length;
-    return '${DateFormat.yMMMM().format(month)}: '
+    return '${_monthAndYear.format(month)}: '
         '${counted == 0 ? 'nothing due' : 'something kept on $kept of $counted days, $perfect perfect'}';
   }
 }

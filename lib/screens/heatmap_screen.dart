@@ -47,6 +47,25 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
     if (picked != null) setState(() => _habitId = picked == all ? null : picked);
   }
 
+  /// The days shown, kept while the habits and the day stay the same: a tap
+  /// on a day or a pinch doesn't work them out again (and keeps the grid's
+  /// layout, so it isn't laid out again either).
+  ({List<Habit> habits, DateTime from, DateTime today, List<DayRecord> days})? _days;
+
+  List<DayRecord> _daysFor(List<Habit> habits, DateTime from, DateTime today, DateTime now) {
+    final last = _days;
+    if (last != null &&
+        last.from == from &&
+        last.today == today &&
+        last.habits.length == habits.length &&
+        [for (var i = 0; i < habits.length; i++) identical(last.habits[i], habits[i])].every((same) => same)) {
+      return last.days;
+    }
+    final days = Insights.days(habits, from: from, to: today, now: now);
+    _days = (habits: habits, from: from, today: today, days: days);
+    return days;
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -62,7 +81,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
     for (final habit in chosen) {
       if (habit.trackedFrom.isBefore(from)) from = habit.trackedFrom;
     }
-    final days = Insights.days(chosen, from: from, to: today, now: now);
+    final days = _daysFor(chosen, from, today, now);
     final record = _selected == null ? null : days.where((d) => d.day == _selected).firstOrNull;
     final shades = Heatmap.shades(palette);
 
