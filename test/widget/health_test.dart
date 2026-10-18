@@ -17,6 +17,7 @@ import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/screens/story_habit_screen.dart';
 
 import '../helpers/fake_health_source.dart';
 
@@ -74,12 +75,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(health.accessRequests.single, {HealthMetric.steps});
-    expect(tester.widget<EditableText>(find.descendant(of: find.byKey(const Key('habitUnitsField')), matching: find.byType(EditableText))).controller.text, 'steps');
-    expect(find.text('Set by Steps'), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('habitUnitsField')), matching: find.text('steps')), findsOneWidget);
+    expect(find.descendant(of: find.byKey(const Key('habitUnitsField')), matching: find.byType(EditableText)), findsNothing,
+        reason: 'chosen, never typed');
+    expect(find.text('From Steps in Health'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('healthMetric_sleepHours')));
     await tester.pumpAndSettle();
-    expect(find.text('Set by Sleep'), findsOneWidget);
+    expect(find.text('From Sleep in Health'), findsOneWidget);
     await tester.tap(find.byKey(const Key('healthMetric_steps')));
     await tester.pumpAndSettle();
 
@@ -267,6 +270,23 @@ void main() {
           find.descendant(of: find.byKey(const Key('habitTargetField')), matching: find.byType(EditableText)));
       expect(target.controller.text, '2000');
       expect(find.byKey(const Key('healthUnitReplaced')), findsNothing);
+    });
+
+    testWidgets('in Story, a linked habit\'s units are chips in "How much" (holding them is safe)', (tester) async {
+      final id = await addLinked(HealthMetric.water);
+      await pump(tester, StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.id == id)));
+      await tester.tap(find.byKey(const Key('storyAmount')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('unitsChip_glasses')), findsOneWidget);
+      await tester.longPress(find.byKey(const Key('habitUnitsField')));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(const Key('unitsChip_ml')));
+      await tester.pumpAndSettle();
+      final target = tester.widget<EditableText>(
+          find.descendant(of: find.byKey(const Key('habitTargetField')), matching: find.byType(EditableText)));
+      expect(target.controller.text, '2000');
     });
 
     testWidgets('a habit not about health suggests nothing', (tester) async {

@@ -27,6 +27,8 @@ import '../help/explainers.dart';
 import '../widgets/habit_icons.dart';
 import '../widgets/info_button.dart';
 import '../widgets/selectable_swatch.dart';
+import '../../domain/entities/health_link.dart';
+import '../inspire/quote_widgets.dart' show QuoteChoiceChip;
 import 'habit_draft.dart';
 
 // The parts of the habit form, each bound to a HabitDraft and rebuilt when it
@@ -183,22 +185,59 @@ class UnitsField extends StatelessWidget {
   Widget build(BuildContext context) => _DraftBuilder(draft, (context) => _field());
 
   Widget _field() {
-    final linked = draft.health != null;
+    // A habit filled in from Health counts in one of its metric's units:
+    // chosen here, never typed (a read-only text field would offer iOS's
+    // copy menu with nothing behind it)
+    final link = draft.health;
+    if (link != null) return _HealthUnits(draft, link);
     return TextFormField(
       key: const Key('habitUnitsField'),
       controller: draft.units,
-      // A habit filled in from Health counts in its metric's units
-      readOnly: linked,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: 'Units (Optional)',
         hintText: 'e.g. glasses',
-        helperText: linked ? 'Set by ${draft.health!.metric.label}' : null,
         errorMaxLines: 2,
       ),
       maxLength: HabitDraft.maxUnitsLength,
       // Enforce the limit without Material's "0/20" counter
       buildCounter: _noCounter,
       validator: HabitDraft.validateUnits,
+    );
+  }
+}
+
+/// A linked habit's units: the metric's units as chips (one shows as text).
+class _HealthUnits extends StatelessWidget {
+  final HabitDraft draft;
+  final HealthLink link;
+
+  const _HealthUnits(this.draft, this.link);
+
+  @override
+  Widget build(BuildContext context) {
+    final units = link.metric.units;
+    return InputDecorator(
+      key: const Key('habitUnitsField'),
+      decoration: InputDecoration(
+        labelText: 'Units',
+        helperText: 'From ${link.metric.label} in Health',
+        helperMaxLines: 2,
+      ),
+      child: units.length == 1
+          ? Text(link.unit.label, key: const Key('habitUnitsText'))
+          : Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final unit in units)
+                  QuoteChoiceChip(
+                    key: Key('unitsChip_${unit.name}'),
+                    label: unit.label,
+                    selected: link.unit == unit,
+                    onTap: () => draft.setHealth(link.metric, unit: unit),
+                  ),
+              ],
+            ),
     );
   }
 }
