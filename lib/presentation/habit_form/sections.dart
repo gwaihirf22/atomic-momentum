@@ -21,7 +21,9 @@ import '../providers/settings_provider.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/category_icons.dart';
 import '../widgets/color_picker.dart';
+import '../help/explainers.dart';
 import '../widgets/habit_icons.dart';
+import '../widgets/info_button.dart';
 import '../widgets/selectable_swatch.dart';
 import 'habit_draft.dart';
 
@@ -52,13 +54,33 @@ class _DraftBuilder extends StatelessWidget {
 class FormSectionHeader extends StatelessWidget {
   final String text;
 
-  const FormSectionHeader(this.text, {super.key});
+  /// Shown at the end of the header, such as an (i).
+  final Widget? trailing;
+
+  const FormSectionHeader(this.text, {super.key, this.trailing});
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: SectionHeader(text, padding: _headerPadding),
-      );
+  Widget build(BuildContext context) {
+    final header = SectionHeader(text, padding: _headerPadding);
+    return Padding(
+      padding: EdgeInsets.only(bottom: trailing == null ? 8 : 0),
+      child: trailing == null
+          ? header
+          : Row(children: [Expanded(child: header), trailing!]),
+    );
+  }
+}
+
+/// The habit's own example for the two-minute explainer ("Read 10 pages",
+/// "Read one page"), once it has a name and a tiny version.
+TwoMinuteExample? twoMinuteExample(HabitDraft draft) {
+  final name = draft.name.text.trim();
+  final tiny = draft.tiny.text.trim();
+  if (name.isEmpty || tiny.isEmpty) return null;
+  final target = draft.target.text.trim();
+  final units = draft.units.text.trim();
+  final amount = target.isEmpty || target == '1' && units.isEmpty ? '' : ' $target${units.isEmpty ? '' : ' $units'}';
+  return (usual: '$name$amount', tiny: tiny);
 }
 
 class NameField extends StatelessWidget {
@@ -512,7 +534,11 @@ class TwoMinuteSection extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (showHeader) const FormSectionHeader('Two-minute version'),
+          if (showHeader)
+            FormSectionHeader(
+              'Two-minute version',
+              trailing: InfoButton(topic: InfoTopic.twoMinute, example: twoMinuteExample(draft)),
+            ),
           TextFormField(
             key: const Key('twoMinuteField'),
             controller: draft.tiny,
@@ -554,7 +580,7 @@ class TwoMinuteSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 4, top: 6),
             child: Text(
-              'On a hard day, do just this. It keeps your streak and counts half toward momentum.',
+              'On a hard day, do just this. It keeps your streak and never lowers your momentum.',
               style: TextStyle(fontSize: 13, color: secondaryLabel(context)),
             ),
           ),

@@ -7,6 +7,7 @@ import '../domain/entities/habit.dart';
 import '../domain/entities/habit_goal.dart';
 import '../domain/entities/reminder_settings.dart';
 import '../presentation/habit_form/habit_draft.dart';
+import '../presentation/help/explainers.dart';
 import '../presentation/habit_form/sections.dart';
 import '../presentation/habit_form/sentence.dart';
 import '../presentation/providers/category_provider.dart';
@@ -15,6 +16,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/habit_icons.dart';
+import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
@@ -111,6 +113,9 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
         key: Key('storySheet_${part.name}'),
         title: title,
         showErrors: showErrors,
+        titleTrailing: part == StoryPart.tiny
+            ? InfoButton(topic: InfoTopic.twoMinute, example: twoMinuteExample(_draft))
+            : null,
         children: content,
       ),
     );
@@ -452,7 +457,16 @@ class _PartSheet extends StatefulWidget {
   final bool showErrors;
   final List<Widget> children;
 
-  const _PartSheet({super.key, required this.title, required this.showErrors, required this.children});
+  /// Shown after the title, such as an (i).
+  final Widget? titleTrailing;
+
+  const _PartSheet({
+    super.key,
+    required this.title,
+    required this.showErrors,
+    required this.children,
+    this.titleTrailing,
+  });
 
   @override
   State<_PartSheet> createState() => _PartSheetState();
@@ -482,18 +496,23 @@ class _PartSheetState extends State<_PartSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Semantics(
-                  header: true,
-                  child: Text(
-                    widget.title,
-                    style: TextStyle(
-                      fontFamily: LargeTitleHeader.fontFamily,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: palette.text,
+                Row(children: [
+                  Expanded(
+                    child: Semantics(
+                      header: true,
+                      child: Text(
+                        widget.title,
+                        style: TextStyle(
+                          fontFamily: LargeTitleHeader.fontFamily,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: palette.text,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (widget.titleTrailing != null) widget.titleTrailing!,
+                ]),
                 const SizedBox(height: 14),
                 ...widget.children,
                 const SizedBox(height: 18),

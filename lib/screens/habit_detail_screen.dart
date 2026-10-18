@@ -15,6 +15,7 @@ import '../domain/entities/habit.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/services/habit_stats.dart';
 import '../presentation/habit_form/sentence.dart';
+import '../presentation/help/explainers.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -22,6 +23,7 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
+import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/two_minute_button.dart';
@@ -563,15 +565,22 @@ class _DayCard extends StatelessWidget {
                     onPressed: logged > 0 ? () => onSet(logged - 1) : null,
                   ),
                   if (showTwoMinute)
-                    TwoMinuteButton(
-                      key: const Key('detailTwoMinute'),
-                      description: habit.twoMinute!.description,
-                      color: color,
-                      done: habit.isTwoMinuteOn(day),
-                      onChanged: habit.twoMinuteReachedByAmountOn(day) && !habit.usedTwoMinuteButtonOn(day)
-                          ? null
-                          : (_) => onTwoMinute(),
-                    ),
+                    // The "2 min" button with its (i), kept together when the row wraps
+                    Row(mainAxisSize: MainAxisSize.min, children: [
+                      TwoMinuteButton(
+                        key: const Key('detailTwoMinute'),
+                        description: habit.twoMinute!.description,
+                        color: color,
+                        done: habit.isTwoMinuteOn(day),
+                        onChanged: habit.twoMinuteReachedByAmountOn(day) && !habit.usedTwoMinuteButtonOn(day)
+                            ? null
+                            : (_) => onTwoMinute(),
+                      ),
+                      InfoButton(
+                        topic: InfoTopic.twoMinute,
+                        example: (usual: '${habit.name}${_amount(habit)}', tiny: habit.twoMinute!.description),
+                      ),
+                    ]),
                   _RoundButton(
                     key: const Key('detailPlus'),
                     icon: Icons.add_rounded,
@@ -590,6 +599,11 @@ class _DayCard extends StatelessWidget {
     );
   }
 }
+
+/// " 10 pages" after a habit's name, for its two-minute example.
+String _amount(Habit habit) => habit.target == 1 && habit.units.isEmpty
+    ? ''
+    : ' ${habit.target}${habit.units.isEmpty ? '' : ' ${habit.units}'}';
 
 class _RoundButton extends StatelessWidget {
   final IconData icon;
@@ -921,11 +935,14 @@ class _StatsGrid extends StatelessWidget {
           key: const Key('detailMomentum'),
           icon: Icons.bolt,
           iconColor: palette.gauge,
-          label: 'Momentum',
+          label: 'Momentum · ${stats.momentum.level.label}',
           value: '${stats.momentum.rounded}',
           unit: change == 0 ? '' : (change > 0 ? '+$change' : '$change'),
           unitColor: change > 0 ? palette.good : palette.textSecondary,
-          semanticsExtra: change == 0 ? '' : ', ${change > 0 ? 'up' : 'down'} ${change.abs()} in 30 days',
+          semanticsExtra:
+              change == 0 ? '' : ', ${change > 0 ? 'up' : 'down'} ${change.abs()} in ${HabitStats.trendDays} days',
+          info: InfoTopic.momentum,
+          infoScore: stats.momentum.score,
           below: SizedBox(
             width: double.infinity,
             height: 28,
@@ -959,6 +976,10 @@ class _Tile extends StatelessWidget {
   final String semanticsExtra;
   final Widget? below;
 
+  /// Tapping the tile explains this, marked by a small (i).
+  final InfoTopic? info;
+  final double? infoScore;
+
   const _Tile({
     super.key,
     this.icon,
@@ -969,23 +990,33 @@ class _Tile extends StatelessWidget {
     this.unitColor,
     this.semanticsExtra = '',
     this.below,
+    this.info,
+    this.infoScore,
   });
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    return Semantics(
+    void explain() => showInfoSheet(context, info!, momentum: infoScore);
+    final tile = Semantics(
       container: true,
       label: '$label: $value $unit$semanticsExtra',
+      button: info != null,
+      hint: info?.buttonLabel,
+      onTap: info == null ? null : explain,
       excludeSemantics: true,
       child: _Card(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [
-              if (icon != null) ...[Icon(icon, size: 15, color: iconColor), const SizedBox(width: 4)],
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (icon != null) ...[
+                Padding(padding: const EdgeInsets.only(top: 1), child: Icon(icon, size: 15, color: iconColor)),
+                const SizedBox(width: 4),
+              ],
               Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: palette.textSecondary))),
+              if (info != null) Icon(CupertinoIcons.info_circle, size: 16, color: palette.textSecondary),
             ]),
             const SizedBox(height: 4),
             Text.rich(
@@ -1011,6 +1042,8 @@ class _Tile extends StatelessWidget {
         ),
       ),
     );
+    if (info == null) return tile;
+    return GestureDetector(key: Key('info_${info!.name}_tile'), behavior: HitTestBehavior.opaque, onTap: explain, child: tile);
   }
 }
 

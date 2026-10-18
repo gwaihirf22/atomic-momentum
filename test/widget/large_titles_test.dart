@@ -97,7 +97,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('overallMomentum')), findsOneWidget);
-      expect(find.bySemanticsLabel(RegExp(r'^Overall momentum \d+, rising$')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp(r'^Overall momentum \d+, Building, rising$')), findsOneWidget);
+      expect(find.byKey(const Key('momentumLevel')), findsOneWidget);
+
+      // Tapping it explains momentum, marking where it stands
+      await tester.tap(find.byKey(const Key('overallMomentum')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('infoSheet_momentum')), findsOneWidget);
+      await tester.ensureVisible(find.byKey(const Key('infoGotIt')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('infoGotIt')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('infoSheet_momentum')), findsNothing);
     });
 
     testWidgets('the small title appears in the bar once the large one scrolls away', (tester) async {

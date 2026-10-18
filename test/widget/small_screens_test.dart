@@ -39,6 +39,9 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
+import 'package:atomic_momentum/presentation/help/explainers.dart';
+import 'package:atomic_momentum/presentation/widgets/info_button.dart';
+
 import '../helpers/real_fonts.dart';
 
 /// Every screen on the smallest supported iPhone (the SE, 375pt wide) and
@@ -163,6 +166,13 @@ void main() {
         HabitEditorScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Story, editing a long name with a two-minute version': () =>
         StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
+    'Momentum explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.momentum, momentum: 72)),
+    'Two-minute explainer, a long example': () => const Scaffold(
+          body: InfoSheet(
+            topic: InfoTopic.twoMinute,
+            example: (usual: 'Drink water every morning 8 glasses', tiny: 'Fill one glass and drink it slowly'),
+          ),
+        ),
   };
 
   for (final width in [375.0, 390.0]) {
@@ -276,7 +286,16 @@ void main() {
 
   // Colors don't change sizes, but each theme builds its own widgets' colors
   for (final palette in [AppPalette.sepia, AppPalette.dark]) {
-    for (final name in ['Habits', 'Calendar', 'Settings', 'New habit', 'Builder, step 1', 'Story, new', 'Habit page']) {
+    for (final name in [
+      'Habits',
+      'Calendar',
+      'Settings',
+      'New habit',
+      'Builder, step 1',
+      'Story, new',
+      'Habit page',
+      'Momentum explainer',
+    ]) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);
         expect(AppPalette.of(tester.element(find.byType(Scaffold).first)), palette);
