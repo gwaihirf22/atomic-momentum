@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/health_link.dart';
 import '../../domain/services/health_days.dart';
 import 'health_source.dart';
 
@@ -12,6 +14,9 @@ class HealthSyncService {
 
   /// Syncs closer together than this are skipped unless forced.
   static const minGap = Duration(seconds: 60);
+
+  /// What the app wrote to Health (the phone's own record, kept a week).
+  static const writesKey = 'health_writes_v1';
 
   final HealthSource Function() _source;
   final SharedPreferences _prefs;
@@ -34,6 +39,60 @@ class HealthSyncService {
     return last == null || clock.now().difference(last) >= minGap;
   }
 
+  List<HealthWrite> _writes() {
+    final raw = _prefs.getString(writesKey);
+    if (raw == null) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is List ? [for (final e in decoded) if (HealthWrite.fromJson(e) case final w?) w] : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<void> _saveWrites(List<HealthWrite> writes) async {
+    final weekAgo = clock.now().subtract(const Duration(days: 8));
+    await _prefs.setString(writesKey, jsonEncode([for (final w in writes) if (w.day.isAfter(weekAgo)) w.toJson()]));
+  }
+
+  /// Mirrors a change to today's amount of a habit that logs to Health:
+  /// more is written to Health; less takes back what the app wrote today,
+  /// newest first. Returns a message when Health holds more than the app
+  /// can take back (it came from Health itself), or null.
+  Future<String?> logChange(Habit before, Habit after) async {
+    final link = after.health;
+    if (link == null || !link.logsToHealth) return null;
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final delta = (after.history[today] ?? 0) - (before.history[today] ?? 0);
+    if (delta == 0) return null;
+    final source = _source();
+    final writes = _writes();
+    if (delta > 0) {
+      final record = await source.log(link.metric, delta, now);
+      if (record == null) return 'Couldn\'t log that to ${source.name}';
+      await _saveWrites([...writes, HealthWrite(habitId: after.id, day: today, amount: delta, record: record)]);
+      return null;
+    }
+    var owed = -delta;
+    final ours = writes.where((w) => w.habitId == after.id && w.day == today).toList();
+    while (owed > 0 && ours.isNotEmpty) {
+      final last = ours.removeLast();
+      writes.remove(last);
+      await source.remove(last.record);
+      if (last.amount > owed) {
+        // Took back too much: log the rest again
+        final rest = await source.log(link.metric, last.amount - owed, last.record.end);
+        if (rest != null) writes.add(HealthWrite(habitId: after.id, day: today, amount: last.amount - owed, record: rest));
+        owed = 0;
+      } else {
+        owed -= last.amount;
+      }
+    }
+    await _saveWrites(writes);
+    return owed > 0 ? 'That came from ${source.name}. Change it there.' : null;
+  }
+
   /// Days to set per habit id, for the linked [habits].
   Future<Map<String, Map<DateTime, int>>> changes(List<Habit> habits) async {
     final linked = habits.where((h) => h.health != null && !h.isBreak).toList();
@@ -53,5 +112,38 @@ class HealthSyncService {
     }
     await _prefs.setInt(lastSyncKey, now.millisecondsSinceEpoch);
     return result;
+  }
+}
+
+/// What the app wrote to Health for a habit, so − can take it back.
+class HealthWrite {
+  final String habitId;
+  final DateTime day;
+  final int amount;
+  final HealthRecord record;
+
+  const HealthWrite({required this.habitId, required this.day, required this.amount, required this.record});
+
+  Map<String, dynamic> toJson() => {
+        'habit': habitId,
+        'day': day.millisecondsSinceEpoch,
+        'amount': amount,
+        'metric': record.metric.name,
+        'start': record.start.millisecondsSinceEpoch,
+        'end': record.end.millisecondsSinceEpoch,
+      };
+
+  static HealthWrite? fromJson(dynamic json) {
+    if (json is! Map) return null;
+    final metric = HealthMetric.fromName(json['metric']);
+    final values = [json['day'], json['amount'], json['start'], json['end']];
+    if (metric == null || json['habit'] is! String || values.any((v) => v is! int)) return null;
+    DateTime at(Object? ms) => DateTime.fromMillisecondsSinceEpoch(ms as int);
+    return HealthWrite(
+      habitId: json['habit'] as String,
+      day: at(json['day']),
+      amount: json['amount'] as int,
+      record: (metric: metric, start: at(json['start']), end: at(json['end'])),
+    );
   }
 }

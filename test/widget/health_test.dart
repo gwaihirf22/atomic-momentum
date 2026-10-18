@@ -163,4 +163,57 @@ void main() {
     expect(find.text('Install Health Connect'), findsOneWidget);
     expect(find.byKey(const Key('healthSyncNow')), findsNothing);
   });
+
+  group('logging back to Health', () {
+    Future<String> addWater() async {
+      await habits.createHabit(CreateHabitParams(
+        name: 'Water',
+        target: 8,
+        units: 'glasses',
+        color: HabitColor.blue,
+        categoryId: BuiltInCategoryIds.body,
+        health: HealthLink(metric: HealthMetric.water, logToHealth: true, linkedOn: yesterday),
+      ));
+      return habits.habits.single.id;
+    }
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero).then((_) => Future<void>.delayed(Duration.zero));
+
+    test('+ logs to Health and − takes back what the app logged', () async {
+      final id = await addWater();
+      await habits.updateHabitProgress(id, 2);
+      await settle();
+      expect(health.logged.single.metric, HealthMetric.water);
+      expect(health.values[HealthMetric.water]![today], 2);
+
+      await habits.updateHabitProgress(id, 1);
+      await settle();
+      expect(health.removed, hasLength(1));
+      expect(health.logged, hasLength(2), reason: 'took back 2, logged 1 again');
+      expect(health.values[HealthMetric.water]![today], 1);
+      expect(habits.takeHealthNotice(), isNull);
+    });
+
+    test('− on water that came from Health says so, and Health\'s number comes back', () async {
+      final id = await addWater();
+      health.values[HealthMetric.water] = {today: 3};
+      await habits.syncHealth(force: true);
+      expect(habits.habits.single.history[today], 3);
+      expect(health.logged, isEmpty, reason: 'numbers from Health aren\'t logged back');
+
+      await habits.updateHabitProgress(id, 2);
+      for (var i = 0; i < 5; i++) {
+        await settle();
+      }
+      expect(habits.takeHealthNotice(), 'That came from Apple Health. Change it there.');
+      expect(habits.habits.single.history[today], 3);
+    });
+
+    test('habits that don\'t log back never write', () async {
+      final id = await addLinked(HealthMetric.steps);
+      await habits.updateHabitProgress(id, 1000);
+      await settle();
+      expect(health.logged, isEmpty);
+    });
+  });
 }

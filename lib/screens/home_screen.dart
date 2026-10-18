@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _habitsForNotices = context.read<HabitProvider>()..addListener(_showHealthNotice);
     _scheduleMidnightReset();
     NotificationService.focusRequests.addListener(_onFocusRequest);
 
@@ -79,6 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _habitsForNotices.removeListener(_showHealthNotice);
     NotificationService.focusRequests.removeListener(_onFocusRequest);
     _midnightTimer?.cancel();
     _highlightTimer?.cancel();
@@ -104,6 +106,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       habits.resetHabitsIfNeeded().then((_) => habits.syncHealth());
       _scheduleMidnightReset();
     }
+  }
+
+  late final HabitProvider _habitsForNotices;
+
+  /// A change that couldn't go to Health (it came from Health itself).
+  void _showHealthNotice() {
+    final notice = _habitsForNotices.takeHealthNotice();
+    if (notice == null || !mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(notice)));
   }
 
   // Every reset boundary (day, week, month) falls on a local midnight

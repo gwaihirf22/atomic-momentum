@@ -194,6 +194,9 @@ class HabitProvider extends ChangeNotifier {
 
   bool _healthSyncing = false;
 
+  /// A change being applied came from Health (so isn't logged back).
+  bool _fromHealth = false;
+
   /// Fills in habits linked to Health from it (the higher number wins for
   /// each day), through the same save queue as taps. Skipped while one is
   /// running, and within a minute of the last unless [force].
@@ -205,7 +208,11 @@ class HabitProvider extends ChangeNotifier {
     try {
       final changes = await health.changes(_habits);
       for (final entry in changes.entries) {
-        await setDays(entry.key, entry.value);
+        // Numbers from Health aren't logged back to it
+        _fromHealth = true;
+        final saved = setDays(entry.key, entry.value);
+        _fromHealth = false;
+        await saved;
       }
     } catch (e) {
       logWarning('Health sync failed: $e');
@@ -213,6 +220,29 @@ class HabitProvider extends ChangeNotifier {
       _healthSyncing = false;
       notifyListeners();
     }
+  }
+
+  /// Why a change couldn't go to Health, once (see [takeHealthNotice]).
+  String? _healthNotice;
+
+  /// The last Health message, cleared as it's read (for a SnackBar).
+  String? takeHealthNotice() {
+    final notice = _healthNotice;
+    _healthNotice = null;
+    return notice;
+  }
+
+  /// Logs a change to a habit that logs to Health, behind the tap. When
+  /// Health holds more than the app wrote, its number comes back.
+  void _mirrorToHealth(Habit before, Habit after) {
+    final health = _health;
+    if (health == null || _fromHealth || !(after.health?.logsToHealth ?? false)) return;
+    health.logChange(before, after).then((notice) {
+      if (notice == null) return;
+      _healthNotice = notice;
+      notifyListeners();
+      syncHealth(force: true);
+    });
   }
 
   /// When this phone last read Health, or null.
@@ -307,6 +337,7 @@ class HabitProvider extends ChangeNotifier {
     }
     _lastSaved.putIfAbsent(habitId, () => current);
     notifyListeners();
+    _mirrorToHealth(current, _habits[index]);
 
     record(_unsaved.putIfAbsent(habitId, _PendingChange.new));
     // A save already running picks this up when it finishes

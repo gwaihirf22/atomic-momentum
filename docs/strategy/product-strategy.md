@@ -63,7 +63,7 @@ These are expected from top apps but aren't the reason someone switches:
 - interactive home and lock screen widgets;
 - the Apple Watch;
 - Siri and Shortcuts;
-- logging automatically from Apple Health.
+- logging automatically from Apple Health (brought forward and built in October 2026: habits fill in from Apple Health / Health Connect and log water and mindful minutes back).
 
 ## 2. Money
 
@@ -123,7 +123,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 |---|---|
 | **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, weekly review and two-minute days, plus rewards (earned freeze and break days) and achievements. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Pro upgrade and tip jar. |
-| **v2** | Widgets (home screen, lock screen, StandBy), logging from Apple Health, sync between devices, Apple Watch. |
+| **v2** | Widgets (home screen, lock screen, StandBy), sync between devices (accounts, Pro), Apple Watch. Logging from Apple Health was brought forward and is done. |
 
 Every feature ships with tests, as with everything so far.
 

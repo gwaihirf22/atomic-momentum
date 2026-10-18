@@ -53,6 +53,11 @@ class FakeHealthSource implements HealthSource {
   @override
   Future<bool> remove(HealthRecord record) async {
     removed.add(record);
+    // The fake's records last one second per unit logged
+    final amount = record.end.difference(record.start).inSeconds;
+    final day = DateTime(record.end.year, record.end.month, record.end.day);
+    final days = values.putIfAbsent(record.metric, () => {});
+    days[day] = (days[day] ?? 0) - amount;
     return true;
   }
 
