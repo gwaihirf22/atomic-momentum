@@ -109,7 +109,7 @@ void main() {
     expect(text(tester, 'insightsMonthCompare'), contains('80'));
   });
 
-  testWidgets('the heatmap: tapping a day says how it went; Year shows more weeks', (tester) async {
+  testWidgets('the heatmap: 6 months; tapping a day says how it went', (tester) async {
     await seed();
     await pump(tester);
     Heatmap heatmap() => tester.widget<Heatmap>(find.byKey(const Key('insightsHeatmap')));
@@ -121,9 +121,6 @@ void main() {
     await tester.tapAt(tester.getTopRight(grid) + const Offset(-3, 3));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('heatmapDaySummary')), findsOneWidget);
-
-    await tap(tester, find.byKey(const Key('insightsRange_year')));
-    expect(heatmap().days.length, inInclusiveRange(52 * 7 + 1, 53 * 7));
   });
 
   testWidgets('choosing one habit shows only it', (tester) async {

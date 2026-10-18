@@ -43,6 +43,7 @@ import 'package:atomic_momentum/domain/services/achievements.dart';
 import 'package:atomic_momentum/presentation/help/explainers.dart';
 import 'package:atomic_momentum/presentation/widgets/achievement_widgets.dart';
 import 'package:atomic_momentum/screens/achievements_screen.dart';
+import 'package:atomic_momentum/screens/heatmap_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
 import '../helpers/real_fonts.dart';
@@ -171,6 +172,7 @@ void main() {
         StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Momentum explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.momentum, momentum: 72)),
     'Achievements': () => const AchievementsScreen(),
+    'Every day (full screen)': () => const HeatmapScreen(),
     'Achievement celebration, a long name': () => Scaffold(
           body: AchievementSheet(
             isNew: true,
@@ -323,6 +325,7 @@ void main() {
       'Insights',
       'Momentum explainer',
       'Achievement celebration, a long name',
+      'Every day (full screen)',
     ]) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);

@@ -33,6 +33,7 @@ import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/stat_card.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'habit_editor_screen.dart';
+import 'heatmap_screen.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -1079,7 +1080,7 @@ class _HeatmapCard extends StatelessWidget {
     return StatCard(
       key: const Key('detailHeatmap'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const StatCardHeading('Last 6 months'),
+        StatCardHeading('Last 6 months', action: HeatmapExpandButton(habitId: habit.id)),
         const SizedBox(height: 12),
         Heatmap(
           days: days,

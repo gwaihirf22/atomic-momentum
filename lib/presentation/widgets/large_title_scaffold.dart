@@ -21,6 +21,9 @@ class LargeTitleScaffold extends StatefulWidget {
   final List<Widget> slivers;
   final Color backgroundColor;
 
+  /// How the page scrolls (e.g. not at all while something inside is pinched).
+  final ScrollPhysics? physics;
+
   const LargeTitleScaffold({
     super.key,
     required this.title,
@@ -28,6 +31,7 @@ class LargeTitleScaffold extends StatefulWidget {
     this.trailing,
     required this.slivers,
     required this.backgroundColor,
+    this.physics,
   });
 
   @override
@@ -86,6 +90,7 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
           child: Builder(
             builder: (context) => CustomScrollView(
               controller: _controller,
+              physics: widget.physics,
               slivers: [
                 SliverToBoxAdapter(child: widget.header),
                 ...widget.slivers,

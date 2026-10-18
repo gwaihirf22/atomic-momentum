@@ -25,19 +25,10 @@ import '../presentation/widgets/momentum_ring.dart';
 import '../presentation/widgets/stat_card.dart';
 import 'achievements_screen.dart';
 import 'habit_detail_screen.dart';
+import 'heatmap_screen.dart';
 
-/// How far back Insights looks.
-enum InsightsRange {
-  half('6 months', 26),
-  year('Year', 53);
-
-  final String label;
-
-  /// Weeks shown on the heatmap (and counted in the cards).
-  final int weeks;
-
-  const InsightsRange(this.label, this.weeks);
-}
+/// How far back the Insights cards look, in weeks (about six months).
+const insightsWeeks = 26;
 
 /// Statistics' home: momentum over the months, every day as a heatmap,
 /// two-minute days, the strongest and hardest weekdays, and each habit.
@@ -49,8 +40,6 @@ class InsightsScreen extends StatefulWidget {
 }
 
 class _InsightsScreenState extends State<InsightsScreen> {
-  var _range = InsightsRange.half;
-
   /// One habit on the heatmap, or null for all.
   String? _habitId;
   DateTime? _selected;
@@ -70,7 +59,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final data = _data = _InsightsData.of(
       habits: habits,
       now: now,
-      range: _range,
       habitId: _habitId,
       weekStart: weekStart,
       previous: _data,
@@ -94,10 +82,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
                       data: data,
                       habits: habits,
                       habitId: _habitId,
-                      range: _range,
                       weekStart: weekStart,
                       selected: _selected,
-                      onRange: (range) => setState(() => _range = range),
                       onHabit: (id) => setState(() {
                         _habitId = id;
                         _selected = null;
@@ -105,7 +91,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
                       onSelect: (day) => setState(() => _selected = day == _selected ? null : day),
                     ),
                     const SizedBox(height: 14),
-                    _TwoMinuteCard(data: data, habits: habits, range: _range),
+                    _TwoMinuteCard(data: data, habits: habits),
                     const SizedBox(height: 14),
                     _WeekCard(data: data, weekStart: weekStart),
                     const SizedBox(height: 14),
@@ -125,7 +111,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
 class _InsightsData {
   final List<Habit> habits;
   final DateTime today;
-  final InsightsRange range;
   final String? habitId;
   final int weekStart;
 
@@ -145,7 +130,6 @@ class _InsightsData {
   _InsightsData._({
     required this.habits,
     required this.today,
-    required this.range,
     required this.habitId,
     required this.weekStart,
     required this.days,
@@ -163,7 +147,6 @@ class _InsightsData {
   static _InsightsData of({
     required List<Habit> habits,
     required DateTime now,
-    required InsightsRange range,
     required String? habitId,
     required int weekStart,
     _InsightsData? previous,
@@ -171,7 +154,6 @@ class _InsightsData {
     final today = DateTime(now.year, now.month, now.day);
     if (previous != null &&
         previous.today == today &&
-        previous.range == range &&
         previous.habitId == habitId &&
         previous.weekStart == weekStart &&
         previous.habits.length == habits.length &&
@@ -180,14 +162,13 @@ class _InsightsData {
     }
 
     final thisWeek = DateTime(today.year, today.month, today.day - (today.weekday - weekStart + 7) % 7);
-    final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (range.weeks - 1));
+    final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (insightsWeeks - 1));
     final chosen = habitId == null ? habits : habits.where((h) => h.id == habitId).toList();
     final days = Insights.days(chosen, from: from, to: today, now: now);
     final chosenKept = Insights.kept(chosen, from: from, now: now);
     return _InsightsData._(
       habits: habits,
       today: today,
-      range: range,
       habitId: habitId,
       weekStart: weekStart,
       days: days,
@@ -350,10 +331,8 @@ class _DaysCard extends StatelessWidget {
   final _InsightsData data;
   final List<Habit> habits;
   final String? habitId;
-  final InsightsRange range;
   final int weekStart;
   final DateTime? selected;
-  final ValueChanged<InsightsRange> onRange;
   final ValueChanged<String?> onHabit;
   final ValueChanged<DateTime> onSelect;
 
@@ -361,10 +340,8 @@ class _DaysCard extends StatelessWidget {
     required this.data,
     required this.habits,
     required this.habitId,
-    required this.range,
     required this.weekStart,
     required this.selected,
-    required this.onRange,
     required this.onHabit,
     required this.onSelect,
   });
@@ -421,15 +398,19 @@ class _DaysCard extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         StatCardHeading(
           'Every day',
-          action: PillButton(
-            key: const Key('insightsHabitPicker'),
-            label: chosen?.name ?? 'All habits',
-            icon: CupertinoIcons.chevron_down,
-            onPressed: () => _pickHabit(context),
-          ),
+          action: Row(mainAxisSize: MainAxisSize.min, children: [
+            Flexible(
+              child: PillButton(
+                key: const Key('insightsHabitPicker'),
+                label: chosen?.name ?? 'All habits',
+                icon: CupertinoIcons.chevron_down,
+                onPressed: () => _pickHabit(context),
+              ),
+            ),
+            HeatmapExpandButton(habitId: habitId),
+          ]),
         ),
-        const SizedBox(height: 10),
-        _RangeSwitch(range: range, onChanged: onRange),
+        Text('Last 6 months', style: TextStyle(fontSize: 12, color: palette.textSecondary)),
         const SizedBox(height: 12),
         Heatmap(
           key: const Key('insightsHeatmap'),
@@ -438,13 +419,13 @@ class _DaysCard extends StatelessWidget {
           selected: selected,
           onSelect: onSelect,
           semanticLabel:
-              '${chosen?.name ?? 'All habits'}, ${range == InsightsRange.half ? 'last 6 months' : 'last year'}: '
+              '${chosen?.name ?? 'All habits'}, last 6 months: '
               'something kept on $kept days, ${data.perfectDays} perfect days',
         ),
         const SizedBox(height: 8),
         if (record != null)
           Text(
-            _summary(record),
+            heatmapDaySummary(record),
             key: const Key('heatmapDaySummary'),
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: palette.text),
           )
@@ -481,77 +462,13 @@ class _DaysCard extends StatelessWidget {
     );
   }
 
-  static String _summary(DayRecord record) {
-    final date = DateFormat.MMMEd().format(record.day);
-    if (record.isEmpty) return '$date: nothing due';
-    final kept = record.done + record.twoMinute;
-    return [
-      '$date: $kept of ${record.due} kept',
-      if (record.perfect) 'perfect day',
-      if (record.twoMinute > 0) '${record.twoMinute} with 2 min',
-    ].join(' · ');
-  }
-}
-
-/// 6 months | Year.
-class _RangeSwitch extends StatelessWidget {
-  final InsightsRange range;
-  final ValueChanged<InsightsRange> onChanged;
-
-  const _RangeSwitch({required this.range, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: palette.raised, borderRadius: BorderRadius.circular(12)),
-      child: Row(children: [
-        for (final option in InsightsRange.values)
-          Expanded(
-            child: Semantics(
-              button: true,
-              selected: option == range,
-              label: option.label,
-              excludeSemantics: true,
-              onTap: () => onChanged(option),
-              child: GestureDetector(
-                key: Key('insightsRange_${option.name}'),
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChanged(option),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  constraints: const BoxConstraints(minHeight: 34),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: option == range ? palette.surface : null,
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Text(
-                    option.label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: option == range ? FontWeight.w700 : FontWeight.w600,
-                      color: option == range ? palette.text : palette.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ]),
-    );
-  }
 }
 
 class _TwoMinuteCard extends StatelessWidget {
   final _InsightsData data;
   final List<Habit> habits;
-  final InsightsRange range;
 
-  const _TwoMinuteCard({required this.data, required this.habits, required this.range});
+  const _TwoMinuteCard({required this.data, required this.habits});
 
   @override
   Widget build(BuildContext context) {
@@ -583,8 +500,7 @@ class _TwoMinuteCard extends StatelessWidget {
       key: const Key('insightsTwoMinute'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const _Heading('Two-minute days', info: InfoTopic.twoMinute),
-        Text(range == InsightsRange.half ? 'Last 6 months' : 'Last 12 months',
-            style: TextStyle(fontSize: 12, color: palette.textSecondary)),
+        Text('Last 6 months', style: TextStyle(fontSize: 12, color: palette.textSecondary)),
         const SizedBox(height: 12),
         if (!anyTiny && kept.twoMinute == 0)
           Text(
