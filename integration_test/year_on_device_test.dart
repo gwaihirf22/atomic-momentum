@@ -220,6 +220,26 @@ void main() {
         await binding.takeScreenshot(name);
       }
 
+      /// Opens what [target] leads to (centred first, clear of the tab bar),
+      /// takes its picture and comes back.
+      Future<void> visit(Finder target, String shot, DateTime at) async {
+        if (target.evaluate().isEmpty) return;
+        await Scrollable.ensureVisible(tester.element(target.first), alignment: 0.4);
+        await _settle(tester);
+        await tester.tap(target.first, warnIfMissed: false);
+        await _settle(tester);
+        final back = find.byType(BackButton).hitTestable().evaluate().isNotEmpty
+            ? find.byType(BackButton).hitTestable()
+            : find.byType(CupertinoNavigationBarBackButton).hitTestable();
+        if (back.evaluate().isEmpty) {
+          problem(at, '$shot: tapping did not open its page');
+          return;
+        }
+        await screenshot(shot);
+        await tester.tap(back.first);
+        await _settle(tester);
+      }
+
       /// The month's end: every screen, its numbers, a picture of each.
       Future<void> checkpoint(int month, DateTime at) async {
         final m = 'm${month.toString().padLeft(2, '0')}';
@@ -229,14 +249,8 @@ void main() {
         await screenshot('${m}_habits');
 
         final water = ids[YearPersona.water];
-        if (water != null) {
-          await tester.ensureVisible(find.byKey(Key('habitCard_$water')));
-          await tester.tap(find.byKey(Key('habitCard_$water')), warnIfMissed: false);
-          await _settle(tester);
-          await screenshot('${m}_habit_page');
-          await tester.pageBack();
-          await _settle(tester);
-        }
+        if (water != null) await visit(find.byKey(Key('habitCard_$water')), '${m}_habit_page', at);
+        await toTop();
 
         await showTab('calendar');
         await screenshot('${m}_calendar');
@@ -251,24 +265,9 @@ void main() {
           problem(at, 'Insights should show a longest streak of $longest');
         }
         await screenshot('${m}_insights');
-        final expand = find.byKey(const Key('heatmapExpand'));
-        if (expand.evaluate().isNotEmpty) {
-          await tester.ensureVisible(expand.first);
-          await tester.tap(expand.first);
-          await _settle(tester);
-          await screenshot('${m}_heatmap');
-          await tester.pageBack();
-          await _settle(tester);
-        }
-        final shelf = find.byKey(const Key('insightsSeeAllAchievements'));
-        if (shelf.evaluate().isNotEmpty) {
-          await tester.ensureVisible(shelf);
-          await tester.tap(shelf);
-          await _settle(tester);
-          await screenshot('${m}_achievements');
-          await tester.pageBack();
-          await _settle(tester);
-        }
+        await visit(find.byKey(const Key('heatmapExpand')), '${m}_heatmap', at);
+        await visit(find.byKey(const Key('insightsSeeAllAchievements')), '${m}_achievements', at);
+        await toTop();
 
         if (settings.showInspireTab) {
           await showTab('inspire');
