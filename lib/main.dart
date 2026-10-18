@@ -69,9 +69,15 @@ class MomentumApp extends StatelessWidget {
               // (AppPalette.of) every widget draws with
               // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
               // it no SnackBar can show
-              builder: (context, child) => Theme(
-                data: IOSTheme.material(palette),
-                child: ScaffoldMessenger(child: child!),
+              builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+                // Status bar icons that show on the theme's background (Android
+                // takes this; iOS follows the navigation bars too)
+                value: (palette.brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+                    .copyWith(statusBarColor: Colors.transparent),
+                child: Theme(
+                  data: IOSTheme.material(palette),
+                  child: ScaffoldMessenger(child: child!),
+                ),
               ),
               localizationsDelegates: const [
                 GlobalMaterialLocalizations.delegate,

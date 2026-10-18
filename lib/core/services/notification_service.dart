@@ -17,6 +17,20 @@ class NotificationService {
 
   static bool _initialized = false;
 
+  /// On Android 12 and later, exact times need the user's say-so (off by
+  /// default from Android 14): without it, notifications are scheduled
+  /// inexactly (Android may hold them a few minutes) rather than failing.
+  static AndroidScheduleMode _androidScheduleMode = AndroidScheduleMode.exactAllowWhileIdle;
+
+  static Future<void> _checkExactAlarms() async {
+    final android =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (android == null) return;
+    final exact = await android.canScheduleExactNotifications();
+    _androidScheduleMode =
+        exact == false ? AndroidScheduleMode.inexactAllowWhileIdle : AndroidScheduleMode.exactAllowWhileIdle;
+  }
+
   /// IDs used by the developer notification tester.
   static const int testNotificationId = 999;
   static const int scheduledTestNotificationId = 998;
@@ -85,6 +99,7 @@ class NotificationService {
       // Permission is asked separately (see requestPermission), so startup
       // never waits on the system prompt
       _initialized = true;
+      await _checkExactAlarms();
 
       // Opened by tapping a notification while the app wasn't running
       final launch = await _notificationsPlugin.getNotificationAppLaunchDetails();
@@ -216,7 +231,7 @@ class NotificationService {
         tz.TZDateTime.from(at, tz.UTC),
         details ?? _getNotificationDetails(),
         payload: '$reminderPayloadPrefix$habitId',
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: _androidScheduleMode,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
@@ -254,7 +269,7 @@ class NotificationService {
         tz.TZDateTime.from(warning.at, tz.UTC),
         details ?? _getNotificationDetails(),
         payload: habitId,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: _androidScheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -317,7 +332,7 @@ class NotificationService {
         tz.TZDateTime.from(at, tz.UTC),
         _getNotificationDetails(),
         payload: testPayload,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: _androidScheduleMode,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -348,7 +363,7 @@ class NotificationService {
         tz.TZDateTime.from(at, tz.UTC),
         _getNotificationDetails(),
         payload: habitId,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: _androidScheduleMode,
         uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       );
       return at;

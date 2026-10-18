@@ -75,6 +75,8 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
         backgroundColor: widget.backgroundColor,
         navigationBar: CupertinoNavigationBar(
           backgroundColor: widget.backgroundColor,
+          // Sets the status bar icons for the theme (Sepia counts as light)
+          brightness: AppPalette.of(context).brightness,
           border: _collapsed ? Border(bottom: BorderSide(color: separator, width: 0.5)) : null,
           middle: AnimatedOpacity(
             key: const Key('collapsedTitle'),
