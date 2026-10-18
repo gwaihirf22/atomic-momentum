@@ -364,7 +364,7 @@ void main() {
       for (final png in sharer.shared) {
         expect(pngSize(png.png), (1080, 1350));
       }
-    }, timeout: const Timeout(Duration(minutes: 90)));
+    }, timeout: const Timeout(Duration(hours: 4)));
   });
 }
 

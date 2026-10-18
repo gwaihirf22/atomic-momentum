@@ -51,6 +51,9 @@ for attempt in 1 2 3; do
   done
   wait "$pid" 2>/dev/null && status=0 || status=$?
   kill "$tailer" 2>/dev/null || true
+  # The driver can say "All tests passed" after the test itself failed
+  # (a timeout, for one): trust the test's own result
+  if grep -qE "Some tests failed|\[E\]" "$log"; then status=1; fi
   if grep -q "Connected to Flutter application" "$log"; then
     rm -f "$log"
     break
