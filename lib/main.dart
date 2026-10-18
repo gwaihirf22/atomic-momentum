@@ -95,6 +95,8 @@ class MomentumApp extends StatelessWidget {
                   child: IntroGate(
                     enabled: showIntro,
                     onDone: onIntroDone,
+                    // Fades into Habits once they've loaded (a long history takes a moment)
+                    isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
                     child: ScaffoldMessenger(child: child!),
                   ),
                 ),

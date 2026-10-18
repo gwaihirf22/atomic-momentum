@@ -27,9 +27,17 @@ class IntroScreen extends StatefulWidget {
   /// launch) pauses it instead of skipping it.
   static const maxStep = Duration(milliseconds: 50);
 
+  /// The longest it holds on "Atomic Momentum" waiting for [isReady].
+  static const maxHold = Duration(seconds: 4);
+
   final VoidCallback onDone;
 
-  const IntroScreen({super.key, required this.onDone});
+  /// Whether the app behind it is ready to show (its habits loaded). Until
+  /// then it holds on the final frame, for up to [maxHold], so it fades into
+  /// a ready screen. Null: never waits.
+  final bool Function()? isReady;
+
+  const IntroScreen({super.key, required this.onDone, this.isReady});
 
   @override
   State<IntroScreen> createState() => _IntroScreenState();
@@ -42,8 +50,9 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
   bool _started = false;
   bool _finished = false;
 
-  /// Seconds of intro shown so far.
+  /// Seconds of intro shown so far, and spent holding for the app.
   double _elapsed = 0;
+  double _held = 0;
 
   double get _total => (_reduced ? IntroScreen.reducedDuration : IntroScreen.duration).inMilliseconds / 1000;
   double get _fadeFrom => _reduced ? _total - 0.3 : IntroScreen.fadeAt;
@@ -71,7 +80,15 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
     final step = now - _lastTick;
     _lastTick = now;
     final seconds = (step > IntroScreen.maxStep ? IntroScreen.maxStep : step).inMicroseconds / 1e6;
-    setState(() => _elapsed = math.min(_total, _elapsed + seconds));
+    // Hold on the final frame, before the fade, while the app isn't ready
+    final isReady = widget.isReady;
+    final waiting = isReady != null && _held < IntroScreen.maxHold.inMicroseconds / 1e6 && !isReady();
+    if (waiting && _elapsed >= _fadeFrom) {
+      _held += seconds;
+      return;
+    }
+    final limit = waiting ? _fadeFrom : _total;
+    setState(() => _elapsed = math.min(limit, _elapsed + seconds));
     if (_elapsed >= _total && !_finished) {
       _finished = true;
       _ticker.stop();
@@ -80,6 +97,8 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
   }
 
   void _skip() {
+    // A tap doesn't wait for the app either
+    _held = IntroScreen.maxHold.inMicroseconds / 1e6;
     if (_elapsed < _fadeFrom) setState(() => _elapsed = _fadeFrom);
   }
 
@@ -375,9 +394,12 @@ class _BurstPainter extends CustomPainter {
 class IntroGate extends StatefulWidget {
   final bool enabled;
   final VoidCallback? onDone;
+
+  /// See IntroScreen.isReady.
+  final bool Function()? isReady;
   final Widget child;
 
-  const IntroGate({super.key, required this.enabled, this.onDone, required this.child});
+  const IntroGate({super.key, required this.enabled, this.onDone, this.isReady, required this.child});
 
   @override
   State<IntroGate> createState() => _IntroGateState();
@@ -398,7 +420,7 @@ class _IntroGateState extends State<IntroGate> {
       fit: StackFit.expand,
       children: [
         ExcludeSemantics(excluding: _showing, child: widget.child),
-        if (_showing) IntroScreen(onDone: _done),
+        if (_showing) IntroScreen(onDone: _done, isReady: widget.isReady),
       ],
     );
   }

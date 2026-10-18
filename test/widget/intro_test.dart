@@ -29,7 +29,11 @@ void main() {
       tester.widget<Opacity>(find.ancestor(of: finder, matching: find.byType(Opacity)).first).opacity;
 
   Future<void> pumpGate(WidgetTester tester,
-      {VoidCallback? onDone, Widget app = const Text('the app'), bool reduceMotion = false, AppPalette palette = AppPalette.dark}) async {
+      {VoidCallback? onDone,
+      bool Function()? isReady,
+      Widget app = const Text('the app'),
+      bool reduceMotion = false,
+      AppPalette palette = AppPalette.dark}) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -37,7 +41,7 @@ void main() {
       theme: IOSTheme.material(palette),
       home: MediaQuery(
         data: MediaQueryData(size: const Size(390, 844), disableAnimations: reduceMotion),
-        child: IntroGate(enabled: true, onDone: onDone, child: Scaffold(body: Center(child: app))),
+        child: IntroGate(enabled: true, onDone: onDone, isReady: isReady, child: Scaffold(body: Center(child: app))),
       ),
     ));
   }
@@ -90,6 +94,55 @@ void main() {
     await play(tester, IntroScreen.duration);
     await tester.pump();
     expect(done, 1);
+  });
+
+  group('waiting for the app', () {
+    testWidgets('holds on "Atomic Momentum" until the habits are loaded, then fades', (tester) async {
+      var done = 0;
+      var ready = false;
+      await pumpGate(tester, onDone: () => done++, isReady: () => ready);
+      await play(tester, IntroScreen.duration + ms(1500));
+      expect(done, 0);
+      expect(opacityOf(tester, mark), 1, reason: 'the final frame, in full');
+      expect(
+          tester
+              .widget<Opacity>(
+                  find.descendant(of: find.byKey(const Key('intro')), matching: find.byType(Opacity)).first)
+              .opacity,
+          1,
+          reason: 'not fading yet');
+      ready = true;
+      await play(tester, ms(400));
+      await tester.pump();
+      expect(done, 1);
+      expect(find.byKey(const Key('intro')), findsNothing);
+    });
+
+    testWidgets('gives up after IntroScreen.maxHold', (tester) async {
+      var done = 0;
+      await pumpGate(tester, onDone: () => done++, isReady: () => false);
+      await play(tester, IntroScreen.duration + IntroScreen.maxHold + ms(100));
+      await tester.pump();
+      expect(done, 1);
+    });
+
+    testWidgets("doesn't wait when the app is ready in time", (tester) async {
+      var done = 0;
+      await pumpGate(tester, onDone: () => done++, isReady: () => true);
+      await play(tester, IntroScreen.duration + ms(50));
+      await tester.pump();
+      expect(done, 1);
+    });
+
+    testWidgets("a tap doesn't wait for the app", (tester) async {
+      var done = 0;
+      await pumpGate(tester, onDone: () => done++, isReady: () => false);
+      await play(tester, ms(300));
+      await tester.tap(find.byKey(const Key('intro')));
+      await play(tester, ms(400));
+      await tester.pump();
+      expect(done, 1);
+    });
   });
 
   testWidgets('a tap skips to the end', (tester) async {
