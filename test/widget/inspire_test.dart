@@ -21,6 +21,9 @@ import 'package:atomic_momentum/screens/quote_search_screen.dart';
 import 'package:atomic_momentum/presentation/inspire/quote_filter_sheet.dart';
 import 'package:atomic_momentum/domain/services/quote_facets.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/presentation/share/share_sheet.dart';
+
+import '../helpers/fake_sharer.dart';
 
 /// The Inspire tab, quote search, the person's own quotes, and quotes kept
 /// with a habit.
@@ -102,6 +105,43 @@ void main() {
 
       expect(find.text('Courage, dear heart.'), findsOneWidget, reason: 'their quote is the only one, so it is today\'s');
       expect(find.text('— Aslan'), findsOneWidget);
+    });
+
+    testWidgets('"Another quote" shows a different one, and keeps it', (tester) async {
+      await pump(tester, const InspireScreen());
+      final first = today();
+      await tester.tap(find.byKey(const Key('inspireAnother')));
+      await tester.pumpAndSettle();
+      final second = today();
+      expect(second.id, isNot(first.id));
+      expect(find.byKey(Key('inspireQuote_${second.id}')), findsOneWidget);
+      expect(find.byKey(Key('inspireQuote_${first.id}')), findsNothing);
+    });
+
+    testWidgets('⋯ shares the quote as a card', (tester) async {
+      final sharer = FakeSharer.install();
+      await pump(tester, const InspireScreen());
+      await tester.tap(find.byKey(const Key('inspireOptions')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('inspireOption_share')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('shareCard_quote')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('shareCard_quote')), matching: find.text(today().text)),
+          findsOneWidget);
+
+      final button = find.descendant(of: find.byType(ShareSheet), matching: find.text('Share…'));
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        await tester.tap(button);
+        for (var i = 0; i < 20 && sharer.shared.isEmpty; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await tester.pump();
+        }
+      });
+      await tester.pumpAndSettle();
+      expect(sharer.shared.single.name, 'momentum-quote.png');
+      expect(pngSize(sharer.shared.single.png), (1080, 1350));
     });
 
     testWidgets('saves and unsaves the quote', (tester) async {

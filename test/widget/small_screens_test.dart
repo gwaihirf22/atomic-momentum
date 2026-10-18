@@ -31,6 +31,9 @@ import 'package:atomic_momentum/domain/entities/quote.dart';
 import 'package:atomic_momentum/screens/inspire_screen.dart';
 import 'package:atomic_momentum/screens/quote_search_screen.dart';
 import 'package:atomic_momentum/presentation/inspire/quote_filter_sheet.dart';
+import 'package:atomic_momentum/presentation/inspire/quote_share_card.dart';
+import 'package:atomic_momentum/presentation/share/share_cards.dart';
+import 'package:atomic_momentum/core/copy/quotes.dart';
 import 'package:atomic_momentum/domain/services/quote_facets.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
@@ -51,7 +54,6 @@ import 'package:atomic_momentum/presentation/help/explainers.dart';
 import 'package:atomic_momentum/presentation/widgets/achievement_widgets.dart';
 import 'package:atomic_momentum/screens/achievements_screen.dart';
 import 'package:atomic_momentum/screens/heatmap_screen.dart';
-import 'package:atomic_momentum/presentation/share/share_cards.dart';
 import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
@@ -190,6 +192,17 @@ void main() {
           body: QuoteFilterSheet(initial: QuoteFilter(author: 'Seneca', themes: {QuoteTheme.hardDays})),
         ),
     'Inspire explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.inspire)),
+    'Quote share card, the longest quote': () => Scaffold(
+          body: Center(child: QuoteShareCard(quote: longQuote, look: ShareLook.of(ShareStyle.charged))),
+        ),
+    'Quote share card, a short quote': () => Scaffold(
+          body: Center(
+            child: QuoteShareCard(
+              quote: Quotes.library.firstWhere((q) => q.id == 'kempis-habit-by-habit'),
+              look: ShareLook.of(ShareStyle.ember),
+            ),
+          ),
+        ),
     'Quote sources sheet': () => const Scaffold(body: QuoteSourcesSheet()),
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>

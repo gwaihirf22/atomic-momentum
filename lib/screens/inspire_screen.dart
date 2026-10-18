@@ -4,11 +4,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../core/feedback/haptics.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/quote.dart';
 import '../domain/services/quote_facets.dart';
 import '../presentation/help/explainers.dart';
+import '../presentation/inspire/quote_share_card.dart';
 import '../presentation/inspire/quote_widgets.dart';
 import '../presentation/providers/quote_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -76,18 +78,22 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
   }
 
   Future<void> _options() async {
+    final quote = context.read<QuoteProvider>().today(context.read<SettingsProvider>().quoteFamilies);
     final choice = await chooseAdaptive<_Option>(
       context,
       title: 'Inspire',
-      options: const [
-        AdaptiveOption(_Option.add, 'Add a quote', key: Key('inspireOption_add')),
-        AdaptiveOption(_Option.mine, 'My quotes', key: Key('inspireOption_mine')),
-        AdaptiveOption(_Option.saved, 'Saved quotes', key: Key('inspireOption_saved')),
-        AdaptiveOption(_Option.sources, 'Quote sources', key: Key('inspireOption_sources')),
+      options: [
+        if (quote != null) const AdaptiveOption(_Option.share, 'Share this quote', key: Key('inspireOption_share')),
+        const AdaptiveOption(_Option.add, 'Add a quote', key: Key('inspireOption_add')),
+        const AdaptiveOption(_Option.mine, 'My quotes', key: Key('inspireOption_mine')),
+        const AdaptiveOption(_Option.saved, 'Saved quotes', key: Key('inspireOption_saved')),
+        const AdaptiveOption(_Option.sources, 'Quote sources', key: Key('inspireOption_sources')),
       ],
     );
     if (!mounted || choice == null) return;
     switch (choice) {
+      case _Option.share:
+        if (quote != null) await shareQuote(context, quote);
       case _Option.add:
         await showMyQuoteSheet(context);
       case _Option.mine:
@@ -96,6 +102,16 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
         _openSearch(const QuoteSearchScreen(start: QuoteList.saved));
       case _Option.sources:
         await showQuoteSourcesSheet(context);
+    }
+  }
+
+  Future<void> _another(Set<QuoteFamily> families) async {
+    Haptics.selection();
+    final changed = await context.read<QuoteProvider>().another(families);
+    if (!changed && mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text("That's the only quote in your sources"), duration: Duration(seconds: 2)),
+      );
     }
   }
 
@@ -161,7 +177,17 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
                     child: Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
-                        child: quote == null ? const _NoQuotes() : _TodaysQuote(quote: quote, saved: quotes.isSaved(quote.id)),
+                        child: quote == null
+                            ? const _NoQuotes()
+                            : AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 350),
+                                child: _TodaysQuote(
+                                  key: ValueKey(quote.id),
+                                  quote: quote,
+                                  saved: quotes.isSaved(quote.id),
+                                  onAnother: () => _another(families),
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -176,13 +202,14 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
   }
 }
 
-enum _Option { add, mine, saved, sources }
+enum _Option { share, add, mine, saved, sources }
 
 class _TodaysQuote extends StatelessWidget {
   final Quote quote;
   final bool saved;
+  final VoidCallback onAnother;
 
-  const _TodaysQuote({required this.quote, required this.saved});
+  const _TodaysQuote({super.key, required this.quote, required this.saved, required this.onAnother});
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +245,20 @@ class _TodaysQuote extends StatelessWidget {
         QuoteByline(quote, size: 16),
         const SizedBox(height: 36),
         Center(child: QuoteActions(quote: quote, saved: saved)),
+        const SizedBox(height: 16),
+        Center(
+          child: TextButton.icon(
+            key: const Key('inspireAnother'),
+            onPressed: onAnother,
+            icon: const Icon(CupertinoIcons.arrow_2_circlepath, size: 17),
+            label: const Text('Another quote'),
+            style: TextButton.styleFrom(
+              foregroundColor: palette.textSecondary,
+              minimumSize: const Size(44, 44),
+              textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
       ],
     );
   }

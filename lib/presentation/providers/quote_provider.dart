@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/copy/quotes.dart';
@@ -16,7 +17,13 @@ class QuoteProvider extends ChangeNotifier {
 
   QuoteProvider(this._repository, this._manage);
 
+  /// Source of "Another quote" picks; tests seed it (test/flutter_test_config.dart).
+  static Random random = Random();
+
   List<Quote> _mine = const [];
+
+  /// The quote picked with "Another quote", for the day it was picked.
+  ({String day, String id})? _chosen;
   List<String> _saved = const [];
   String? _error;
 
@@ -26,6 +33,7 @@ class QuoteProvider extends ChangeNotifier {
   Future<void> load() async {
     _mine = await _repository.getMine();
     _saved = await _repository.getSaved();
+    _chosen = await _repository.getChosenToday();
     notifyListeners();
   }
 
@@ -42,8 +50,41 @@ class QuoteProvider extends ChangeNotifier {
   /// Every quote from the [families] turned on.
   List<Quote> from(Set<QuoteFamily> families) => [for (final q in all) if (families.contains(q.family)) q];
 
-  /// Today's quote (or [now]'s) from the [families] turned on.
-  Quote? today(Set<QuoteFamily> families, {DateTime? now}) => QuoteOfTheDay.pick(now ?? clock.now(), from(families));
+  /// Today's quote (or [now]'s) from the [families] turned on: the one
+  /// picked with "Another quote" if it's for that day and its source is
+  /// still on, otherwise the day's turn.
+  Quote? today(Set<QuoteFamily> families, {DateTime? now}) {
+    final date = now ?? clock.now();
+    final chosen = _chosen;
+    if (chosen != null && chosen.day == _dayKey(date)) {
+      final quote = find(chosen.id);
+      if (quote != null && families.contains(quote.family)) return quote;
+    }
+    return QuoteOfTheDay.pick(date, from(families));
+  }
+
+  /// Swaps today's quote for another at random from the [families] turned
+  /// on (never the one showing). It stays for the rest of the day; the
+  /// days' turns go on at midnight. False if there's nothing else to show.
+  Future<bool> another(Set<QuoteFamily> families, {DateTime? now}) async {
+    final date = now ?? clock.now();
+    final current = today(families, now: date);
+    final others = [for (final q in from(families)) if (q.id != current?.id) q];
+    if (others.isEmpty) return false;
+    final pick = others[random.nextInt(others.length)];
+    _chosen = (day: _dayKey(date), id: pick.id);
+    notifyListeners();
+    try {
+      await _repository.saveChosenToday(_chosen!.day, pick.id);
+    } on AppException catch (e) {
+      // Still shown for this session
+      _error = e.message;
+    }
+    return true;
+  }
+
+  static String _dayKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Quote? find(String id) {
     for (final q in all) {

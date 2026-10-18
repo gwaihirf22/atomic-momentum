@@ -18,6 +18,8 @@ Check the wording of every built-in quote against the named public-domain editio
 ## How it works
 - `Quote` (id, text, author, source, family, themes). Built-in quotes are `const` data in `core/copy/quotes.dart`, and their ids are stable because habits and the saved list keep quotes by id.
 - **Quote of the day** (`QuoteOfTheDay`): quotes take turns in an order set by a hash of their ids, indexed by the number of days since 2024-01-01 (counted from the calendar date). Every device shows the same quote all day, a new one at local midnight, and none repeats until all have shown. Adding a quote doesn't reorder the rest. Turning sources off just narrows the pool.
+- **Another quote**: the button under the quote swaps in a different one at random from the sources turned on. It stays for the rest of that day, after a restart too (`quote_today_v1`). The normal turns resume at midnight, and the day's turn comes back if the chosen quote's source is turned off.
+- **Sharing**: ⋯ → Share this quote opens the app's share sheet with a quote card (a 1080 × 1350 picture), in any share style.
 - **Browse and filters** (`QuoteFacets`, `QuoteFilter`): with nothing typed or chosen, Quotes shows what the library holds:
   - the sources turned on, with counts, and a link to the ones turned off
   - themes

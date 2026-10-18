@@ -13,4 +13,10 @@ abstract class QuoteRepository {
   Future<List<String>> getSaved();
 
   Future<void> saveSaved(List<String> ids);
+
+  /// The quote picked with "Another quote" and the day it was picked for
+  /// ('yyyy-MM-dd'), or null if none.
+  Future<({String day, String id})?> getChosenToday();
+
+  Future<void> saveChosenToday(String day, String id);
 }

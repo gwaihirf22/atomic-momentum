@@ -8,6 +8,7 @@ import '../../domain/repositories/quote_repository.dart';
 class QuoteRepositoryImpl implements QuoteRepository {
   static const mineKey = 'quotes_mine_v1';
   static const savedKey = 'quotes_saved_v1';
+  static const chosenTodayKey = 'quote_today_v1';
 
   /// Where unreadable quotes are kept instead of being thrown away.
   static const corruptBackupKey = 'quotes_mine_v1_corrupt';
@@ -43,6 +44,19 @@ class QuoteRepositoryImpl implements QuoteRepository {
   Future<void> saveSaved(List<String> ids) async {
     final ok = await _prefs.setStringList(savedKey, ids);
     if (!ok) throw const StorageException('Failed to write saved quotes to storage');
+  }
+
+  @override
+  Future<({String day, String id})?> getChosenToday() async {
+    final stored = _prefs.getStringList(chosenTodayKey);
+    if (stored == null || stored.length != 2 || stored.any((s) => s.isEmpty)) return null;
+    return (day: stored[0], id: stored[1]);
+  }
+
+  @override
+  Future<void> saveChosenToday(String day, String id) async {
+    final ok = await _prefs.setStringList(chosenTodayKey, [day, id]);
+    if (!ok) throw const StorageException('Failed to write the chosen quote to storage');
   }
 
   /// Null when the data is unusable as a whole. Bad entries are skipped; for
