@@ -81,6 +81,8 @@ flutter:
 
   assets:
     - assets/fonts/Sora/OFL.txt
+    # Settings → App icon previews (tool/make_app_icons.py)
+    - assets/branding/icons/
 
   # Sora (SIL Open Font License), for large titles; body text is the system font
   fonts:
@@ -122,14 +124,14 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
-# App icons: `./flutter/bin/dart run flutter_launcher_icons` regenerates them
-# from assets/branding (app_icon.png is full-bleed; iOS/Android round the
-# corners; macOS icons carry their own shape and margin)
+# App icons. iPhone and Android: `python3 tool/make_app_icons.py` (light, dark
+# and the choices in Settings → App icon), so they're off here. Mac and web:
+# `./flutter/bin/dart run flutter_launcher_icons` (app_icon.png is full-bleed;
+# macOS icons carry their own shape and margin)
 flutter_launcher_icons:
   image_path: "assets/branding/app_icon.png"
-  ios: true
-  remove_alpha_ios: true
-  android: true
+  ios: false
+  android: false
   macos:
     generate: true
     image_path: "assets/branding/app_icon_macos.png"

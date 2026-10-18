@@ -49,6 +49,7 @@ import 'package:atomic_momentum/screens/home_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/screens/app_icon_screen.dart';
 
 import 'package:atomic_momentum/domain/services/achievements.dart';
 import 'package:atomic_momentum/presentation/help/explainers.dart';
@@ -58,6 +59,7 @@ import 'package:atomic_momentum/screens/heatmap_screen.dart';
 import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
+import '../helpers/fake_app_icon_service.dart';
 import '../helpers/fake_health_source.dart';
 import '../helpers/real_fonts.dart';
 
@@ -79,6 +81,8 @@ void main() {
     await initializeDependencies(seedDefaultHabit: false);
     // Health shows (as on an iPhone), with a habit filled in from it
     FakeHealthSource.install();
+    // Settings shows App icon, as on an iPhone
+    FakeAppIconService.install();
     habits = get<HabitProvider>();
     await habits.loadHabits();
     await habits.addSampleHabits();
@@ -199,6 +203,7 @@ void main() {
     'Habits': () => const HomeScreen(),
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
+    'App icon': () => const AppIconScreen(),
     'Insights': () => const InsightsScreen(),
     'Inspire': () => const InspireScreen(),
     'Quote search': () => const QuoteSearchScreen(),
@@ -454,6 +459,7 @@ void main() {
       'Habits',
       'Calendar',
       'Settings',
+      'App icon',
       'New habit',
       'Builder, step 1',
       'Story, new',

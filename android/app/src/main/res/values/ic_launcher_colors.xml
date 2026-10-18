@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Behind each adaptive launcher icon; made by tool/make_app_icons.py -->
+<resources>
+    <color name="ic_launcher_background">#021631</color>
+    <color name="ic_launcher_light_background">#FDFAF3</color>
+</resources>

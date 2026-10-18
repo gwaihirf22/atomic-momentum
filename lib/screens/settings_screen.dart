@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
+import '../core/branding/app_icons.dart';
+import '../core/injection/injection_container.dart';
+import '../core/services/app_icon_service.dart';
 import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/habit_notify.dart';
@@ -18,6 +21,7 @@ import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/health_settings_section.dart';
 import '../presentation/widgets/settings_list.dart';
+import 'app_icon_screen.dart';
 import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
 
@@ -92,6 +96,7 @@ class SettingsScreen extends StatelessWidget {
                   if (theme != null) await themeProvider.setDayTheme(theme);
                 },
               ),
+            if (get<AppIconService>().isSupported) const _AppIconSetting(),
             SettingsTile(
               tileKey: const Key('dayStartSetting'),
               icon: CupertinoIcons.sunrise_fill,
@@ -420,4 +425,43 @@ class SettingsScreen extends StatelessWidget {
         AppTheme.sepia => 'Sepia',
         AppTheme.dark => 'Dark',
       };
+}
+
+/// Settings → App icon, showing the icon the phone has now.
+class _AppIconSetting extends StatefulWidget {
+  const _AppIconSetting();
+
+  @override
+  State<_AppIconSetting> createState() => _AppIconSettingState();
+}
+
+class _AppIconSettingState extends State<_AppIconSetting> {
+  final _service = get<AppIconService>();
+  AppIconChoice? _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final icon = await _service.current();
+    if (mounted) setState(() => _current = icon);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsTile(
+      tileKey: const Key('appIconSetting'),
+      icon: CupertinoIcons.app_fill,
+      iconColor: HabitColor.blue.color,
+      title: 'App icon',
+      value: _current?.label,
+      onTap: () async {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppIconScreen()));
+        await _load();
+      },
+    );
+  }
 }
