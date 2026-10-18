@@ -12,7 +12,7 @@ flutter="${FLUTTER:-./flutter/bin/flutter}"
 device="${1:?Usage: tool/perf_check.sh <device id> [years]}"
 years="${2:-1}"
 
-"$flutter" drive --profile \
+"$flutter" drive --profile --no-dds \
   --driver=test_driver/perf_driver.dart \
   --target=integration_test/year_performance_test.dart \
   --dart-define=YEARS="$years" \
