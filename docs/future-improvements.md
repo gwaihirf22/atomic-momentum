@@ -15,11 +15,19 @@ Things to do that aren't on the product roadmap, or that are smaller than a road
 
 ## App icon, launch and intro
 
-- **More app icons.** The catalogue is built to grow: a source picture, a line in `tool/make_app_icons.py`, an `AppIcons` entry, a manifest alias and the Xcode setting (CLAUDE.md, "App icon"). **Decision needed:** the strategy lists "themes and alternate app icons" under Pro, but themes and the icon choice are free today.
+- **More app icons.** The catalogue is built to grow: a source picture, a line in `tool/make_app_icons.py`, an `AppIcons` entry, a manifest alias and the Xcode setting (CLAUDE.md, "App icon"). All of them are free; the app has no Pro.
 - **iOS 18 tinted icons.** iOS makes a tinted version from the default icon. A tinted variant of our own (a grayscale logo in each icon set) would look cleaner.
 - **The launch screen follows the phone's light or dark mode, not the app's Appearance setting.** With Appearance set to Dark on a phone in light mode, a cream frame shows before the dark intro. Native launch screens can't read the app's setting, so the only fix would be a neutral launch colour.
 - **macOS and web icons** still come from the older `assets/branding/app_icon.png` crop. Regenerate them from the new full-bleed masters (`app_icon_charged.png`, `app_icon_light.png`).
 - **`MomentumMark`** (the logo drawn in code, in the theme's colours) can be reused for the onboarding tutorial and an About screen.
+
+## Buy me a coffee
+
+- **Turn it on:** make a tip page (Buy Me a Coffee, Ko-fi or similar) and put its address in `AppLinks.coffee` (`lib/core/services/sharer.dart`). Until then the Settings row stays hidden.
+- **Tips outside the US** would have to be in-app purchases (Apple guideline 3.1.1; Google Play's payments policy). Add them only if wanted: three consumable products, through `in_app_purchase` or RevenueCat, plus each store's paid-apps agreement.
+- **Watch the rules:**
+  - Google's US allowance follows a court order, reported to run until November 2027. Recheck it before then, and before each store submission (Apple guideline 3.1.1(a), Google Play's payments policy).
+  - On Android the US check uses the phone's region, because Play's own country needs its billing library. If Google objects, switch to Play Billing's `BillingConfig.countryCode`.
 
 ## Health and Inspire
 

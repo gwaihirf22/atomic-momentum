@@ -60,6 +60,6 @@
 - **Android:** use an emulator with the Health Connect app installed.
 
 ## Later
-- Accounts and sync between devices (Pro). History stays the source of truth, and the per-day "higher wins" rule merges cleanly. This phone's own state (last sync, write log, permissions) stays local. Change timestamps per day will be needed first.
+- Accounts and sync between devices (possibly a paid extra; the app is otherwise free). History stays the source of truth, and the per-day "higher wins" rule merges cleanly. This phone's own state (last sync, write log, permissions) stays local. Change timestamps per day will be needed first.
 - Background delivery (filling in without opening the app), and a badge on habit cards.
 - **From the other session's year simulation:** raising a target re-scores all past days. Health-linked targets can be raised too, so the same question applies.

@@ -62,7 +62,7 @@ None of these happen at launch, and they touch one habit at a time. A few hundre
 - **New layout per habit:** `checkpoint`, `recent` (today's format, within the window) and `archive` (a separate key per habit, e.g. `habit_archive_<id>`). Prefs reads and writes stay on the main isolate; decoding can stay in `Isolate.run` as now.
 - **Rolling the window:** done at most once a day, at the launch's period reset (`UpdateHabitUseCase.refreshAll`). Days that leave the window are folded into the checkpoint and appended to the archive in the same single write.
 - **Migration:** one-time and per habit. Replay the full history, write the checkpoint and archive, and keep the old JSON until the new one is read back and checks out.
-- **Backup, sync and CSV export** (Pro, later) read the archive as well. The archive is just the days, so nothing is lost.
+- **Backup, sync and CSV export** (later) read the archive as well. The archive is just the days, so nothing is lost.
 
 ## How we'll know it's right
 

@@ -61,6 +61,7 @@ import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
 import '../helpers/fake_app_icon_service.dart';
+import '../helpers/fake_support_link.dart';
 import '../helpers/fake_health_source.dart';
 import '../helpers/real_fonts.dart';
 
@@ -84,6 +85,8 @@ void main() {
     FakeHealthSource.install();
     // Settings shows App icon, as on an iPhone
     FakeAppIconService.install();
+    // And Buy me a coffee, as for a US user once there's a page
+    FakeSupportLink.install();
     habits = get<HabitProvider>();
     await habits.loadHabits();
     await habits.addSampleHabits();

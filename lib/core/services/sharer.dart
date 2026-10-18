@@ -14,6 +14,10 @@ class AppLinks {
   /// Sent along with a shared picture (null before launch: the card itself
   /// carries the name).
   static String? get shareText => hasStore ? 'Made with Momentum: $store' : null;
+
+  /// The developer's tip page ("Buy me a coffee" in Settings, US only; see
+  /// SupportLink). Empty until there is one, which hides the row.
+  static const coffee = '';
 }
 
 /// Hands a picture to the phone's share sheet (Messages, WhatsApp, Telegram,

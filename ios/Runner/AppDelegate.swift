@@ -1,4 +1,5 @@
 import Flutter
+import StoreKit
 import UIKit
 
 @main
@@ -12,6 +13,9 @@ import UIKit
     GeneratedPluginRegistrant.register(with: self)
     if let registrar = self.registrar(forPlugin: "AppIcon") {
       AppIconChannel.register(messenger: registrar.messenger())
+    }
+    if let registrar = self.registrar(forPlugin: "Storefront") {
+      StorefrontChannel.register(messenger: registrar.messenger())
     }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
@@ -40,6 +44,21 @@ enum AppIconChannel {
         }
       default:
         result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+}
+
+/// The App Store's country for this Apple ID ("USA"), or nil when unknown.
+/// Settings offers "Buy me a coffee" (an outside link) only in the US, where
+/// Apple allows it (guideline 3.1.1(a)).
+enum StorefrontChannel {
+  static func register(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "momentum/storefront", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "country" else { return result(FlutterMethodNotImplemented) }
+      Task { @MainActor in
+        result(await Storefront.current?.countryCode)
       }
     }
   }

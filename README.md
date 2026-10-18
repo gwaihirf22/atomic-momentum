@@ -17,6 +17,7 @@ Built with Flutter for iPhone first, with Android, macOS and web from the same c
 - **Habit page:** the day's ring, the week and month, streak, best and momentum, an 8-week trend, the habit's "why" and day notes.
 - **Inspire:** the quote of the day from a public-domain library, your own quotes, and quotes kept with a habit.
 - **Apple Health and Health Connect:** habits fill in from steps, exercise, sleep and water, and water is logged back.
+- **Free:** no ads, no subscriptions, no paid tier. US users will see a "Buy me a coffee" link in Settings once the tip page exists.
 - **Looks:** Charged (dark), Light and Sepia themes; a choice of app icon (Match system, Charged or Light); a short intro on launch. Designed for screens down to the iPhone SE and for large text sizes.
 
 ## Run it

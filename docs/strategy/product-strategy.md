@@ -4,7 +4,7 @@
 
 The core habit tracker is built: habits, categories, flexible schedules, streaks, the Calendar and streak warnings. This document covers four things:
 - what will make the app stand out;
-- what people will pay for;
+- how it's paid for (it's free, with a tip link);
 - which platform to build on;
 - the order we build in.
 
@@ -74,31 +74,25 @@ These are expected from top apps but aren't the reason someone switches:
 - Siri and Shortcuts;
 - logging automatically from Apple Health (brought forward and built in October 2026: habits fill in from Apple Health / Health Connect and log water and mindful minutes back).
 
-## 2. Money
+## 2. Money: free, with a coffee link
 
-People who use habit apps strongly dislike subscriptions, so we sell a generous free app plus a one-time upgrade.
+*Changed October 18, 2026.* The first plan was a free app plus a one-time Pro upgrade and an in-app tip jar. Paul decided instead: **Momentum is entirely free.** It's his first real app, and he wants it available to everyone.
 
-**Free:**
-- all tracking and categories;
-- the momentum score;
-- never miss twice;
-- the two-minute version;
-- one routine;
-- this month's insights.
-
-A stingy free tier kills word of mouth.
-
-**Atomic Momentum Pro** is a single purchase of about $9.99–14.99, priced the same on both stores. It includes:
-- unlimited routines and timers, with Live Activities;
-- insights across your full history: year heatmaps, trends, the weekly review archive and CSV export;
-- themes and alternate app icons (both are free in the app today; decide before launch, see [../future-improvements.md](../future-improvements.md));
-- **later:** backup and syncing between devices. Sync is the feature people most reliably pay for, but with Android in the picture it needs a server.
-
-**The tip jar ("buy me a coffee")** is built from *in-app purchases*, such as Small, Medium and Large coffee, in Settings. Don't use a Buy Me a Coffee link:
-- Apple's reviewers have rejected external tip links under guideline 3.1.1, even for US apps after the 2025 rule change.
-- Google Play has similar billing rules.
-
-For the code, use RevenueCat's `purchases_flutter`, which is the simplest for one developer handling both stores, or the official `in_app_purchase` package.
+- **Everything is free:**
+  - all tracking and categories;
+  - momentum and never miss twice;
+  - the two-minute version;
+  - insights across the full history;
+  - themes and app icons;
+  - routines when they come.
+- **No ads, no subscriptions and no Pro.**
+- **"Buy me a coffee"** in Settings (Support) opens the developer's tip page in the browser (`SupportLink`, the page in `AppLinks.coffee`).
+  - **US users only.** As of October 2026 both stores allow a link to an outside payment page in the United States: Apple through guideline 3.1.1(a), "These entitlements are not required for developers to include buttons, external links, or other calls to action in their United States storefront apps"; Google Play while its US court order stands, until November 2027 as reported.
+  - **Elsewhere it's hidden.** Both stores forbid such links in other countries: Apple wants tips as in-app purchases, and Google Play allows outside donations only to registered charities (AnkiDroid was flagged over a donation link in September 2026). So the row hides itself outside the US.
+  - **Hidden until there's a page.** It stays hidden until `AppLinks.coffee` holds one.
+- **Later, if wanted:**
+  - in-app tips for other countries: consumable purchases, through RevenueCat's `purchases_flutter` or the official `in_app_purchase`;
+  - an optional paid extra for something that costs money to run, such as sync between devices, which needs a server.
 
 ## 3. Platform: stay on Flutter
 
@@ -131,8 +125,8 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 | Phase | Contents, in order |
 |---|---|
 | **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); weekly review and rewards (earned freeze and break days) still to come. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
-| **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Pro upgrade and tip jar. |
-| **v2** | Widgets (home screen, lock screen, StandBy), sync between devices (accounts, Pro), Apple Watch. Logging from Apple Health was brought forward and is done. |
+| **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Tips outside the US, if wanted (in-app purchases). |
+| **v2** | Widgets (home screen, lock screen, StandBy), sync between devices (accounts; possibly a paid extra, since it needs a server), Apple Watch. Logging from Apple Health was brought forward and is done. |
 
 Every feature ships with tests, as with everything so far.
 

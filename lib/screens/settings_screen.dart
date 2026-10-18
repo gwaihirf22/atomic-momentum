@@ -6,6 +6,7 @@ import '../core/theme/app_palette.dart';
 import '../core/branding/app_icons.dart';
 import '../core/injection/injection_container.dart';
 import '../core/services/app_icon_service.dart';
+import '../core/services/support_link.dart';
 import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/habit_notify.dart';
@@ -348,6 +349,7 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         const HealthSettingsSection(),
+        const _SupportSection(),
         // Debug builds only: never shown in release / App Store builds
         if (kDebugMode)
           SettingsSection(
@@ -469,6 +471,55 @@ class _AppIconSettingState extends State<_AppIconSetting> {
         await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AppIconScreen()));
         await _load();
       },
+    );
+  }
+}
+
+/// "Buy me a coffee": the only way to give something for the app, which is
+/// free. Shown only where it's allowed and once there's a page (SupportLink).
+class _SupportSection extends StatefulWidget {
+  const _SupportSection();
+
+  @override
+  State<_SupportSection> createState() => _SupportSectionState();
+}
+
+class _SupportSectionState extends State<_SupportSection> {
+  final _link = get<SupportLink>();
+  bool _available = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _link.isAvailable().then((available) {
+      if (mounted && available) setState(() => _available = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_available) return const SizedBox.shrink();
+    return SettingsSection(
+      header: 'Support',
+      footer: 'Momentum is free, with no ads. If it helps you, a coffee helps keep it going.',
+      children: [
+        SettingsTile(
+          tileKey: const Key('buyMeACoffee'),
+          icon: Icons.local_cafe_rounded,
+          iconColor: HabitColor.brown.color,
+          title: 'Buy me a coffee',
+          onTap: () async {
+            if (!await _link.open() && context.mounted) {
+              await showAdaptiveAlert<void>(
+                context,
+                title: 'Couldn\'t open the page',
+                message: 'Check your connection and try again.',
+                actions: const [AdaptiveAction(label: 'OK', value: null, isDefault: true)],
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 }
