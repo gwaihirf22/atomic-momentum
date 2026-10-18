@@ -73,7 +73,17 @@ class HabitStats {
 
   /// [weekStart] is the first day of the user's week (DateTime.monday..sunday),
   /// for the weekly bars of a daily habit.
+  /// Worked out once per habit, day and week start: the habit page asks on
+  /// every rebuild (a day tap, a hold).
+  static final _cache = Expando<Map<(DateTime, int), HabitStats>>('habit stats');
+
   static HabitStats of(Habit habit, DateTime now, {int weekStart = DateTime.monday}) {
+    final cached = _cache[habit] ??= {};
+    if (cached.length > 4) cached.clear();
+    return cached[(DateTime(now.year, now.month, now.day), weekStart)] ??= _of(habit, now, weekStart);
+  }
+
+  static HabitStats _of(Habit habit, DateTime now, int weekStart) {
     final today = DateTime(now.year, now.month, now.day);
     final total = habit.history.values.fold(0, (sum, amount) => sum + amount);
     if (!habit.resetFrequency.isPeriodic) {

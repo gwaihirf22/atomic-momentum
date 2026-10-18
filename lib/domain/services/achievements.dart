@@ -119,8 +119,30 @@ class Achievements {
         ResetFrequency.never => const [],
       };
 
+  /// The last [earned] and [next], with what they were worked out from: the
+  /// main screen, Insights and the Achievements page ask with the same habits.
+  static ({List<Habit> habits, DateTime day, int weekStart, List<Achievement> earned})? _lastEarned;
+  static ({List<Habit> habits, DateTime day, List<AchievementProgress> next})? _lastNext;
+
+  static bool _same(List<Habit> a, List<Habit> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
   /// Everything earned up to [now], oldest first.
   static List<Achievement> earned(List<Habit> habits, DateTime now, {int weekStart = DateTime.monday}) {
+    final day = DateTime(now.year, now.month, now.day);
+    final last = _lastEarned;
+    if (last != null && last.day == day && last.weekStart == weekStart && _same(last.habits, habits)) return last.earned;
+    final result = List<Achievement>.unmodifiable(_earned(habits, now, weekStart));
+    _lastEarned = (habits: List.of(habits), day: day, weekStart: weekStart, earned: result);
+    return result;
+  }
+
+  static List<Achievement> _earned(List<Habit> habits, DateTime now, int weekStart) {
     final earned = <Achievement>[];
     final tinyDays = <DateTime>[];
     final comebackDays = <DateTime>[];
@@ -232,6 +254,15 @@ class Achievements {
 
   /// The next milestone for each habit (and the shared ones), closest first.
   static List<AchievementProgress> next(List<Habit> habits, DateTime now) {
+    final day = DateTime(now.year, now.month, now.day);
+    final last = _lastNext;
+    if (last != null && last.day == day && _same(last.habits, habits)) return last.next;
+    final result = List<AchievementProgress>.unmodifiable(_next(habits, now));
+    _lastNext = (habits: List.of(habits), day: day, next: result);
+    return result;
+  }
+
+  static List<AchievementProgress> _next(List<Habit> habits, DateTime now) {
     final progress = <AchievementProgress>[];
     var tiny = 0;
     var comebacks = 0;
@@ -384,7 +415,16 @@ class Achievements {
     return weeks;
   }
 
+  /// [_walk] per habit and day: a tap changes one habit, not the others.
+  static final _walks = Expando<Map<DateTime, _Walk>>('achievement walks');
+
   static _Walk _walk(Habit habit, DateTime now) {
+    final cached = _walks[habit] ??= {};
+    if (cached.length > 4) cached.clear();
+    return cached[DateTime(now.year, now.month, now.day)] ??= _walkFrom(habit, now);
+  }
+
+  static _Walk _walkFrom(Habit habit, DateTime now) {
     final walk = _Walk();
     final goals = streakGoals(habit);
     PeriodMark? previous;

@@ -125,7 +125,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _habits = context.read<HabitProvider>()..addListener(_checkAchievements);
+    _habits = context.read<HabitProvider>()..addListener(_checkAchievementsSoon);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
     // A notification tap that launched the app arrives before this screen
@@ -136,11 +136,25 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
 
   @override
   void dispose() {
-    _habits.removeListener(_checkAchievements);
+    _habits.removeListener(_checkAchievementsSoon);
     NotificationService.focusRequests.removeListener(_showHabits);
     _fadeTimer?.cancel();
     _slide.dispose();
     super.dispose();
+  }
+
+  bool _checkPending = false;
+
+  /// Checks after the frame that shows the change (a tap draws first), once
+  /// however many times habits notified before it.
+  void _checkAchievementsSoon() {
+    if (_checkPending) return;
+    _checkPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPending = false;
+      _checkAchievements();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   /// Celebrates an achievement just earned (today or yesterday), once. Ones

@@ -33,14 +33,6 @@ class DayRecord {
 
   bool get isEmpty => due == 0;
 
-  DayRecord _plus({int done = 0, int twoMinute = 0, required double amount}) => DayRecord(
-        day: day,
-        due: due + 1,
-        done: this.done + done,
-        twoMinute: this.twoMinute + twoMinute,
-        amount: this.amount + amount,
-      );
-
   @override
   String toString() => 'DayRecord($day, $done+$twoMinute of $due, ${level.toStringAsFixed(2)})';
 }
@@ -104,32 +96,53 @@ class Insights {
   static List<DayRecord> days(List<Habit> habits, {required DateTime from, required DateTime to, required DateTime now}) {
     final first = _date(from);
     final last = _date(to);
-    final records = <DateTime, DayRecord>{
-      for (var d = first; !d.isAfter(last); d = DateTime(d.year, d.month, d.day + 1)) d: DayRecord(day: d),
-    };
-
-    void add(DateTime day, RecentPeriod period) {
-      final record = records[day];
-      if (record == null) return;
-      records[day] = record._plus(
-        done: period.mark == PeriodMark.done ? 1 : 0,
-        twoMinute: period.mark == PeriodMark.twoMinute ? 1 : 0,
-        amount: period.fraction,
-      );
+    final index = <DateTime, int>{};
+    for (var d = first; !d.isAfter(last); d = DateTime(d.year, d.month, d.day + 1)) {
+      index[d] = index.length;
     }
-
+    final due = List<int>.filled(index.length, 0);
+    final done = List<int>.filled(index.length, 0);
+    final tiny = List<int>.filled(index.length, 0);
+    final amount = List<double>.filled(index.length, 0);
     for (final habit in habits) {
+      for (final entry in _daysOf(habit, now).entries) {
+        final i = index[entry.key];
+        if (i == null) continue;
+        final mark = entry.value;
+        due[i]++;
+        if (mark.mark == PeriodMark.done) done[i]++;
+        if (mark.mark == PeriodMark.twoMinute) tiny[i]++;
+        amount[i] += mark.fraction;
+      }
+    }
+    return [
+      for (final entry in index.entries)
+        DayRecord(day: entry.key, due: due[entry.value], done: done[entry.value], twoMinute: tiny[entry.value], amount: amount[entry.value]),
+    ];
+  }
+
+  /// Where each of a habit's periods shows on the heatmap, by day, as things
+  /// stand on [now]'s day: a day's own day; a longer period, the day it was
+  /// kept. Kept per habit and day, so screens and achievements share it.
+  static final _dayCache = Expando<Map<DateTime, Map<DateTime, RecentPeriod>>>('insight days');
+
+  static Map<DateTime, RecentPeriod> _daysOf(Habit habit, DateTime now) {
+    final today = _date(now);
+    final cached = _dayCache[habit] ??= {};
+    if (cached.length > 4) cached.clear();
+    return cached[today] ??= () {
+      final out = <DateTime, RecentPeriod>{};
       for (final period in periods(habit, now)) {
         if (period.mark == PeriodMark.untracked || period.mark == PeriodMark.rest) continue;
         if (period.isOneDay) {
-          add(period.start, period);
+          out[period.start] = period;
         } else if (period.mark == PeriodMark.done || period.mark == PeriodMark.twoMinute) {
           final day = keptOn(habit, period);
-          if (!day.isAfter(_date(now))) add(day, period);
+          if (!day.isAfter(today)) out[day] = period;
         }
       }
-    }
-    return records.values.toList();
+      return out;
+    }();
   }
 
   /// Overall momentum at the end of each of the last [count] months, oldest
@@ -144,10 +157,11 @@ class Insights {
     final counts = List<int>.filled(times.length, 0);
     for (final habit in habits) {
       if (!habit.schedule.isPeriodic) continue;
-      final scores = habit.momentumSeries(times);
+      final scores = _monthEnds(habit, times);
       for (var i = 0; i < times.length; i++) {
-        if (!habit.countsTowardMomentumAt(times[i])) continue;
-        sums[i] += scores[i];
+        final score = scores[i];
+        if (score == null) continue;
+        sums[i] += score;
         counts[i]++;
       }
     }
@@ -155,6 +169,19 @@ class Insights {
       for (var i = 0; i < times.length; i++)
         MonthMomentum(DateTime(times[i].year, times[i].month), counts[i] == 0 ? null : sums[i] / counts[i]),
     ];
+  }
+
+  /// A habit's momentum at each of [times] (null where it doesn't count
+  /// yet), kept per habit for the day of the last one.
+  static final _monthCache = Expando<Map<DateTime, List<double?>>>('month momentum');
+
+  static List<double?> _monthEnds(Habit habit, List<DateTime> times) {
+    final cached = _monthCache[habit] ??= {};
+    if (cached.length > 4) cached.clear();
+    return cached[_date(times.last)] ??= () {
+      final scores = habit.momentumSeries(times);
+      return [for (var i = 0; i < times.length; i++) habit.countsTowardMomentumAt(times[i]) ? scores[i] : null];
+    }();
   }
 
   /// How the periods that ended between [from] and [now] went (habits being

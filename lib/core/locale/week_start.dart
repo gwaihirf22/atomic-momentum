@@ -5,7 +5,12 @@ import 'package:intl/date_symbol_data_local.dart';
 /// from the CLDR data bundled with intl: Sunday in the US, Monday in most of
 /// Europe, Saturday in much of the Middle East. Falls back to the language
 /// (e.g. "en"), then to Monday (ISO 8601).
-int regionalFirstDayOfWeek(Locale locale) {
+int regionalFirstDayOfWeek(Locale locale) => _firstDays[locale.toString()] ??= _lookUp(locale);
+
+/// Looked up once per locale: intl builds its whole symbol table each time.
+final _firstDays = <String, int>{};
+
+int _lookUp(Locale locale) {
   final symbols = dateTimeSymbolMap();
   final candidates = [
     if (locale.countryCode != null && locale.countryCode!.isNotEmpty)

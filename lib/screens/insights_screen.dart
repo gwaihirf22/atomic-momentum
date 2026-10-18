@@ -167,7 +167,8 @@ class _InsightsData {
     final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (insightsWeeks - 1));
     final chosen = habitId == null ? habits : habits.where((h) => h.id == habitId).toList();
     final days = Insights.days(chosen, from: from, to: today, now: now);
-    final chosenKept = Insights.kept(chosen, from: from, now: now);
+    final allKept = Insights.kept(habits, from: from, now: now);
+    final chosenKept = habitId == null ? allKept : Insights.kept(chosen, from: from, now: now);
     return _InsightsData._(
       habits: habits,
       today: today,
@@ -175,7 +176,7 @@ class _InsightsData {
       weekStart: weekStart,
       days: days,
       months: Insights.momentumByMonth(habits, now),
-      kept: Insights.kept(habits, from: from, now: now),
+      kept: allKept,
       weekdays: Insights.weekdays(habits, from: from, now: now),
       perfectDays: days.where((d) => d.perfect).length,
       timesKept: chosenKept.kept,
