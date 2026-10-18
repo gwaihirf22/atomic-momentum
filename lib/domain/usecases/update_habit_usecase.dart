@@ -1,4 +1,5 @@
 import '../entities/habit_notify.dart';
+import '../entities/health_link.dart';
 import '../entities/habit.dart';
 import '../entities/habit_color.dart';
 import '../entities/reset_frequency.dart';
@@ -68,6 +69,8 @@ class UpdateHabitUseCase {
         twoMinute: params.twoMinute,
         removeTwoMinute: params.removeTwoMinute,
         notify: params.notify,
+        health: params.health,
+        removeHealth: params.removeHealth,
       );
 
       // Validate the updated habit
@@ -215,8 +218,9 @@ class UpdateHabitUseCase {
       if (params.target! < 0) {
         throw ValidationException('Target must be greater than 0');
       }
-      if (params.target! > 1000) {
-        throw ValidationException('Target cannot exceed 1000');
+      // The habit's own link decides its cap (checked by the form); this is the outer bound
+      if (params.target! > Habit.maxStepsTarget) {
+        throw ValidationException('Target cannot exceed ${Habit.maxStepsTarget}');
       }
     }
   }
@@ -255,6 +259,10 @@ class UpdateHabitParams {
   /// New notification settings (null means unchanged).
   final HabitNotify? notify;
 
+  /// A new Health link (null means unchanged; see [removeHealth]).
+  final HealthLink? health;
+  final bool removeHealth;
+
   const UpdateHabitParams({
     this.name,
     this.target,
@@ -270,6 +278,8 @@ class UpdateHabitParams {
     this.twoMinute,
     this.removeTwoMinute = false,
     this.notify,
+    this.health,
+    this.removeHealth = false,
   });
 
   bool get hasChanges => 
@@ -286,5 +296,7 @@ class UpdateHabitParams {
     scheduledWeekdays != null ||
     twoMinute != null ||
     removeTwoMinute ||
-    notify != null;
+    notify != null ||
+    health != null ||
+    removeHealth;
 }

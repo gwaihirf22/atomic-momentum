@@ -5,5 +5,10 @@
 	<!-- Lets habits marked time-sensitive break through Focus -->
 	<key>com.apple.developer.usernotifications.time-sensitive</key>
 	<true/>
+	<!-- Habits filled in from Apple Health (enable HealthKit for the App ID too) -->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
 </dict>
 </plist>

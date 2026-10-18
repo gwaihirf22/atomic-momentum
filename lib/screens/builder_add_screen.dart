@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../presentation/habit_form/health_section.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../presentation/habit_form/habit_draft.dart';
@@ -356,6 +357,7 @@ class _BuilderAddScreenState extends State<BuilderAddScreen> {
         ],
       ]),
       FormCard(children: [ScheduleSection(_draft)]),
+      HealthSection(_draft, wrap: (section) => FormCard(children: [section])),
     ];
   }
 

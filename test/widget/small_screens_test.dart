@@ -16,6 +16,7 @@ import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/domain/entities/health_link.dart';
 import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/presentation/habit_form/habit_draft.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
@@ -57,6 +58,7 @@ import 'package:atomic_momentum/screens/heatmap_screen.dart';
 import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
+import '../helpers/fake_health_source.dart';
 import '../helpers/real_fonts.dart';
 
 /// Every screen on the smallest supported iPhone (the SE, 375pt wide) and
@@ -75,6 +77,8 @@ void main() {
     await resetDependencies();
     SharedPreferences.setMockInitialValues({});
     await initializeDependencies(seedDefaultHabit: false);
+    // Health shows (as on an iPhone), with a habit filled in from it
+    FakeHealthSource.install();
     habits = get<HabitProvider>();
     await habits.loadHabits();
     await habits.addSampleHabits();
@@ -106,6 +110,23 @@ void main() {
       categoryId: BuiltInCategoryIds.body,
       scheduledWeekdays: [1, 3, 5],
       reminder: ReminderSettings(time: TimeOfDay(hour: 7, minute: 0), enabled: true, daysOfWeek: [1, 3, 5]),
+    ));
+
+    await habits.createHabit(CreateHabitParams(
+      name: 'Walk the neighbourhood',
+      target: 8000,
+      units: 'steps',
+      color: HabitColor.green,
+      categoryId: BuiltInCategoryIds.body,
+      health: HealthLink(metric: HealthMetric.steps, linkedOn: DateTime.now()),
+    ));
+    await habits.createHabit(CreateHabitParams(
+      name: 'Water from the bottle',
+      target: 8,
+      units: 'glasses',
+      color: HabitColor.blue,
+      categoryId: BuiltInCategoryIds.body,
+      health: HealthLink(metric: HealthMetric.water, logToHealth: true, linkedOn: DateTime.now()),
     ));
 
     // Quotes kept with a habit, one of them the person's own (long)
@@ -192,6 +213,13 @@ void main() {
           body: QuoteFilterSheet(initial: QuoteFilter(author: 'Seneca', themes: {QuoteTheme.hardDays})),
         ),
     'Inspire explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.inspire)),
+    'Health explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.health)),
+    'Habit page, filled in from Health': () =>
+        HabitDetailScreen(habitId: habits.habits.firstWhere((h) => h.name.startsWith('Walk the')).id),
+    'Edit habit, logging water back to Health': () =>
+        AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Water from the bottle')),
+    'Story, editing a habit filled in from Health': () =>
+        StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Walk the'))),
     'Quote share card, the longest quote': () => Scaffold(
           body: Center(child: QuoteShareCard(quote: longQuote, look: ShareLook.of(ShareStyle.charged))),
         ),
@@ -437,6 +465,8 @@ void main() {
       'Quote filter sheet',
       'Add a quote sheet',
       'Inspire explainer',
+      'Health explainer',
+      'Edit habit, logging water back to Health',
       'Momentum explainer',
       'Achievement celebration, a long name',
       'Every day (full screen)',

@@ -43,5 +43,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Momentum reads your steps, exercise, sleep, mindful minutes and water to fill in habits you link to Health.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Momentum logs water and mindful minutes to Health when you log them in a linked habit.</string>
 </dict>
 </plist>

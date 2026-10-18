@@ -5,7 +5,8 @@ import 'package:flutter/cupertino.dart';
 enum InfoTopic {
   twoMinute('About two-minute days'),
   momentum('About momentum'),
-  inspire('About Inspire');
+  inspire('About Inspire'),
+  health('About filling in from Health');
 
   /// What the (i) button reads as to VoiceOver.
   final String buttonLabel;
@@ -39,6 +40,7 @@ class Explainer {
         InfoTopic.twoMinute => twoMinute,
         InfoTopic.momentum => momentum,
         InfoTopic.inspire => inspire,
+        InfoTopic.health => health,
       };
 
   static const twoMinute = Explainer(
@@ -91,6 +93,39 @@ class Explainer {
       ),
     ],
     source: 'Habit formation time: Lally et al., 2009.',
+  );
+
+  static const health = Explainer(
+    title: 'From Health',
+    intro: 'Link a habit to your phone\'s health data and it fills itself in: steps walked, exercise, sleep, '
+        'mindful minutes or water.',
+    points: [
+      ExplainerPoint(
+        'The higher of Health and what you log counts for each day. Health never takes away what you logged.',
+        lead: 'Which wins',
+        icon: CupertinoIcons.arrow_up_circle,
+      ),
+      ExplainerPoint(
+        'It checks when you open the app and at midnight, and fills in the past week if you were away.',
+        lead: 'When',
+        icon: CupertinoIcons.arrow_2_circlepath,
+      ),
+      ExplainerPoint(
+        'Sleep counts on the morning you wake, to the nearest hour. Water counts in 250 ml glasses.',
+        lead: 'Counting',
+        icon: CupertinoIcons.moon,
+      ),
+      ExplainerPoint(
+        'Water and mindful minutes can go back into Health as you log them, and come out again with −.',
+        lead: 'Logging back',
+        icon: CupertinoIcons.heart,
+      ),
+      ExplainerPoint(
+        'Numbers staying at 0? Allow Momentum in Health (iPhone: Health → Sharing → Apps), or Health Connect.',
+        lead: 'Permissions',
+        icon: CupertinoIcons.lock,
+      ),
+    ],
   );
 
   static const inspire = Explainer(

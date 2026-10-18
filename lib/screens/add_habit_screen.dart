@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../presentation/habit_form/health_section.dart';
 import '../core/exceptions/friendly_error.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
@@ -108,6 +109,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       FormCard(children: [ColorRow(_draft)]),
                       FormCard(children: [IconGrid(_draft)]),
                       if (!_draft.isBreak) FormCard(children: [ScheduleSection(_draft)]),
+                      HealthSection(_draft, wrap: (section) => FormCard(children: [section])),
                       if (_draft.frequency.isPeriodic && !_draft.isBreak) FormCard(children: [TwoMinuteSection(_draft)]),
                       FormCard(children: [ReminderSection(_draft)]),
                       if (_draft.isEditing) FormCard(children: [CountsFromSection(_draft)]),

@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../core/injection/injection_container.dart';
+import '../core/services/health_source.dart';
+import '../presentation/widgets/health_settings_section.dart' show healthSyncAgo;
 import '../domain/services/step_size.dart';
 import '../presentation/widgets/habit_stepper.dart';
 import '../core/feedback/haptics.dart';
@@ -274,6 +277,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             ),
             const SizedBox(height: 14),
             _StatsGrid(habit: habit, stats: stats, color: color),
+            if (habit.health != null) _HealthLine(habit: habit),
             if (stats.bars.isNotEmpty) ...[
               const SizedBox(height: 14),
               _TrendCard(habit: habit, stats: stats, color: color),
@@ -1461,6 +1465,35 @@ class _TextSheetState extends State<_TextSheet> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// "From Apple Health · steps · synced 2 min ago", under the stats of a
+/// habit filled in from Health.
+class _HealthLine extends StatelessWidget {
+  final Habit habit;
+
+  const _HealthLine({required this.habit});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final source = get<HealthSource>();
+    final synced = healthSyncAgo(context.watch<HabitProvider>().lastHealthSync).toLowerCase();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(children: [
+        Icon(CupertinoIcons.heart_fill, size: 14, color: palette.danger),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'From ${source.name} · ${habit.health!.metric.label.toLowerCase()} · synced $synced',
+            key: const Key('detailHealth'),
+            style: TextStyle(fontSize: 13, color: palette.textSecondary),
+          ),
+        ),
+      ]),
     );
   }
 }

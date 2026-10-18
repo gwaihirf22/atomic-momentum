@@ -8,6 +8,7 @@ import 'habit_metadata.dart';
 import 'habit_schedule.dart';
 import 'habit_goal.dart';
 import 'habit_notify.dart';
+import 'health_link.dart';
 import 'momentum.dart';
 import 'two_minute_version.dart';
 import '../services/momentum_calculator.dart';
@@ -65,11 +66,20 @@ class Habit extends Equatable {
   /// How this habit's notifications arrive (sound, time sensitive, warnings).
   final HabitNotify notify;
 
+  /// Filled in from Apple Health / Health Connect, or null.
+  final HealthLink? health;
+
   bool get isBreak => goal.isBreak;
 
   static const maxWhyLength = 300;
   static const maxDayNoteLength = 200;
   static const maxQuotes = 10;
+
+  /// The largest target a habit can have: 1000, or 100,000 for steps.
+  static const maxTarget = 1000;
+  static const maxStepsTarget = 100000;
+  static int maxTargetFor(HealthLink? health) =>
+      health?.metric == HealthMetric.steps ? maxStepsTarget : maxTarget;
 
   /// A period's total may go past the target (typing "10" for 8 glasses),
   /// up to this many times it, which still catches a mistyped extra zero.
@@ -103,6 +113,7 @@ class Habit extends Equatable {
     this.quoteIds = const [],
     this.goal = HabitGoal.build,
     this.notify = HabitNotify.standard,
+    this.health,
   });
 
   static int _idCounter = 0;
@@ -593,6 +604,8 @@ class Habit extends Equatable {
     TwoMinuteVersion? twoMinute,
     bool removeTwoMinute = false,
     HabitNotify? notify,
+    HealthLink? health,
+    bool removeHealth = false,
   }) {
     final newFrequency = resetFrequency ?? this.resetFrequency;
     final newInterval = resetInterval ?? this.resetInterval;
@@ -642,6 +655,7 @@ class Habit extends Equatable {
       quoteIds: updated.quoteIds,
       goal: goal,
       notify: notify ?? this.notify,
+      health: removeHealth ? null : (health ?? this.health),
     );
 
     // A new target, frequency or reset day changes how history adds up
@@ -763,6 +777,7 @@ class Habit extends Equatable {
     List<String>? quoteIds,
     HabitGoal? goal,
     HabitNotify? notify,
+    HealthLink? health,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -788,6 +803,7 @@ class Habit extends Equatable {
       quoteIds: quoteIds ?? this.quoteIds,
       goal: goal ?? this.goal,
       notify: notify ?? this.notify,
+      health: health ?? this.health,
     );
   }
 
@@ -823,6 +839,7 @@ class Habit extends Equatable {
       if (quoteIds.isNotEmpty) 'quotes': quoteIds,
       if (goal != HabitGoal.build) 'goal': goal.name,
       if (!notify.isStandard) 'notify': notify.toJson(),
+      if (health != null) 'health': health!.toJson(),
     };
   }
 
@@ -907,6 +924,7 @@ class Habit extends Equatable {
       quoteIds: quoteIdsFromJson(json['quotes']),
       goal: HabitGoal.fromJson(json['goal']),
       notify: HabitNotify.fromJson(json['notify']),
+      health: HealthLink.fromJson(json['health']),
     );
   }
 
@@ -935,6 +953,7 @@ class Habit extends Equatable {
         quoteIds,
         goal,
         notify,
+        health,
       ];
 
   @override

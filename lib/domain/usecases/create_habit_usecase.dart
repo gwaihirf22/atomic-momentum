@@ -2,6 +2,7 @@ import '../entities/habit.dart';
 import '../entities/habit_color.dart';
 import '../entities/habit_goal.dart';
 import '../entities/habit_notify.dart';
+import '../entities/health_link.dart';
 import '../entities/reset_frequency.dart';
 import '../entities/reminder_settings.dart';
 import '../entities/two_minute_version.dart';
@@ -24,7 +25,7 @@ class CreateHabitUseCase {
       await _checkDuplicateName(params.name);
 
       // Create the habit
-      final habit = Habit.create(
+      var habit = Habit.create(
         name: params.name.trim(),
         target: params.target,
         units: params.units,
@@ -40,6 +41,8 @@ class CreateHabitUseCase {
         goal: params.goal,
         notify: params.notify,
       );
+      // Linked after creating, so Habit.create stays as it is
+      if (params.health != null) habit = habit.copyWith(health: params.health);
 
       // Validate the created habit
       final validationResult = HabitValidator.validate(habit);
@@ -68,8 +71,9 @@ class CreateHabitUseCase {
     if (params.goal == HabitGoal.quit ? params.target != 0 : params.target <= 0) {
       throw ValidationException('Target must be greater than 0');
     }
-    if (params.target > 1000) {
-      throw ValidationException('Target cannot exceed 1000');
+    final most = Habit.maxTargetFor(params.health);
+    if (params.target > most) {
+      throw ValidationException('Target cannot exceed $most');
     }
   }
 
@@ -109,6 +113,9 @@ class CreateHabitParams {
   final HabitGoal goal;
   final HabitNotify notify;
 
+  /// Filled in from Health, or null.
+  final HealthLink? health;
+
   const CreateHabitParams({
     required this.name,
     required this.target,
@@ -124,6 +131,7 @@ class CreateHabitParams {
     this.twoMinute,
     this.goal = HabitGoal.build,
     this.notify = HabitNotify.standard,
+    this.health,
   });
 
   CreateHabitParams copyWith({

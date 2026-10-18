@@ -2,6 +2,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_color.dart';
 import '../../domain/entities/habit_goal.dart';
 import '../../domain/entities/habit_notify.dart';
+import '../../domain/entities/health_link.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/entities/streak_data.dart';
 import '../../domain/entities/reminder_settings.dart';
@@ -35,6 +36,7 @@ class HabitModel extends Habit {
     super.quoteIds,
     super.goal,
     super.notify,
+    super.health,
   });
 
   /// Create HabitModel from domain Habit entity
@@ -65,6 +67,7 @@ class HabitModel extends Habit {
         quoteIds: habit.quoteIds,
         goal: habit.goal,
         notify: habit.notify,
+        health: habit.health,
       );
     } catch (e) {
       rethrow;
@@ -99,6 +102,7 @@ class HabitModel extends Habit {
         quoteIds: quoteIds,
         goal: goal,
         notify: notify,
+        health: health,
       );
       
       return habitDomain;
@@ -166,6 +170,7 @@ class HabitModel extends Habit {
       quoteIds: Habit.quoteIdsFromJson(json['quotes']),
       goal: HabitGoal.fromJson(json['goal']),
       notify: HabitNotify.fromJson(json['notify']),
+      health: HealthLink.fromJson(json['health']),
     );
   }
 
@@ -210,6 +215,7 @@ class HabitModel extends Habit {
         if (quoteIds.isNotEmpty) 'quotes': quoteIds,
         if (goal != HabitGoal.build) 'goal': goal.name,
         if (!notify.isStandard) 'notify': notify.toJson(),
+        if (health != null) 'health': health!.toJson(),
         '_version': '2.0.0', // Add version for future migrations
         '_serializedAt': clock.now().toIso8601String(),
       };

@@ -114,7 +114,10 @@ void main() {
       expect(HabitDraft.validateTarget(''), 'Please enter a target number');
       expect(HabitDraft.validateTarget('0'), 'Target must be a positive number');
       expect(HabitDraft.validateTarget('two'), 'Target must be a positive number');
-      expect(HabitDraft.validateTarget('1001'), 'Target cannot exceed 1000');
+      expect(HabitDraft.validateTarget('1001'), 'Target cannot exceed 1,000');
+      // Steps from Health go up to 100,000
+      expect(HabitDraft.validateTarget('8000', most: 100000), isNull);
+      expect(HabitDraft.validateTarget('100001', most: 100000), 'Target cannot exceed 100,000');
       expect(HabitDraft.validateTarget('8'), isNull);
     });
 

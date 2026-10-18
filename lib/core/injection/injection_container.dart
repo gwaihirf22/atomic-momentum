@@ -31,6 +31,8 @@ import '../../presentation/providers/settings_provider.dart';
 import '../../presentation/providers/quote_provider.dart';
 
 // Services
+import '../services/health_source.dart';
+import '../services/health_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
@@ -75,6 +77,9 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   sl.registerLazySingleton(() => SettingsProvider(sl()));
   sl.registerLazySingleton(() => AchievementStore(sl()));
   sl.registerLazySingleton<Sharer>(() => const SystemSharer());
+  sl.registerLazySingleton<HealthSource>(() => PluginHealthSource());
+  // Reads the source when it syncs, so tests can swap in a fake after setup
+  sl.registerLazySingleton(() => HealthSyncService(source: () => sl<HealthSource>(), prefs: sl()));
   sl.registerLazySingleton(() => StreakWarningService(
     scheduler: LocalNotificationStreakWarningScheduler(defaults: () => sl<SettingsProvider>().notifyDefaults),
     readSettings: () => sl<SettingsProvider>().streakWarnings,
@@ -103,6 +108,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     streakWarningService: sl(),
     reminderService: sl(),
     categoryRepository: sl(),
+    healthSync: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list
   sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));

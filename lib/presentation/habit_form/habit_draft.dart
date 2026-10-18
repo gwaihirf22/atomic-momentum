@@ -1,3 +1,5 @@
+import '../../domain/entities/health_link.dart';
+import 'package:intl/intl.dart' show NumberFormat;
 import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +50,31 @@ class HabitDraft extends ChangeNotifier {
   /// How this habit's notifications arrive: its sound (null: Settings'
   /// default), time-sensitive, and streak warnings.
   HabitNotify notify = HabitNotify.standard;
+
+  /// Filled in from Apple Health / Health Connect, or null. Set with [setHealth].
+  HealthLink? health;
+
+  /// Links the habit to [metric] (null: unlinks). The units follow the
+  /// metric, and an empty target (or the last metric's default) takes this
+  /// one's default.
+  void setHealth(HealthMetric? metric, {bool? logToHealth}) => edit(() {
+        if (metric == null) {
+          health = null;
+          return;
+        }
+        final previous = health?.metric;
+        final now = clock.now();
+        health = HealthLink(
+          metric: metric,
+          logToHealth: logToHealth ?? health?.logToHealth ?? false,
+          linkedOn: health?.linkedOn ?? DateTime(now.year, now.month, now.day),
+        );
+        units.text = metric.unit;
+        final typed = int.tryParse(target.text.trim());
+        if (typed == null || (previous != null && typed == previous.defaultTarget)) {
+          target.text = '${metric.defaultTarget}';
+        }
+      });
 
   /// Building it up, or breaking it (quit or limit). Set with [setGoal].
   HabitGoal goal = HabitGoal.build;
@@ -100,6 +127,7 @@ class HabitDraft extends ChangeNotifier {
     name.text = habit.name;
     goal = habit.goal;
     notify = habit.notify;
+    health = habit.health;
     target.text = habit.target.toString();
     units.text = habit.units;
     color = habit.color;
@@ -239,12 +267,13 @@ class HabitDraft extends ChangeNotifier {
     return null;
   }
 
-  static String? validateTarget(String? value) {
+  /// [most] is the habit's own cap (100,000 for steps from Health).
+  static String? validateTarget(String? value, {int most = maxTarget}) {
     final text = value?.trim() ?? '';
     if (text.isEmpty) return 'Please enter a target number';
     final number = int.tryParse(text);
     if (number == null || number <= 0) return 'Target must be a positive number';
-    if (number > maxTarget) return 'Target cannot exceed $maxTarget';
+    if (number > most) return 'Target cannot exceed ${NumberFormat.decimalPattern().format(most)}';
     return null;
   }
 
@@ -263,7 +292,7 @@ class HabitDraft extends ChangeNotifier {
   String? get nameError => validateName(name.text);
   /// A limit is checked like a target; quitting has no amount.
   String? get targetError => switch (goal) {
-        HabitGoal.build => validateTarget(target.text),
+        HabitGoal.build => validateTarget(target.text, most: Habit.maxTargetFor(health)),
         HabitGoal.limit => validateLimit(target.text),
         HabitGoal.quit => null,
       };
@@ -291,6 +320,7 @@ class HabitDraft extends ChangeNotifier {
   String snapshot() => jsonEncode([
         goal.name,
         notify.toJson(),
+        health?.toJson(),
         name.text,
         target.text,
         units.text,
@@ -349,6 +379,8 @@ class HabitDraft extends ChangeNotifier {
         twoMinute: twoMinute,
         goal: goal,
         notify: notify,
+        // Only habits being built are filled in from Health
+        health: isBreak ? null : health,
       );
 
   /// The edited habit's new values. Only call when editing and [isValid].
@@ -371,6 +403,8 @@ class HabitDraft extends ChangeNotifier {
       twoMinute: params.twoMinute,
       removeTwoMinute: params.twoMinute == null && original!.twoMinute != null,
       notify: notify,
+      health: params.health,
+      removeHealth: params.health == null && original!.health != null,
     );
   }
 

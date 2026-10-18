@@ -1,3 +1,4 @@
+import '../../domain/entities/habit.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -167,7 +168,7 @@ class TargetField extends StatelessWidget {
           suffixText: draft.schedule.periodLabel,
         ),
         keyboardType: TextInputType.number,
-        validator: HabitDraft.validateTarget,
+        validator: (value) => HabitDraft.validateTarget(value, most: Habit.maxTargetFor(draft.health)),
       ),
     );
   }
@@ -179,13 +180,19 @@ class UnitsField extends StatelessWidget {
   const UnitsField(this.draft, {super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => _DraftBuilder(draft, (context) => _field());
+
+  Widget _field() {
+    final linked = draft.health != null;
     return TextFormField(
       key: const Key('habitUnitsField'),
       controller: draft.units,
-      decoration: const InputDecoration(
+      // A habit filled in from Health counts in its metric's units
+      readOnly: linked,
+      decoration: InputDecoration(
         labelText: 'Units (Optional)',
         hintText: 'e.g. glasses',
+        helperText: linked ? 'Set by ${draft.health!.metric.label}' : null,
         errorMaxLines: 2,
       ),
       maxLength: HabitDraft.maxUnitsLength,

@@ -1,6 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/injection/injection_container.dart';
+import '../core/services/health_source.dart';
+import '../presentation/habit_form/health_section.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/habit.dart';
@@ -23,7 +26,7 @@ import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'add_habit_screen.dart';
 
 /// The parts of the Story sentence that open a sheet.
-enum StoryPart { name, amount, schedule, reminder, tiny, strictness }
+enum StoryPart { name, amount, schedule, reminder, tiny, strictness, health }
 
 /// Story: a habit written as one sentence, from the Calm design. "I will
 /// [drink water] [8 glasses] [every day], [reminded at 9:00 AM]. On a hard
@@ -103,6 +106,7 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
       StoryPart.reminder =>
         (_draft.isBreak ? 'Check-in' : 'Reminder', <Widget>[ReminderSection(_draft, showHeader: false)]),
       StoryPart.tiny => ('On a hard day', <Widget>[TwoMinuteSection(_draft, showHeader: false, autofocus: !showErrors)]),
+      StoryPart.health => (get<HealthSource>().name, <Widget>[HealthSection(_draft, showHeader: false)]),
     };
     return showModalBottomSheet<void>(
       context: context,
@@ -113,9 +117,11 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
         key: Key('storySheet_${part.name}'),
         title: title,
         showErrors: showErrors,
-        titleTrailing: part == StoryPart.tiny
-            ? InfoButton(topic: InfoTopic.twoMinute, example: twoMinuteExample(_draft))
-            : null,
+        titleTrailing: switch (part) {
+          StoryPart.tiny => InfoButton(topic: InfoTopic.twoMinute, example: twoMinuteExample(_draft)),
+          StoryPart.health => const InfoButton(topic: InfoTopic.health),
+          _ => null,
+        },
         children: content,
       ),
     );
@@ -267,6 +273,19 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
               value: valueText(reminderDays),
               onTap: () => _openPart(StoryPart.reminder),
             ),
+            // Only where there's a health store, and for habits being built
+            HealthSection(
+              _draft,
+              wrap: (_) => Column(mainAxisSize: MainAxisSize.min, children: [
+                Divider(height: 1, indent: 16, color: palette.separator),
+                row(
+                  key: const Key('storyHealth'),
+                  title: get<HealthSource>().name,
+                  value: valueText(_draft.health?.metric.label ?? 'Off'),
+                  onTap: () => _openPart(StoryPart.health),
+                ),
+              ]),
+            ),
           ],
         ),
       ),
@@ -313,6 +332,7 @@ class _StorySentence extends StatelessWidget {
               StoryPart.reminder => draft.isBreak ? 'Check-in' : 'Reminder',
               StoryPart.tiny => 'On a hard day',
               StoryPart.strictness => 'How strict',
+              StoryPart.health => 'Health',
             },
             onTap: () => onTap(part),
           ),

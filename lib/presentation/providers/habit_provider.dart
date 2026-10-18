@@ -8,6 +8,7 @@ import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
+import '../../core/services/health_sync_service.dart';
 import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../core/logging/log.dart';
@@ -42,6 +43,9 @@ class HabitProvider extends ChangeNotifier {
   // Used to skip sample habits whose category the user has deleted
   final CategoryRepository? _categoryRepository;
 
+  // Null disables filling habits in from Apple Health / Health Connect
+  final HealthSyncService? _health;
+
   HabitProvider({
     required GetHabitsUseCase getHabitsUseCase,
     required CreateHabitUseCase createHabitUseCase,
@@ -51,7 +55,9 @@ class HabitProvider extends ChangeNotifier {
     StreakWarningService? streakWarningService,
     ReminderService? reminderService,
     CategoryRepository? categoryRepository,
+    HealthSyncService? healthSync,
   })  : _streakWarnings = streakWarningService,
+        _health = healthSync,
         _reminders = reminderService,
         _categoryRepository = categoryRepository,
         _getHabitsUseCase = getHabitsUseCase,
@@ -116,6 +122,8 @@ class HabitProvider extends ChangeNotifier {
       _setState(HabitProviderState.loaded);
       await _streakWarnings?.syncAll(_habits);
       await _reminders?.syncAll(_habits);
+      // Not awaited: Health can be slow, and the list is already showing
+      syncHealth();
     } catch (e) {
       _error = e.toString();
       _setState(HabitProviderState.error);
@@ -183,6 +191,32 @@ class HabitProvider extends ChangeNotifier {
       },
     );
   }
+
+  bool _healthSyncing = false;
+
+  /// Fills in habits linked to Health from it (the higher number wins for
+  /// each day), through the same save queue as taps. Skipped while one is
+  /// running, and within a minute of the last unless [force].
+  Future<void> syncHealth({bool force = false}) async {
+    final health = _health;
+    if (health == null || _healthSyncing || !_habits.any((h) => h.health != null)) return;
+    if (!health.isDue(force: force)) return;
+    _healthSyncing = true;
+    try {
+      final changes = await health.changes(_habits);
+      for (final entry in changes.entries) {
+        await setDays(entry.key, entry.value);
+      }
+    } catch (e) {
+      logWarning('Health sync failed: $e');
+    } finally {
+      _healthSyncing = false;
+      notifyListeners();
+    }
+  }
+
+  /// When this phone last read Health, or null.
+  DateTime? get lastHealthSync => _health?.lastSync;
 
   /// Why the person keeps the habit; shows at once and saves behind.
   Future<bool> setWhy(String habitId, String text) =>

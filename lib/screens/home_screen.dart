@@ -99,7 +99,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _greeting = Greetings.pick(now, avoid: _greeting, dayStart: dayStart);
         _greetingPart = Greetings.partOf(now, dayStart: dayStart);
       });
-      context.read<HabitProvider>().resetHabitsIfNeeded();
+      final habits = context.read<HabitProvider>();
+      // A new day first, then whatever Health has recorded since
+      habits.resetHabitsIfNeeded().then((_) => habits.syncHealth());
       _scheduleMidnightReset();
     }
   }
@@ -111,7 +113,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     _midnightTimer = Timer(nextMidnight.difference(now) + const Duration(seconds: 1), () {
       if (!mounted) return;
-      context.read<HabitProvider>().resetHabitsIfNeeded();
+      final habits = context.read<HabitProvider>();
+      habits.resetHabitsIfNeeded().then((_) => habits.syncHealth(force: true));
       _scheduleMidnightReset();
     });
   }
