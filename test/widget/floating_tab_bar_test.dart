@@ -277,6 +277,9 @@ void main() {
       await openInspire(tester);
       double actions() => tester.widget<AnimatedOpacity>(find.byKey(const Key('inspireActionsFade'))).opacity;
       expect(actions(), 1);
+      // A long quote of the day puts the buttons below the fold
+      await tester.drag(find.byType(InspireScreen), const Offset(0, -600));
+      await tester.pumpAndSettle();
 
       await tester.pump(IOSMainNavigation.barFadeDelay + const Duration(milliseconds: 100));
       await tester.pumpAndSettle();

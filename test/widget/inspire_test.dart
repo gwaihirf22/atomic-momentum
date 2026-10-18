@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/core/copy/quotes.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/presentation/inspire/quote_widgets.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/quote.dart';
@@ -343,7 +344,7 @@ void main() {
       await pump(tester, HabitDetailScreen(habitId: habitId));
       await tester.ensureVisible(find.byKey(const Key('detailQuote_kjv-proverbs-24-16')));
       await tester.pumpAndSettle();
-      expect(find.text('For a just man falleth seven times, and riseth up again.'), findsOneWidget);
+      expect(find.text('For a righteous man may fall seven times and rise again.'), findsOneWidget);
     });
   });
 
@@ -382,7 +383,7 @@ void main() {
           scrollable: find.byType(Scrollable).first);
       await tester.tap(find.byKey(const Key('browseAuthor_Seneca')));
       await tester.pumpAndSettle();
-      expect(count('8 quotes'), findsOneWidget);
+      expect(count('${Quotes.library.where((q) => q.author == 'Seneca').length} quotes'), findsOneWidget);
       expect(find.byKey(const Key('activeFilter_author')).hitTestable(), findsOneWidget, reason: 'back at the top');
     });
 
@@ -394,7 +395,7 @@ void main() {
           scrollable: find.descendant(of: find.byType(QuoteFilterSheet), matching: find.byType(Scrollable)).first);
       await tester.tap(find.byKey(const Key('filterAuthor_Seneca')));
       await tester.pumpAndSettle();
-      expect(find.text('Show 8 quotes'), findsOneWidget);
+      expect(find.text('Show ${Quotes.library.where((q) => q.author == 'Seneca').length} quotes'), findsOneWidget);
       await tester.scrollUntilVisible(find.byKey(const Key('filterTheme_hardDays')).hitTestable(), -200,
           scrollable: find.descendant(of: find.byType(QuoteFilterSheet), matching: find.byType(Scrollable)).first);
       await tester.tap(find.byKey(const Key('filterTheme_hardDays')));
@@ -467,13 +468,39 @@ void main() {
     });
   });
 
+  test('a copied verse names its translation; other quotes their source', () {
+    final verse = Quotes.library.firstWhere((q) => q.id == 'kjv-proverbs-24-16');
+    expect(quoteToCopy(verse), '"${verse.text}"\n— Proverbs 24:16 (NKJV)');
+    final stoic = Quotes.library.firstWhere((q) => q.id == 'marcus-be-such');
+    expect(quoteToCopy(stoic), endsWith('— Marcus Aurelius, Meditations 10.16 · tr. George Long'));
+  });
+
+  testWidgets('Sources & credits carries the NKJV notice, from the Inspire options', (tester) async {
+    await pump(tester, const InspireScreen());
+    await tester.tap(find.byKey(const Key('inspireOptions')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('inspireOption_credits')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('quoteCredits')), findsOneWidget);
+    expect(find.text(Quotes.nkjvNotice), findsOneWidget);
+  });
+
+  testWidgets('browse lists the Puritans and Thinkers with their counts', (tester) async {
+    await pump(tester, const QuoteSearchScreen());
+    for (final family in [QuoteFamily.puritans, QuoteFamily.thinkers]) {
+      final count = Quotes.library.where((q) => q.family == family).length;
+      expect(find.descendant(of: find.byKey(Key('browseFamily_${family.name}')), matching: find.text('$count')),
+          findsOneWidget, reason: family.name);
+    }
+  });
+
   testWidgets('Settings turns the tab off, and opens the sources while it is on', (tester) async {
     await pump(tester, const SettingsScreen());
     await tester.scrollUntilVisible(find.byKey(const Key('quoteSourcesSetting')), 300,
         scrollable: find.byType(Scrollable).first);
     await tester.ensureVisible(find.byKey(const Key('quoteSourcesSetting')));
       await tester.pumpAndSettle();
-    expect(find.text('5 of 5'), findsOneWidget);
+    expect(find.text('${QuoteFamily.values.length} of ${QuoteFamily.values.length}'), findsOneWidget);
     await tester.tap(find.byKey(const Key('quoteSourcesSetting')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('quoteFamily_stoic')), findsOneWidget);

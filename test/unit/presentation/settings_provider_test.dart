@@ -116,12 +116,20 @@ void main() {
 
     await settings.setQuoteFamily(QuoteFamily.scripture, true);
     expect(settings.quoteFamilies, {QuoteFamily.mine, QuoteFamily.scripture});
-    expect(notified, 6);
+    // One off, each of the others off (the last refused), one back on
+    expect(notified, QuoteFamily.values.length + 1);
   });
 
   test('unknown stored quote sources are ignored', () async {
     SharedPreferences.setMockInitialValues({'quoteFamiliesOff': ['stoic', 'gone']});
     expect(SettingsProvider(await SharedPreferences.getInstance()).quoteFamilies,
         QuoteFamily.values.toSet()..remove(QuoteFamily.stoic));
+  });
+
+  test('sources added in an update start on, even for people who turned others off', () async {
+    SharedPreferences.setMockInitialValues({'quoteFamiliesOff': ['scripture']});
+    final families = SettingsProvider(await SharedPreferences.getInstance()).quoteFamilies;
+    expect(families, containsAll([QuoteFamily.puritans, QuoteFamily.thinkers]));
+    expect(families, isNot(contains(QuoteFamily.scripture)));
   });
 }

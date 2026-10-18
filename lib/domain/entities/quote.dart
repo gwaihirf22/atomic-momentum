@@ -5,8 +5,10 @@ import 'package:equatable/equatable.dart';
 enum QuoteFamily {
   stoic('Stoics'),
   christian('Christian writers'),
+  puritans('Puritans'),
   scripture('Scripture'),
   stories('Classic stories'),
+  thinkers('Thinkers'),
   mine('My quotes');
 
   final String label;

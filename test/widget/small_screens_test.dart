@@ -237,6 +237,7 @@ void main() {
           ),
         ),
     'Quote sources sheet': () => const Scaffold(body: QuoteSourcesSheet()),
+    'Quote sources & credits': () => const Scaffold(body: QuoteCreditsSheet()),
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Stretch')),

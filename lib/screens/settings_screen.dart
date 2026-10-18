@@ -338,6 +338,13 @@ class SettingsScreen extends StatelessWidget {
                 value: '${settings.quoteFamilies.length} of ${QuoteFamily.values.length}',
                 onTap: () => showQuoteSourcesSheet(context),
               ),
+            SettingsTile(
+              tileKey: const Key('quoteCreditsSetting'),
+              icon: CupertinoIcons.info_circle_fill,
+              iconColor: HabitColor.blueGrey.color,
+              title: 'Sources & credits',
+              onTap: () => showQuoteCreditsSheet(context),
+            ),
           ],
         ),
         const HealthSettingsSection(),

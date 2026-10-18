@@ -6,14 +6,33 @@ A fifth tab, **Inspire**, just left of Settings. It opens on the **quote of the 
 The tab can be turned off (Settings → Inspire → Inspire tab). Each source can be turned off: Stoics, Christian writers, Scripture, Classic stories, My quotes (Settings → Inspire → Quote sources, or the Inspire options). One source always stays on.
 
 ## Copyright rule
-The app's own quotes are **public domain only**:
-- **Stoics** in old translations, named in each quote's source: George Long (Epictetus 1877, Marcus Aurelius 1862) and Richard M. Gummere (Seneca, 1917–1925). Modern translations (Hays, Robin Hard and others) are under copyright, even though the authors are ancient.
-- **Scripture** in the King James Version. The NIV and ESV need permission, beyond their short-quote allowances.
-- **Writers and stories** published before 1930 whose authors died more than 70 years ago (Chesterton, Spurgeon, à Kempis, Bunyan, Dickens, Alcott, Burnett, Montgomery, Barrie, Margery Williams, Aesop).
+The app's own quotes are **public domain, with one exception: Scripture is in the NKJV.**
+- **The Stoics** are in old translations, named in each source: George Long (Epictetus, Marcus Aurelius) and Richard M. Gummere (Seneca). Modern translations (Hays, Robin Hard and others) are under copyright.
+- **Writers, Puritans, thinkers and stories** come from works published before 1930 whose authors died long ago. They include Chesterton, Spurgeon, Murray, Müller, Bounds, Owen, Watson, Baxter, Sibbes, Flavel, Brooks, Rutherford, Edwards, Johnson, Twain, Franklin, William James, Bunyan, Dickens, Burnett, Kipling and others.
+- **Scripture** is in the **New King James Version, © 1982 Thomas Nelson.** It's quoted under the publisher's free-quotation allowance, with this notice in Settings → Inspire → Sources & credits: "Scripture taken from the New King James Version®. Copyright © 1982 by Thomas Nelson. Used by permission. All rights reserved." Copied and shared verses end "(NKJV)".
+  - **Before release:** confirm with HarperCollins Christian Publishing (Thomas Nelson) permissions that a paid app is covered. Their policy is written for print.
+  - **Wording:** every verse must match the NKJV word for word. Only line-start capitals (from the NKJV's poetry layout) and the final punctuation have been changed.
 
-Tolkien, C. S. Lewis, Sanderson and other copyrighted authors come in only as the person's **own quotes**. The person types them in for themselves, and the app never shares them. Before adding any copyrighted quote to the built-in library, get written permission from its rights holder. `test/unit/core/quotes_library_test.dart` guards a few known names.
+Tolkien, C. S. Lewis, Sanderson and other copyrighted authors come in only as the person's own quotes. "We are what we repeatedly do" is Will Durant (1926), not Aristotle, so it isn't included. Before adding any copyrighted quote to the built-in library, get written permission. `test/unit/core/quotes_library_test.dart` guards a few known names.
 
-Check the wording of every built-in quote against the named public-domain edition before release.
+## Review before release (Paul)
+Check each against its source and correct the wording here and in `lib/core/copy/quotes.dart`:
+- **Scripture (NKJV):** all 31 verses (ids start `kjv-`), against an NKJV.
+- **Puritans:**
+  - Owen (*Mortification of Sin*), Watson, Sibbes (*The Bruised Reed*), Rutherford (*Letters*)
+  - Flavel ×2 (*Mystery of Providence*, *Keeping the Heart*)
+  - Baxter ×2 (*Christian Directory*; the "dying man" line)
+  - Brooks (*Precious Remedies*), Edwards (*Resolutions* 5, 6), Bunyan (on prayer)
+  - Watson, Baxter's second line and Bunyan's have no source named yet; add one if found.
+- **Thinkers:**
+  - Johnson (*Vision of Theodore*, *Rasselas*)
+  - Twain ×2 (*Pudd'nhead Wilson*)
+  - Franklin ×3 (*Poor Richard*)
+  - William James ×4 (*Principles of Psychology*, "Habit")
+- **Christian writers:** Murray (*Humility*), Müller, Bounds (*Power Through Prayer*), Hudson Taylor, Chambers (*My Utmost*)
+- **Stoics:** Seneca Letters 1 and 76, and Marcus 6.2 (Gummere and Long)
+- **Stories:** Bunyan (Hill Difficulty), Dickens (Marley), Burnett (thistle), Kipling ("If—")
+- **Attributions flagged earlier:** Hudson Taylor ("faithfulness in a little thing"), Moody, de Sales, Carey, the Epictetus fragment, Chambers ("drudgery")
 
 ## How it works
 - `Quote` (id, text, author, source, family, themes). Built-in quotes are `const` data in `core/copy/quotes.dart`, and their ids are stable because habits and the saved list keep quotes by id.

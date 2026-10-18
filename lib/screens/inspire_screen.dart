@@ -88,6 +88,7 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
         const AdaptiveOption(_Option.mine, 'My quotes', key: Key('inspireOption_mine')),
         const AdaptiveOption(_Option.saved, 'Saved quotes', key: Key('inspireOption_saved')),
         const AdaptiveOption(_Option.sources, 'Quote sources', key: Key('inspireOption_sources')),
+        const AdaptiveOption(_Option.credits, 'Sources & credits', key: Key('inspireOption_credits')),
       ],
     );
     if (!mounted || choice == null) return;
@@ -102,6 +103,8 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
         _openSearch(const QuoteSearchScreen(start: QuoteList.saved));
       case _Option.sources:
         await showQuoteSourcesSheet(context);
+      case _Option.credits:
+        await showQuoteCreditsSheet(context);
     }
   }
 
@@ -201,7 +204,7 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
   }
 }
 
-enum _Option { share, add, mine, saved, sources }
+enum _Option { share, add, mine, saved, sources, credits }
 
 class _TodaysQuote extends StatelessWidget {
   final Quote quote;

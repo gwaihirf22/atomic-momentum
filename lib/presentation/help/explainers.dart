@@ -139,7 +139,7 @@ class Explainer {
         icon: CupertinoIcons.sun_max,
       ),
       ExplainerPoint(
-        'Stoics, Christian writers, Scripture and classic stories. Turn any off in Settings or under ⋯.',
+        'Stoics, Christian writers, Puritans, Scripture, stories and thinkers. Turn any off in Settings or under ⋯.',
         lead: 'Sources',
         icon: CupertinoIcons.book,
       ),
@@ -160,6 +160,7 @@ class Explainer {
         icon: CupertinoIcons.plus_circle,
       ),
     ],
-    source: 'Built-in quotes are public domain: old translations, the King James Version and classic books.',
+    source: 'Scripture: New King James Version, © 1982 Thomas Nelson, used by permission. Other built-in quotes are '
+        'public domain. See Sources & credits.',
   );
 }

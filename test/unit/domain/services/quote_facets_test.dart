@@ -63,7 +63,8 @@ void main() {
 
   test('counts say what each choice would show, with the other groups kept', () {
     final counts = QuoteFacets.counts(library, const QuoteFilter(author: 'Seneca'), enabled: everything);
-    expect(counts.families[QuoteFamily.stoic], 8);
+    final seneca = Quotes.library.where((q) => q.author == 'Seneca').length;
+    expect(counts.families[QuoteFamily.stoic], seneca);
     expect(counts.families[QuoteFamily.scripture], 0);
     expect(counts.themes[QuoteTheme.hardDays], 2);
     // The author group itself isn't narrowed by its own choice

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/copy/quotes.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/quote.dart';
@@ -329,7 +330,7 @@ class _Browse extends StatelessWidget {
     final off = QuoteFamily.values.length - enabled.length;
 
     String sourceSubtitle(QuoteFamily family) {
-      if (family == QuoteFamily.scripture) return 'King James Version';
+      if (family == QuoteFamily.scripture) return Quotes.nkjv;
       final names = QuoteFacets.authors([for (final q in all) if (q.family == family) q])
         ..sort((a, b) => b.count.compareTo(a.count));
       if (names.isEmpty) return family == QuoteFamily.mine ? 'Quotes you add' : '';

@@ -28,11 +28,26 @@ void main() {
     }
   });
 
-  test('scripture is the King James Version, cited by verse', () {
-    for (final q in library.where((q) => q.family == QuoteFamily.scripture)) {
-      expect(q.source, 'King James Version', reason: q.id);
+  test('scripture is the New King James Version, cited by verse, with its notice', () {
+    final verses = library.where((q) => q.family == QuoteFamily.scripture).toList();
+    for (final q in verses) {
+      expect(q.source, Quotes.nkjv, reason: q.id);
       expect(RegExp(r'\d+:\d+').hasMatch(q.author), isTrue, reason: q.id);
     }
+    // Well under the NKJV's free-quotation allowance
+    expect(verses.length, lessThan(100));
+    expect(Quotes.nkjvNotice, contains('Copyright © 1982 by Thomas Nelson'));
+  });
+
+  test('ids from earlier versions are all still there (habits and saved lists keep them)', () {
+    final ids = {for (final q in library) q.id};
+    const earlier = [
+      'epictetus-walking-by-walking', 'marcus-be-such', 'seneca-life-speeds-by', 'chesterton-worth-doing-badly',
+      'edwards-never-lose-a-moment', 'kjv-proverbs-24-16', 'kjv-joshua-1-9', 'aesop-little-by-little',
+      'burnett-it-is-done', 'williams-you-become',
+    ];
+    expect(ids.containsAll(earlier), isTrue);
+    expect(ids.where((id) => id.startsWith('kjv-')), hasLength(31), reason: 'verses keep their old ids');
   });
 
   test('each built-in source has a good number of quotes, and every theme is used', () {
@@ -45,7 +60,7 @@ void main() {
   });
 
   test('copyrighted authors are left to the person\'s own quotes', () {
-    const notPublicDomain = ['Tolkien', 'C. S. Lewis', 'C.S. Lewis', 'Sanderson', 'Hays', 'Holiday'];
+    const notPublicDomain = ['Tolkien', 'C. S. Lewis', 'C.S. Lewis', 'Sanderson', 'Hays', 'Holiday', 'Durant'];
     for (final q in library) {
       for (final name in notPublicDomain) {
         expect('${q.author} ${q.source}', isNot(contains(name)), reason: q.id);

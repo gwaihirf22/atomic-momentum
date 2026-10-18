@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import '../../core/copy/quotes.dart';
 import '../../core/feedback/haptics.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/entities/habit.dart';
@@ -106,7 +107,11 @@ class QuoteTile extends StatelessWidget {
 /// The quote with its text and source, ready to paste.
 String quoteToCopy(Quote quote) => [
       '"${quote.text}"',
-      if (quote.author.isNotEmpty) '— ${quote.author}${quote.source.isNotEmpty ? ', ${quote.source}' : ''}',
+      // Verses carry their translation, as its copyright notice asks
+      if (quote.source == Quotes.nkjv)
+        '— ${quote.author} (NKJV)'
+      else if (quote.author.isNotEmpty)
+        '— ${quote.author}${quote.source.isNotEmpty ? ', ${quote.source}' : ''}',
     ].join('\n');
 
 Future<void> copyQuote(BuildContext context, Quote quote) async {
@@ -687,8 +692,10 @@ class QuoteSourcesSheet extends StatelessWidget {
   static const icons = {
     QuoteFamily.stoic: CupertinoIcons.building_2_fill,
     QuoteFamily.christian: CupertinoIcons.book_fill,
+    QuoteFamily.puritans: CupertinoIcons.flame_fill,
     QuoteFamily.scripture: CupertinoIcons.book_circle_fill,
     QuoteFamily.stories: CupertinoIcons.sparkles,
+    QuoteFamily.thinkers: CupertinoIcons.lightbulb_fill,
     QuoteFamily.mine: CupertinoIcons.person_fill,
   };
 
@@ -745,8 +752,68 @@ class QuoteSourcesSheet extends StatelessWidget {
   static const _subtitles = {
     QuoteFamily.stoic: 'Epictetus, Seneca, Marcus Aurelius',
     QuoteFamily.christian: 'Chesterton, Spurgeon, à Kempis and more',
-    QuoteFamily.scripture: 'King James Version',
+    QuoteFamily.puritans: 'Owen, Watson, Baxter, Sibbes and more',
+    QuoteFamily.scripture: 'New King James Version',
     QuoteFamily.stories: 'Aesop, Bunyan, Dickens, Alcott and more',
+    QuoteFamily.thinkers: 'Johnson, Twain, Franklin, William James',
     QuoteFamily.mine: 'Quotes you add',
   };
+}
+
+/// Where the app's quotes come from: the translations, and the notice the
+/// NKJV asks for.
+Future<void> showQuoteCreditsSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    backgroundColor: AppPalette.of(context).surface,
+    builder: (_) => const QuoteCreditsSheet(),
+  );
+}
+
+class QuoteCreditsSheet extends StatelessWidget {
+  const QuoteCreditsSheet({super.key});
+
+  static const credits = [
+    ('Scripture', Quotes.nkjvNotice),
+    ('Epictetus and Marcus Aurelius', 'Translated by George Long (1862, 1877).'),
+    ('Seneca', 'Letters to Lucilius, translated by Richard M. Gummere (1917–1925).'),
+    ('Augustine', 'Confessions, translated by E. B. Pusey (1838).'),
+    ('Everything else', 'From works in the public domain. Quotes you add stay on this phone.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return SafeArea(
+      child: SingleChildScrollView(
+        key: const Key('quoteCredits'),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              header: true,
+              child: Text(
+                'Sources & credits',
+                style: TextStyle(
+                  fontFamily: LargeTitleHeader.fontFamily,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: palette.text,
+                ),
+              ),
+            ),
+            for (final (title, text) in credits) ...[
+              const SizedBox(height: 16),
+              Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: palette.textSecondary)),
+              const SizedBox(height: 4),
+              Text(text, style: TextStyle(fontSize: 15, height: 1.4, color: palette.text)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
