@@ -1,3 +1,4 @@
+import '../services/achievement_store.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,6 +65,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
 
   // Settings and streak warnings
   sl.registerLazySingleton(() => SettingsProvider(sl()));
+  sl.registerLazySingleton(() => AchievementStore(sl()));
   sl.registerLazySingleton(() => StreakWarningService(
     scheduler: LocalNotificationStreakWarningScheduler(defaults: () => sl<SettingsProvider>().notifyDefaults),
     readSettings: () => sl<SettingsProvider>().streakWarnings,

@@ -5,10 +5,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/feedback/haptics.dart';
+import '../core/injection/injection_container.dart';
+import '../core/services/achievement_store.dart';
 import '../core/services/notification_service.dart';
 import '../core/theme/app_palette.dart';
+import '../domain/services/achievements.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
+import '../presentation/providers/settings_provider.dart';
+import '../presentation/widgets/achievement_widgets.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
 import '../presentation/widgets/tab_swipe.dart';
 import 'habit_editor_screen.dart';
@@ -77,9 +82,16 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   /// Tabs with a page open on top of their first one: the bar hides there.
   final _deep = <int>{};
 
+  late final HabitProvider _habits;
+
+  /// An achievement's sheet is open.
+  bool _celebrating = false;
+
   @override
   void initState() {
     super.initState();
+    _habits = context.read<HabitProvider>()..addListener(_checkAchievements);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
     // A notification tap that launched the app arrives before this screen
     if (NotificationService.focusRequests.value != null) {
@@ -89,9 +101,45 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
 
   @override
   void dispose() {
+    _habits.removeListener(_checkAchievements);
     NotificationService.focusRequests.removeListener(_showHabits);
     _slide.dispose();
     super.dispose();
+  }
+
+  /// Celebrates an achievement just earned (today or yesterday), once. Ones
+  /// found in older history, or there before the first check, are filed on
+  /// the shelf quietly. Waits while Add, Edit or a sheet is open.
+  void _checkAchievements() {
+    if (_celebrating || !mounted || _habits.state != HabitProviderState.loaded) return;
+    final store = get<AchievementStore>();
+    final now = clock.now();
+    final weekStart = context.read<SettingsProvider>().firstDayOfWeek;
+    final earned = Achievements.earned(_habits.habits, now, weekStart: weekStart);
+    if (!store.started) {
+      store.markSeen(earned.map((a) => a.id));
+      return;
+    }
+    final seen = store.seen;
+    final fresh = earned.where((a) => !seen.contains(a.id)).toList();
+    if (fresh.isEmpty) return;
+
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
+    final recent = fresh.where((a) => !a.earnedOn.isBefore(yesterday)).toList()
+      ..sort((a, b) => a.rank.compareTo(b.rank));
+    if (recent.isNotEmpty && Navigator.of(context, rootNavigator: true).canPop()) return;
+    store.markSeen(fresh.map((a) => a.id));
+    if (recent.isEmpty) return;
+
+    final achievement = recent.first;
+    final next = Achievements.next(_habits.habits, now)
+        .where((p) => p.habitName != null && p.habitName == achievement.habitName)
+        .firstOrNull;
+    _celebrating = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) await showAchievementSheet(context, achievement, isNew: true, next: next);
+      _celebrating = false;
+    });
   }
 
   void _stackChanged(int tab) {

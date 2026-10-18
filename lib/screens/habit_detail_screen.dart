@@ -14,12 +14,14 @@ import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/services/habit_stats.dart';
+import '../domain/services/achievements.dart';
 import '../domain/services/insights.dart';
 import '../presentation/habit_form/sentence.dart';
 import '../presentation/help/explainers.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
+import '../presentation/widgets/achievement_widgets.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/heatmap.dart';
 import '../presentation/widgets/break_wording.dart';
@@ -255,6 +257,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               _TrendCard(habit: habit, stats: stats, color: color),
               const SizedBox(height: 14),
               _HeatmapCard(habit: habit, weekStart: weekStart, selected: _day, onSelect: _select),
+              const SizedBox(height: 14),
+              _AchievementsCard(habit: habit, weekStart: weekStart),
             ],
             const SizedBox(height: 14),
             _WhyCard(why: habit.why, onTap: () => _editWhy(habit)),
@@ -1009,6 +1013,48 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter old) => old.values != values || old.color != color;
+}
+
+/// This habit's achievements, newest first, and the next one.
+class _AchievementsCard extends StatelessWidget {
+  final Habit habit;
+  final int weekStart;
+
+  const _AchievementsCard({required this.habit, required this.weekStart});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final now = clock.now();
+    final earned = Achievements.earned([habit], now, weekStart: weekStart)
+        .where((a) => a.onShelf && a.habitId == habit.id)
+        .toList()
+        .reversed
+        .toList();
+    final next = Achievements.next([habit], now).where((p) => p.habitName == habit.name).firstOrNull;
+    return StatCard(
+      key: const Key('detailAchievements'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const StatCardHeading('Achievements'),
+        const SizedBox(height: 12),
+        if (earned.isEmpty && next == null)
+          Text('Achievements for this habit show here.', style: TextStyle(fontSize: 14, color: palette.textSecondary))
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (next != null) ...[AchievementTile.next(next), const SizedBox(width: 10)],
+              for (final a in earned) ...[
+                AchievementTile.earned(a, onTap: () => showAchievementSheet(context, a, next: next)),
+                const SizedBox(width: 10),
+              ],
+            ]),
+          ),
+      ]),
+    );
+  }
 }
 
 /// The last six months of this habit, day by day; tapping a day shows it.

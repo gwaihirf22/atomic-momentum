@@ -39,7 +39,10 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
+import 'package:atomic_momentum/domain/services/achievements.dart';
 import 'package:atomic_momentum/presentation/help/explainers.dart';
+import 'package:atomic_momentum/presentation/widgets/achievement_widgets.dart';
+import 'package:atomic_momentum/screens/achievements_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
 import '../helpers/real_fonts.dart';
@@ -167,6 +170,29 @@ void main() {
     'Story, editing a long name with a two-minute version': () =>
         StoryHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
     'Momentum explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.momentum, momentum: 72)),
+    'Achievements': () => const AchievementsScreen(),
+    'Achievement celebration, a long name': () => Scaffold(
+          body: AchievementSheet(
+            isNew: true,
+            achievement: Achievement(
+              id: 'clean_30_x',
+              kind: AchievementKind.clean,
+              title: '30 days without late night snacking',
+              badge: '30',
+              unit: 'DAYS',
+              message: "A whole month without a slip. That's a real change.",
+              habitName: 'Late night snacking after dinner',
+              earnedOn: DateTime(2026, 10, 17),
+            ),
+            next: const AchievementProgress(
+              title: '90 days without late night snacking',
+              badge: '90',
+              unit: 'DAYS',
+              current: 30,
+              goal: 90,
+            ),
+          ),
+        ),
     'Two-minute explainer, a long example': () => const Scaffold(
           body: InfoSheet(
             topic: InfoTopic.twoMinute,
@@ -296,6 +322,7 @@ void main() {
       'Habit page',
       'Insights',
       'Momentum explainer',
+      'Achievement celebration, a long name',
     ]) {
       testWidgets('$name in ${palette.theme.name} at 375pt, text 135%', (tester) async {
         await pump(tester, screens[name]!(), width: 375, scale: 1.35, palette: palette);

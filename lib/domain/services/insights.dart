@@ -119,7 +119,7 @@ class Insights {
     }
 
     for (final habit in habits) {
-      for (final period in _periods(habit, now)) {
+      for (final period in periods(habit, now)) {
         if (period.mark == PeriodMark.untracked || period.mark == PeriodMark.rest) continue;
         if (_isOneDay(habit, period.start)) {
           add(period.start, period);
@@ -164,13 +164,13 @@ class Insights {
     var full = 0, twoMinute = 0, missed = 0, saved = 0;
     for (final habit in habits) {
       // From the start, to know whether a streak was going before [from]
-      final periods = _periods(habit, now)
+      final habitPeriods = periods(habit, now)
           .where((p) => p.mark != PeriodMark.untracked && p.mark != PeriodMark.rest && p.mark != PeriodMark.current)
           .toList();
       var streak = 0;
       PeriodMark? previous;
       var streakBeforeMiss = 0;
-      for (final period in periods) {
+      for (final period in habitPeriods) {
         final inRange = !period.start.isBefore(habit.schedule.periodStart(first));
         final mark = period.mark;
         if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
@@ -197,7 +197,7 @@ class Insights {
     final kept = List<int>.filled(8, 0);
     final due = List<int>.filled(8, 0);
     for (final habit in habits) {
-      for (final period in _periods(habit, now)) {
+      for (final period in periods(habit, now)) {
         if (period.start.isBefore(_date(from)) || !_isOneDay(habit, period.start)) continue;
         final mark = period.mark;
         if (mark == PeriodMark.untracked || mark == PeriodMark.rest || mark == PeriodMark.current) continue;
@@ -228,7 +228,7 @@ class Insights {
 
   /// A habit's periods from when it was first tracked to the one under way
   /// at [now], oldest first.
-  static List<RecentPeriod> _periods(Habit habit, DateTime now) {
+  static List<RecentPeriod> periods(Habit habit, DateTime now) {
     final schedule = habit.schedule;
     if (!schedule.isPeriodic) return const [];
     final cached = _cache[habit] ??= {};

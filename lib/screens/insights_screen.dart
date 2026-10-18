@@ -8,11 +8,13 @@ import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/habit.dart';
 import '../domain/entities/momentum.dart';
+import '../domain/services/achievements.dart';
 import '../domain/services/insights.dart';
 import '../presentation/help/explainers.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
+import '../presentation/widgets/achievement_widgets.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/break_wording.dart';
 import '../presentation/widgets/heatmap.dart';
@@ -21,6 +23,7 @@ import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/momentum_chart.dart';
 import '../presentation/widgets/momentum_ring.dart';
 import '../presentation/widgets/stat_card.dart';
+import 'achievements_screen.dart';
 import 'habit_detail_screen.dart';
 
 /// How far back Insights looks.
@@ -106,6 +109,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
                     const SizedBox(height: 14),
                     _WeekCard(data: data, weekStart: weekStart),
                     const SizedBox(height: 14),
+                    _AchievementsCard(data: data),
+                    const SizedBox(height: 14),
                     _HabitsCard(habits: habits),
                   ],
           ),
@@ -133,6 +138,10 @@ class _InsightsData {
   final int longestStreak;
   final int formed;
 
+  /// Earned (for the shelf), newest first, and what's coming next.
+  final List<Achievement> achievements;
+  final List<AchievementProgress> next;
+
   _InsightsData._({
     required this.habits,
     required this.today,
@@ -147,6 +156,8 @@ class _InsightsData {
     required this.timesKept,
     required this.longestStreak,
     required this.formed,
+    required this.achievements,
+    required this.next,
   });
 
   static _InsightsData of({
@@ -187,6 +198,9 @@ class _InsightsData {
       timesKept: chosenKept.kept,
       longestStreak: Insights.longestStreak(chosen),
       formed: Insights.formed(habits),
+      achievements:
+          Achievements.earned(habits, now, weekStart: weekStart).where((a) => a.onShelf).toList().reversed.toList(),
+      next: Achievements.next(habits, now),
     );
   }
 }
@@ -732,6 +746,66 @@ class _WeekCard extends StatelessWidget {
             style: TextStyle(fontSize: 13, height: 1.4, color: palette.textSecondary),
           ),
         ],
+      ]),
+    );
+  }
+}
+
+class _AchievementsCard extends StatelessWidget {
+  final _InsightsData data;
+
+  const _AchievementsCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final earned = data.achievements;
+    final next = data.next;
+    return StatCard(
+      key: const Key('insightsAchievements'),
+      padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: StatCardHeading(
+            'Achievements',
+            action: PillButton(
+              key: const Key('insightsSeeAllAchievements'),
+              label: earned.isEmpty ? 'See what\'s ahead' : 'See all ${earned.length}',
+              onPressed: () => Navigator.of(context)
+                  .push(CupertinoPageRoute<void>(builder: (_) => const AchievementsScreen())),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (earned.isEmpty && next.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Text('Keep going: the first is a week in a row.',
+                style: TextStyle(fontSize: 14, color: palette.textSecondary)),
+          )
+        else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.only(right: 16),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              for (final a in earned.take(8)) ...[
+                AchievementTile.earned(
+                  a,
+                  onTap: () => showAchievementSheet(
+                    context,
+                    a,
+                    next: next.where((p) => p.habitName != null && p.habitName == a.habitName).firstOrNull,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              for (final p in next.take(3)) ...[
+                AchievementTile.next(p),
+                const SizedBox(width: 10),
+              ],
+            ]),
+          ),
       ]),
     );
   }
