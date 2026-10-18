@@ -162,7 +162,7 @@ class Habit extends Equatable {
 
   DateTime get resetAnchor => resetAnchorDate ?? metadata.createdDate;
 
-  HabitSchedule get schedule => HabitSchedule(
+  late final HabitSchedule schedule = HabitSchedule(
         frequency: resetFrequency,
         interval: resetInterval,
         anchor: resetAnchor,
@@ -183,11 +183,20 @@ class Habit extends Equatable {
       return history.values.fold(0, (sum, amount) => sum + amount);
     }
 
-    final start = schedule.periodStart(date);
-    final end = schedule.nextPeriodStart(date);
-    return history.entries
-        .where((entry) => !entry.key.isBefore(start) && entry.key.isBefore(end))
-        .fold(0, (sum, entry) => sum + entry.value);
+    return _periodTotals[schedule.periodStart(date)] ?? 0;
+  }
+
+  /// History summed per period, keyed by period start. A Habit never
+  /// changes (an update makes a new one), so it's worked out once.
+  late final Map<DateTime, int> _periodTotals = _sumByPeriod();
+
+  Map<DateTime, int> _sumByPeriod() {
+    final totals = <DateTime, int>{};
+    for (final entry in history.entries) {
+      final start = schedule.periodStart(entry.key);
+      totals[start] = (totals[start] ?? 0) + entry.value;
+    }
+    return totals;
   }
 
   /// Sets the period progress for today. History stores what was logged on
@@ -407,6 +416,25 @@ class Habit extends Equatable {
         twoMinute: _twoMinuteLog,
         breakLimit: isBreak ? target : null,
       );
+
+  /// The first day the habit counts from: when it was made, or the earliest
+  /// day with anything logged, if that's earlier (seeded or backfilled history).
+  DateTime get trackedFrom {
+    var start = _dateOnly(metadata.createdDate);
+    for (final day in [...history.keys, ...twoMinuteDays]) {
+      if (day.isBefore(start)) start = _dateOnly(day);
+    }
+    return start;
+  }
+
+  /// Whether this habit counts toward overall momentum at [at]: a habit
+  /// being built once something is logged, one being broken once a period
+  /// has passed since it was made (a clean run logs nothing).
+  bool countsTowardMomentumAt(DateTime at) {
+    if (!schedule.isPeriodic) return false;
+    if (isBreak) return metadata.createdDate.isBefore(schedule.periodStart(at));
+    return history.entries.any((entry) => entry.value > 0 && !entry.key.isAfter(at));
+  }
 
   /// Momentum's score at each of [at] (oldest first), like [momentumAt] for
   /// each but in one pass.

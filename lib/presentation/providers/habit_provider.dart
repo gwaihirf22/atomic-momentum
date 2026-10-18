@@ -74,10 +74,7 @@ class HabitProvider extends ChangeNotifier {
   /// passed (a clean run logs nothing). Null when there's nothing to average.
   Momentum? get overallMomentum {
     final now = clock.now();
-    bool tracked(Habit h) => h.isBreak
-        ? h.metadata.createdDate.isBefore(h.schedule.periodStart(now))
-        : h.history.values.any((amount) => amount > 0);
-    final scores = _habits.where((h) => h.schedule.isPeriodic && tracked(h)).map((h) => h.momentum).toList();
+    final scores = _habits.where((h) => h.countsTowardMomentumAt(now)).map((h) => h.momentum).toList();
     if (scores.isEmpty) return null;
     double average(double Function(Momentum m) of) => scores.map(of).reduce((a, b) => a + b) / scores.length;
     return Momentum(score: average((m) => m.score), trend: average((m) => m.trend));

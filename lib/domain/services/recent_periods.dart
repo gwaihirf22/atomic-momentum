@@ -52,7 +52,7 @@ List<RecentPeriod> recentPeriods(Habit habit, DateTime now, {int count = 7}) {
     starts.insert(0, start);
   }
 
-  final tracked = _trackedFrom(habit);
+  final tracked = habit.trackedFrom;
   final current = starts.last;
   return [
     for (final start in starts) _markFor(habit, start, isCurrent: start == current, tracked: tracked),
@@ -68,15 +68,4 @@ RecentPeriod _markFor(Habit habit, DateTime start, {required bool isCurrent, req
   if (habit.isTwoMinuteOn(start)) return RecentPeriod(start, PeriodMark.twoMinute, fraction);
   if (isCurrent) return RecentPeriod(start, PeriodMark.current, fraction);
   return RecentPeriod(start, fraction > 0 ? PeriodMark.partial : PeriodMark.missed, fraction);
-}
-
-/// The first day the habit counts from: when it was made, or the earliest
-/// day with anything logged, if that's earlier (seeded or backfilled history).
-DateTime _trackedFrom(Habit habit) {
-  final created = habit.metadata.createdDate;
-  var start = DateTime(created.year, created.month, created.day);
-  for (final day in [...habit.history.keys, ...habit.twoMinuteDays]) {
-    if (day.isBefore(start)) start = DateTime(day.year, day.month, day.day);
-  }
-  return start;
 }
