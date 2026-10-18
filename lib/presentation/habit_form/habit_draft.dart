@@ -60,6 +60,14 @@ class HabitDraft extends ChangeNotifier {
   /// An id, so a habit in an unknown or deleted category keeps it unless changed.
   String categoryId;
   String? icon;
+
+  /// Editing: the day the habit counts from, and whether the days logged
+  /// before it are to be cleared (so it can start after them).
+  DateTime? countFrom;
+  bool clearEarlier = false;
+
+  /// Editing: how many days before [day] have something logged.
+  int daysLoggedBefore(DateTime day) => original?.daysLoggedBefore(day) ?? 0;
   ResetFrequency frequency = ResetFrequency.daily;
 
   /// Weekly habits reset on this date's weekday, monthly on its day of month.
@@ -108,6 +116,7 @@ class HabitDraft extends ChangeNotifier {
       message.text = reminder.customMessage ?? '';
     }
     icon = habit.metadata.icon;
+    countFrom = habit.trackedFrom;
     final twoMinute = habit.twoMinute;
     if (twoMinute != null) {
       tiny.text = twoMinute.description;
@@ -300,6 +309,8 @@ class HabitDraft extends ChangeNotifier {
         tiny.text.trim(),
         tinyMinimum.text.trim(),
         tinyShowOnCard,
+        countFrom?.toIso8601String(),
+        clearEarlier,
       ]);
 
   // Saving
@@ -370,9 +381,13 @@ class HabitDraft extends ChangeNotifier {
   Future<bool> save(HabitProvider habits) async {
     saveError = null;
     try {
-      final saved = isEditing
+      var saved = isEditing
           ? await habits.updateHabitDetails(original!.id, toUpdateParams())
           : await habits.createHabit(toCreateParams());
+      final start = countFrom;
+      if (saved && isEditing && start != null && (start != original!.trackedFrom || clearEarlier)) {
+        saved = await habits.countFrom(original!.id, start, clearEarlier: clearEarlier);
+      }
       if (!saved) saveError = habits.error;
       return saved;
     } catch (e) {

@@ -192,7 +192,28 @@ class HabitProvider extends ChangeNotifier {
   /// at once and saves behind.
   Future<bool> startFrom(String habitId, DateTime date) {
     final day = DateTime(date.year, date.month, date.day);
-    return _applyNow(habitId, (habit) => habit.startFrom(day), (pending) => pending.startFrom = day);
+    return _applyNow(
+      habitId,
+      (habit) => habit.startFrom(day),
+      (pending) => pending
+        ..countFrom = null
+        ..startFrom = day,
+    );
+  }
+
+  /// Counts the habit from [date], earlier or later (see [Habit.countFrom]),
+  /// first clearing what was logged before it if [clearEarlier]. Shows at
+  /// once and saves behind.
+  Future<bool> countFrom(String habitId, DateTime date, {bool clearEarlier = false}) {
+    final day = DateTime(date.year, date.month, date.day);
+    return _applyNow(
+      habitId,
+      (habit) => (clearEarlier ? habit.clearBefore(day) : habit).countFrom(day),
+      (pending) => pending
+        ..startFrom = null
+        ..countFrom = day
+        ..clearEarlier = clearEarlier,
+    );
   }
 
   /// The note on [date]; empty removes it. Shows at once and saves behind.
@@ -253,6 +274,9 @@ class HabitProvider extends ChangeNotifier {
         try {
           Habit? saved;
           if (pending.startFrom != null) saved = await _updateHabitUseCase.startFrom(habitId, pending.startFrom!);
+          if (pending.countFrom != null) {
+            saved = await _updateHabitUseCase.countFrom(habitId, pending.countFrom!, clearEarlier: pending.clearEarlier);
+          }
           if (pending.days.isNotEmpty) {
             saved = await _updateHabitUseCase.setDays(habitId, pending.days);
           }
@@ -488,6 +512,11 @@ class _PendingChange {
 
   /// The earlier day the habit now counts from.
   DateTime? startFrom;
+
+  /// The day the habit counts from (earlier or later), clearing what's logged
+  /// before it first if [clearEarlier].
+  DateTime? countFrom;
+  bool clearEarlier = false;
 
   /// Day -> note text ('' removes it).
   final Map<DateTime, String> notes = {};

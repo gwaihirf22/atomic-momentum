@@ -149,6 +149,10 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
                       _StorySentence(draft: _draft, onTap: _openPart),
                       const SizedBox(height: 26),
                       _details(palette),
+                      if (editing) ...[
+                        const SizedBox(height: 14),
+                        FormCard(children: [CountsFromSection(_draft)]),
+                      ],
                       if (editing)
                         Padding(
                           padding: const EdgeInsets.only(top: 18),

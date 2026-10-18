@@ -76,4 +76,30 @@ void main() {
     final viaTiny = at(() => habit().setTwoMinuteForDate(jan(13), true).setTwoMinuteForDate(jan(13), false));
     expect(viaTiny.trackedFrom, jan(13));
   });
+
+  group('counting from another day', () {
+    test('later works when nothing is logged before it', () {
+      final earlier = at(() => habit().startFrom(jan(5)));
+      final later = at(() => earlier.countFrom(jan(12)));
+      expect(later.trackedFrom, jan(12));
+      expect(later.startedOn(jan(11)), isFalse);
+    });
+
+    test('not after a day with something logged: clear those first', () {
+      final logged = at(() => habit().startFrom(jan(5)).setProgressForDate(jan(8), 1).setTwoMinuteForDate(jan(9), true));
+      expect(logged.daysLoggedBefore(jan(12)), 2);
+      expect(() => at(() => logged.countFrom(jan(12))), throwsArgumentError);
+
+      final cleared = at(() => logged.clearBefore(jan(12)).countFrom(jan(12)));
+      expect(cleared.trackedFrom, jan(12));
+      expect(cleared.history, isEmpty);
+      expect(cleared.twoMinuteDays, isEmpty);
+    });
+
+    test('the same day changes nothing; the future is refused', () {
+      final h = habit();
+      expect(at(() => h.countFrom(jan(17))), same(h));
+      expect(() => at(() => h.countFrom(jan(18))), throwsArgumentError);
+    });
+  });
 }

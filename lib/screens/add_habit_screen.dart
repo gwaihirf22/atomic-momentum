@@ -110,6 +110,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       if (!_draft.isBreak) FormCard(children: [ScheduleSection(_draft)]),
                       if (_draft.frequency.isPeriodic && !_draft.isBreak) FormCard(children: [TwoMinuteSection(_draft)]),
                       FormCard(children: [ReminderSection(_draft)]),
+                      if (_draft.isEditing) FormCard(children: [CountsFromSection(_draft)]),
                       // Another way to delete, besides swiping the habit card
                       if (widget.editHabit != null)
                         Center(

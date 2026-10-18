@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:provider/provider.dart';
 import '../../core/locale/week_start.dart';
 import '../../core/theme/app_palette.dart';
@@ -511,6 +512,94 @@ class ScheduleSection extends StatelessWidget {
                   )
                 : null,
             onTap: draft.startDateMatters ? () => _pickResetDay(context) : null,
+          ),
+        ],
+      );
+    });
+  }
+}
+
+/// Editing: the day the habit counts from. Earlier days are there to log
+/// (or, for a habit being broken, count as clean); a later day can't come
+/// after one with something logged, so moving past those offers to clear
+/// them first.
+class CountsFromSection extends StatelessWidget {
+  final HabitDraft draft;
+  final bool showHeader;
+
+  const CountsFromSection(this.draft, {super.key, this.showHeader = true});
+
+  Future<void> _pick(BuildContext context) async {
+    final current = draft.countFrom!;
+    final today = DateUtils.dateOnly(clock.now());
+    final picked = await pickDateAdaptive(
+      context,
+      initial: current,
+      first: current.isBefore(DateTime(2020)) ? current : DateTime(2020),
+      last: today,
+      helpText: 'Counts from',
+    );
+    if (picked == null || !context.mounted) return;
+    await choose(context, draft, DateUtils.dateOnly(picked));
+  }
+
+  /// Sets [day] as the start, first asking to clear what's logged before it
+  /// if anything is.
+  static Future<void> choose(BuildContext context, HabitDraft draft, DateTime day) async {
+    final logged = draft.daysLoggedBefore(day);
+    if (logged > 0) {
+      final date = DateFormat.MMMd().format(day);
+      final clear = await confirmAdaptive(
+        context,
+        title: logged == 1 ? 'Clear 1 day logged before $date?' : 'Clear the $logged days logged before $date?',
+        message: draft.isBreak
+            ? 'A habit counts from its first day, so what was logged before $date goes, '
+                'and the clean days before it no longer count toward its streak.'
+            : 'A habit counts from its first day, so what was logged before $date goes, '
+                'and those days no longer count toward its streak or momentum.',
+        confirmLabel: 'Clear and start $date',
+        destructive: true,
+        confirmKey: const Key('countsFromClear'),
+        cancelKey: const Key('countsFromKeep'),
+      );
+      if (!clear) return;
+    }
+    draft.edit(() {
+      draft.countFrom = day;
+      draft.clearEarlier = logged > 0;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DraftBuilder(draft, (context) {
+      final day = draft.countFrom;
+      if (day == null) return const SizedBox.shrink();
+      final date = DateFormat.yMMMd().format(day);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showHeader) const FormSectionHeader('Counts from'),
+          ListTile(
+            key: const Key('countsFrom'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.flag_outlined),
+            title: Text(date),
+            trailing: TextButton(
+              key: const Key('countsFromChange'),
+              onPressed: () => _pick(context),
+              child: const Text('Change'),
+            ),
+            onTap: () => _pick(context),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 4, top: 2),
+            child: Text(
+              draft.isBreak
+                  ? 'The first day this habit counts. Every day since counts as clean unless you log a slip.'
+                  : 'The first day this habit counts. Days you haven\'t logged since then count as missed.',
+              style: TextStyle(fontSize: 13, color: secondaryLabel(context)),
+            ),
           ),
         ],
       );

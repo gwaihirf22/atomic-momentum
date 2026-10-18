@@ -122,6 +122,17 @@ void main() {
     expect(habits.getHabitById(read)!.getProgressForDate(day), 1);
   });
 
+  testWidgets('Undo puts the start back', (tester) async {
+    if (day == today) return;
+    await pump(tester);
+    await tap(tester, 'startFrom_$read');
+    await tap(tester, 'startFromConfirm');
+    expect(habits.getHabitById(read)!.trackedFrom, day);
+    await tap(tester, 'startFromUndo');
+    expect(habits.getHabitById(read)!.trackedFrom, today);
+    expect(find.byKey(Key('notStarted_$read')), findsOneWidget);
+  });
+
   testWidgets('a habit being broken: the days since count as clean', (tester) async {
     if (day == today) return;
     await pump(tester);

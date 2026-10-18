@@ -92,6 +92,11 @@ class UpdateHabitUseCase {
   Future<Habit> startFrom(String habitId, DateTime date) =>
       _change(habitId, (habit) => habit.startedOn(date) ? habit : habit.startFrom(date));
 
+  /// Counts the habit from [date], earlier or later, first clearing what was
+  /// logged before it if [clearEarlier] (see [Habit.countFrom]).
+  Future<Habit> countFrom(String habitId, DateTime date, {bool clearEarlier = false}) =>
+      _change(habitId, (habit) => (clearEarlier ? habit.clearBefore(date) : habit).countFrom(date));
+
   /// The note on [date] (see [Habit.setDayNote]).
   Future<Habit> setDayNote(String habitId, DateTime date, String text) =>
       _change(habitId, (habit) => habit.setDayNote(date, text));

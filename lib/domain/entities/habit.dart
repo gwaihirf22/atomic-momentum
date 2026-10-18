@@ -316,14 +316,65 @@ class Habit extends Equatable {
   /// older habits fall back to the day they were made for it).
   Habit startFrom(DateTime date) {
     final day = _dateOnly(date);
+    if (!day.isBefore(trackedFrom)) throw ArgumentError('It already counts from ${trackedFrom.month}/${trackedFrom.day}');
+    return countFrom(day);
+  }
+
+  /// The first day with anything logged (an amount or the two-minute
+  /// version), or null.
+  DateTime? get firstLogged {
+    DateTime? first;
+    for (final day in [...history.keys, ...twoMinuteDays]) {
+      if (first == null || day.isBefore(first)) first = _dateOnly(day);
+    }
+    return first;
+  }
+
+  /// How many days before [date] have something logged.
+  int daysLoggedBefore(DateTime date) {
+    final day = _dateOnly(date);
+    return {
+      for (final d in [...history.keys, ...twoMinuteDays])
+        if (_dateOnly(d).isBefore(day)) _dateOnly(d),
+    }.length;
+  }
+
+  /// Counts the habit from [date], earlier or later than now. It can't start
+  /// in the future, or after a day that has something logged ([clearBefore]
+  /// those first). Its periods keep their boundaries (the reset day is
+  /// pinned, as older habits fall back to the day they were made for it).
+  Habit countFrom(DateTime date) {
+    final day = _dateOnly(date);
     final now = clock.now();
     if (day.isAfter(_dateOnly(now))) throw ArgumentError("A habit can't start in the future");
-    if (!day.isBefore(trackedFrom)) throw ArgumentError('It already counts from ${trackedFrom.month}/${trackedFrom.day}');
+    final logged = firstLogged;
+    if (logged != null && logged.isBefore(day)) {
+      throw ArgumentError('Something is logged before then: clear those days first');
+    }
+    if (day == trackedFrom && _dateOnly(metadata.createdDate) == day) return this;
     final updated = copyWith(
       metadata: metadata.copyWith(createdDate: day, lastModifiedDate: now),
       resetAnchorDate: resetAnchorDate ?? _dateOnly(resetAnchor),
     );
     return updated._recalculated(now);
+  }
+
+  /// Clears everything logged before [date]: amounts and two-minute days
+  /// (day notes stay).
+  Habit clearBefore(DateTime date) {
+    final day = _dateOnly(date);
+    final now = clock.now();
+    return copyWith(
+      history: {
+        for (final entry in history.entries)
+          if (!entry.key.isBefore(day)) entry.key: entry.value,
+      },
+      twoMinuteDays: {
+        for (final d in twoMinuteDays)
+          if (!d.isBefore(day)) d,
+      },
+      metadata: metadata.updateModifiedDate(),
+    )._recalculated(now);
   }
 
   /// The note on [date]; empty removes it. Days can't be in the future.

@@ -101,11 +101,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
     if (!confirmed || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    final saved = await context.read<HabitProvider>().startFrom(habit.id, day);
+    final habits = context.read<HabitProvider>();
+    final before = habit.trackedFrom;
+    final saved = await habits.startFrom(habit.id, day);
     messenger.showSnackBar(SnackBar(
       content: Text(saved
           ? '${habit.name} now counts from $date'
           : "Couldn't change when ${habit.name} starts. Please try again."),
+      action: saved
+          ? SnackBarAction(
+              key: const Key('startFromUndo'),
+              label: 'Undo',
+              // Back to where it started (refused if something's been logged since)
+              onPressed: () => habits.countFrom(habit.id, before),
+            )
+          : null,
     ));
   }
 
