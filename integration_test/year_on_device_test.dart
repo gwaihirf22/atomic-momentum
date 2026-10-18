@@ -132,32 +132,54 @@ void main() {
 
       /// One of the persona's actions done with a tap on its card, if it's
       /// one a card can do; false to leave it to the provider.
+      /// Scrolls [target] to the middle of the screen, clear of the tab bar.
+      Future<void> centre(Finder target) async {
+        await Scrollable.ensureVisible(tester.element(target), alignment: 0.4);
+        await _settle(tester);
+      }
+
+      /// One of the persona's actions done with a tap on its card, if it's
+      /// one a card can do; false to leave it to the provider. A tap that
+      /// didn't do what it should is a problem, and the action is done
+      /// through the provider instead so the year carries on as scripted.
       Future<bool> byTap(PersonaAction action, DateTime at) async {
         final name = action.habit;
         if (name == null || !ids.containsKey(name)) return false;
-        final h = habits.getHabitById(ids[name]!)!;
+        final id = ids[name]!;
+        final h = habits.getHabitById(id)!;
         final r = ref.habits[name]!;
+        Future<bool> missed(String what) async {
+          problem(at, '$name: $what by tapping the card did nothing');
+          return false;
+        }
+
         switch (action) {
           case SetTotal(:final total) when h.target == 1 && total == 1 && h.progress == 0 && !h.isBreak:
-            final plus = find.byKey(Key('incrementHabit_${h.id}'));
+            final plus = find.byKey(Key('incrementHabit_$id'));
             if (plus.evaluate().isEmpty) return false;
-            await tester.ensureVisible(plus);
+            await centre(plus);
             await tester.tap(plus);
+            await _settle(tester);
+            if (habits.getHabitById(id)!.progress != 1) return missed('+');
             r.setTotal(at, 1);
           case TwoMinuteTap():
-            final button = find.byKey(Key('twoMinute_${h.id}'));
+            final button = find.byKey(Key('twoMinute_$id'));
             if (button.evaluate().isEmpty) return false;
-            await tester.ensureVisible(button);
+            await centre(button);
             await tester.tap(button);
+            await _settle(tester);
+            if (!habits.getHabitById(id)!.usedTwoMinuteButtonOn(at)) return missed('2 min');
             r.tap(at);
           case HoldToFinish(:final undo):
-            final ring = find.byKey(Key('habitIcon_${h.id}'));
+            final ring = find.byKey(Key('habitIcon_$id'));
             if (ring.evaluate().isEmpty) return false;
             final before = r.periodDays(at);
-            await tester.ensureVisible(ring);
+            final wasDone = h.isCompleted;
+            await centre(ring);
             await tester.longPress(ring);
             await _settle(tester);
-            if (h.isCompleted) {
+            if (habits.getHabitById(id)!.isCompleted == wasDone) return missed('holding the ring');
+            if (wasDone) {
               for (final d in before.keys) {
                 r.setDay(d, 0);
               }
@@ -165,10 +187,12 @@ void main() {
               r.setTotal(at, h.target);
             }
             if (undo) {
-              await tester.tap(find.byKey(Key('undoHold_${h.id}')));
+              await tester.tap(find.byKey(Key('undoHold_$id')));
+              await _settle(tester);
               for (final entry in before.entries) {
                 r.setDay(entry.key, entry.value);
               }
+              if (habits.getHabitById(id)!.isCompleted != wasDone) problem(at, '$name: Undo after a hold did nothing');
             }
           default:
             return false;
@@ -304,6 +328,8 @@ void main() {
             await driver.apply(action, now);
           }
           await _settle(tester);
+          // Back to the top, where the momentum ring is
+          if (byCards) await toTop();
           await closeSheets();
           checkCards(now);
         }
