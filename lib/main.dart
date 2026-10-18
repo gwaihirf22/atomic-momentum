@@ -7,6 +7,7 @@ import 'core/injection/injection_container.dart';
 import 'core/services/notification_service.dart';
 import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
+import 'presentation/intro/intro_screen.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
 import 'presentation/providers/quote_provider.dart';
@@ -22,16 +23,26 @@ void main() async {
   // Portrait only on phones (matches Info.plist)
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  runApp(const MomentumApp());
+  // The intro plays on a cold launch, unless a notification tap opened the
+  // app (then it goes straight to the habit)
+  final showIntro = NotificationService.focusRequests.value == null;
 
-  // Ask for notification permission once the app is on screen
-  if (NotificationService.isSupported) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => NotificationService.requestPermission());
+  // Ask for notification permission once the app is on screen (after the
+  // intro, so the system prompt doesn't cover it)
+  void askPermission() {
+    if (NotificationService.isSupported) NotificationService.requestPermission();
   }
+
+  runApp(MomentumApp(showIntro: showIntro, onIntroDone: askPermission));
+  if (!showIntro) WidgetsBinding.instance.addPostFrameCallback((_) => askPermission());
 }
 
 class MomentumApp extends StatelessWidget {
-  const MomentumApp({Key? key}) : super(key: key);
+  /// The cold-launch intro (main turns it on; tests leave it off).
+  final bool showIntro;
+  final VoidCallback? onIntroDone;
+
+  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +92,11 @@ class MomentumApp extends StatelessWidget {
                     .copyWith(statusBarColor: Colors.transparent),
                 child: Theme(
                   data: IOSTheme.material(palette),
-                  child: ScaffoldMessenger(child: child!),
+                  child: IntroGate(
+                    enabled: showIntro,
+                    onDone: onIntroDone,
+                    child: ScaffoldMessenger(child: child!),
+                  ),
                 ),
               ),
               localizationsDelegates: const [

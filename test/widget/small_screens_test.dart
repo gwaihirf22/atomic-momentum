@@ -50,6 +50,7 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
+import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
 
 import 'package:atomic_momentum/domain/services/achievements.dart';
 import 'package:atomic_momentum/presentation/help/explainers.dart';
@@ -449,6 +450,28 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('Filter · 3'), findsOneWidget);
         expectNothingCutOff(tester, 'Quotes, filtered');
+      });
+    }
+  }
+
+  for (final width in [375.0, 390.0]) {
+    for (final scale in [1.0, 1.35]) {
+      testWidgets('Intro, Unstoppable and the end, at ${width.toInt()}pt, text ${(scale * 100).round()}%', (tester) async {
+        tester.view.physicalSize = Size(width, 667);
+        tester.view.devicePixelRatio = 1.0;
+        tester.platformDispatcher.textScaleFactorTestValue = scale * sfWidthAllowance;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        await tester.pumpWidget(MaterialApp(
+          theme: IOSTheme.material(AppPalette.dark).copyWith(platform: TargetPlatform.iOS),
+          home: IntroScreen(onDone: () {}),
+        ));
+        await tester.pump(const Duration(milliseconds: 1050));
+        expect(find.byKey(const Key('introWord_unstoppable')), findsOneWidget);
+        expectNothingCutOff(tester, 'Intro, Unstoppable');
+        await tester.pump(const Duration(milliseconds: 950));
+        expectNothingCutOff(tester, 'Intro, the end');
+        await tester.pump(IntroScreen.duration);
       });
     }
   }

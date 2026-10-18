@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The launch screen, matching the intro's first frame: Sepia by day
+         (AppPalette.sepia.background), Charged at night (values-night) -->
+    <color name="launch_background">#F3EBDD</color>
+</resources>
