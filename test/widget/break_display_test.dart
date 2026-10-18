@@ -121,6 +121,14 @@ void main() {
       expect(habits.getHabitById(smoking)!.progress, 0);
     });
 
+    testWidgets('a clean run shows its streak and momentum, though nothing is logged', (tester) async {
+      await habits.startFrom(smoking, DateTime(now.year, now.month, now.day - 9));
+      await pump(tester, const HomeScreen());
+      expect(habits.getHabitById(smoking)!.history, isEmpty);
+      expect(find.descendant(of: find.byKey(Key('habitStreak_$smoking')), matching: find.text('10')), findsOneWidget);
+      expect(find.byKey(Key('habitMomentum_$smoking')), findsOneWidget);
+    });
+
     testWidgets('a slip after a clean streak reads "Don\'t slip twice"', (tester) async {
       // Tracked from a slip six days ago; clean since, until a slip yesterday
       await habits.updateProgressForDate(smoking, DateTime(now.year, now.month, now.day - 6), 1);

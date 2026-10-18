@@ -167,9 +167,10 @@ class HabitCard extends StatelessWidget {
     final now = clock.now();
     final isRestDay = !habit.isDueOn(now);
     final secondary = secondaryLabel(context);
-    // Momentum and streak appear once there's something to show
-    final showStats = habit.schedule.isPeriodic &&
-        (habit.history.values.any((amount) => amount > 0) || habit.twoMinuteDays.isNotEmpty);
+    // Momentum and streak appear once there's something to show; a habit
+    // being broken is kept by logging nothing, so its clean run shows too
+    final logged = habit.history.values.any((amount) => amount > 0) || habit.twoMinuteDays.isNotEmpty;
+    final showStats = habit.schedule.isPeriodic && (logged || (habit.isBreak && habit.streak.current > 0));
     final showTwoMinute = showsTwoMinuteButton(habit, now);
     final hasStatsRow = showStats || showTwoMinute;
     Widget stats() => _stats(palette, showStats: showStats, showTwoMinute: showTwoMinute, now: now);
