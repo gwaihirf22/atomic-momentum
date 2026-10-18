@@ -53,6 +53,11 @@ class Habit extends Equatable {
   /// A short note on any day (date-only keys).
   final Map<DateTime, String> dayNotes;
 
+  /// Quotes the person keeps with this habit (ids from the quote library,
+  /// built-in or their own), in the order added. Ids of quotes since deleted
+  /// are skipped where shown.
+  final List<String> quoteIds;
+
   /// Building it up, or breaking it (quit or limit). For a break habit,
   /// [target] is the most allowed per period (0 to quit) and logs are slips.
   final HabitGoal goal;
@@ -64,6 +69,7 @@ class Habit extends Equatable {
 
   static const maxWhyLength = 300;
   static const maxDayNoteLength = 200;
+  static const maxQuotes = 10;
 
   /// A period's total may go past the target (typing "10" for 8 glasses),
   /// up to this many times it, which still catches a mistyped extra zero.
@@ -94,6 +100,7 @@ class Habit extends Equatable {
     this.twoMinuteDays = const {},
     this.why = '',
     this.dayNotes = const {},
+    this.quoteIds = const [],
     this.goal = HabitGoal.build,
     this.notify = HabitNotify.standard,
   });
@@ -304,6 +311,31 @@ class Habit extends Equatable {
     final trimmed = text.trim();
     if (trimmed.length > maxWhyLength) throw ArgumentError('Keep it under $maxWhyLength characters');
     return copyWith(why: trimmed, metadata: metadata.updateModifiedDate());
+  }
+
+  /// Keeps a quote with this habit (once; at most [maxQuotes]).
+  Habit addQuote(String id) {
+    if (quoteIds.contains(id)) return this;
+    if (quoteIds.length >= maxQuotes) throw ArgumentError('A habit keeps up to $maxQuotes quotes');
+    return copyWith(quoteIds: [...quoteIds, id], metadata: metadata.updateModifiedDate());
+  }
+
+  /// The habit's quotes as [ids] (repeats dropped, order kept).
+  Habit setQuotes(List<String> ids) {
+    final unique = <String>[];
+    for (final id in ids) {
+      if (id.isNotEmpty && !unique.contains(id)) unique.add(id);
+    }
+    if (unique.length > maxQuotes) throw ArgumentError('A habit keeps up to $maxQuotes quotes');
+    return copyWith(quoteIds: unique, metadata: metadata.updateModifiedDate());
+  }
+
+  Habit removeQuote(String id) {
+    if (!quoteIds.contains(id)) return this;
+    return copyWith(
+      quoteIds: [for (final q in quoteIds) if (q != id) q],
+      metadata: metadata.updateModifiedDate(),
+    );
   }
 
   /// Whether the habit was being tracked on [date]: on or after the day it
@@ -605,6 +637,7 @@ class Habit extends Equatable {
       twoMinuteDays: updated.twoMinuteDays,
       why: updated.why,
       dayNotes: updated.dayNotes,
+      quoteIds: updated.quoteIds,
       goal: goal,
       notify: notify ?? this.notify,
     );
@@ -721,6 +754,7 @@ class Habit extends Equatable {
     Set<DateTime>? twoMinuteDays,
     String? why,
     Map<DateTime, String>? dayNotes,
+    List<String>? quoteIds,
     HabitGoal? goal,
     HabitNotify? notify,
   }) {
@@ -745,6 +779,7 @@ class Habit extends Equatable {
       twoMinuteDays: twoMinuteDays ?? this.twoMinuteDays,
       why: why ?? this.why,
       dayNotes: dayNotes ?? this.dayNotes,
+      quoteIds: quoteIds ?? this.quoteIds,
       goal: goal ?? this.goal,
       notify: notify ?? this.notify,
     );
@@ -779,6 +814,7 @@ class Habit extends Equatable {
       'twoMinuteDays': twoMinuteDaysToJson(twoMinuteDays),
       if (why.isNotEmpty) 'why': why,
       if (dayNotes.isNotEmpty) 'dayNotes': dayNotesToJson(dayNotes),
+      if (quoteIds.isNotEmpty) 'quotes': quoteIds,
       if (goal != HabitGoal.build) 'goal': goal.name,
       if (!notify.isStandard) 'notify': notify.toJson(),
     };
@@ -800,6 +836,16 @@ class Habit extends Equatable {
       if (day != null && value is String && value.isNotEmpty) notes[_dateOnly(day)] = value;
     });
     return notes;
+  }
+
+  /// Quote ids, skipping anything that isn't a non-empty string or repeats.
+  static List<String> quoteIdsFromJson(dynamic json) {
+    if (json is! List) return const [];
+    final ids = <String>[];
+    for (final value in json) {
+      if (value is String && value.isNotEmpty && !ids.contains(value)) ids.add(value);
+    }
+    return ids;
   }
 
   /// Days as sorted 'yyyy-MM-dd' strings.
@@ -852,6 +898,7 @@ class Habit extends Equatable {
       twoMinuteDays: twoMinuteDaysFromJson(json['twoMinuteDays']),
       why: json['why'] is String ? json['why'] as String : '',
       dayNotes: dayNotesFromJson(json['dayNotes']),
+      quoteIds: quoteIdsFromJson(json['quotes']),
       goal: HabitGoal.fromJson(json['goal']),
       notify: HabitNotify.fromJson(json['notify']),
     );
@@ -879,6 +926,7 @@ class Habit extends Equatable {
         twoMinuteDays,
         why,
         dayNotes,
+        quoteIds,
         goal,
         notify,
       ];

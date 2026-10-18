@@ -9,6 +9,7 @@ import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
+import 'presentation/providers/quote_provider.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'screens/ios_main_navigation.dart';
 
@@ -49,6 +50,10 @@ class MomentumApp extends StatelessWidget {
         // Shared singleton (the streak warning service reads it), so not owned here
         ChangeNotifierProvider<SettingsProvider>.value(
           value: get<SettingsProvider>(),
+        ),
+        // Shared singleton (loaded with the app's dependencies), so not owned here
+        ChangeNotifierProvider<QuoteProvider>.value(
+          value: get<QuoteProvider>(),
         ),
       ],
       // Above the app there's no MediaQuery yet; this one tracks the device's

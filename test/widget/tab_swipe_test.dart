@@ -10,11 +10,13 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
+import 'package:atomic_momentum/screens/inspire_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
 /// Swiping sideways between the main tabs, and where a swipe stays put.
@@ -93,6 +95,19 @@ void main() {
     await swipe(tester, find.text('Appearance'), const Offset(-300, 0));
     expect(showing(SettingsScreen), isTrue);
     await swipe(tester, find.text('Appearance'), const Offset(300, 0));
+    expect(showing(InspireScreen), isTrue);
+    await swipe(tester, find.byType(InspireScreen), const Offset(300, 0));
+    expect(showing(InsightsScreen), isTrue);
+  });
+
+  testWidgets('with Inspire turned off, Settings comes right after Insights', (tester) async {
+    await get<SettingsProvider>().setShowInspireTab(false);
+    await launch(tester);
+    await tester.tap(find.byKey(const Key('tab_insights')));
+    await tester.pumpAndSettle();
+    await swipe(tester, find.byType(InsightsScreen), const Offset(-300, 0));
+    expect(showing(SettingsScreen), isTrue);
+    await swipe(tester, find.text('Appearance'), const Offset(300, 0));
     expect(showing(InsightsScreen), isTrue);
   });
 
@@ -136,7 +151,7 @@ void main() {
     await swipe(tester, find.byType(CategoriesScreen), const Offset(-300, 0));
     await swipe(tester, find.byType(CategoriesScreen), const Offset(200, 0));
     expect(find.byType(CategoriesScreen).hitTestable(), findsOneWidget);
-    expect(showing(InsightsScreen), isFalse);
+    expect(showing(InspireScreen), isFalse);
   });
 
   testWidgets('a notification tap during a swipe lands on Habits', (tester) async {

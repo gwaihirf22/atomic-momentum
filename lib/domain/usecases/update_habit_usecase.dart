@@ -97,6 +97,9 @@ class UpdateHabitUseCase {
   Future<Habit> countFrom(String habitId, DateTime date, {bool clearEarlier = false}) =>
       _change(habitId, (habit) => (clearEarlier ? habit.clearBefore(date) : habit).countFrom(date));
 
+  /// The quotes kept with the habit (see [Habit.setQuotes]).
+  Future<Habit> setQuotes(String habitId, List<String> ids) => _change(habitId, (habit) => habit.setQuotes(ids));
+
   /// The note on [date] (see [Habit.setDayNote]).
   Future<Habit> setDayNote(String habitId, DateTime date, String text) =>
       _change(habitId, (habit) => habit.setDayNote(date, text));

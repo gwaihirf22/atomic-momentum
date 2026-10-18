@@ -9,16 +9,19 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/floating_tab_bar.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
+import 'package:atomic_momentum/screens/inspire_screen.dart';
+import 'package:atomic_momentum/screens/ios_main_navigation.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
 import '../helpers/real_fonts.dart';
 
-/// The floating tab bar: four tabs, Habits doubling as "+", hiding on pushed
+/// The floating tab bar: five tabs (Inspire can be turned off), Habits doubling as "+", hiding on pushed
 /// pages, and content that clears it.
 void main() {
   setUp(() async {
@@ -46,6 +49,7 @@ void main() {
     for (final (tab, screen) in [
       ('calendar', CalendarScreen),
       ('insights', InsightsScreen),
+      ('inspire', InspireScreen),
       ('settings', SettingsScreen),
     ]) {
       await tester.tap(find.byKey(Key('tab_$tab')));
@@ -76,14 +80,20 @@ void main() {
     expect(barShown(tester), isTrue, reason: 'back on the first page');
   });
 
-  testWidgets('four tabs and no orb; selected, Habits turns into "Add habit"', (tester) async {
+  Finder tabKeys() => find.descendant(
+        of: bar(),
+        matching: find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key as ValueKey<String>).value.startsWith('tab_')),
+      );
+
+  List<String> tabOrder(WidgetTester tester) => [
+        for (final element in tabKeys().evaluate())
+          ((element.widget.key as ValueKey<String>).value).substring(4),
+      ];
+
+  testWidgets('five tabs and no orb; selected, Habits turns into "Add habit"', (tester) async {
     await launch(tester);
     expect(find.byKey(const Key('addHabitOrb')), findsNothing);
-    final tabs = find.descendant(
-      of: bar(),
-      matching: find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key as ValueKey<String>).value.startsWith('tab_')),
-    );
-    expect(tabs, findsNWidgets(4));
+    expect(tabKeys(), findsNWidgets(5));
     expect(find.descendant(of: bar(), matching: find.text('Add habit')), findsOneWidget);
     expect(find.descendant(of: bar(), matching: find.text('Habits')), findsNothing);
 
@@ -135,7 +145,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Hidden while the page is open, so tap it through the bar's callback
-    tester.widget<FloatingTabBar>(bar()).onTap(3);
+    final floating = tester.widget<FloatingTabBar>(bar());
+    floating.onTap(floating.tabs.indexWhere((t) => t.label == 'Settings'));
     await tester.pumpAndSettle();
     expect(find.byType(CategoriesScreen), findsNothing);
     expect(barShown(tester), isTrue);
@@ -194,6 +205,94 @@ void main() {
     semantics.dispose();
   });
 
+  group('Inspire', () {
+    bool barVisible(WidgetTester tester) =>
+        tester.widget<AnimatedOpacity>(find.byKey(const Key('tabBarFade'))).opacity == 1;
+
+    Future<void> openInspire(WidgetTester tester) async {
+      await tester.tap(find.byKey(const Key('tab_inspire')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('sits just left of Settings, and Settings can take it off the bar and put it back', (tester) async {
+      await launch(tester);
+      expect(tabOrder(tester), ['habits', 'calendar', 'insights', 'inspire', 'settings']);
+
+      await tester.tap(find.byKey(const Key('tab_settings')));
+      await tester.pumpAndSettle();
+      // To the end of Settings, clear of the bar
+      await tester.drag(find.byType(Scrollable).hitTestable().first, const Offset(0, -5000));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('inspireTabSwitch')));
+      await tester.pumpAndSettle();
+      expect(get<SettingsProvider>().showInspireTab, isFalse);
+      expect(tabOrder(tester), ['habits', 'calendar', 'insights', 'settings']);
+      expect(find.byType(SettingsScreen).hitTestable(), findsOneWidget, reason: 'Settings stays selected');
+      expect(find.byKey(const Key('quoteSourcesSetting')), findsNothing);
+
+      await tester.tap(find.byKey(const Key('inspireTabSwitch')));
+      await tester.pumpAndSettle();
+      expect(tabOrder(tester), ['habits', 'calendar', 'insights', 'inspire', 'settings']);
+      expect(find.byType(SettingsScreen).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('off, it stays off after a restart', (tester) async {
+      await get<SettingsProvider>().setShowInspireTab(false);
+      await launch(tester);
+      expect(tabOrder(tester), ['habits', 'calendar', 'insights', 'settings']);
+      expect(find.byType(InspireScreen), findsNothing);
+    });
+
+    testWidgets('the bar fades after a few seconds untouched, and a touch brings it back', (tester) async {
+      await launch(tester);
+      await openInspire(tester);
+      expect(barVisible(tester), isTrue);
+
+      // A touch starts the wait over
+      await tester.tapAt(const Offset(12, 400));
+      await tester.pump(IOSMainNavigation.barFadeDelay - const Duration(milliseconds: 100));
+      expect(barVisible(tester), isTrue);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+      expect(barVisible(tester), isFalse);
+      expect(barShown(tester), isFalse, reason: 'a faded bar takes no taps');
+
+      await tester.tapAt(const Offset(200, 400));
+      await tester.pumpAndSettle();
+      expect(barVisible(tester), isTrue);
+      expect(barShown(tester), isTrue);
+
+      // Other tabs never fade
+      await tester.tap(find.byKey(const Key('tab_insights')));
+      await tester.pumpAndSettle();
+      await tester.pump(IOSMainNavigation.barFadeDelay * 2);
+      expect(barVisible(tester), isTrue);
+    });
+
+    testWidgets('swiping between tabs still works while the bar is faded', (tester) async {
+      await launch(tester);
+      await openInspire(tester);
+      await tester.pump(IOSMainNavigation.barFadeDelay + const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+      expect(barVisible(tester), isFalse);
+
+      await tester.fling(find.byType(InspireScreen), const Offset(-300, 0), 1000);
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsScreen).hitTestable(), findsOneWidget);
+      expect(barVisible(tester), isTrue);
+    });
+
+    testWidgets('with VoiceOver on, the bar never fades', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(accessibleNavigation: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await launch(tester);
+      await openInspire(tester);
+      await tester.pump(IOSMainNavigation.barFadeDelay * 2);
+      await tester.pumpAndSettle();
+      expect(barVisible(tester), isTrue);
+    });
+  });
+
   group('fits an iPhone SE', () {
     setUpAll(loadRealFonts);
 
@@ -215,7 +314,7 @@ void main() {
             expect(p.didExceedMaxLines, isFalse, reason: p.text.toPlainText());
           }
         }
-        for (final tab in ['habits', 'calendar', 'insights', 'settings']) {
+        for (final tab in ['habits', 'calendar', 'insights', 'inspire', 'settings']) {
           final size = tester.getSize(find.byKey(Key('tab_$tab')));
           expect(size.width, greaterThanOrEqualTo(44), reason: tab);
           expect(size.height, greaterThanOrEqualTo(44), reason: tab);

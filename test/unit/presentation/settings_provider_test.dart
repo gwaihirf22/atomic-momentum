@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show Locale, TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:atomic_momentum/domain/entities/quote.dart';
 import 'package:atomic_momentum/domain/entities/streak_warning_settings.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 
@@ -88,5 +89,39 @@ void main() {
   test('an unknown saved style falls back to Story', () async {
     SharedPreferences.setMockInitialValues({'addHabitStyle': 'wizard'});
     expect(SettingsProvider(await SharedPreferences.getInstance()).addHabitStyle, AddHabitStyle.story);
+  });
+
+  test('the Inspire tab is on until turned off, and stays off', () async {
+    expect(settings.showInspireTab, isTrue);
+    await settings.setShowInspireTab(false);
+    expect(SettingsProvider(await SharedPreferences.getInstance()).showInspireTab, isFalse);
+  });
+
+  test('every quote source starts on; turned off ones stay off; the last one stays on', () async {
+    expect(settings.quoteFamilies, QuoteFamily.values.toSet());
+    var notified = 0;
+    settings.addListener(() => notified++);
+
+    await settings.setQuoteFamily(QuoteFamily.scripture, false);
+    expect(settings.quoteFamilies, isNot(contains(QuoteFamily.scripture)));
+    final reloaded = SettingsProvider(await SharedPreferences.getInstance());
+    expect(reloaded.quoteFamilies, QuoteFamily.values.toSet()..remove(QuoteFamily.scripture));
+
+    for (final family in QuoteFamily.values.where((f) => f != QuoteFamily.mine)) {
+      await settings.setQuoteFamily(family, false);
+    }
+    expect(settings.quoteFamilies, {QuoteFamily.mine});
+    await settings.setQuoteFamily(QuoteFamily.mine, false);
+    expect(settings.quoteFamilies, {QuoteFamily.mine}, reason: 'one source always stays on');
+
+    await settings.setQuoteFamily(QuoteFamily.scripture, true);
+    expect(settings.quoteFamilies, {QuoteFamily.mine, QuoteFamily.scripture});
+    expect(notified, 6);
+  });
+
+  test('unknown stored quote sources are ignored', () async {
+    SharedPreferences.setMockInitialValues({'quoteFamiliesOff': ['stoic', 'gone']});
+    expect(SettingsProvider(await SharedPreferences.getInstance()).quoteFamilies,
+        QuoteFamily.values.toSet()..remove(QuoteFamily.stoic));
   });
 }

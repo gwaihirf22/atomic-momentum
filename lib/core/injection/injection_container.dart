@@ -12,6 +12,8 @@ import '../../domain/repositories/habit_repository.dart';
 import '../../data/repositories/habit_repository_impl.dart';
 import '../../domain/repositories/category_repository.dart';
 import '../../data/repositories/category_repository_impl.dart';
+import '../../domain/repositories/quote_repository.dart';
+import '../../data/repositories/quote_repository_impl.dart';
 
 // Use cases
 import '../../domain/usecases/get_habits_usecase.dart';
@@ -19,12 +21,14 @@ import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
 import '../../domain/usecases/manage_categories_usecase.dart';
+import '../../domain/usecases/manage_quotes_usecase.dart';
 
 // Providers
 import '../../presentation/providers/habit_provider.dart';
 import '../../presentation/providers/category_provider.dart';
 import '../../presentation/providers/theme_provider.dart';
 import '../../presentation/providers/settings_provider.dart';
+import '../../presentation/providers/quote_provider.dart';
 
 // Services
 import '../services/notification_service.dart';
@@ -57,12 +61,15 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
     () => CategoryRepositoryImpl(sl()),
   );
 
+  sl.registerLazySingleton<QuoteRepository>(() => QuoteRepositoryImpl(sl()));
+
   // Use cases
   sl.registerLazySingleton(() => GetHabitsUseCase(sl()));
   sl.registerLazySingleton(() => CreateHabitUseCase(sl()));
   sl.registerLazySingleton(() => UpdateHabitUseCase(sl()));
   sl.registerLazySingleton(() => DeleteHabitUseCase(sl()));
   sl.registerLazySingleton(() => ManageCategoriesUseCase(sl(), sl()));
+  sl.registerLazySingleton(() => ManageQuotesUseCase(sl()));
 
   // Settings and streak warnings
   sl.registerLazySingleton(() => SettingsProvider(sl()));
@@ -100,6 +107,8 @@ Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
   // Shared: the Categories page and the Habits screen must see the same list
   sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));
   await sl<CategoryProvider>().load();
+  sl.registerLazySingleton(() => QuoteProvider(sl(), sl()));
+  await sl<QuoteProvider>().load();
   
   // Theme provider with persistence
   sl.registerLazySingleton(() => ThemeProvider.fromPrefs(sharedPreferences));

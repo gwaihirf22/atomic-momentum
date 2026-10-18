@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,14 +21,51 @@ import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'insights_screen.dart';
+import 'inspire_screen.dart';
 import 'settings_screen.dart';
 
-/// The app's main screen: four tabs, each with its own navigation stack,
-/// under the floating tab bar, whose Habits tab turns into "+" for adding.
-/// A sideways swipe on a tab's first page slides to the next or previous
-/// tab, and sliding a finger along the bar picks the tab under it.
+/// The main tabs, in the bar's order. Inspire can be turned off in Settings.
+enum AppTab {
+  habits(
+    FloatingTab(
+      label: 'Habits',
+      icon: CupertinoIcons.checkmark_circle,
+      activeIcon: CupertinoIcons.checkmark_circle_fill,
+      addLabel: 'Add habit',
+    ),
+    HomeScreen(),
+  ),
+  calendar(FloatingTab(label: 'Calendar', icon: CupertinoIcons.calendar, activeIcon: CupertinoIcons.calendar), CalendarScreen()),
+  insights(
+    FloatingTab(label: 'Insights', icon: CupertinoIcons.chart_bar, activeIcon: CupertinoIcons.chart_bar_fill),
+    InsightsScreen(),
+  ),
+  inspire(
+    FloatingTab(label: 'Inspire', icon: CupertinoIcons.quote_bubble, activeIcon: CupertinoIcons.quote_bubble_fill),
+    InspireScreen(),
+  ),
+  settings(
+    FloatingTab(label: 'Settings', icon: CupertinoIcons.settings, activeIcon: CupertinoIcons.settings_solid),
+    SettingsScreen(),
+  );
+
+  final FloatingTab bar;
+  final Widget screen;
+
+  const AppTab(this.bar, this.screen);
+}
+
+/// The app's main screen: the tabs (four or five, see [AppTab]), each with
+/// its own navigation stack, under the floating tab bar, whose Habits tab
+/// turns into "+" for adding. A sideways swipe on a tab's first page slides
+/// to the next or previous tab, and sliding a finger along the bar picks
+/// the tab under it. On Inspire the bar fades away after [barFadeDelay]
+/// untouched, and any touch brings it back.
 class IOSMainNavigation extends StatefulWidget {
   const IOSMainNavigation({Key? key}) : super(key: key);
+
+  /// How long Inspire sits untouched before the bar fades.
+  static const barFadeDelay = Duration(seconds: 3);
 
   /// Opens New Habit over everything (the tab bar included), from anywhere.
   static Future<void> addHabit(BuildContext context) async {
@@ -46,24 +84,13 @@ class IOSMainNavigation extends StatefulWidget {
 }
 
 class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTickerProviderStateMixin {
-  static const _tabs = [
-    FloatingTab(
-      label: 'Habits',
-      icon: CupertinoIcons.checkmark_circle,
-      activeIcon: CupertinoIcons.checkmark_circle_fill,
-      addLabel: 'Add habit',
-    ),
-    FloatingTab(label: 'Calendar', icon: CupertinoIcons.calendar, activeIcon: CupertinoIcons.calendar),
-    FloatingTab(label: 'Insights', icon: CupertinoIcons.chart_bar, activeIcon: CupertinoIcons.chart_bar_fill),
-    FloatingTab(label: 'Settings', icon: CupertinoIcons.settings, activeIcon: CupertinoIcons.settings_solid),
-  ];
+  final _navigators = {for (final tab in AppTab.values) tab: GlobalKey<NavigatorState>()};
+  late final _observers = {for (final tab in AppTab.values) tab: _StackObserver(() => _stackChanged(tab))};
 
-  static const _screens = <Widget>[HomeScreen(), CalendarScreen(), InsightsScreen(), SettingsScreen()];
+  AppTab _current = AppTab.habits;
 
-  final _navigators = [for (final _ in _tabs) GlobalKey<NavigatorState>()];
-  late final _observers = [for (var i = 0; i < _tabs.length; i++) _StackObserver(() => _stackChanged(i))];
-
-  int _index = 0;
+  /// The tabs in the bar now, in order (Inspire only while it's turned on).
+  List<AppTab> _visible = AppTab.values;
 
   /// When the current tab was chosen: Habits' "+" ignores a tap right after
   /// arriving, so a quick double-tap from another tab doesn't open Add.
@@ -73,14 +100,21 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   /// How far the current tab is slid sideways by a swipe, in points
   /// (negative: towards the next tab), with the tab it reveals.
   late final _slide = AnimationController.unbounded(vsync: this);
-  int? _revealed;
+  AppTab? _revealed;
   double _width = 0;
 
   /// Tabs are built the first time they're shown, then kept.
-  final _opened = <int>{0};
+  final _opened = <AppTab>{AppTab.habits};
 
   /// Tabs with a page open on top of their first one: the bar hides there.
-  final _deep = <int>{};
+  final _deep = <AppTab>{};
+
+  /// Inspire's bar has faded (see [IOSMainNavigation.barFadeDelay]).
+  bool _barFaded = false;
+  Timer? _fadeTimer;
+
+  /// VoiceOver or Switch Control is on: the bar never fades.
+  bool _accessible = false;
 
   late final HabitProvider _habits;
 
@@ -103,6 +137,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   void dispose() {
     _habits.removeListener(_checkAchievements);
     NotificationService.focusRequests.removeListener(_showHabits);
+    _fadeTimer?.cancel();
     _slide.dispose();
     super.dispose();
   }
@@ -142,39 +177,60 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     });
   }
 
-  void _stackChanged(int tab) {
+  void _stackChanged(AppTab tab) {
     // Navigators report changes while they build; update after the frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final deep = _navigators[tab].currentState?.canPop() ?? false;
-      if (deep != _deep.contains(tab)) setState(() => deep ? _deep.add(tab) : _deep.remove(tab));
+      final deep = _navigators[tab]!.currentState?.canPop() ?? false;
+      if (deep == _deep.contains(tab)) return;
+      setState(() => deep ? _deep.add(tab) : _deep.remove(tab));
+      if (tab == _current) _wakeBar();
     });
   }
 
-  void _select(int index) {
-    if (index == _index) {
+  /// A tap on the bar's tab at [position].
+  void _select(int position) {
+    final tab = _visible[position];
+    if (tab == _current) {
       // Tapping the current tab goes back to its first page, as in iOS
-      _navigators[index].currentState?.popUntil((route) => route.isFirst);
+      _navigators[tab]!.currentState?.popUntil((route) => route.isFirst);
       return;
     }
-    _switchTo(index);
+    _switchTo(tab);
   }
 
-  /// Shows [index] (from a tap, a swipe or sliding along the bar).
-  void _switchTo(int index) {
+  /// Shows [tab] (from a tap, a swipe or sliding along the bar).
+  void _switchTo(AppTab tab) {
     _endSlide();
-    if (index == _index) return;
+    if (tab == _current) return;
     setState(() {
-      _index = index;
-      _opened.add(index);
+      _current = tab;
+      _opened.add(tab);
       _selectedAt = clock.now();
     });
+    _wakeBar();
   }
 
-  void _slideAlongBar(int index) {
-    if (index == _index) return;
+  void _slideAlongBar(int position) {
+    final tab = _visible[position];
+    if (tab == _current) return;
     Haptics.selection();
-    _switchTo(index);
+    _switchTo(tab);
+  }
+
+  /// Whether the bar fades on the tab showing now: Inspire's first page.
+  bool get _fades => _current == AppTab.inspire && !_deep.contains(AppTab.inspire) && !_accessible;
+
+  /// Shows the bar again (if it had faded) and starts the wait before it
+  /// fades, where it does.
+  void _wakeBar() {
+    _fadeTimer?.cancel();
+    _fadeTimer = null;
+    if (_barFaded) setState(() => _barFaded = false);
+    if (!_fades) return;
+    _fadeTimer = Timer(IOSMainNavigation.barFadeDelay, () {
+      if (mounted && _fades) setState(() => _barFaded = true);
+    });
   }
 
   void _endSlide() {
@@ -187,13 +243,15 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
 
   void _swipeUpdate(DragUpdateDetails details) {
     final offset = _slide.value + details.delta.dx;
-    final next = offset < 0 ? _index + 1 : _index - 1;
-    if (next < 0 || next >= _tabs.length) {
+    final position = _visible.indexOf(_current);
+    final nextPosition = offset < 0 ? position + 1 : position - 1;
+    if (nextPosition < 0 || nextPosition >= _visible.length) {
       // Past the first or last tab: it gives a little, then stops
       _revealed = null;
       _slide.value = (offset.sign * math.min(offset.abs(), 60.0));
       return;
     }
+    final next = _visible[nextPosition];
     if (next != _revealed) setState(() => _opened.add(_revealed = next));
     _slide.value = offset.clamp(-_width, _width);
   }
@@ -229,35 +287,49 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   void _showHabits() {
     if (NotificationService.focusRequests.value == null) return;
     _endSlide();
-    if (_index != 0) setState(() => _index = 0);
+    if (_current != AppTab.habits) setState(() => _current = AppTab.habits);
+    _wakeBar();
     // Add and Edit open above the tabs; pages and sheets open inside them
     if (mounted) Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-    _navigators[0].currentState?.popUntil((route) => route.isFirst);
+    _navigators[AppTab.habits]!.currentState?.popUntil((route) => route.isFirst);
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
-    final showBar = !_deep.contains(_index);
-
-    final tabs = [
-      for (var i = 0; i < _tabs.length; i++)
-        _opened.contains(i)
-            ? CupertinoTabView(
-                navigatorKey: _navigators[i],
-                navigatorObservers: [_observers[i]],
-                builder: (context) => _screens[i],
-              )
-            : const SizedBox.shrink(),
+    final showInspire = context.watch<SettingsProvider>().showInspireTab;
+    _visible = [
+      for (final tab in AppTab.values)
+        if (tab != AppTab.inspire || showInspire) tab,
     ];
+    // Inspire was turned off while showing (Settings is where it's turned
+    // off, so this is only a safeguard)
+    if (!_visible.contains(_current)) _current = AppTab.settings;
+    if (_revealed != null && !_visible.contains(_revealed)) _endSlide();
+    _accessible = MediaQuery.accessibleNavigationOf(context);
+    final showBar = !_deep.contains(_current);
+    final faded = _barFaded && _fades;
+    final position = _visible.indexOf(_current);
+
+    Widget tabView(AppTab tab) => _opened.contains(tab)
+        ? CupertinoTabView(
+            navigatorKey: _navigators[tab],
+            navigatorObservers: [_observers[tab]!],
+            builder: (context) => tab.screen,
+          )
+        : const SizedBox.shrink();
 
     return ColoredBox(
       color: palette.background,
       child: Stack(
         children: [
           Positioned.fill(
-            child: TabBarInset(
+            // Any touch brings a faded bar back
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: (_) => _wakeBar(),
+              child: TabBarInset(
               height: FloatingTabBar.coveredHeight(safeBottom),
               child: LayoutBuilder(builder: (context, constraints) {
                 _width = constraints.maxWidth;
@@ -281,19 +353,23 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
                       final revealed = offset == 0 ? null : _revealed;
                       return Stack(
                         children: [
-                          for (var i = 0; i < _tabs.length; i++)
+                          for (final tab in AppTab.values)
                             Offstage(
-                              offstage: i != _index && i != revealed,
+                              offstage: tab != _current && tab != revealed,
                               child: Transform.translate(
                                 offset: Offset(
-                                  i == _index ? offset : (i == revealed ? offset + (i > _index ? _width : -_width) : 0),
+                                  tab == _current
+                                      ? offset
+                                      : (tab == revealed
+                                          ? offset + (_visible.indexOf(tab) > position ? _width : -_width)
+                                          : 0),
                                   0,
                                 ),
                                 child: IgnorePointer(
-                                  ignoring: i != _index,
+                                  ignoring: tab != _current,
                                   child: TickerMode(
-                                    enabled: i == _index,
-                                    child: FocusScope(canRequestFocus: i == _index, child: tabs[i]),
+                                    enabled: tab == _current,
+                                    child: FocusScope(canRequestFocus: tab == _current, child: tabView(tab)),
                                   ),
                                 ),
                               ),
@@ -304,6 +380,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
                   ),
                 );
               }),
+              ),
             ),
           ),
           Positioned(
@@ -311,20 +388,28 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
             right: FloatingTabBar.sideMargin,
             bottom: FloatingTabBar.bottomGap(safeBottom),
             child: IgnorePointer(
-              ignoring: !showBar,
-              child: AnimatedSlide(
-                offset: showBar ? Offset.zero : const Offset(0, 2),
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                child: AnimatedBuilder(
-                  animation: _slide,
-                  builder: (context, _) => FloatingTabBar(
-                    tabs: _tabs,
-                    // The highlight moves over once the swipe is halfway
-                    currentIndex: _revealed != null && _slide.value.abs() > _width / 2 ? _revealed! : _index,
-                    onTap: _select,
-                    onSlide: _slideAlongBar,
-                    onAdd: _add,
+              ignoring: !showBar || faded,
+              child: AnimatedOpacity(
+                key: const Key('tabBarFade'),
+                opacity: faded ? 0 : 1,
+                duration: Duration(milliseconds: faded ? 600 : 200),
+                curve: Curves.easeOut,
+                child: AnimatedSlide(
+                  offset: showBar ? Offset.zero : const Offset(0, 2),
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  child: AnimatedBuilder(
+                    animation: _slide,
+                    builder: (context, _) => FloatingTabBar(
+                      tabs: [for (final tab in _visible) tab.bar],
+                      // The highlight moves over once the swipe is halfway
+                      currentIndex: _visible.indexOf(
+                        _revealed != null && _slide.value.abs() > _width / 2 ? _revealed! : _current,
+                      ),
+                      onTap: _select,
+                      onSlide: _slideAlongBar,
+                      onAdd: _add,
+                    ),
                   ),
                 ),
               ),

@@ -216,6 +216,22 @@ class HabitProvider extends ChangeNotifier {
     );
   }
 
+  /// Keeps a quote with the habit; shows at once and saves behind.
+  Future<bool> addQuote(String habitId, String quoteId) => _applyNow(
+        habitId,
+        (habit) => habit.addQuote(quoteId),
+        (pending) => pending.quoteIds = _quoteIdsOf(habitId),
+      );
+
+  /// Takes a quote off the habit; shows at once and saves behind.
+  Future<bool> removeQuote(String habitId, String quoteId) => _applyNow(
+        habitId,
+        (habit) => habit.removeQuote(quoteId),
+        (pending) => pending.quoteIds = _quoteIdsOf(habitId),
+      );
+
+  List<String> _quoteIdsOf(String habitId) => _habits.firstWhere((habit) => habit.id == habitId).quoteIds;
+
   /// The note on [date]; empty removes it. Shows at once and saves behind.
   Future<bool> setDayNote(String habitId, DateTime date, String text) {
     final day = DateTime(date.year, date.month, date.day);
@@ -287,6 +303,7 @@ class HabitProvider extends ChangeNotifier {
             saved = await _updateHabitUseCase.setTwoMinuteForDate(habitId, entry.key, entry.value);
           }
           if (pending.why != null) saved = await _updateHabitUseCase.setWhy(habitId, pending.why!);
+          if (pending.quoteIds != null) saved = await _updateHabitUseCase.setQuotes(habitId, pending.quoteIds!);
           for (final entry in pending.notes.entries) {
             saved = await _updateHabitUseCase.setDayNote(habitId, entry.key, entry.value);
           }
@@ -509,6 +526,9 @@ class _PendingChange {
   final Map<DateTime, bool> twoMinute = {};
 
   String? why;
+
+  /// The habit's quotes as they now stand.
+  List<String>? quoteIds;
 
   /// The earlier day the habit now counts from.
   DateTime? startFrom;

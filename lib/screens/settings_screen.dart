@@ -7,10 +7,12 @@ import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
 import '../domain/entities/habit_notify.dart';
 import '../domain/entities/quiet_hours.dart';
+import '../domain/entities/quote.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
+import '../presentation/inspire/quote_widgets.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/settings_list.dart';
@@ -308,6 +310,30 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         // Debug builds only: never shown in release / App Store builds
+        SettingsSection(
+          header: 'Inspire',
+          footer: 'A quote for each day, from the sources you choose and quotes you add.',
+          children: [
+            SettingsSwitchTile(
+              tileKey: const Key('inspireTabSwitch'),
+              icon: CupertinoIcons.quote_bubble_fill,
+              iconColor: HabitColor.amber.color,
+              title: 'Inspire tab',
+              subtitle: 'A quote to start each day',
+              value: settings.showInspireTab,
+              onChanged: settings.setShowInspireTab,
+            ),
+            if (settings.showInspireTab)
+              SettingsTile(
+                tileKey: const Key('quoteSourcesSetting'),
+                icon: CupertinoIcons.book_fill,
+                iconColor: HabitColor.teal.color,
+                title: 'Quote sources',
+                value: '${settings.quoteFamilies.length} of ${QuoteFamily.values.length}',
+                onTap: () => showQuoteSourcesSheet(context),
+              ),
+          ],
+        ),
         if (kDebugMode)
           SettingsSection(
             header: 'Developer',

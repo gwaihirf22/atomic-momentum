@@ -32,6 +32,7 @@ class HabitModel extends Habit {
     super.twoMinuteDays,
     super.why,
     super.dayNotes,
+    super.quoteIds,
     super.goal,
     super.notify,
   });
@@ -61,6 +62,7 @@ class HabitModel extends Habit {
         twoMinuteDays: habit.twoMinuteDays,
         why: habit.why,
         dayNotes: habit.dayNotes,
+        quoteIds: habit.quoteIds,
         goal: habit.goal,
         notify: habit.notify,
       );
@@ -94,6 +96,7 @@ class HabitModel extends Habit {
         twoMinuteDays: twoMinuteDays,
         why: why,
         dayNotes: dayNotes,
+        quoteIds: quoteIds,
         goal: goal,
         notify: notify,
       );
@@ -160,6 +163,7 @@ class HabitModel extends Habit {
       twoMinuteDays: Habit.twoMinuteDaysFromJson(json['twoMinuteDays']),
       why: json['why'] is String ? json['why'] as String : '',
       dayNotes: Habit.dayNotesFromJson(json['dayNotes']),
+      quoteIds: Habit.quoteIdsFromJson(json['quotes']),
       goal: HabitGoal.fromJson(json['goal']),
       notify: HabitNotify.fromJson(json['notify']),
     );
@@ -203,6 +207,7 @@ class HabitModel extends Habit {
         if (twoMinuteDays.isNotEmpty) 'twoMinuteDays': Habit.twoMinuteDaysToJson(twoMinuteDays),
         if (why.isNotEmpty) 'why': why,
         if (dayNotes.isNotEmpty) 'dayNotes': Habit.dayNotesToJson(dayNotes),
+        if (quoteIds.isNotEmpty) 'quotes': quoteIds,
         if (goal != HabitGoal.build) 'goal': goal.name,
         if (!notify.isStandard) 'notify': notify.toJson(),
         '_version': '2.0.0', // Add version for future migrations

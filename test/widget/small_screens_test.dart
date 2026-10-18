@@ -24,7 +24,12 @@ import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
+import 'package:atomic_momentum/presentation/inspire/quote_widgets.dart';
+import 'package:atomic_momentum/domain/entities/quote.dart';
+import 'package:atomic_momentum/screens/inspire_screen.dart';
+import 'package:atomic_momentum/screens/quote_search_screen.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
 import 'package:atomic_momentum/presentation/widgets/color_picker.dart';
@@ -59,6 +64,8 @@ void main() {
   late HabitProvider habits;
 
   setUpAll(loadRealFonts);
+
+  late Quote longQuote;
 
   setUp(() async {
     await resetDependencies();
@@ -97,6 +104,18 @@ void main() {
       reminder: ReminderSettings(time: TimeOfDay(hour: 7, minute: 0), enabled: true, daysOfWeek: [1, 3, 5]),
     ));
 
+    // Quotes kept with a habit, one of them the person's own (long)
+    final quotes = get<QuoteProvider>();
+    longQuote = (await quotes.addMine(
+      text: 'Not all those who wander are lost. ' * 11,
+      author: 'Someone with a rather long name for a byline',
+      source: 'A very long book title, chapter twelve, page 300',
+    ))!;
+    await quotes.setSaved('spurgeon-snail', true);
+    final read = habits.habits.firstWhere((h) => h.name == 'Read').id;
+    await habits.addQuote(read, 'burnett-it-is-done');
+    await habits.addQuote(read, longQuote.id);
+
     // A long category name
     await get<CategoryProvider>().add(
       name: 'Personal growth',
@@ -122,6 +141,7 @@ void main() {
         ChangeNotifierProvider<HabitProvider>.value(value: habits),
         ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
+        ChangeNotifierProvider<QuoteProvider>.value(value: get<QuoteProvider>()),
       ],
       child: MaterialApp(
         theme: IOSTheme.material(palette).copyWith(platform: TargetPlatform.iOS),
@@ -155,6 +175,15 @@ void main() {
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
     'Insights': () => const InsightsScreen(),
+    'Inspire': () => const InspireScreen(),
+    'Quote search': () => const QuoteSearchScreen(),
+    'My quotes': () => const QuoteSearchScreen(start: QuoteListStart.mine),
+    'Choose a quote (for a habit)': () =>
+        QuoteSearchScreen(pickForHabitId: habits.habits.firstWhere((h) => h.name == 'Read').id),
+    'Quote sheet, the longest quote': () => Scaffold(body: QuoteSheet(quoteId: longQuote.id)),
+    'Quote sheet, a built-in quote': () => const Scaffold(body: QuoteSheet(quoteId: 'burnett-it-is-done')),
+    'Add a quote sheet': () => const Scaffold(body: MyQuoteSheet()),
+    'Quote sources sheet': () => const Scaffold(body: QuoteSourcesSheet()),
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Stretch')),
@@ -335,6 +364,21 @@ void main() {
     }
   }
 
+  for (final width in [375.0, 390.0]) {
+    for (final scale in [1.0, 1.35]) {
+      testWidgets('Inspire, the longest quote of the day, at ${width.toInt()}pt, text ${(scale * 100).round()}%',
+          (tester) async {
+        final settings = get<SettingsProvider>();
+        for (final family in QuoteFamily.values.where((f) => f != QuoteFamily.mine)) {
+          await settings.setQuoteFamily(family, false);
+        }
+        await pump(tester, const InspireScreen(), width: width, scale: scale);
+        expect(find.byKey(Key('inspireQuote_${longQuote.id}')), findsOneWidget);
+        expectNothingCutOff(tester, 'Inspire, longest quote');
+      });
+    }
+  }
+
   // Colors don't change sizes, but each theme builds its own widgets' colors
   for (final palette in [AppPalette.sepia, AppPalette.dark]) {
     for (final name in [
@@ -346,6 +390,9 @@ void main() {
       'Story, new',
       'Habit page',
       'Insights',
+      'Inspire',
+      'Quote search',
+      'Quote sheet, a built-in quote',
       'Momentum explainer',
       'Achievement celebration, a long name',
       'Every day (full screen)',

@@ -18,6 +18,7 @@ import '../domain/services/achievements.dart';
 import '../domain/services/insights.dart';
 import '../presentation/habit_form/sentence.dart';
 import '../presentation/help/explainers.dart';
+import '../presentation/inspire/habit_quotes_card.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -281,6 +282,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
             ],
             const SizedBox(height: 14),
             _WhyCard(why: habit.why, onTap: () => _editWhy(habit)),
+            const SizedBox(height: 14),
+            HabitQuotesCard(habit: habit),
             const SizedBox(height: 14),
             _NotesCard(
               habit: habit,

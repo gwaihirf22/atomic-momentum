@@ -6,6 +6,7 @@ import '../../core/locale/week_start.dart';
 import '../../core/services/notification_service.dart' show NotifyDefaults;
 import '../../domain/entities/habit_notify.dart';
 import '../../domain/entities/quiet_hours.dart';
+import '../../domain/entities/quote.dart';
 import '../../domain/entities/streak_warning_settings.dart';
 
 /// The style the habit editor opens in; either can be switched to there.
@@ -33,6 +34,8 @@ class SettingsProvider extends ChangeNotifier {
   static const _quietEnabledKey = 'quietHoursEnabled';
   static const _quietStartKey = 'quietHoursStart';
   static const _quietEndKey = 'quietHoursEnd';
+  static const _showInspireTabKey = 'showInspireTab';
+  static const _quoteFamiliesOffKey = 'quoteFamiliesOff';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -114,6 +117,33 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAllowTimeSensitive(bool allow) async {
     await _prefs.setBool(_allowTimeSensitiveKey, allow);
+    notifyListeners();
+  }
+
+  /// Whether the Inspire tab shows in the tab bar (on until turned off).
+  bool get showInspireTab => _prefs.getBool(_showInspireTabKey) ?? true;
+
+  Future<void> setShowInspireTab(bool show) async {
+    await _prefs.setBool(_showInspireTabKey, show);
+    notifyListeners();
+  }
+
+  /// The quote sources turned on (all until some are turned off). Stored as
+  /// the ones turned off, so sources added later start on.
+  Set<QuoteFamily> get quoteFamilies {
+    final off = _prefs.getStringList(_quoteFamiliesOffKey) ?? const [];
+    return {for (final family in QuoteFamily.values) if (!off.contains(family.name)) family};
+  }
+
+  /// Turns a source on or off; the last one on stays on.
+  Future<void> setQuoteFamily(QuoteFamily family, bool on) async {
+    final families = quoteFamilies;
+    on ? families.add(family) : families.remove(family);
+    if (families.isEmpty) return;
+    await _prefs.setStringList(_quoteFamiliesOffKey, [
+      for (final f in QuoteFamily.values)
+        if (!families.contains(f)) f.name,
+    ]);
     notifyListeners();
   }
 
