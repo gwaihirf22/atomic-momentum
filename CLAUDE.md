@@ -69,6 +69,14 @@ tool/device_notification_check.sh "iPhone 17 Pro"
 # or emulator-5554 with fewer days), with screenshots of every screen each month
 tool/device_year_check.sh "Year iPhone 17 Pro"
 
+# Paul's own iPhone (plugged in, Developer Mode on): a release build, signed with his free
+# personal team (no time-sensitive notifications; Runner-PersonalTeam.entitlements). Free
+# installs expire after 7 days: run it again (data stays). DEV_TOOLS=1 keeps Settings →
+# Developer ("Load a year of use") in the release build, for testing real speed
+DEV_TOOLS=1 tool/install_on_iphone.sh
+# If the phone shows "connecting" forever: plug straight into the Mac (not a dock), re-pair
+# (xcrun devicectl manage unpair/pair --device <id>), and restart the Mac
+
 # Generate test coverage
 ./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
 

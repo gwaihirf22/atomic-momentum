@@ -9,7 +9,7 @@ Things to do that aren't on the product roadmap, or that are smaller than a road
 - **Compact settled history** (checkpoint plus recent days, the rest archived and unpacked only when needed). Design: [design/history-compaction.md](design/history-compaction.md).
   - **Not urgent:** in profile mode a year loads in about 0.5 s and two years in about 0.8 s (see Done).
   - Worth doing before long-time users reach several years, since the load grows with every day.
-- **Measure an iPhone profile build** too. So far only the Android emulator has been measured in profile mode. Debug simulator runs are much slower and swing with machine load (one run at a load average of about 150 took about 13 s).
+- **Try an iPhone SE (or older phone)** with a year loaded. The iPhone 15 Pro Max is instant (see Done); the SE is the slowest phone supported.
 - **The first launch frame** takes 57–134 ms in profile mode (it varies between runs): the first content frame, with the first achievements check right after it, on the main isolate. Move the check off-thread if it shows as a hitch just after the intro.
 
 ## App icon, launch and intro
@@ -47,4 +47,5 @@ Things to do that aren't on the product roadmap, or that are smaller than a road
 
 - **Loading a year off the main isolate** (`2cafdc0`), with decode-once storage and cached statistics (`76f7dc2`, `3ee1b35`, `e60195e`).
 - **The intro waits out a stalled start** (`9e858f5`) and **holds until habits load** (`d469056`). The 4 s hold (`IntroScreen.maxHold`) is never reached in release, since habits load well inside the 2.4 s intro.
+- **A year on a real iPhone** (15 Pro Max, release build with `DEV_TOOLS=1`, "Load a year of use"): Paul saw no lag on launch, a fresh relaunch, or opening Insights. The intro took longer than the loading, and it stays.
 - **Profile-mode launch, measured** (Android emulator, quiet machine, `tool/perf_check.sh`): from start to habits on screen took 536 ms with a year of history and 838 ms with two.

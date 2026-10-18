@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
 import '../core/branding/app_icons.dart';
+import '../core/dev/dev_tools.dart';
 import '../core/injection/injection_container.dart';
 import '../core/services/app_icon_service.dart';
 import '../core/services/support_link.dart';
@@ -350,8 +350,8 @@ class SettingsScreen extends StatelessWidget {
         ),
         const HealthSettingsSection(),
         const _SupportSection(),
-        // Debug builds only: never shown in release / App Store builds
-        if (kDebugMode)
+        // Debug builds, and test builds made with DEV_TOOLS; never in a store build
+        if (DevTools.enabled)
           SettingsSection(
             header: 'Developer',
             children: [
