@@ -26,7 +26,8 @@ class HabitStats {
   final int best;
   final Momentum momentum;
 
-  /// Momentum at the end of each of the last [trendDays] days, oldest first.
+  /// Momentum at the end of today and each of the [trendDays] days before
+  /// it, oldest first.
   final List<double> momentumTrend;
 
   /// Of the recent due periods ([recentLabel]): how many were kept, how many
@@ -67,7 +68,7 @@ class HabitStats {
   /// Kept share of [due], 0 to 1 (0 with nothing due yet).
   double get keptShare => due == 0 ? 0 : kept / due;
 
-  /// Momentum's change over the trend, in points.
+  /// Momentum's change over the last [trendDays] days, in points.
   double get momentumChange => momentumTrend.isEmpty ? 0 : momentumTrend.last - momentumTrend.first;
 
   /// [weekStart] is the first day of the user's week (DateTime.monday..sunday),
@@ -91,10 +92,10 @@ class HabitStats {
       );
     }
 
-    final trend = [
-      for (var i = trendDays - 1; i >= 0; i--)
-        habit.momentumAt(DateTime(today.year, today.month, today.day - i, 23, 59)).score,
-    ];
+    // trendDays + 1 day-ends, so the change spans exactly trendDays days
+    final trend = habit.momentumSeries([
+      for (var i = trendDays; i >= 0; i--) DateTime(today.year, today.month, today.day - i, 23, 59),
+    ]);
 
     // Recent periods: 30 days, 8 weeks or 6 months. The one under way counts
     // only once it's kept (it isn't over yet).

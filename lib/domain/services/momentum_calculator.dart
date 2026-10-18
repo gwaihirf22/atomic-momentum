@@ -12,9 +12,11 @@ import 'period_totals.dart';
 /// score at once while an unfinished today never lowers it. Rest days aren't
 /// due periods, so they're ignored.
 ///
-/// A period kept with the two-minute version counts at least half
-/// ([TwoMinuteLog.credit]). A two-minute today counts early only when that
-/// raises the score, so logging the tiny version never makes it drop.
+/// A period kept with the two-minute version never lowers the score: it
+/// holds it where it is, or lifts it toward half ([TwoMinuteLog.credit])
+/// when it's lower. Showing up small is never punished; only full days
+/// climb high. A two-minute today counts early only when that raises the
+/// score.
 ///
 /// Calibrated so that steady practice reaches 80 in about 66 days (the
 /// average time to form a habit, Lally et al. 2009) whatever the schedule,
@@ -50,6 +52,83 @@ class MomentumCalculator {
     return 1 - math.pow(1 - _scoreAtHabit, 1 / periods).toDouble();
   }
 
+  /// The score at each of [at] (oldest first), as [calculate] would give
+  /// with history up to that moment, in one pass: for charts over many days.
+  static List<double> series({
+    required Map<DateTime, int> history,
+    required int target,
+    required HabitSchedule schedule,
+    required DateTime start,
+    required List<DateTime> at,
+    TwoMinuteLog twoMinute = TwoMinuteLog.none,
+    int? breakLimit,
+  }) {
+    if (at.isEmpty) return const [];
+    if (!schedule.isPeriodic || (breakLimit == null && target <= 0)) return [for (final _ in at) 0.0];
+    assert(() {
+      for (var i = 1; i < at.length; i++) {
+        if (at[i].isBefore(at[i - 1])) return false;
+      }
+      return true;
+    }(), 'times must be in order');
+
+    final alpha = smoothing(schedule);
+    final last = at.last;
+    final totals = PeriodTotals.byPeriodStart(history, schedule, last);
+    final tiny = PeriodTotals.twoMinuteStarts(totals, twoMinute, schedule, last);
+    final due = PeriodTotals.dueStarts(schedule, start, last).toList();
+
+    var s = 0.0;
+    var next = 0;
+    final scores = <double>[];
+    for (final time in at) {
+      if (time.isBefore(start)) {
+        scores.add(0);
+        continue;
+      }
+      final current = schedule.periodStart(time);
+      // Periods ended by then count in full
+      while (next < due.length && due[next].isBefore(current)) {
+        final period = due[next++];
+        final done = _credit(totals[period] ?? 0, tiny.contains(period), s, target, breakLimit);
+        s = s * (1 - alpha) + done * alpha;
+      }
+      var score = s;
+      if (next < due.length && due[next] == current) {
+        // The period under way, as it stood then
+        var total = 0;
+        var usedTiny = false;
+        for (final entry in history.entries) {
+          if (entry.value > 0 && !entry.key.isBefore(current) && !entry.key.isAfter(time)) total += entry.value;
+        }
+        for (final day in twoMinute.days) {
+          if (!day.isAfter(time) && schedule.periodStart(day) == current) usedTiny = true;
+        }
+        final minimum = twoMinute.minimum;
+        final isTiny = usedTiny || (minimum != null && minimum > 0 && total >= minimum);
+        score = _counted(s, _credit(total, isTiny, s, target, breakLimit), isTiny, alpha) ?? s;
+      }
+      scores.add(100 * score);
+    }
+    return scores;
+  }
+
+  /// How much of a period was done, 0 to 1. A habit being broken gets full
+  /// credit at or under the limit and none over it; a two-minute period
+  /// holds the score [s] or lifts it toward half.
+  static double _credit(int total, bool isTiny, double s, int target, int? breakLimit) {
+    var done = breakLimit != null ? (total <= breakLimit ? 1.0 : 0.0) : math.min(1.0, total / target);
+    if (isTiny) done = math.max(done, math.max(TwoMinuteLog.credit, s));
+    return done;
+  }
+
+  /// The score after the period under way, or null while it doesn't count
+  /// yet: only once complete, or kept small when that raises the score.
+  static double? _counted(double s, double done, bool isTiny, double alpha) {
+    final next = s * (1 - alpha) + done * alpha;
+    return done >= 1 || (isTiny && next > s) ? next : null;
+  }
+
   static double _scoreAt(
     Map<DateTime, int> history,
     int target,
@@ -67,15 +146,13 @@ class MomentumCalculator {
 
     var s = 0.0;
     for (final periodStart in PeriodTotals.dueStarts(schedule, start, at)) {
-      // A habit being broken: full credit at or under the limit, none over
-      var done = breakLimit != null
-          ? ((totals[periodStart] ?? 0) <= breakLimit ? 1.0 : 0.0)
-          : math.min(1.0, (totals[periodStart] ?? 0) / target);
       final isTiny = tiny.contains(periodStart);
-      if (isTiny) done = math.max(done, TwoMinuteLog.credit);
-      final next = s * (1 - alpha) + done * alpha;
-      if (periodStart == current && done < 1 && !(isTiny && next > s)) continue;
-      s = next;
+      final done = _credit(totals[periodStart] ?? 0, isTiny, s, target, breakLimit);
+      if (periodStart == current) {
+        s = _counted(s, done, isTiny, alpha) ?? s;
+      } else {
+        s = s * (1 - alpha) + done * alpha;
+      }
     }
     return 100 * s;
   }

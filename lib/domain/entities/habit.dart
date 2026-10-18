@@ -408,6 +408,18 @@ class Habit extends Equatable {
         breakLimit: isBreak ? target : null,
       );
 
+  /// Momentum's score at each of [at] (oldest first), like [momentumAt] for
+  /// each but in one pass.
+  List<double> momentumSeries(List<DateTime> at) => MomentumCalculator.series(
+        history: history,
+        target: target,
+        schedule: schedule,
+        start: _momentumStart,
+        at: at,
+        twoMinute: _twoMinuteLog,
+        breakLimit: isBreak ? target : null,
+      );
+
   TwoMinuteLog get _twoMinuteLog => TwoMinuteLog(days: twoMinuteDays, minimum: twoMinute?.minimum);
 
   /// Creation day, or the earliest logged day if that's earlier (seeded or

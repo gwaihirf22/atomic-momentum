@@ -176,6 +176,44 @@ void main() {
           ).score;
       expect(score(TwoMinuteLog(days: {monday})), greaterThan(score(TwoMinuteLog.none)));
     });
+
+    test('a two-minute day that has ended holds a high score where it was; a miss lowers it', () {
+      // Every day done until yesterday (a Sunday); yesterday kept small, missed or done
+      final sunday = jan(14);
+      final before = {for (final d in everyDaySince(start, sunday)) d: 1};
+      double scoreAt(DateTime at, {Map<DateTime, int>? history, TwoMinuteLog log = TwoMinuteLog.none}) =>
+          MomentumCalculator.calculate(
+            history: history ?? before,
+            target: 1,
+            schedule: daily,
+            start: start,
+            now: at,
+            twoMinute: log,
+          ).score;
+      final saturdayNight = DateTime(2024, 1, 13, 23, 59);
+      final high = scoreAt(saturdayNight);
+      expect(high, greaterThan(80));
+
+      final tiny = scoreAt(noon, log: TwoMinuteLog(days: {sunday}));
+      final missed = scoreAt(noon);
+      final done = scoreAt(noon, history: {...before, sunday: 1});
+      expect(tiny, closeTo(high, 0.001), reason: 'held');
+      expect(missed, lessThan(high));
+      expect(done, greaterThan(high));
+    });
+
+    test('below half, a two-minute day that has ended lifts the score toward half', () {
+      final sunday = jan(14);
+      double score(TwoMinuteLog log) => MomentumCalculator.calculate(
+            history: {jan(10): 1},
+            target: 1,
+            schedule: daily,
+            start: jan(10),
+            now: noon,
+            twoMinute: log,
+          ).score;
+      expect(score(TwoMinuteLog(days: {sunday})), greaterThan(score(TwoMinuteLog.none)));
+    });
   });
 
   group('Habit', () {

@@ -63,7 +63,7 @@ void main() {
   test("momentum's last 30 days, oldest first, rising as days are kept", () {
     final h = habit(history: {for (var i = 0; i < 20; i++) daysAgo(i): 2});
     final stats = HabitStats.of(h, now);
-    expect(stats.momentumTrend, hasLength(30));
+    expect(stats.momentumTrend, hasLength(HabitStats.trendDays + 1));
     expect(stats.momentumTrend.last, greaterThan(stats.momentumTrend.first));
     expect(stats.momentumTrend.last, closeTo(stats.momentum.score, 1));
     expect(stats.momentumChange, greaterThan(0));

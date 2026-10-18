@@ -69,15 +69,17 @@ class HabitProvider extends ChangeNotifier {
   HabitProviderState get state => _state;
   List<Habit> get habits => List.unmodifiable(_habits);
   String? get error => _error;
-  /// Average momentum across habits that reset and have something logged,
-  /// or null when there's nothing to average yet.
+  /// Average momentum across habits that reset and have been tracked: built
+  /// habits once something is logged, habits being broken once a period has
+  /// passed (a clean run logs nothing). Null when there's nothing to average.
   Momentum? get overallMomentum {
-    final tracked = _habits
-        .where((h) => h.schedule.isPeriodic && h.history.values.any((amount) => amount > 0))
-        .map((h) => h.momentum)
-        .toList();
-    if (tracked.isEmpty) return null;
-    double average(double Function(Momentum m) of) => tracked.map(of).reduce((a, b) => a + b) / tracked.length;
+    final now = clock.now();
+    bool tracked(Habit h) => h.isBreak
+        ? h.metadata.createdDate.isBefore(h.schedule.periodStart(now))
+        : h.history.values.any((amount) => amount > 0);
+    final scores = _habits.where((h) => h.schedule.isPeriodic && tracked(h)).map((h) => h.momentum).toList();
+    if (scores.isEmpty) return null;
+    double average(double Function(Momentum m) of) => scores.map(of).reduce((a, b) => a + b) / scores.length;
     return Momentum(score: average((m) => m.score), trend: average((m) => m.trend));
   }
 

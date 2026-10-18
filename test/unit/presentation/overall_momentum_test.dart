@@ -1,8 +1,10 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -50,5 +52,27 @@ void main() {
     final scoreA = habits.getHabitById(a)!.momentum.score;
     final scoreB = habits.getHabitById(b)!.momentum.score;
     expect(habits.overallMomentum!.score, closeTo((scoreA + scoreB) / 2, 0.001));
+  });
+
+  test('a habit being broken counts once a day has passed, though it logs nothing', () async {
+    final now = DateTime.now();
+    Future<void> addQuit(String name, DateTime at) => withClock(
+          Clock.fixed(at),
+          () => habits.createHabit(CreateHabitParams(
+            name: name,
+            target: 0,
+            color: HabitColor.red,
+            categoryId: BuiltInCategoryIds.body,
+            goal: HabitGoal.quit,
+          )),
+        );
+    await addQuit('Smoking', DateTime(now.year, now.month, now.day - 10, 9));
+    await habits.loadHabits();
+    final clean = habits.habits.single;
+    expect(clean.momentum.score, greaterThan(0));
+    expect(habits.overallMomentum!.score, closeTo(clean.momentum.score, 0.001));
+
+    await addQuit('Soda', now);
+    expect(habits.overallMomentum!.score, closeTo(clean.momentum.score, 0.001), reason: 'added today: not yet');
   });
 }
