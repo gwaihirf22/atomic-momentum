@@ -124,8 +124,8 @@ class Insights {
         if (_isOneDay(habit, period.start)) {
           add(period.start, period);
         } else if (period.mark == PeriodMark.done || period.mark == PeriodMark.twoMinute) {
-          final day = _keptOn(habit, period);
-          if (day != null && !day.isAfter(_date(now))) add(day, period);
+          final day = keptOn(habit, period);
+          if (!day.isAfter(_date(now))) add(day, period);
         }
       }
     }
@@ -227,12 +227,13 @@ class Insights {
   static final _cache = Expando<Map<DateTime, List<RecentPeriod>>>('insight periods');
 
   /// A habit's periods from when it was first tracked to the one under way
-  /// at [now], oldest first.
+  /// at [now], oldest first. They only depend on which period [now] is in,
+  /// so they're kept per period, not per moment.
   static List<RecentPeriod> periods(Habit habit, DateTime now) {
     final schedule = habit.schedule;
     if (!schedule.isPeriodic) return const [];
     final cached = _cache[habit] ??= {};
-    return cached[now] ??= () {
+    return cached[schedule.periodStart(now)] ??= () {
       final first = schedule.periodStart(habit.trackedFrom);
       var start = schedule.periodStart(now);
       var count = 1;
@@ -247,10 +248,12 @@ class Insights {
   static bool _isOneDay(Habit habit, DateTime start) =>
       habit.schedule.nextPeriodStart(start) == DateTime(start.year, start.month, start.day + 1);
 
-  /// The day a longer period was kept: when its running total reached the
-  /// target (or the two-minute minimum), or the "2 min" button was used. A
-  /// habit being broken keeps a period on its last day.
-  static DateTime? _keptOn(Habit habit, RecentPeriod period) {
+  /// The day a kept period was kept: a day's own day; for a longer period,
+  /// when its running total reached the target (or the two-minute minimum),
+  /// or the "2 min" button was used. A habit being broken keeps a period on
+  /// its last day.
+  static DateTime keptOn(Habit habit, RecentPeriod period) {
+    if (_isOneDay(habit, period.start)) return period.start;
     final schedule = habit.schedule;
     final end = schedule.nextPeriodStart(period.start);
     final lastDay = DateTime(end.year, end.month, end.day - 1);

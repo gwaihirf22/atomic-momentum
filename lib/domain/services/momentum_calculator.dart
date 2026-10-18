@@ -78,6 +78,14 @@ class MomentumCalculator {
     final tiny = PeriodTotals.twoMinuteStarts(totals, twoMinute, schedule, last);
     final due = PeriodTotals.dueStarts(schedule, start, last).toList();
 
+    // What the period under way held at each time, kept as a sliding window
+    // over the logged days (times only move forward, and so do periods), so
+    // a year of days costs one pass rather than one pass per day
+    final logged = [for (final e in history.entries) if (e.value > 0) e]..sort((a, b) => a.key.compareTo(b.key));
+    final tapped = twoMinute.days.toList()..sort();
+    var loggedFrom = 0, loggedTo = 0, windowTotal = 0;
+    var tappedFrom = 0, tappedTo = 0;
+
     var s = 0.0;
     var next = 0;
     final scores = <double>[];
@@ -95,15 +103,17 @@ class MomentumCalculator {
       }
       var score = s;
       if (next < due.length && due[next] == current) {
-        // The period under way, as it stood then
-        var total = 0;
-        var usedTiny = false;
-        for (final entry in history.entries) {
-          if (entry.value > 0 && !entry.key.isBefore(current) && !entry.key.isAfter(time)) total += entry.value;
+        // The period under way, as it stood then: logged from its start to [time]
+        for (; loggedTo < logged.length && !logged[loggedTo].key.isAfter(time); loggedTo++) {
+          windowTotal += logged[loggedTo].value;
         }
-        for (final day in twoMinute.days) {
-          if (!day.isAfter(time) && schedule.periodStart(day) == current) usedTiny = true;
+        for (; loggedFrom < loggedTo && logged[loggedFrom].key.isBefore(current); loggedFrom++) {
+          windowTotal -= logged[loggedFrom].value;
         }
+        for (; tappedTo < tapped.length && !tapped[tappedTo].isAfter(time); tappedTo++) {}
+        for (; tappedFrom < tappedTo && tapped[tappedFrom].isBefore(current); tappedFrom++) {}
+        final total = windowTotal;
+        final usedTiny = tappedTo > tappedFrom;
         final minimum = twoMinute.minimum;
         final isTiny = usedTiny || (minimum != null && minimum > 0 && total >= minimum);
         score = _counted(s, _credit(total, isTiny, s, target, breakLimit), isTiny, alpha) ?? s;

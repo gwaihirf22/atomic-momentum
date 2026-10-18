@@ -4,6 +4,7 @@ import 'package:atomic_momentum/domain/services/momentum_calculator.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/entities/streak_data.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
@@ -78,6 +79,20 @@ void main() {
         expect(habit.resetFrequency, ResetFrequency.weekly);
         expect(habit.reminder, reminder);
         expect(habit.metadata.icon, 'custom_icon');
+      });
+
+      test('a habit being broken is clean from the start: today counts at once', () {
+        final quit = Habit.create(
+          name: 'Smoking',
+          target: 0,
+          color: HabitColor.blueGrey,
+          categoryId: BuiltInCategoryIds.body,
+          goal: HabitGoal.quit,
+        );
+        expect(quit.streak.current, 1);
+        // One being built has nothing to count yet
+        expect(Habit.create(name: 'Read', target: 1, color: HabitColor.blue, categoryId: BuiltInCategoryIds.mind)
+            .streak, StreakData.empty());
       });
     });
 

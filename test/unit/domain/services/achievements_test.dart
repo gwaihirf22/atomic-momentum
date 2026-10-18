@@ -89,6 +89,17 @@ void main() {
       expect(byId(Achievements.earned([weekly], now))['streak_4_h']!.title, '4 weeks');
     });
 
+    test('a longer period counts the day it was kept, not the day it began', () {
+      // Weeks from Monday, each kept on its Saturday; the 4th on Sat Jan 13
+      final weekly = habit(
+        created: DateTime(2023, 12, 18),
+        frequency: ResetFrequency.weekly,
+        history: {for (var w = 0; w < 4; w++) DateTime(2023, 12, 23 + 7 * w): 1},
+      );
+      final earned = byId(Achievements.earned([weekly], now));
+      expect(earned['streak_4_h']!.earnedOn, DateTime(2024, 1, 13));
+    });
+
     test('the 66-day milestone cites the research', () {
       final h = habit(created: ago(70), history: logged(70, 0));
       expect(byId(Achievements.earned([h], now))['streak_66_h']!.message, contains('Lally'));

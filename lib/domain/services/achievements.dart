@@ -336,8 +336,20 @@ class Achievements {
     return trimmed.isEmpty ? trimmed : trimmed[0].toLowerCase() + trimmed.substring(1);
   }
 
+  /// [_formedOn] per habit and day: it only changes with history (a new
+  /// Habit) or the day, so a tap on one habit doesn't redo the others.
+  static final _formed = Expando<Map<DateTime, DateTime?>>('formed on');
+
   /// The first day momentum reached 80, if it has.
   static DateTime? _formedOn(Habit habit, DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    final cached = _formed[habit] ??= {};
+    if (cached.containsKey(today)) return cached[today];
+    if (cached.length > 4) cached.clear();
+    return cached[today] = _firstFormed(habit, now);
+  }
+
+  static DateTime? _firstFormed(Habit habit, DateTime now) {
     final start = habit.trackedFrom;
     final today = DateTime(now.year, now.month, now.day);
     final days = [
@@ -389,7 +401,9 @@ class Achievements {
       if (habit.isBreak && period.start == current) continue;
       final missedBefore = previous == PeriodMark.missed || previous == PeriodMark.partial;
       if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
-        if (missedBefore && streakBeforeMiss > 0) walk.comebacks.add(period.start);
+        // Reached the day it was kept (a week kept on Saturday, on Saturday)
+        final day = Insights.keptOn(habit, period);
+        if (missedBefore && streakBeforeMiss > 0) walk.comebacks.add(day);
         final continues = !missedBefore || streakBeforeMiss > 0;
         final before = missedBefore ? streakBeforeMiss : walk.streak;
         if (walk.streak == 0 && !(missedBefore && streakBeforeMiss > 0)) {
@@ -400,13 +414,13 @@ class Achievements {
         }
         walk.streak = (continues ? before : 0) + 1;
         if (walk.streak > best) best = walk.streak;
-        if (mark == PeriodMark.twoMinute) walk.tinyDays.add(period.start);
+        if (mark == PeriodMark.twoMinute) walk.tinyDays.add(day);
         for (final goal in goals) {
-          if (walk.streak >= goal) walk.reached.putIfAbsent(goal, () => period.start);
+          if (walk.streak >= goal) walk.reached.putIfAbsent(goal, () => day);
         }
-        if (runEnded && walk.streak >= comebackLength) walk.comebackOn ??= period.start;
+        if (runEnded && walk.streak >= comebackLength) walk.comebackOn ??= day;
         if (longestBefore >= minBest && walk.streak == longestBefore + 1) {
-          walk.bestOn = period.start;
+          walk.bestOn = day;
           walk.bestLength = walk.streak;
         } else if (walk.bestOn != null && walk.streak > walk.bestLength) {
           walk.bestLength = walk.streak;

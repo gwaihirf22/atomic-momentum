@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/feedback/haptics.dart';
 import '../core/injection/injection_container.dart';
+import '../core/services/achievement_celebrations.dart';
 import '../core/services/achievement_store.dart';
 import '../core/services/notification_service.dart';
 import '../core/theme/app_palette.dart';
@@ -150,23 +151,20 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     final store = get<AchievementStore>();
     final now = clock.now();
     final weekStart = context.read<SettingsProvider>().firstDayOfWeek;
-    final earned = Achievements.earned(_habits.habits, now, weekStart: weekStart);
-    if (!store.started) {
-      store.markSeen(earned.map((a) => a.id));
-      return;
-    }
-    final seen = store.seen;
-    final fresh = earned.where((a) => !seen.contains(a.id)).toList();
-    if (fresh.isEmpty) return;
+    final started = store.started;
+    final decision = AchievementCelebrations.decide(
+      earned: Achievements.earned(_habits.habits, now, weekStart: weekStart),
+      started: started,
+      seen: store.seen,
+      now: now,
+      busy: Navigator.of(context, rootNavigator: true).canPop(),
+    );
+    if (decision.wait) return;
+    // The first check starts the store even with nothing earned yet
+    if (decision.markSeen.isNotEmpty || !started) store.markSeen(decision.markSeen);
+    final achievement = decision.celebrate;
+    if (achievement == null) return;
 
-    final yesterday = DateTime(now.year, now.month, now.day - 1);
-    final recent = fresh.where((a) => !a.earnedOn.isBefore(yesterday)).toList()
-      ..sort((a, b) => a.rank.compareTo(b.rank));
-    if (recent.isNotEmpty && Navigator.of(context, rootNavigator: true).canPop()) return;
-    store.markSeen(fresh.map((a) => a.id));
-    if (recent.isEmpty) return;
-
-    final achievement = recent.first;
     final next = Achievements.next(_habits.habits, now)
         .where((p) => p.habitName != null && p.habitName == achievement.habitName)
         .firstOrNull;

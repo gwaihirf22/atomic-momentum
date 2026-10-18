@@ -126,8 +126,8 @@ class Habit extends Equatable {
     final now = clock.now();
     // Timestamp alone collides when habits are created in the same instant
     final id = 'habit_${now.microsecondsSinceEpoch}_${_idCounter++}';
-    
-    return Habit(
+
+    final habit = Habit(
       id: id,
       name: name,
       progress: 0,
@@ -150,6 +150,8 @@ class Habit extends Equatable {
       goal: goal,
       notify: notify,
     );
+    // A habit being broken is clean from the start: today counts already
+    return goal.isBreak ? habit._recalculated(now) : habit;
   }
 
   /// Done for now: a build habit reached its target; a habit being broken is
@@ -535,13 +537,13 @@ class Habit extends Equatable {
 
   /// The first day the habit counts from: when it was made, or the earliest
   /// day with anything logged, if that's earlier (seeded or backfilled history).
-  DateTime get trackedFrom {
+  late final DateTime trackedFrom = () {
     var start = _dateOnly(metadata.createdDate);
     for (final day in [...history.keys, ...twoMinuteDays]) {
       if (day.isBefore(start)) start = _dateOnly(day);
     }
     return start;
-  }
+  }();
 
   /// Whether this habit counts toward overall momentum at [at]: a habit
   /// being built once something is logged, one being broken once a period
@@ -568,13 +570,13 @@ class Habit extends Equatable {
 
   /// Creation day, or the earliest logged day if that's earlier (seeded or
   /// backfilled history counts too).
-  DateTime get _momentumStart {
+  late final DateTime _momentumStart = () {
     var start = _dateOnly(metadata.createdDate);
     for (final day in history.keys) {
       if (day.isBefore(start)) start = day;
     }
     return start;
-  }
+  }();
 
   Habit updateDetails({
     String? name,
@@ -681,9 +683,13 @@ class Habit extends Equatable {
 
   /// Whether the "2 min" button was used in the period containing [date].
   bool usedTwoMinuteButtonOn(DateTime date) {
-    final day = _dateOnly(date);
-    return twoMinuteDays.any((d) => _inSamePeriod(d, day));
+    if (twoMinuteDays.isEmpty) return false;
+    if (!resetFrequency.isPeriodic) return true;
+    return _twoMinutePeriods.contains(schedule.periodStart(date));
   }
+
+  /// Starts of the periods the "2 min" button was used in, worked out once.
+  late final Set<DateTime> _twoMinutePeriods = {for (final d in twoMinuteDays) schedule.periodStart(d)};
 
   /// Whether the period's total reached the two-minute minimum.
   bool twoMinuteReachedByAmountOn(DateTime date) {
