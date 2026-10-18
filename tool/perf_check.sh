@@ -22,11 +22,12 @@ python3 - <<'PY'
 import json
 data = json.load(open('build/integration_response_data.json'))
 wall = data.get('wall_ms', {})
-print(f"\n{data.get('years')} year(s) of history, profile mode")
-print(f"{'':36}{'wall ms':>8}{'worst frame':>13}{'avg frame':>11}{'janky':>7}")
+print(f"\n{data.get('years')} year(s) of history, profile mode; habits on screen {data.get('loaded_ms')} ms after start")
+print(f"{'':36}{'wall ms':>8}{'worst build':>13}{'avg build':>11}{'janky':>7}")
 for name, ms in wall.items():
     t = data.get(name, {})
-    worst = max(t.get('worst_frame_build_time_millis', 0), t.get('worst_frame_rasterizer_time_millis', 0))
+    # The app's own work (build); raster is drawing, which an emulator does in software
+    worst = t.get('worst_frame_build_time_millis', 0)
     avg = t.get('average_frame_build_time_millis', 0)
     janky = t.get('missed_frame_build_budget_count', 0)
     print(f"{name:36}{ms:>8}{worst:>13.1f}{avg:>11.1f}{janky:>7}")

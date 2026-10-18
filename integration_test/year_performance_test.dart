@@ -70,10 +70,14 @@ void main() {
       }
     }
 
+    var loadedAfter = 0;
     await measure('launch', () async {
+      final watch = Stopwatch()..start();
       await initializeDependencies(seedDefaultHabit: false);
       await tester.pumpWidget(const MomentumApp());
       await until(find.byKey(const Key('overallMomentum')));
+      // From starting up to the habits being on screen
+      loadedAfter = watch.elapsedMilliseconds;
       await settle();
     });
     // The app's own provider (HabitProvider is made per request)
@@ -133,6 +137,6 @@ void main() {
       await settle();
     });
 
-    binding.reportData = {...?binding.reportData, 'wall_ms': wall, 'years': years};
+    binding.reportData = {...?binding.reportData, 'wall_ms': wall, 'years': years, 'loaded_ms': loadedAfter};
   }, timeout: const Timeout(Duration(minutes: 10)));
 }
