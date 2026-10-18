@@ -47,6 +47,19 @@ void main() {
     expect(scheduler.byKind['at_risk']!.keys, [StreakWarningKind.secondMiss]);
   });
 
+  test('a sync that would schedule the same again does nothing', () async {
+    await service.sync(withStreak);
+    await service.sync(withStreak);
+    expect(scheduler.cancelled, ['at_risk'], reason: 'only the first sync touched the device');
+
+    // A new default sound, or a full reload, schedules afresh
+    scheduler.detailsKey = 'another sound';
+    await service.sync(withStreak);
+    await service.syncAll([withStreak], replace: true);
+    expect(scheduler.cancelled, ['at_risk', 'at_risk', 'at_risk']);
+    expect(scheduler.scheduled['at_risk'], isNotNull);
+  });
+
   test('cancels when there is nothing to warn about', () async {
     await service.sync(withStreak);
     await service.sync(withStreak.setProgressForDate(DateTime(2024, 1, 14), 0).refresh(noon));

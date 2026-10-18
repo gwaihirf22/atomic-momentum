@@ -26,4 +26,8 @@ class FakeStreakWarningScheduler implements StreakWarningScheduler {
     byKind.remove(habitId);
     cancelled.add(habitId);
   }
+
+  /// Stands for the default sound: change it to make the service reschedule.
+  @override
+  String detailsKey = 'defaults';
 }

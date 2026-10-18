@@ -82,12 +82,13 @@ class NotificationService {
     requestSoundPermission: false,
   );
 
+  static bool _timeZonesLoaded = false;
+
   static Future<void> initialize() async {
     if (_initialized) return;
 
     try {
-      // Initialize timezone data
-      tz.initializeTimeZones();
+      // Initialize timezone data (configureLocalTimeZone loads it, once)
       await configureLocalTimeZone();
 
       // Initialize the plugin
@@ -115,7 +116,11 @@ class NotificationService {
   /// reminder at 2am in California).
   static Future<void> configureLocalTimeZone() async {
     try {
-      tz.initializeTimeZones();
+      // The whole database is parsed: once is enough
+      if (!_timeZonesLoaded) {
+        tz.initializeTimeZones();
+        _timeZonesLoaded = true;
+      }
       final identifier = await timezoneResolver();
       tz.setLocalLocation(tz.getLocation(identifier));
       debugPrint('NotificationService: Local timezone is $identifier');
@@ -236,6 +241,16 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('NotificationService: Failed to schedule reminder for $habitId: $e');
+    }
+  }
+
+  /// Cancels one pending notification.
+  static Future<void> cancel(int id) async {
+    if (!_initialized) return;
+    try {
+      await _notificationsPlugin.cancel(id);
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel $id: $e');
     }
   }
 
@@ -463,6 +478,10 @@ class NotifyDefaults {
   const NotifyDefaults({this.sound = NotifySound.chime, this.allowTimeSensitive = true});
 
   static const standard = NotifyDefaults();
+
+  /// What these defaults change about a notification, to tell whether
+  /// what's scheduled still matches.
+  String get key => '${sound.name}|$allowTimeSensitive';
 
   /// The sound [notify] plays here.
   NotifySound soundFor(HabitNotify notify) => notify.sound ?? sound;

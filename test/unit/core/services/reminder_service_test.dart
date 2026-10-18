@@ -55,14 +55,36 @@ void main() {
     expect(ReminderService(scheduler: scheduler, reservedFor: (_) => 100).roomFor(habits), 0);
   });
 
-  test('each sync replaces the previous set, including older versions\' weekly reminders', () async {
+  test('the first sync replaces everything (older versions\' reminders too); later ones change only what moved', () async {
     final habit = TestData.createTestHabit(id: 'a', target: 1, reminder: smart);
     await service.syncAll([habit]);
-    await service.syncAll([habit.copyWith(reminder: smart.copyWith(enabled: false))]);
-
-    expect(scheduler.cancelCount, 2);
+    expect(scheduler.cancelCount, 1);
     expect(scheduler.cancelledHabitIds, contains('a'));
+    final first = List.of(scheduler.scheduled);
+    expect(first, isNotEmpty);
+
+    // The same again: nothing to do
+    await service.syncAll([habit]);
+    expect(scheduler.cancelCount, 1);
+    expect(scheduler.scheduled, first);
+
+    // Turned off: its reminders go, one by one
+    await service.syncAll([habit.copyWith(reminder: smart.copyWith(enabled: false))]);
+    expect(scheduler.cancelCount, 1);
     expect(scheduler.scheduled, isEmpty);
+
+    // A full reload replaces everything again
+    await service.syncAll([habit], replace: true);
+    expect(scheduler.cancelCount, 2);
+    expect(scheduler.scheduled, hasLength(first.length));
+  });
+
+  test('a new default sound reschedules everything', () async {
+    final habit = TestData.createTestHabit(id: 'a', target: 1, reminder: smart);
+    await service.syncAll([habit]);
+    scheduler.detailsKey = 'another sound';
+    await service.syncAll([habit]);
+    expect(scheduler.cancelCount, 2);
   });
 
   test('reminder ids are stable for the same habit and moment, and differ otherwise', () {

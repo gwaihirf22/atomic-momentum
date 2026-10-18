@@ -13,6 +13,10 @@ abstract class StreakWarningScheduler {
 
   /// Cancels every kind of warning for the habit.
   Future<void> cancel(String habitId);
+
+  /// What the scheduler adds to each warning (the default sound), so a
+  /// change to it reschedules them.
+  String get detailsKey;
 }
 
 class LocalNotificationStreakWarningScheduler implements StreakWarningScheduler {
@@ -31,6 +35,9 @@ class LocalNotificationStreakWarningScheduler implements StreakWarningScheduler 
   Future<void> cancel(String habitId) {
     return NotificationService.cancelStreakWarning(habitId);
   }
+
+  @override
+  String get detailsKey => _defaults().key;
 }
 
 /// Keeps each habit's pending streak warnings (at most one of each
@@ -53,25 +60,40 @@ class StreakWarningService {
   /// Settings' quiet hours: warnings move to just before them.
   final QuietHours Function() _quietHours;
 
+  /// What each habit's last sync scheduled, so a sync that would schedule
+  /// the same again does nothing (every launch, tap and midnight syncs).
+  final Map<String, String> _scheduled = {};
+
   Future<void> sync(Habit habit) async {
     try {
       final warnings = StreakWarningPlanner.plan(habit, _readSettings(), _clock(), quiet: _quietHours());
+      final key = [
+        _scheduler.detailsKey,
+        for (final w in warnings) '${w.kind.name}|${w.at.toIso8601String()}|${w.title}|${w.body}|${w.notify.sound?.name}|${w.notify.timeSensitive}',
+      ].join('\n');
+      if (_scheduled[habit.id] == key) return;
+      _scheduled.remove(habit.id);
       await _scheduler.cancel(habit.id);
       for (final warning in warnings) {
         await _scheduler.schedule(habit.id, warning);
       }
+      _scheduled[habit.id] = key;
     } catch (e) {
       debugPrint('StreakWarningService: failed to sync ${habit.name}: $e');
     }
   }
 
-  Future<void> syncAll(Iterable<Habit> habits) async {
+  /// [replace]: cancel and schedule every habit's warnings afresh (on a
+  /// full reload), not only the ones that changed.
+  Future<void> syncAll(Iterable<Habit> habits, {bool replace = false}) async {
+    if (replace) _scheduled.clear();
     for (final habit in habits) {
       await sync(habit);
     }
   }
 
   Future<void> cancel(String habitId) async {
+    _scheduled.remove(habitId);
     try {
       await _scheduler.cancel(habitId);
     } catch (e) {

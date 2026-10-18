@@ -14,6 +14,13 @@ abstract class ReminderScheduler {
   Future<void> cancelAll(Iterable<String> habitIds);
 
   Future<void> schedule(PlannedReminder reminder);
+
+  /// Cancels one reminder scheduled earlier.
+  Future<void> cancel(PlannedReminder reminder);
+
+  /// What the scheduler adds to each reminder (the default sound), so a
+  /// change to it reschedules them.
+  String get detailsKey;
 }
 
 class LocalNotificationReminderScheduler implements ReminderScheduler {
@@ -25,6 +32,12 @@ class LocalNotificationReminderScheduler implements ReminderScheduler {
 
   @override
   Future<void> cancelAll(Iterable<String> habitIds) => NotificationService.cancelPendingReminders();
+
+  @override
+  Future<void> cancel(PlannedReminder reminder) => NotificationService.cancel(reminderId(reminder));
+
+  @override
+  String get detailsKey => _defaults().key;
 
   @override
   Future<void> schedule(PlannedReminder reminder) {
@@ -79,6 +92,14 @@ class ReminderService {
   bool _running = false;
   List<Habit>? _pending;
 
+  /// What the last sync left scheduled (null before the first), by what
+  /// makes each one what it is, and the scheduler's defaults then.
+  Map<String, PlannedReminder>? _scheduled;
+  String? _scheduledDetails;
+
+  static String _key(PlannedReminder r) =>
+      '${r.habitId}|${r.at.toIso8601String()}|${r.title}|${r.body}|${r.notify.sound?.name}|${r.notify.timeSensitive}';
+
   ReminderService({
     required ReminderScheduler scheduler,
     DateTime Function()? clock,
@@ -99,7 +120,10 @@ class ReminderService {
   int roomFor(List<Habit> habits) =>
       math.max(0, math.min(budget, iosPendingLimit - spare - _reservedFor(habits)));
 
-  Future<void> syncAll(Iterable<Habit> habits) async {
+  /// [replace]: cancel everything and schedule afresh (on a full reload),
+  /// rather than only what changed since the last sync.
+  Future<void> syncAll(Iterable<Habit> habits, {bool replace = false}) async {
+    if (replace) _scheduled = null;
     _pending = habits.toList();
     if (_running) return;
     _running = true;
@@ -120,11 +144,30 @@ class ReminderService {
       final planned = [for (final habit in habits) ...ReminderPlanner.plan(habit, now: now, quiet: _quietHours())]
         ..sort((a, b) => a.at.compareTo(b.at));
 
-      await _scheduler.cancelAll(habits.map((h) => h.id));
-      for (final reminder in planned.take(roomFor(habits))) {
-        await _scheduler.schedule(reminder);
+      final chosen = planned.take(roomFor(habits)).toList();
+      final details = _scheduler.detailsKey;
+      final scheduled = _scheduled;
+      if (scheduled == null || details != _scheduledDetails) {
+        // The first time (or new defaults): replace whatever is there
+        await _scheduler.cancelAll(habits.map((h) => h.id));
+        for (final reminder in chosen) {
+          await _scheduler.schedule(reminder);
+        }
+      } else {
+        // Since then, only what changed: a tap or a new day moves a few
+        final wanted = {for (final r in chosen) _key(r): r};
+        for (final entry in scheduled.entries) {
+          if (!wanted.containsKey(entry.key)) await _scheduler.cancel(entry.value);
+        }
+        for (final entry in wanted.entries) {
+          if (!scheduled.containsKey(entry.key)) await _scheduler.schedule(entry.value);
+        }
       }
+      _scheduled = {for (final r in chosen) _key(r): r};
+      _scheduledDetails = details;
     } catch (e) {
+      // Not sure what's there now: replace it all next time
+      _scheduled = null;
       logWarning('ReminderService: failed to sync reminders: $e');
     }
   }

@@ -122,8 +122,9 @@ class HabitProvider extends ChangeNotifier {
       }
       
       _setState(HabitProviderState.loaded);
-      await _streakWarnings?.syncAll(_habits);
-      await _reminders?.syncAll(_habits);
+      // A full reload schedules everything afresh
+      await _streakWarnings?.syncAll(_habits, replace: true);
+      await _reminders?.syncAll(_habits, replace: true);
       // Not awaited: Health can be slow, and the list is already showing
       syncHealth();
     } catch (e) {

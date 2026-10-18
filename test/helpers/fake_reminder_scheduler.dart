@@ -17,5 +17,13 @@ class FakeReminderScheduler implements ReminderScheduler {
   @override
   Future<void> schedule(PlannedReminder reminder) async => scheduled.add(reminder);
 
+  @override
+  Future<void> cancel(PlannedReminder reminder) async =>
+      scheduled.removeWhere((r) => r.habitId == reminder.habitId && r.at == reminder.at);
+
+  /// Stands for the default sound: change it to make the service reschedule.
+  @override
+  String detailsKey = 'defaults';
+
   List<PlannedReminder> forHabit(String id) => scheduled.where((r) => r.habitId == id).toList();
 }
