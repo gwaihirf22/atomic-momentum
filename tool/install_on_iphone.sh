@@ -29,7 +29,14 @@ entitlements="Runner/Runner-PersonalTeam.entitlements"
 
 echo "Building for $device (entitlements: $entitlements)"
 defines=()
-[ "${DEV_TOOLS:-0}" = "1" ] && defines=(--dart-define=DEV_TOOLS=true) && echo "With Settings → Developer"
+if [ "${DEV_TOOLS:-0}" = "1" ]; then
+  defines=(--dart-define=DEV_TOOLS=true)
+  echo "With Settings → Developer"
+  # Flutter keeps the switch in ios/Flutter/Generated.xcconfig; put that back
+  # to a plain build afterwards (even on failure), so nothing built from Xcode
+  # later carries it. Archiving with it fails anyway (tool/check_no_dev_tools.sh)
+  trap './flutter/bin/flutter build ios --release --config-only >/dev/null 2>&1 && echo "Build settings reset (no DEV_TOOLS)"' EXIT
+fi
 ./flutter/bin/flutter build ios --release --config-only "${defines[@]+"${defines[@]}"}"
 derived="build/ios/device-derived"
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \

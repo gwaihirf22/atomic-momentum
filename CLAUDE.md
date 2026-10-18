@@ -76,6 +76,9 @@ tool/device_year_check.sh "Year iPhone 17 Pro"
 DEV_TOOLS=1 tool/install_on_iphone.sh
 # If the phone shows "connecting" forever: plug straight into the Mac (not a dock), re-pair
 # (xcrun devicectl manage unpair/pair --device <id>), and restart the Mac
+# Store builds never have Settings → Developer: build them with plain `flutter build ipa` /
+# `flutter build appbundle` (no DEV_TOOLS). Xcode's "Check no dev tools" phase
+# (tool/check_no_dev_tools.sh) fails any archive that carries DEV_TOOLS=true
 
 # Generate test coverage
 ./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
