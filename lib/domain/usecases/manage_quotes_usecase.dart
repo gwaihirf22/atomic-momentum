@@ -15,7 +15,15 @@ class ManageQuotesUseCase {
 
   static int _idCounter = 0;
 
-  Future<List<Quote>> addMine({required String text, required String author, String source = ''}) async {
+  /// Adds one of their own, filed under [family] (My quotes unless they
+  /// choose another source) with [themes].
+  Future<List<Quote>> addMine({
+    required String text,
+    required String author,
+    String source = '',
+    QuoteFamily family = QuoteFamily.mine,
+    Set<QuoteTheme> themes = const {},
+  }) async {
     final mine = await _repository.getMine();
     if (mine.length >= maxMine) throw const ValidationException('You can keep up to $maxMine quotes of your own');
     final quote = _checked(Quote(
@@ -23,7 +31,8 @@ class ManageQuotesUseCase {
       text: text,
       author: author,
       source: source,
-      family: QuoteFamily.mine,
+      family: family,
+      themes: themes,
     ));
     final updated = [...mine, quote];
     await _repository.saveMine(updated);

@@ -18,7 +18,16 @@ Check the wording of every built-in quote against the named public-domain editio
 ## How it works
 - `Quote` (id, text, author, source, family, themes). Built-in quotes are `const` data in `core/copy/quotes.dart`, and their ids are stable because habits and the saved list keep quotes by id.
 - **Quote of the day** (`QuoteOfTheDay`): quotes take turns in an order set by a hash of their ids, indexed by the number of days since 2024-01-01 (counted from the calendar date). Every device shows the same quote all day, a new one at local midnight, and none repeats until all have shown. Adding a quote doesn't reorder the rest. Turning sources off just narrows the pool.
-- **Search** (`QuoteSearch`): every word typed must appear in the text, author or source. Case, accents and apostrophe styles are ignored. Search narrows further by theme, and by the Saved or Mine list.
+- **Browse and filters** (`QuoteFacets`, `QuoteFilter`): with nothing typed or chosen, Quotes shows what the library holds:
+  - the sources turned on, with counts, and a link to the ones turned off
+  - themes
+  - authors, A–Z (Scripture's verse references aren't listed as authors)
+  - Saved and My quotes
+
+  A tap filters to any of these. The Filter sheet combines a list (All, Saved or Mine), sources, themes and one author; each choice shows how many quotes it would give with the other choices kept. Active filters show as chips with an ×. Saved and Mine ignore the source switches.
+- **Search** (`QuoteSearch`): every word typed must appear in the text, author or source, within the filters. Case, accents and apostrophe styles are ignored.
+- **Your own quotes** are filed under the source you choose (My quotes by default) and themes. The author field suggests names already in the library, so quotes by the same person group together. A quote follows its source's switch, and it's always in My quotes.
+- **(i) explainer** (`InfoTopic.inspire`): on the Inspire tab and in Quotes.
 - **Storage**: the person's own quotes go under `quotes_mine_v1` (unreadable data is kept under `quotes_mine_v1_corrupt`), saved ids under `quotes_saved_v1`, and a habit's quotes in the habit JSON as `quotes`. Settings: `showInspireTab`, `quoteFamiliesOff`.
 - **Navigation**: `AppTab` names the tabs. Per-tab state is keyed by tab, so hiding Inspire never moves another tab's stack.
 

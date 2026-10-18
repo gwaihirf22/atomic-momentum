@@ -30,6 +30,8 @@ import 'package:atomic_momentum/presentation/inspire/quote_widgets.dart';
 import 'package:atomic_momentum/domain/entities/quote.dart';
 import 'package:atomic_momentum/screens/inspire_screen.dart';
 import 'package:atomic_momentum/screens/quote_search_screen.dart';
+import 'package:atomic_momentum/presentation/inspire/quote_filter_sheet.dart';
+import 'package:atomic_momentum/domain/services/quote_facets.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/category_icons.dart';
 import 'package:atomic_momentum/presentation/widgets/color_picker.dart';
@@ -127,7 +129,7 @@ void main() {
   tearDown(resetDependencies);
 
   Future<void> pump(WidgetTester tester, Widget screen,
-      {required double width, required double scale, AppPalette palette = AppPalette.light}) async {
+      {required double width, required double scale, AppPalette palette = AppPalette.sepia}) async {
     // Tall, so whole screens build; the width is what's under test
     tester.view.physicalSize = Size(width, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -177,12 +179,17 @@ void main() {
     'Insights': () => const InsightsScreen(),
     'Inspire': () => const InspireScreen(),
     'Quote search': () => const QuoteSearchScreen(),
-    'My quotes': () => const QuoteSearchScreen(start: QuoteListStart.mine),
+    'My quotes': () => const QuoteSearchScreen(start: QuoteList.mine),
     'Choose a quote (for a habit)': () =>
         QuoteSearchScreen(pickForHabitId: habits.habits.firstWhere((h) => h.name == 'Read').id),
     'Quote sheet, the longest quote': () => Scaffold(body: QuoteSheet(quoteId: longQuote.id)),
     'Quote sheet, a built-in quote': () => const Scaffold(body: QuoteSheet(quoteId: 'burnett-it-is-done')),
     'Add a quote sheet': () => const Scaffold(body: MyQuoteSheet()),
+    'Edit a quote sheet, filed under a source': () => Scaffold(body: MyQuoteSheet(editing: longQuote)),
+    'Quote filter sheet': () => const Scaffold(
+          body: QuoteFilterSheet(initial: QuoteFilter(author: 'Seneca', themes: {QuoteTheme.hardDays})),
+        ),
+    'Inspire explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.inspire)),
     'Quote sources sheet': () => const Scaffold(body: QuoteSourcesSheet()),
     'New habit': () => const AddHabitScreen(),
     'Edit habit (custom reminder days)': () =>
@@ -379,8 +386,29 @@ void main() {
     }
   }
 
+  for (final width in [375.0, 390.0]) {
+    for (final scale in [1.0, 1.35]) {
+      testWidgets('Quotes, filtered by a source, an author and a theme, at ${width.toInt()}pt, text ${(scale * 100).round()}%',
+          (tester) async {
+        await pump(tester, const QuoteSearchScreen(), width: width, scale: scale);
+        await tester.tap(find.byKey(const Key('browseAuthor_Frances Hodgson Burnett')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('quoteFilterButton')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('filterFamily_stories')));
+        await tester.tap(find.byKey(const Key('filterTheme_momentum')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('quoteFilterApply')));
+        await tester.pumpAndSettle();
+        expect(find.text('Filter · 3'), findsOneWidget);
+        expectNothingCutOff(tester, 'Quotes, filtered');
+      });
+    }
+  }
+
   // Colors don't change sizes, but each theme builds its own widgets' colors
-  for (final palette in [AppPalette.sepia, AppPalette.dark]) {
+  // The main passes are in Sepia, the look by day
+  for (final palette in [AppPalette.light, AppPalette.dark]) {
     for (final name in [
       'Habits',
       'Calendar',
@@ -393,6 +421,9 @@ void main() {
       'Inspire',
       'Quote search',
       'Quote sheet, a built-in quote',
+      'Quote filter sheet',
+      'Add a quote sheet',
+      'Inspire explainer',
       'Momentum explainer',
       'Achievement celebration, a long name',
       'Every day (full screen)',

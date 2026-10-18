@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:atomic_momentum/core/copy/quotes.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -17,6 +18,8 @@ import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/inspire_screen.dart';
 import 'package:atomic_momentum/screens/quote_search_screen.dart';
+import 'package:atomic_momentum/presentation/inspire/quote_filter_sheet.dart';
+import 'package:atomic_momentum/domain/services/quote_facets.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 
 /// The Inspire tab, quote search, the person's own quotes, and quotes kept
@@ -155,8 +158,8 @@ void main() {
       await tester.tap(find.byKey(const Key('inspireOption_saved')));
       await tester.pumpAndSettle();
       expect(find.byType(QuoteSearchScreen), findsOneWidget);
-      expect(find.text('Saved quotes'), findsWidgets);
-      expect(find.byKey(const Key('quoteSearchEmpty')), findsOneWidget);
+      expect(find.byKey(const Key('activeFilter_list')), findsOneWidget);
+      expect(find.text('Tap the heart on a quote to keep it here.'), findsOneWidget);
     });
   });
 
@@ -171,12 +174,16 @@ void main() {
 
       await tester.enterText(find.byKey(const Key('quoteSearchField')), 'zebra');
       await tester.pumpAndSettle();
-      expect(find.text('Nothing matches. Try other words.'), findsOneWidget);
+      expect(find.text('Nothing matches. Try other words, or fewer filters.'), findsOneWidget);
 
+      await tester.enterText(find.byKey(const Key('quoteSearchField')), '');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('browseTheme_comeback')));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byKey(const Key('quoteSearchField')), 'seven');
-      await tester.tap(find.byKey(const Key('quoteTheme_comeback')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('quote_kjv-proverbs-24-16')), findsOneWidget);
+      expect(find.text('1 quote'), findsOneWidget);
     });
 
     testWidgets('a quote opens in a sheet to save, keep or copy', (tester) async {
@@ -193,7 +200,7 @@ void main() {
     });
 
     testWidgets('their own quotes are added, edited and deleted (and come off habits)', (tester) async {
-      await pump(tester, const QuoteSearchScreen(start: QuoteListStart.mine));
+      await pump(tester, const QuoteSearchScreen(start: QuoteList.mine));
       expect(find.text('Quotes you add show here. Tap + to add one.'), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('quoteSearchAdd')));
@@ -261,6 +268,126 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('detailQuote_kjv-proverbs-24-16')));
       await tester.pumpAndSettle();
       expect(find.text('For a just man falleth seven times, and riseth up again.'), findsOneWidget);
+    });
+  });
+
+  group('browsing and filtering the library', () {
+    Finder count(String text) =>
+        find.byWidgetPredicate((w) => w is Text && w.key == const Key('quoteResultCount') && w.data == text);
+
+    testWidgets('shows the sources turned on, with counts, and links to the ones off', (tester) async {
+      await settings.setQuoteFamily(QuoteFamily.scripture, false);
+      await pump(tester, const QuoteSearchScreen());
+      for (final family in [QuoteFamily.stoic, QuoteFamily.christian, QuoteFamily.stories, QuoteFamily.mine]) {
+        expect(find.byKey(Key('browseFamily_${family.name}')), findsOneWidget, reason: family.name);
+      }
+      expect(find.byKey(const Key('browseFamily_scripture')), findsNothing);
+      final stoics = quotes.all.where((q) => q.family == QuoteFamily.stoic).length;
+      expect(find.descendant(of: find.byKey(const Key('browseFamily_stoic')), matching: find.text('$stoics')),
+          findsOneWidget);
+      expect(find.text('1 source off · Quote sources'), findsOneWidget);
+      expect(find.byKey(const Key('browseAuthor_Seneca')), findsOneWidget);
+      expect(find.byKey(const Key('browseSaved')), findsOneWidget);
+    });
+
+    testWidgets('a source, theme or author narrows the list; its chip takes it off', (tester) async {
+      await pump(tester, const QuoteSearchScreen());
+      await tester.tap(find.byKey(const Key('browseFamily_stoic')));
+      await tester.pumpAndSettle();
+      final stoics = quotes.all.where((q) => q.family == QuoteFamily.stoic).length;
+      expect(count('$stoics quotes'), findsOneWidget);
+      expect(find.text('Filter · 1'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('activeFilter_family_stoic')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('browseFamily_stoic')), findsOneWidget, reason: 'back to browsing');
+
+      await tester.scrollUntilVisible(find.byKey(const Key('browseAuthor_Seneca')).hitTestable(), 200,
+          scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.byKey(const Key('browseAuthor_Seneca')));
+      await tester.pumpAndSettle();
+      expect(count('8 quotes'), findsOneWidget);
+      expect(find.byKey(const Key('activeFilter_author')).hitTestable(), findsOneWidget, reason: 'back at the top');
+    });
+
+    testWidgets('the filter sheet combines an author and a theme, with counts', (tester) async {
+      await pump(tester, const QuoteSearchScreen());
+      await tester.tap(find.byKey(const Key('quoteFilterButton')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const Key('filterAuthor_Seneca')).hitTestable(), 200,
+          scrollable: find.descendant(of: find.byType(QuoteFilterSheet), matching: find.byType(Scrollable)).first);
+      await tester.tap(find.byKey(const Key('filterAuthor_Seneca')));
+      await tester.pumpAndSettle();
+      expect(find.text('Show 8 quotes'), findsOneWidget);
+      await tester.scrollUntilVisible(find.byKey(const Key('filterTheme_hardDays')).hitTestable(), -200,
+          scrollable: find.descendant(of: find.byType(QuoteFilterSheet), matching: find.byType(Scrollable)).first);
+      await tester.tap(find.byKey(const Key('filterTheme_hardDays')));
+      await tester.pumpAndSettle();
+      expect(find.text('Show 2 quotes'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('quoteFilterApply')));
+      await tester.pumpAndSettle();
+
+      expect(count('2 quotes'), findsOneWidget);
+      expect(find.byKey(const Key('quote_seneca-imagination')), findsOneWidget);
+      expect(find.byKey(const Key('quote_seneca-we-do-not-dare')), findsOneWidget);
+      expect(find.text('Filter · 2'), findsOneWidget);
+    });
+
+    testWidgets('their own quote, filed under a source and a theme, is found by both', (tester) async {
+      await pump(tester, const QuoteSearchScreen());
+      await tester.tap(find.byKey(const Key('quoteSearchAdd')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('myQuoteText')), 'Courage, dear heart.');
+      await tester.enterText(find.byKey(const Key('myQuoteAuthor')), 'Aslan');
+      await tester.ensureVisible(find.byKey(const Key('myQuoteFamily_stories')));
+      await tester.tap(find.byKey(const Key('myQuoteFamily_stories')));
+      await tester.ensureVisible(find.byKey(const Key('myQuoteTheme_hardDays')));
+      await tester.tap(find.byKey(const Key('myQuoteTheme_hardDays')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('myQuoteSave')));
+      await tester.tap(find.byKey(const Key('myQuoteSave')));
+      await tester.pumpAndSettle();
+
+      final mine = quotes.mine.single;
+      expect(mine.family, QuoteFamily.stories);
+      expect(mine.themes, {QuoteTheme.hardDays});
+      expect(mine.isMine, isTrue);
+
+      await tester.tap(find.byKey(const Key('activeFilter_list')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('browseFamily_stories')));
+      await tester.pumpAndSettle();
+      final stories = Quotes.library.where((q) => q.family == QuoteFamily.stories).length;
+      expect(count('${stories + 1} quotes'), findsOneWidget);
+      await tester.scrollUntilVisible(find.byKey(Key('quote_${mine.id}')), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.byKey(Key('quote_${mine.id}')), findsOneWidget);
+      expect(find.byKey(const Key('browseFamily_mine')), findsNothing);
+    });
+
+    testWidgets('typing an author suggests names already in the library', (tester) async {
+      await pump(tester, const QuoteSearchScreen());
+      await tester.tap(find.byKey(const Key('quoteSearchAdd')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const Key('myQuoteAuthor')), 'sene');
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('authorSuggestion_Seneca')));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Seneca'), findsOneWidget);
+    });
+
+    testWidgets('the (i) explains Inspire, from the tab and from the library', (tester) async {
+      await pump(tester, const InspireScreen());
+      await tester.tap(find.byKey(const Key('info_inspire')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('infoSheet_inspire')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('infoGotIt')));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('inspireSearch')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('info_inspire')).hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('infoSheet_inspire')), findsOneWidget);
     });
   });
 

@@ -4,7 +4,8 @@ import 'package:flutter/cupertino.dart';
 /// to use it.
 enum InfoTopic {
   twoMinute('About two-minute days'),
-  momentum('About momentum');
+  momentum('About momentum'),
+  inspire('About Inspire');
 
   /// What the (i) button reads as to VoiceOver.
   final String buttonLabel;
@@ -37,6 +38,7 @@ class Explainer {
   static Explainer of(InfoTopic topic) => switch (topic) {
         InfoTopic.twoMinute => twoMinute,
         InfoTopic.momentum => momentum,
+        InfoTopic.inspire => inspire,
       };
 
   static const twoMinute = Explainer(
@@ -89,5 +91,40 @@ class Explainer {
       ),
     ],
     source: 'Habit formation time: Lally et al., 2009.',
+  );
+
+  static const inspire = Explainer(
+    title: 'Inspire',
+    intro: 'A few words to carry into your day, from thinkers and stories that have helped people keep going '
+        'for centuries.',
+    points: [
+      ExplainerPoint(
+        'The same quote all day, a new one at midnight. Every quote takes a turn before any comes back.',
+        lead: 'Quote of the day',
+        icon: CupertinoIcons.sun_max,
+      ),
+      ExplainerPoint(
+        'Stoics, Christian writers, Scripture and classic stories. Turn any off in Settings or under ⋯.',
+        lead: 'Sources',
+        icon: CupertinoIcons.book,
+      ),
+      ExplainerPoint(
+        'Search browses by source, theme or author, or finds the words you type. Filter to narrow it down.',
+        lead: 'Find',
+        icon: CupertinoIcons.search,
+      ),
+      ExplainerPoint(
+        'Add quotes you love, even ones still under copyright: they stay on this phone. File each under a '
+        'source and themes so filters find it.',
+        lead: 'Your own',
+        icon: CupertinoIcons.person,
+      ),
+      ExplainerPoint(
+        'Keep a quote with a habit, and it shows on the habit\'s page for the days it\'s hard.',
+        lead: 'With a habit',
+        icon: CupertinoIcons.plus_circle,
+      ),
+    ],
+    source: 'Built-in quotes are public domain: old translations, the King James Version and classic books.',
   );
 }

@@ -10,10 +10,14 @@ void main() {
     return ThemeProvider.fromPrefs(await SharedPreferences.getInstance());
   }
 
-  test('follows the device by default, with Light by day', () async {
+  test('follows the device by default, with Sepia by day', () async {
     final theme = await load({});
     expect(theme.appearance, Appearance.system);
-    expect(theme.dayTheme, AppTheme.light);
+    expect(theme.dayTheme, AppTheme.sepia);
+  });
+
+  test('someone who picked Light by day keeps it', () async {
+    expect((await load({'dayTheme': 'light'})).dayTheme, AppTheme.light);
   });
 
   test('keeps the choice made with the old dark mode switch', () async {
@@ -32,7 +36,7 @@ void main() {
     final theme = await load({'themeMode': 'neon', 'dayTheme': 'dark'});
     expect(theme.appearance, Appearance.system);
     // Dark isn't a day theme
-    expect(theme.dayTheme, AppTheme.light);
+    expect(theme.dayTheme, AppTheme.sepia);
   });
 
   test('saves a new choice, which wins over the old switch', () async {
@@ -67,12 +71,12 @@ void main() {
 
     testWidgets('System: the day theme in light mode, Dark at night', (tester) async {
       final provider = ThemeProvider(Appearance.system);
-      expect(await themeFor(tester, provider, Brightness.light), AppTheme.light);
+      expect(await themeFor(tester, provider, Brightness.light), AppTheme.sepia);
       expect(await themeFor(tester, provider, Brightness.dark), AppTheme.dark);
 
-      final sepiaByDay = ThemeProvider(Appearance.system, null, AppTheme.sepia);
-      expect(await themeFor(tester, sepiaByDay, Brightness.light), AppTheme.sepia);
-      expect(await themeFor(tester, sepiaByDay, Brightness.dark), AppTheme.dark);
+      final lightByDay = ThemeProvider(Appearance.system, null, AppTheme.light);
+      expect(await themeFor(tester, lightByDay, Brightness.light), AppTheme.light);
+      expect(await themeFor(tester, lightByDay, Brightness.dark), AppTheme.dark);
     });
 
     testWidgets('a chosen theme ignores the device', (tester) async {

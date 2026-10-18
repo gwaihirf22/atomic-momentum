@@ -7,12 +7,15 @@ import 'package:provider/provider.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/quote.dart';
+import '../domain/services/quote_facets.dart';
+import '../presentation/help/explainers.dart';
 import '../presentation/inspire/quote_widgets.dart';
 import '../presentation/providers/quote_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
+import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import 'quote_search_screen.dart';
 
@@ -88,9 +91,9 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
       case _Option.add:
         await showMyQuoteSheet(context);
       case _Option.mine:
-        _openSearch(const QuoteSearchScreen(start: QuoteListStart.mine));
+        _openSearch(const QuoteSearchScreen(start: QuoteList.mine));
       case _Option.saved:
-        _openSearch(const QuoteSearchScreen(start: QuoteListStart.saved));
+        _openSearch(const QuoteSearchScreen(start: QuoteList.saved));
       case _Option.sources:
         await showQuoteSourcesSheet(context);
     }
@@ -139,6 +142,7 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
                     label: 'Search quotes',
                     onTap: () => _openSearch(const QuoteSearchScreen()),
                   ),
+                  const InfoButton(topic: InfoTopic.inspire),
                   _TopButton(
                     key: const Key('inspireOptions'),
                     icon: CupertinoIcons.ellipsis_circle,

@@ -34,7 +34,8 @@ enum QuoteTheme {
 }
 
 /// A quote: one of the app's own (public domain, see core/copy/quotes.dart)
-/// or one the person added ([QuoteFamily.mine]).
+/// or one the person added ([isMine]), which they file under any source
+/// (My quotes unless they choose another) so filters find it.
 class Quote extends Equatable {
   /// Stable: habits and the saved list keep quotes by id.
   final String id;
@@ -56,7 +57,8 @@ class Quote extends Equatable {
     this.themes = const {},
   });
 
-  bool get isMine => family == QuoteFamily.mine;
+  /// One the person added (whatever source they filed it under).
+  bool get isMine => id.startsWith(mineIdPrefix);
 
   static const maxTextLength = 400;
   static const maxAuthorLength = 80;
@@ -65,13 +67,14 @@ class Quote extends Equatable {
   /// Prefix of the ids of the person's own quotes.
   static const mineIdPrefix = 'mine-';
 
-  Quote copyWith({String? text, String? author, String? source}) => Quote(
+  Quote copyWith({String? text, String? author, String? source, QuoteFamily? family, Set<QuoteTheme>? themes}) =>
+      Quote(
         id: id,
         text: text ?? this.text,
         author: author ?? this.author,
         source: source ?? this.source,
-        family: family,
-        themes: themes,
+        family: family ?? this.family,
+        themes: themes ?? this.themes,
       );
 
   Map<String, dynamic> toJson() => {

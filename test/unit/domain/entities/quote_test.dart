@@ -27,11 +27,20 @@ void main() {
     expect(() => Quote.fromJson({'id': 'x', 'text': ''}), throwsFormatException);
   });
 
-  test('copyWith changes only the words', () {
+  test('copyWith changes what is given, never the id', () {
     final changed = quote.copyWith(text: 'Life before death.');
     expect(changed.text, 'Life before death.');
     expect(changed.id, quote.id);
     expect(changed.family, quote.family);
     expect(changed.themes, quote.themes);
+    final refiled = quote.copyWith(family: QuoteFamily.stories, themes: {QuoteTheme.purpose});
+    expect(refiled.family, QuoteFamily.stories);
+    expect(refiled.themes, {QuoteTheme.purpose});
+  });
+
+  test('a quote is theirs by its id, whatever source it is filed under', () {
+    expect(quote.copyWith(family: QuoteFamily.stoic).isMine, isTrue);
+    const builtIn = Quote(id: 'spurgeon-snail', text: 'By perseverance', author: 'Spurgeon', family: QuoteFamily.christian);
+    expect(builtIn.isMine, isFalse);
   });
 }

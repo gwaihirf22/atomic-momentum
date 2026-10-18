@@ -103,8 +103,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final theme = Theme.of(tester.element(find.text('Habits').first));
-      expect(theme.colorScheme.primary, AppPalette.light.accent);
-      expect(theme.scaffoldBackgroundColor, AppPalette.light.background);
+      // System by default, Sepia by day
+      expect(theme.colorScheme.primary, AppPalette.sepia.accent);
+      expect(theme.scaffoldBackgroundColor, AppPalette.sepia.background);
     });
   });
 
@@ -214,17 +215,17 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
-      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Light')),
-          findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Sepia')),
+          findsOneWidget, reason: 'Sepia by default');
       await tester.tap(find.byKey(const Key('dayThemeSetting')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('dayTheme_dark')), findsNothing);
-      await tester.tap(find.byKey(const Key('dayTheme_sepia')));
+      await tester.tap(find.byKey(const Key('dayTheme_light')));
       await tester.pumpAndSettle();
 
-      expect(get<ThemeProvider>().dayTheme, AppTheme.sepia);
-      expect((await SharedPreferences.getInstance()).getString('dayTheme'), 'sepia');
-      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Sepia')),
+      expect(get<ThemeProvider>().dayTheme, AppTheme.light);
+      expect((await SharedPreferences.getInstance()).getString('dayTheme'), 'light');
+      expect(find.descendant(of: find.byKey(const Key('dayThemeSetting')), matching: find.text('Light')),
           findsOneWidget);
     });
   });

@@ -25,10 +25,13 @@ class ThemeProvider extends ChangeNotifier {
   Appearance _appearance;
   AppTheme _dayTheme;
 
-  ThemeProvider(this._appearance, [this._prefs, this._dayTheme = AppTheme.light]);
+  /// Under System, days are Sepia until the person picks Light.
+  static const defaultDayTheme = AppTheme.sepia;
+
+  ThemeProvider(this._appearance, [this._prefs, this._dayTheme = defaultDayTheme]);
 
   /// Reads the saved choice. An old dark/light switch keeps its value;
-  /// people who never chose follow the device.
+  /// people who never chose follow the device, Sepia by day.
   factory ThemeProvider.fromPrefs(SharedPreferences prefs) {
     final saved = prefs.getString(_modeKey);
     final appearance = Appearance.values.where((a) => a.name == saved).firstOrNull ??
@@ -38,7 +41,7 @@ class ThemeProvider extends ChangeNotifier {
           null => Appearance.system,
         };
     final savedDay = prefs.getString(_dayThemeKey);
-    final dayTheme = dayThemes.where((t) => t.name == savedDay).firstOrNull ?? AppTheme.light;
+    final dayTheme = dayThemes.where((t) => t.name == savedDay).firstOrNull ?? defaultDayTheme;
     return ThemeProvider(appearance, prefs, dayTheme);
   }
 

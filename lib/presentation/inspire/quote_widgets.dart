@@ -380,6 +380,9 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
   late final _text = TextEditingController(text: widget.editing?.text ?? '');
   late final _author = TextEditingController(text: widget.editing?.author ?? '');
   late final _source = TextEditingController(text: widget.editing?.source ?? '');
+  late QuoteFamily _family = widget.editing?.family ?? QuoteFamily.mine;
+  late final Set<QuoteTheme> _themes = {...?widget.editing?.themes};
+  final _authorFocus = FocusNode();
   String? _error;
   bool _saving = false;
 
@@ -388,6 +391,7 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
     _text.dispose();
     _author.dispose();
     _source.dispose();
+    _authorFocus.dispose();
     super.dispose();
   }
 
@@ -398,8 +402,20 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
     final editing = widget.editing;
     Quote? saved;
     if (editing == null) {
-      saved = await quotes.addMine(text: _text.text, author: _author.text, source: _source.text);
-    } else if (await quotes.updateMine(editing.copyWith(text: _text.text, author: _author.text, source: _source.text))) {
+      saved = await quotes.addMine(
+        text: _text.text,
+        author: _author.text,
+        source: _source.text,
+        family: _family,
+        themes: _themes,
+      );
+    } else if (await quotes.updateMine(editing.copyWith(
+      text: _text.text,
+      author: _author.text,
+      source: _source.text,
+      family: _family,
+      themes: {..._themes},
+    ))) {
       saved = quotes.find(editing.id);
     }
     if (!mounted) return;
@@ -416,6 +432,12 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final authors = context.read<QuoteProvider>().authors;
+    Widget label(String text) => Padding(
+          padding: const EdgeInsets.only(top: 14, bottom: 8),
+          child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: palette.textSecondary)),
+        );
+
     return Padding(
       // Rides above the keyboard
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -457,12 +479,52 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
                 },
               ),
               const SizedBox(height: 8),
-              TextField(
-                key: const Key('myQuoteAuthor'),
-                controller: _author,
-                maxLength: Quote.maxAuthorLength,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Who said it (optional)'),
+              // Names already in the library are offered, so quotes by one
+              // author find each other
+              RawAutocomplete<String>(
+                textEditingController: _author,
+                focusNode: _authorFocus,
+                optionsBuilder: (value) {
+                  final typed = value.text.trim().toLowerCase();
+                  if (typed.isEmpty) return const [];
+                  return authors
+                      .where((a) => a.toLowerCase().contains(typed) && a.toLowerCase() != typed)
+                      .take(5);
+                },
+                fieldViewBuilder: (context, controller, focusNode, onSubmitted) => TextField(
+                  key: const Key('myQuoteAuthor'),
+                  controller: controller,
+                  focusNode: focusNode,
+                  maxLength: Quote.maxAuthorLength,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(labelText: 'Who said it (optional)'),
+                ),
+                optionsViewBuilder: (context, onSelected, options) => Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    color: palette.raised,
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(12),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220, maxWidth: 320),
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        children: [
+                          for (final name in options)
+                            InkWell(
+                              key: Key('authorSuggestion_$name'),
+                              onTap: () => onSelected(name),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                child: Text(name, style: TextStyle(fontSize: 15, color: palette.text)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               TextField(
@@ -472,10 +534,82 @@ class _MyQuoteSheetState extends State<MyQuoteSheet> {
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Where it\'s from (optional)', hintText: 'A book, a talk…'),
               ),
-              const SizedBox(height: 16),
+              label('FILE UNDER'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final family in QuoteFamily.values)
+                    QuoteChoiceChip(
+                      key: Key('myQuoteFamily_${family.name}'),
+                      label: family.label,
+                      selected: _family == family,
+                      onTap: () => setState(() => _family = family),
+                    ),
+                ],
+              ),
+              label('THEMES'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final theme in QuoteTheme.values)
+                    QuoteChoiceChip(
+                      key: Key('myQuoteTheme_${theme.name}'),
+                      label: theme.label,
+                      selected: _themes.contains(theme),
+                      onTap: () => setState(() => _themes.contains(theme) ? _themes.remove(theme) : _themes.add(theme)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
               OrbButton(key: const Key('myQuoteSave'), label: 'Save', busy: _saving, onPressed: _saving ? null : _save),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A rounded choice: filled when chosen. [count] shows after the label.
+class QuoteChoiceChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final int? count;
+  final VoidCallback? onTap;
+
+  const QuoteChoiceChip({super.key, required this.label, required this.selected, this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final foreground = selected ? palette.onAccent : palette.text;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: TextButton(
+        onPressed: onTap,
+        style: TextButton.styleFrom(
+          foregroundColor: foreground,
+          backgroundColor: selected ? palette.accent : palette.raised,
+          disabledForegroundColor: palette.textSecondary,
+          minimumSize: const Size(44, 36),
+          tapTargetSize: MaterialTapTargetSize.padded,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        child: Text.rich(
+          TextSpan(children: [
+            TextSpan(text: label),
+            if (count != null)
+              TextSpan(
+                text: '  $count',
+                style: TextStyle(fontWeight: FontWeight.w500, color: foreground.withValues(alpha: 0.7)),
+              ),
+          ]),
+          textAlign: TextAlign.center,
         ),
       ),
     );

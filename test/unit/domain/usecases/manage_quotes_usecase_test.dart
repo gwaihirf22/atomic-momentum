@@ -28,6 +28,24 @@ void main() {
     expect(await repository.getMine(), second);
   });
 
+  test('files their quote under the source and themes they choose', () async {
+    final quote = (await manage.addMine(
+      text: 'Courage, dear heart.',
+      author: 'Aslan',
+      family: QuoteFamily.stories,
+      themes: {QuoteTheme.hardDays},
+    ))
+        .single;
+    expect(quote.family, QuoteFamily.stories);
+    expect(quote.themes, {QuoteTheme.hardDays});
+    expect(quote.isMine, isTrue);
+
+    final refiled = await manage.updateMine(quote.copyWith(family: QuoteFamily.christian, themes: {}));
+    expect(refiled.single.family, QuoteFamily.christian);
+    expect(refiled.single.themes, isEmpty);
+    expect(await repository.getMine(), refiled, reason: 'stored, and read back as theirs');
+  });
+
   test('checks the words', () async {
     expect(manage.addMine(text: '   ', author: 'x'), throwsA(isA<ValidationException>()));
     expect(manage.addMine(text: 'x' * (Quote.maxTextLength + 1), author: ''), throwsA(isA<ValidationException>()));

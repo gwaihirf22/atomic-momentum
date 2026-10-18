@@ -4,6 +4,7 @@ import '../../core/copy/quotes.dart';
 import '../../core/exceptions/storage_exceptions.dart';
 import '../../domain/entities/quote.dart';
 import '../../domain/repositories/quote_repository.dart';
+import '../../domain/services/quote_facets.dart';
 import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/usecases/manage_quotes_usecase.dart';
 
@@ -34,6 +35,10 @@ class QuoteProvider extends ChangeNotifier {
   /// Every quote: the app's, then theirs.
   List<Quote> get all => [...Quotes.library, ..._mine];
 
+  /// Every author's name in the library (theirs too), A to Z, for
+  /// suggestions while they type one.
+  List<String> get authors => QuoteFacets.authors(all).map((a) => a.name).toList();
+
   /// Every quote from the [families] turned on.
   List<Quote> from(Set<QuoteFamily> families) => [for (final q in all) if (families.contains(q.family)) q];
 
@@ -58,8 +63,20 @@ class QuoteProvider extends ChangeNotifier {
   Future<bool> setSaved(String id, bool save) => _run(() async => _saved = await _manage.setSaved(id, save));
 
   /// Adds one of their own; returns the new quote, or null (see [error]).
-  Future<Quote?> addMine({required String text, required String author, String source = ''}) async {
-    final ok = await _run(() async => _mine = await _manage.addMine(text: text, author: author, source: source));
+  Future<Quote?> addMine({
+    required String text,
+    required String author,
+    String source = '',
+    QuoteFamily family = QuoteFamily.mine,
+    Set<QuoteTheme> themes = const {},
+  }) async {
+    final ok = await _run(() async => _mine = await _manage.addMine(
+          text: text,
+          author: author,
+          source: source,
+          family: family,
+          themes: themes,
+        ));
     return ok ? _mine.last : null;
   }
 

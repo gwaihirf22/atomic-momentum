@@ -309,7 +309,6 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
-        // Debug builds only: never shown in release / App Store builds
         SettingsSection(
           header: 'Inspire',
           footer: 'A quote for each day, from the sources you choose and quotes you add.',
@@ -334,6 +333,7 @@ class SettingsScreen extends StatelessWidget {
               ),
           ],
         ),
+        // Debug builds only: never shown in release / App Store builds
         if (kDebugMode)
           SettingsSection(
             header: 'Developer',
