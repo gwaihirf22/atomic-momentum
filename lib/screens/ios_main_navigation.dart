@@ -1,12 +1,16 @@
+import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/feedback/haptics.dart';
 import '../core/services/notification_service.dart';
 import '../core/theme/app_palette.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
+import '../presentation/widgets/tab_swipe.dart';
 import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
@@ -15,6 +19,8 @@ import 'settings_screen.dart';
 
 /// The app's main screen: four tabs, each with its own navigation stack,
 /// under the floating tab bar, whose Habits tab turns into "+" for adding.
+/// A sideways swipe on a tab's first page slides to the next or previous
+/// tab, and sliding a finger along the bar picks the tab under it.
 class IOSMainNavigation extends StatefulWidget {
   const IOSMainNavigation({Key? key}) : super(key: key);
 
@@ -34,7 +40,7 @@ class IOSMainNavigation extends StatefulWidget {
   State<IOSMainNavigation> createState() => _IOSMainNavigationState();
 }
 
-class _IOSMainNavigationState extends State<IOSMainNavigation> {
+class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTickerProviderStateMixin {
   static const _tabs = [
     FloatingTab(
       label: 'Habits',
@@ -59,6 +65,12 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
   DateTime? _selectedAt;
   static const _addGuard = Duration(milliseconds: 400);
 
+  /// How far the current tab is slid sideways by a swipe, in points
+  /// (negative: towards the next tab), with the tab it reveals.
+  late final _slide = AnimationController.unbounded(vsync: this);
+  int? _revealed;
+  double _width = 0;
+
   /// Tabs are built the first time they're shown, then kept.
   final _opened = <int>{0};
 
@@ -78,6 +90,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
   @override
   void dispose() {
     NotificationService.focusRequests.removeListener(_showHabits);
+    _slide.dispose();
     super.dispose();
   }
 
@@ -96,10 +109,64 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
       _navigators[index].currentState?.popUntil((route) => route.isFirst);
       return;
     }
+    _switchTo(index);
+  }
+
+  /// Shows [index] (from a tap, a swipe or sliding along the bar).
+  void _switchTo(int index) {
+    _endSlide();
+    if (index == _index) return;
     setState(() {
       _index = index;
       _opened.add(index);
       _selectedAt = clock.now();
+    });
+  }
+
+  void _slideAlongBar(int index) {
+    if (index == _index) return;
+    Haptics.selection();
+    _switchTo(index);
+  }
+
+  void _endSlide() {
+    _slide.stop();
+    _slide.value = 0;
+    _revealed = null;
+  }
+
+  void _swipeStart(DragStartDetails _) => _slide.stop();
+
+  void _swipeUpdate(DragUpdateDetails details) {
+    final offset = _slide.value + details.delta.dx;
+    final next = offset < 0 ? _index + 1 : _index - 1;
+    if (next < 0 || next >= _tabs.length) {
+      // Past the first or last tab: it gives a little, then stops
+      _revealed = null;
+      _slide.value = (offset.sign * math.min(offset.abs(), 60.0));
+      return;
+    }
+    if (next != _revealed) setState(() => _opened.add(_revealed = next));
+    _slide.value = offset.clamp(-_width, _width);
+  }
+
+  void _swipeEnd(DragEndDetails details) {
+    final offset = _slide.value;
+    final velocity = details.primaryVelocity ?? 0;
+    final next = _revealed;
+    final goes = next != null &&
+        offset != 0 &&
+        (offset.abs() > _width / 3 || (velocity.abs() > 400 && velocity.sign == offset.sign));
+    if (!goes) {
+      _slide.animateTo(0, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic);
+      return;
+    }
+    _slide
+        .animateTo(offset.sign * _width, duration: const Duration(milliseconds: 220), curve: Curves.easeOutCubic)
+        .whenCompleteOrCancel(() {
+      if (!mounted || _revealed != next || _slide.value.abs() < _width) return;
+      Haptics.selection();
+      _switchTo(next);
     });
   }
 
@@ -113,6 +180,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
   /// then scrolls to the habit), closing anything open on top of it.
   void _showHabits() {
     if (NotificationService.focusRequests.value == null) return;
+    _endSlide();
     if (_index != 0) setState(() => _index = 0);
     // Add and Edit open above the tabs; pages and sheets open inside them
     if (mounted) Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
@@ -125,6 +193,17 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     final showBar = !_deep.contains(_index);
 
+    final tabs = [
+      for (var i = 0; i < _tabs.length; i++)
+        _opened.contains(i)
+            ? CupertinoTabView(
+                navigatorKey: _navigators[i],
+                navigatorObservers: [_observers[i]],
+                builder: (context) => _screens[i],
+              )
+            : const SizedBox.shrink(),
+    ];
+
     return ColoredBox(
       color: palette.background,
       child: Stack(
@@ -132,27 +211,51 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
           Positioned.fill(
             child: TabBarInset(
               height: FloatingTabBar.coveredHeight(safeBottom),
-              child: Stack(
-                children: [
-                  for (var i = 0; i < _tabs.length; i++)
-                    Offstage(
-                      offstage: i != _index,
-                      child: TickerMode(
-                        enabled: i == _index,
-                        child: FocusScope(
-                          canRequestFocus: i == _index,
-                          child: _opened.contains(i)
-                              ? CupertinoTabView(
-                                  navigatorKey: _navigators[i],
-                                  navigatorObservers: [_observers[i]],
-                                  builder: (context) => _screens[i],
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              child: LayoutBuilder(builder: (context, constraints) {
+                _width = constraints.maxWidth;
+                return RawGestureDetector(
+                  // Only on a tab's first page; pages pushed on it swipe back
+                  gestures: showBar
+                      ? {
+                          TabSwipeRecognizer: GestureRecognizerFactoryWithHandlers<TabSwipeRecognizer>(
+                            () => TabSwipeRecognizer(debugOwner: this),
+                            (recognizer) => recognizer
+                              ..onStart = _swipeStart
+                              ..onUpdate = _swipeUpdate
+                              ..onEnd = _swipeEnd,
+                          ),
+                        }
+                      : const {},
+                  child: AnimatedBuilder(
+                    animation: _slide,
+                    builder: (context, _) {
+                      final offset = _slide.value;
+                      final revealed = offset == 0 ? null : _revealed;
+                      return Stack(
+                        children: [
+                          for (var i = 0; i < _tabs.length; i++)
+                            Offstage(
+                              offstage: i != _index && i != revealed,
+                              child: Transform.translate(
+                                offset: Offset(
+                                  i == _index ? offset : (i == revealed ? offset + (i > _index ? _width : -_width) : 0),
+                                  0,
+                                ),
+                                child: IgnorePointer(
+                                  ignoring: i != _index,
+                                  child: TickerMode(
+                                    enabled: i == _index,
+                                    child: FocusScope(canRequestFocus: i == _index, child: tabs[i]),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                );
+              }),
             ),
           ),
           Positioned(
@@ -165,11 +268,16 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> {
                 offset: showBar ? Offset.zero : const Offset(0, 2),
                 duration: const Duration(milliseconds: 220),
                 curve: Curves.easeOutCubic,
-                child: FloatingTabBar(
-                  tabs: _tabs,
-                  currentIndex: _index,
-                  onTap: _select,
-                  onAdd: _add,
+                child: AnimatedBuilder(
+                  animation: _slide,
+                  builder: (context, _) => FloatingTabBar(
+                    tabs: _tabs,
+                    // The highlight moves over once the swipe is halfway
+                    currentIndex: _revealed != null && _slide.value.abs() > _width / 2 ? _revealed! : _index,
+                    onTap: _select,
+                    onSlide: _slideAlongBar,
+                    onAdd: _add,
+                  ),
                 ),
               ),
             ),

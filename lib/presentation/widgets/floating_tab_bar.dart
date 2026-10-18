@@ -49,13 +49,20 @@ class FloatingTabBar extends StatelessWidget {
   /// A tap on the selected tab that has an add state.
   final VoidCallback onAdd;
 
+  /// A finger sliding along the bar is over this tab: it only switches to
+  /// it (never adds, nor goes back to a tab's first page).
+  final ValueChanged<int>? onSlide;
+
   const FloatingTabBar({
     super.key,
     required this.tabs,
     required this.currentIndex,
     required this.onTap,
     required this.onAdd,
+    this.onSlide,
   });
+
+  static const _padding = 6.0;
 
   @override
   Widget build(BuildContext context) {
@@ -89,22 +96,38 @@ class FloatingTabBar extends StatelessWidget {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
-                children: [
-                  for (var i = 0; i < tabs.length; i++)
-                    Expanded(
-                      child: _TabButton(
-                        key: Key('tab_${tabs[i].label.toLowerCase()}'),
-                        tab: tabs[i],
-                        selected: i == currentIndex,
-                        onTap: () => onTap(i),
-                        onAdd: onAdd,
-                      ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                void slide(Offset position) {
+                  final slot = (position.dx - _padding) / ((constraints.maxWidth - 2 * _padding) / tabs.length);
+                  onSlide?.call(slot.floor().clamp(0, tabs.length - 1));
+                }
+
+                return GestureDetector(
+                  key: const Key('tabBarSlide'),
+                  behavior: HitTestBehavior.translucent,
+                  excludeFromSemantics: true,
+                  onHorizontalDragStart: onSlide == null ? null : (details) => slide(details.localPosition),
+                  onHorizontalDragUpdate: onSlide == null ? null : (details) => slide(details.localPosition),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: _padding),
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < tabs.length; i++)
+                          Expanded(
+                            child: _TabButton(
+                              key: Key('tab_${tabs[i].label.toLowerCase()}'),
+                              tab: tabs[i],
+                              selected: i == currentIndex,
+                              onTap: () => onTap(i),
+                              onAdd: onAdd,
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -181,7 +204,8 @@ class _TabButton extends StatelessWidget {
                 child: Text(
                   adding ? tab.addLabel! : tab.label,
                   maxLines: 1,
-                  style: TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w600, color: color),
+                  style:
+                      TextStyle(fontSize: 11, fontWeight: selected ? FontWeight.w700 : FontWeight.w600, color: color),
                 ),
               ),
             ],

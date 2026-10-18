@@ -79,7 +79,11 @@ void main() {
   testWidgets('four tabs and no orb; selected, Habits turns into "Add habit"', (tester) async {
     await launch(tester);
     expect(find.byKey(const Key('addHabitOrb')), findsNothing);
-    expect(find.descendant(of: bar(), matching: find.byType(GestureDetector)), findsNWidgets(4));
+    final tabs = find.descendant(
+      of: bar(),
+      matching: find.byWidgetPredicate((w) => w.key is ValueKey<String> && (w.key as ValueKey<String>).value.startsWith('tab_')),
+    );
+    expect(tabs, findsNWidgets(4));
     expect(find.descendant(of: bar(), matching: find.text('Add habit')), findsOneWidget);
     expect(find.descendant(of: bar(), matching: find.text('Habits')), findsNothing);
 

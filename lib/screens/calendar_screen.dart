@@ -23,6 +23,7 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
+import '../presentation/widgets/tab_swipe.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
 import 'habit_detail_screen.dart';
@@ -532,7 +533,9 @@ class _DayHabitRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
-      child: Material(
+      // A swipe on a habit never moves to another tab
+      child: TabSwipeBlocker(
+        child: Material(
         key: Key('dayHabit_${habit.id}'),
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(AppStyle.cardRadius),
@@ -627,6 +630,7 @@ class _DayHabitRow extends StatelessWidget {
         ),
           HoldUndoOverlay(undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
         ]),
+        ),
       ),
     );
   }
