@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/entities/momentum.dart';
 import '../widgets/large_title_scaffold.dart';
@@ -22,6 +23,10 @@ class IntroScreen extends StatefulWidget {
   static const markAt = 1.6;
   static const fadeAt = 2.1;
 
+  /// The most one frame moves the intro on, so a stalled start (a busy first
+  /// launch) pauses it instead of skipping it.
+  static const maxStep = Duration(milliseconds: 50);
+
   final VoidCallback onDone;
 
   const IntroScreen({super.key, required this.onDone});
@@ -31,11 +36,17 @@ class IntroScreen extends StatefulWidget {
 }
 
 class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(vsync: this);
+  late final Ticker _ticker = createTicker(_tick);
+  Duration _lastTick = Duration.zero;
   bool _reduced = false;
   bool _started = false;
+  bool _finished = false;
+
+  /// Seconds of intro shown so far.
+  double _elapsed = 0;
 
   double get _total => (_reduced ? IntroScreen.reducedDuration : IntroScreen.duration).inMilliseconds / 1000;
+  double get _fadeFrom => _reduced ? _total - 0.3 : IntroScreen.fadeAt;
 
   @override
   void didChangeDependencies() {
@@ -43,26 +54,41 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
     if (_started) return;
     _started = true;
     _reduced = MediaQuery.disableAnimationsOf(context);
-    _controller.duration = _reduced ? IntroScreen.reducedDuration : IntroScreen.duration;
-    _controller.forward().whenCompleteOrCancel(() {
-      if (mounted) widget.onDone();
-    });
+    _ticker.start();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
+  // The intro counts only time it was on screen: while the app is busy
+  // starting up (loading a long history) frames stall, and a clock would
+  // run the intro out before anyone saw it. A frame moves it on at most
+  // IntroScreen.maxStep
+  void _tick(Duration now) {
+    final step = now - _lastTick;
+    _lastTick = now;
+    final seconds = (step > IntroScreen.maxStep ? IntroScreen.maxStep : step).inMicroseconds / 1e6;
+    setState(() => _elapsed = math.min(_total, _elapsed + seconds));
+    if (_elapsed >= _total && !_finished) {
+      _finished = true;
+      _ticker.stop();
+      widget.onDone();
+    }
+  }
+
   void _skip() {
-    final fadeFrom = (_reduced ? _total - 0.3 : IntroScreen.fadeAt) / _total;
-    if (_controller.value < fadeFrom) _controller.value = fadeFrom;
+    if (_elapsed < _fadeFrom) setState(() => _elapsed = _fadeFrom);
   }
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    // Seconds into the intro; with Reduce Motion, the final frame throughout
+    final t = _reduced ? IntroScreen.fadeAt : _elapsed;
+    final opacity = 1 - _ease((_elapsed - _fadeFrom) / (_total - _fadeFrom));
     return Semantics(
       label: 'Momentum',
       excludeSemantics: true,
@@ -70,23 +96,13 @@ class _IntroScreenState extends State<IntroScreen> with SingleTickerProviderStat
         key: const Key('intro'),
         behavior: HitTestBehavior.opaque,
         onTap: _skip,
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            // Seconds into the intro; with Reduce Motion, the final frame throughout
-            final t = _reduced ? IntroScreen.fadeAt : _controller.value * _total;
-            final fadeFrom = _reduced ? _total - 0.3 : IntroScreen.fadeAt;
-            final elapsed = _controller.value * _total;
-            final opacity = 1 - _ease((elapsed - fadeFrom) / (_total - fadeFrom));
-            return Opacity(
-              opacity: opacity,
-              child: ColoredBox(
-                color: palette.background,
-                // Its own text style: it sits above the app's pages
-                child: Material(type: MaterialType.transparency, child: _Frame(t: t)),
-              ),
-            );
-          },
+        child: Opacity(
+          opacity: opacity,
+          child: ColoredBox(
+            color: palette.background,
+            // Its own text style: it sits above the app's pages
+            child: Material(type: MaterialType.transparency, child: _Frame(t: t)),
+          ),
         ),
       ),
     );

@@ -16,6 +16,15 @@ void main() {
   final momentum = find.byKey(const Key('introMomentum'));
   final mark = find.byKey(const Key('introMark'));
 
+  /// Plays [time] of intro frame by frame (the intro counts only frames it
+  /// was drawn in, at most IntroScreen.maxStep each).
+  Future<void> play(WidgetTester tester, Duration time) async {
+    const frame = Duration(milliseconds: 16);
+    for (var left = time; left > Duration.zero; left -= frame) {
+      await tester.pump(left < frame ? left : frame);
+    }
+  }
+
   double opacityOf(WidgetTester tester, Finder finder) =>
       tester.widget<Opacity>(find.ancestor(of: finder, matching: find.byType(Opacity)).first).opacity;
 
@@ -36,13 +45,13 @@ void main() {
   testWidgets('the levels climb over a MOMENTUM that stays put, to ATOMIC and the mark, then the app', (tester) async {
     var done = 0;
     await pumpGate(tester, onDone: () => done++);
-    await tester.pump(ms(150));
+    await play(tester, ms(150));
     final momentumAt = tester.getCenter(momentum);
 
     const turns = {150: 'building', 450: 'rolling', 750: 'strong', 1050: 'unstoppable'};
     var at = 150;
     for (final turn in turns.entries) {
-      await tester.pump(ms(turn.key - at));
+      await play(tester, ms(turn.key - at));
       at = turn.key;
       expect(word(turn.value), findsOneWidget, reason: '${turn.value} at ${turn.key} ms');
       for (final other in turns.values.where((w) => w != turn.value)) {
@@ -52,29 +61,43 @@ void main() {
       expect(opacityOf(tester, mark), 0, reason: 'no mark yet');
     }
 
-    await tester.pump(ms(1400 - at));
+    await play(tester, ms(1400 - at));
     expect(word('atomic'), findsOneWidget);
     expect(find.text('ATOMIC'), findsOneWidget);
     expect(tester.getCenter(momentum), momentumAt);
 
-    await tester.pump(ms(600));
+    await play(tester, ms(600));
     expect(opacityOf(tester, mark), 1, reason: 'the mark has risen by 2 s');
     expect(word('atomic'), findsOneWidget, reason: '"Atomic Momentum" under the mark');
     expect(done, 0);
 
-    await tester.pump(ms(500));
+    await play(tester, ms(500));
     await tester.pump();
     expect(find.byKey(const Key('intro')), findsNothing);
     expect(find.text('the app'), findsOneWidget);
     expect(done, 1);
   });
 
+  testWidgets('a stalled start pauses the intro instead of running it out unseen', (tester) async {
+    var done = 0;
+    await pumpGate(tester, onDone: () => done++);
+    await play(tester, ms(150));
+    // A busy first launch: three seconds without a frame
+    await tester.pump(const Duration(seconds: 3));
+    expect(done, 0);
+    expect(find.byKey(const Key('intro')), findsOneWidget);
+    expect(word('building'), findsOneWidget, reason: 'it carries on where it was');
+    await play(tester, IntroScreen.duration);
+    await tester.pump();
+    expect(done, 1);
+  });
+
   testWidgets('a tap skips to the end', (tester) async {
     var done = 0;
     await pumpGate(tester, onDone: () => done++);
-    await tester.pump(ms(300));
+    await play(tester, ms(300));
     await tester.tap(find.byKey(const Key('intro')));
-    await tester.pump(ms(350));
+    await play(tester, ms(350));
     await tester.pump();
     expect(find.byKey(const Key('intro')), findsNothing);
     expect(done, 1);
@@ -83,11 +106,11 @@ void main() {
   testWidgets('with Reduce Motion, only the final frame, briefly', (tester) async {
     var done = 0;
     await pumpGate(tester, onDone: () => done++, reduceMotion: true);
-    await tester.pump(ms(100));
+    await play(tester, ms(100));
     expect(word('atomic'), findsOneWidget);
     expect(word('building'), findsNothing);
     expect(opacityOf(tester, mark), 1);
-    await tester.pump(ms(800));
+    await play(tester, ms(800));
     await tester.pump();
     expect(find.byKey(const Key('intro')), findsNothing);
     expect(done, 1);
@@ -98,7 +121,7 @@ void main() {
     await pumpGate(tester, app: _Counter(key: key));
     final before = key.currentState;
     expect(before, isNotNull);
-    await tester.pump(IntroScreen.duration + ms(50));
+    await play(tester, IntroScreen.duration + ms(50));
     await tester.pump();
     expect(find.byKey(const Key('intro')), findsNothing);
     expect(key.currentState, same(before));
@@ -107,10 +130,10 @@ void main() {
   testWidgets('VoiceOver hears "Momentum", not the app behind it', (tester) async {
     final semantics = tester.ensureSemantics();
     await pumpGate(tester);
-    await tester.pump(ms(500));
+    await play(tester, ms(500));
     expect(find.bySemanticsLabel('Momentum'), findsOneWidget);
     expect(find.bySemanticsLabel('the app'), findsNothing);
-    await tester.pump(IntroScreen.duration);
+    await play(tester, IntroScreen.duration);
     await tester.pump();
     expect(find.byKey(const Key('intro')), findsNothing);
     expect(find.bySemanticsLabel('the app'), findsOneWidget);
@@ -122,14 +145,14 @@ void main() {
       await pumpGate(tester, palette: palette);
       var at = 0;
       for (final t in [150, 1050, 1300, 1900]) {
-        await tester.pump(ms(t - at));
+        await play(tester, ms(t - at));
         at = t;
         expect(tester.takeException(), isNull, reason: 'at $t ms');
       }
       final background = tester.widget<ColoredBox>(
           find.descendant(of: find.byKey(const Key('intro')), matching: find.byType(ColoredBox)).first);
       expect(background.color, palette.background);
-      await tester.pump(IntroScreen.duration);
+      await play(tester, IntroScreen.duration);
       await tester.pump();
     });
   }
@@ -146,10 +169,10 @@ void main() {
     testWidgets('plays the intro when launched with it, then shows Habits and runs onIntroDone', (tester) async {
       var done = 0;
       await tester.pumpWidget(MomentumApp(showIntro: true, onIntroDone: () => done++));
-      await tester.pump(ms(500));
+      await play(tester, ms(500));
       expect(find.byKey(const Key('intro')), findsOneWidget);
       expect(done, 0, reason: 'notification permission waits for the intro');
-      await tester.pump(IntroScreen.duration);
+      await play(tester, IntroScreen.duration);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('intro')), findsNothing);
       expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);

@@ -466,12 +466,19 @@ void main() {
           theme: IOSTheme.material(AppPalette.dark).copyWith(platform: TargetPlatform.iOS),
           home: IntroScreen(onDone: () {}),
         ));
-        await tester.pump(const Duration(milliseconds: 1050));
+        // The intro moves on at most IntroScreen.maxStep a frame
+        Future<void> play(int ms) async {
+          for (var i = 0; i < ms ~/ 10; i++) {
+            await tester.pump(const Duration(milliseconds: 10));
+          }
+        }
+
+        await play(1050);
         expect(find.byKey(const Key('introWord_unstoppable')), findsOneWidget);
         expectNothingCutOff(tester, 'Intro, Unstoppable');
-        await tester.pump(const Duration(milliseconds: 950));
+        await play(950);
         expectNothingCutOff(tester, 'Intro, the end');
-        await tester.pump(IntroScreen.duration);
+        await play(IntroScreen.duration.inMilliseconds);
       });
     }
   }
