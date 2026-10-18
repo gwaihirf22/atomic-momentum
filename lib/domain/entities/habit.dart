@@ -605,10 +605,18 @@ class Habit extends Equatable {
     HabitNotify? notify,
     HealthLink? health,
     bool removeHealth = false,
+    double? historyScale,
   }) {
     final newFrequency = resetFrequency ?? this.resetFrequency;
     final newInterval = resetInterval ?? this.resetInterval;
     final updated = copyWith(
+      // A new unit for the same thing (glasses to ml): past days convert too
+      history: historyScale == null || historyScale == 1
+          ? null
+          : {
+              for (final e in history.entries)
+                if ((e.value * historyScale).round() > 0) e.key: (e.value * historyScale).round(),
+            },
       name: name ?? this.name,
       target: target ?? this.target,
       units: units ?? this.units,

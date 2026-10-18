@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import '../../domain/entities/health_link.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 import 'dart:convert';
@@ -54,27 +55,71 @@ class HabitDraft extends ChangeNotifier {
   /// Filled in from Apple Health / Health Connect, or null. Set with [setHealth].
   HealthLink? health;
 
-  /// Links the habit to [metric] (null: unlinks). The units follow the
-  /// metric, and an empty target (or the last metric's default) takes this
-  /// one's default.
-  void setHealth(HealthMetric? metric, {bool? logToHealth}) => edit(() {
+  /// The habit's own units when linking replaced a target it couldn't
+  /// convert ("bottles"), for the Health section to say so; null otherwise.
+  String? healthUnitReplaced;
+
+  /// Links the habit to [metric] counted in [unit] (null: unlinks).
+  ///
+  /// - The same metric in another unit converts the target (8 glasses →
+  ///   2000 ml), and past days on save (see [toUpdateParams]).
+  /// - Otherwise units the habit already counts in that the metric knows
+  ///   ("ml", "minutes") are kept, with the target as it is.
+  /// - Anything else ("bottles", or nothing) takes the metric's usual unit
+  ///   and its default target, so 2000 never quietly becomes 2000 glasses.
+  void setHealth(HealthMetric? metric, {HealthUnit? unit, bool? logToHealth}) => edit(() {
+        healthUnitReplaced = null;
         if (metric == null) {
           health = null;
           return;
         }
-        final previous = health?.metric;
+        final previous = health;
         final now = clock.now();
+        final typedTarget = int.tryParse(target.text.trim());
+        HealthUnit chosen;
+        int? newTarget;
+        if (previous != null && previous.metric == metric) {
+          chosen = unit ?? previous.unit;
+          if (chosen != previous.unit && typedTarget != null) {
+            newTarget = math.max(1, chosen.fromBase(previous.unit.toBase(typedTarget)));
+          }
+        } else {
+          final matched = HealthUnit.match(units.text, metric.units);
+          chosen = unit ?? matched ?? metric.defaultUnit;
+          if (matched != null && typedTarget != null) {
+            // Units it already had: the target converts if another is chosen
+            if (chosen != matched) newTarget = math.max(1, chosen.fromBase(matched.toBase(typedTarget)));
+          } else {
+            final old = units.text.trim();
+            if (typedTarget != null && old.isNotEmpty && previous == null) healthUnitReplaced = old;
+            newTarget = metric.defaultTargetIn(chosen);
+          }
+        }
         health = HealthLink(
           metric: metric,
-          logToHealth: logToHealth ?? health?.logToHealth ?? false,
-          linkedOn: health?.linkedOn ?? DateTime(now.year, now.month, now.day),
+          unit: chosen,
+          logToHealth: logToHealth ?? previous?.logToHealth ?? false,
+          linkedOn: previous?.linkedOn ?? DateTime(now.year, now.month, now.day),
         );
-        units.text = metric.unit;
-        final typed = int.tryParse(target.text.trim());
-        if (typed == null || (previous != null && typed == previous.defaultTarget)) {
-          target.text = '${metric.defaultTarget}';
-        }
+        units.text = chosen.label;
+        if (newTarget != null) target.text = '$newTarget';
       });
+
+  /// How much past days scale by on save: the habit was linked to the same
+  /// metric in another unit (glasses → ml: 250). Null otherwise.
+  double? get historyScale {
+    final habit = original;
+    final after = isBreak ? null : health;
+    if (habit == null || after == null) return null;
+    final before = habit.health;
+    // What past days were counted in: the old link's unit, or units it
+    // already had that the metric knows ("ml")
+    final HealthUnit? was = before == null
+        ? HealthUnit.match(habit.units, after.metric.units)
+        : (before.metric == after.metric ? before.unit : null);
+    if (was == null || was == after.unit) return null;
+    return was.base / after.unit.base;
+  }
 
   /// Building it up, or breaking it (quit or limit). Set with [setGoal].
   HabitGoal goal = HabitGoal.build;
@@ -405,6 +450,7 @@ class HabitDraft extends ChangeNotifier {
       notify: notify,
       health: params.health,
       removeHealth: params.health == null && original!.health != null,
+      historyScale: historyScale,
     );
   }
 

@@ -71,6 +71,7 @@ class UpdateHabitUseCase {
         notify: params.notify,
         health: params.health,
         removeHealth: params.removeHealth,
+        historyScale: params.historyScale,
       );
 
       // Validate the updated habit
@@ -262,6 +263,10 @@ class UpdateHabitParams {
   final HealthLink? health;
   final bool removeHealth;
 
+  /// Multiplies every past day (a linked habit's unit changed: 8 glasses
+  /// become 2000 ml); null leaves them.
+  final double? historyScale;
+
   const UpdateHabitParams({
     this.name,
     this.target,
@@ -279,6 +284,7 @@ class UpdateHabitParams {
     this.notify,
     this.health,
     this.removeHealth = false,
+    this.historyScale,
   });
 
   bool get hasChanges => 

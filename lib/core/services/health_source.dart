@@ -37,11 +37,14 @@ abstract class HealthSource {
   /// Opens the store to install Health Connect (Android).
   Future<void> installHealthConnect();
 
-  /// Whole units of [metric] for each day from [from] to [to] (date-only).
+  /// [metric] for each day from [from] to [to] (date-only), in its base
+  /// unit: steps, workouts, minutes (exercise, sleep, mindful) or ml (water).
+  /// The habit's own unit converts it (HealthUnit.fromBase).
   Future<Map<DateTime, int>> dailyValues(HealthMetric metric, DateTime from, DateTime to);
 
-  /// Logs [amount] of a writable metric ending at [at]; null if it failed.
-  Future<HealthRecord?> log(HealthMetric metric, int amount, DateTime at);
+  /// Logs [baseAmount] (ml of water, minutes of mindfulness) of a writable
+  /// metric ending at [at]; null if it failed.
+  Future<HealthRecord?> log(HealthMetric metric, double baseAmount, DateTime at);
 
   /// Takes back something [log] wrote.
   Future<bool> remove(HealthRecord record);
@@ -160,9 +163,9 @@ class PluginHealthSource implements HealthSource {
             to: last,
           ),
         HealthMetric.mindfulMinutes => HealthDays.minutesByDay(spans, first, last),
-        HealthMetric.sleepHours => HealthDays.sleepHoursByDay(spans, first, last),
+        HealthMetric.sleepHours => HealthDays.sleepMinutesByDay(spans, first, last),
         HealthMetric.workouts => HealthDays.countByStartDay(points.map((p) => p.dateFrom), first, last),
-        HealthMetric.water => HealthDays.waterGlassesByDay([
+        HealthMetric.water => HealthDays.waterMlByDay([
             for (final p in points)
               if (p.value case NumericHealthValue(:final numericValue)) (at: p.dateFrom, liters: numericValue.toDouble()),
           ], first, last),
@@ -174,14 +177,15 @@ class PluginHealthSource implements HealthSource {
   }
 
   @override
-  Future<HealthRecord?> log(HealthMetric metric, int amount, DateTime at) async {
-    if (!metric.writable || amount <= 0) return null;
+  Future<HealthRecord?> log(HealthMetric metric, double baseAmount, DateTime at) async {
+    if (!metric.writable || baseAmount <= 0) return null;
     // Water: an instant; mindful minutes: a session ending now
-    final start = metric == HealthMetric.water ? at : at.subtract(Duration(minutes: amount));
+    final start =
+        metric == HealthMetric.water ? at : at.subtract(Duration(seconds: (baseAmount * 60).round()));
     try {
       await _configure();
       final ok = await _health.writeHealthData(
-        value: metric == HealthMetric.water ? amount * HealthMetric.glassMl / 1000 : amount.toDouble(),
+        value: metric == HealthMetric.water ? baseAmount / 1000 : baseAmount,
         type: _writeType(metric),
         unit: metric == HealthMetric.water ? HealthDataUnit.LITER : HealthDataUnit.MINUTE,
         startTime: start,

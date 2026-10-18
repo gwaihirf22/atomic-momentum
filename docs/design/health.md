@@ -8,9 +8,9 @@
   | Steps | steps | ✓ | ✓ |
   | Exercise | minutes: the higher of Apple's Exercise minutes (Watch only) and the time in workouts any app logged (on Android, workout time) | ✓ | ✓ |
   | Workouts | workouts started that day | ✓ | ✓ |
-  | Sleep | hours | ✓ | ✓ |
-  | Mindful minutes | minutes | ✓ | not offered through the package |
-  | Water | 250 ml glasses | ✓ | ✓ |
+  | Sleep | hours or minutes | ✓ | ✓ |
+  | Mindful minutes | minutes or hours | ✓ | not offered through the package |
+  | Water | glasses (250 ml), ml, fl oz or cups (8 oz) | ✓ | ✓ |
 
 - **Writing.** Water and mindful minutes can also log back. Each + writes the amount added to Health. A − takes back what the app wrote that day, newest first. If what's being removed came from Health itself (another app, or the Watch), the app says "That came from Apple Health. Change it there." and Health's number comes back.
 
@@ -23,8 +23,13 @@
 ## Rules
 - **The higher number wins.** For each day, the app keeps the higher of what was logged and what Health says. Health never lowers a day, and taps still count on days Health missed.
 - **Window.** Each sync looks at the last 7 days, never before the day the habit was linked and never before it started counting. Values are clamped so no period goes past what it can hold (10 × the target).
-- **Sleep** counts on the morning you wake. Asleep time from 6 PM the evening before to 6 PM that day is added up and rounded to the nearest hour. Overlapping records (iPhone and Watch) count once, and so do overlapping exercise and mindful sessions.
-- **Water.** Liters ÷ 0.25, rounded, gives glasses.
+- **Sleep** counts on the morning you wake: asleep time from 6 PM the evening before to 6 PM that day, in minutes, then in the habit's unit (hours round to the nearest). Overlapping records (iPhone and Watch) count once, and so do overlapping exercise and mindful sessions.
+- **Units.** Health gives exact amounts in a base unit per metric: steps, workouts, minutes (exercise, sleep, mindful) or ml (water). A linked habit counts in a `HealthUnit` chosen from a short list. Each unit is an exact number of base units (a glass is 250 ml, a fl oz 29.5735 ml, a cup 236.588 ml, an hour 60 minutes) and converts both ways, rounding to whole units only at the end. The units field is never free text while linked.
+- **Linking a habit that has units.**
+  - If its units are ones the metric knows ("ml", "oz", "minutes"), they're kept with its target, so nothing needs converting.
+  - If they aren't ("bottles", or none), it takes the metric's usual unit and default target. The editor then says so ("'bottles' isn't a unit Apple Health counts in…"), and past days stay as they were.
+  - Choosing another unit converts the target, and past days convert too on save (8 glasses becomes 2000 ml; `UpdateHabitParams.historyScale`).
+- **Writing back.** + logs the exact base amount (10 fl oz is 296 ml). The app's write log keeps base amounts, so − takes back exactly what was written.
 - **When it syncs:**
   - when the app opens
   - on resume, at most once a minute

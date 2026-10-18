@@ -62,14 +62,12 @@ class HealthDays {
     return {for (final day in watch.keys) day: math.max(watch[day]!, logged[day] ?? 0)};
   }
 
-  /// Hours asleep per day, counted toward the day you wake up: from 6 PM
-  /// the evening before to 6 PM that day, rounded to the nearest hour.
-  static Map<DateTime, int> sleepHoursByDay(Iterable<HealthSpan> asleep, DateTime from, DateTime to) => {
+  /// Minutes asleep per day, counted toward the day you wake up: from 6 PM
+  /// the evening before to 6 PM that day.
+  static Map<DateTime, int> sleepMinutesByDay(Iterable<HealthSpan> asleep, DateTime from, DateTime to) => {
         for (final day in _days(from, to))
-          day: (unionMinutes(asleep,
-                      from: DateTime(day.year, day.month, day.day - 1, 18), to: DateTime(day.year, day.month, day.day, 18)) /
-                  60)
-              .round(),
+          day: unionMinutes(asleep,
+              from: DateTime(day.year, day.month, day.day - 1, 18), to: DateTime(day.year, day.month, day.day, 18)),
       };
 
   /// How many began on each day (workouts).
@@ -82,14 +80,14 @@ class HealthDays {
     return counts;
   }
 
-  /// 250 ml glasses of water per day, from samples in liters.
-  static Map<DateTime, int> waterGlassesByDay(Iterable<({DateTime at, double liters})> samples, DateTime from, DateTime to) {
+  /// Milliliters of water per day, from samples in liters.
+  static Map<DateTime, int> waterMlByDay(Iterable<({DateTime at, double liters})> samples, DateTime from, DateTime to) {
     final liters = {for (final day in _days(from, to)) day: 0.0};
     for (final s in samples) {
       final day = _day(s.at);
       if (liters.containsKey(day)) liters[day] = liters[day]! + s.liters;
     }
-    return {for (final e in liters.entries) e.key: (e.value * 1000 / 250).round()};
+    return {for (final e in liters.entries) e.key: (e.value * 1000).round()};
   }
 }
 

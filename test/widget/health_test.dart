@@ -120,7 +120,7 @@ void main() {
 
   test('syncs close together are skipped unless forced; break habits are never filled in', () async {
     final id = await addLinked(HealthMetric.water);
-    health.values[HealthMetric.water] = {today: 3};
+    health.values[HealthMetric.water] = {today: 750};
     await habits.syncHealth(force: true);
     final reads = health.reads;
     await habits.syncHealth();
@@ -196,19 +196,19 @@ void main() {
       await habits.updateHabitProgress(id, 2);
       await settle();
       expect(health.logged.single.metric, HealthMetric.water);
-      expect(health.values[HealthMetric.water]![today], 2);
+      expect(health.values[HealthMetric.water]![today], 500, reason: '2 glasses of 250 ml');
 
       await habits.updateHabitProgress(id, 1);
       await settle();
       expect(health.removed, hasLength(1));
       expect(health.logged, hasLength(2), reason: 'took back 2, logged 1 again');
-      expect(health.values[HealthMetric.water]![today], 1);
+      expect(health.values[HealthMetric.water]![today], 250);
       expect(habits.takeHealthNotice(), isNull);
     });
 
     test('− on water that came from Health says so, and Health\'s number comes back', () async {
       final id = await addWater();
-      health.values[HealthMetric.water] = {today: 3};
+      health.values[HealthMetric.water] = {today: 750};
       await habits.syncHealth(force: true);
       expect(habits.habits.single.history[today], 3);
       expect(health.logged, isEmpty, reason: 'numbers from Health aren\'t logged back');
@@ -246,6 +246,27 @@ void main() {
       await tester.tap(find.byKey(const Key('healthMetric_workouts')));
       await tester.pumpAndSettle();
       expect(find.textContaining('has no workouts for today yet'), findsOneWidget);
+    });
+
+    testWidgets('an unknown unit is replaced (and says so); the unit chips convert the target', (tester) async {
+      await pump(tester, const AddHabitScreen());
+      await tester.enterText(find.byKey(const Key('habitNameField')), 'Drink water');
+      await tester.enterText(find.byKey(const Key('habitTargetField')), '3');
+      await tester.enterText(find.byKey(const Key('habitUnitsField')), 'bottles');
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const Key('healthSuggestionLink')));
+      await tester.tap(find.byKey(const Key('healthSuggestionLink')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('healthUnitReplaced')), findsOneWidget);
+      expect(find.textContaining('"bottles" isn\'t a unit Apple Health counts in, so the target is now 8 glasses'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('healthUnit_ml')));
+      await tester.tap(find.byKey(const Key('healthUnit_ml')));
+      await tester.pumpAndSettle();
+      final target = tester.widget<EditableText>(
+          find.descendant(of: find.byKey(const Key('habitTargetField')), matching: find.byType(EditableText)));
+      expect(target.controller.text, '2000');
+      expect(find.byKey(const Key('healthUnitReplaced')), findsNothing);
     });
 
     testWidgets('a habit not about health suggests nothing', (tester) async {

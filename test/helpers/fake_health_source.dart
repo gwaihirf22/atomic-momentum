@@ -41,7 +41,8 @@ class FakeHealthSource implements HealthSource {
   }
 
   @override
-  Future<HealthRecord?> log(HealthMetric metric, int amount, DateTime at) async {
+  Future<HealthRecord?> log(HealthMetric metric, double baseAmount, DateTime at) async {
+    final amount = baseAmount.round();
     final record = (metric: metric, start: at.subtract(Duration(seconds: amount)), end: at);
     logged.add(record);
     final day = DateTime(at.year, at.month, at.day);

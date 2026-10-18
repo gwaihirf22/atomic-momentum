@@ -11,21 +11,77 @@ enum HealthGroup {
   const HealthGroup(this.label);
 }
 
+/// What a linked habit counts in. Each is an exact number of its metric's
+/// base unit (steps, workouts, minutes, or milliliters), so amounts convert
+/// both ways; nothing typed ever goes into the arithmetic.
+enum HealthUnit {
+  steps('steps', 1, 8000),
+  workouts('workouts', 1, 1),
+  minutes('minutes', 1, 30),
+  hours('hours', 60, 1),
+  glasses('glasses', 250, 8),
+  ml('ml', 1, 2000),
+  flOz('fl oz', 29.5735, 64),
+  cups('cups', 236.588, 8);
+
+  /// As the habit's units read ("fl oz").
+  final String label;
+
+  /// How many of the metric's base unit one of these is (a glass: 250 ml).
+  final double base;
+
+  /// A sensible target in this unit when nothing else says (sleep and
+  /// mindful minutes have their own, see [HealthMetric.defaultTargetIn]).
+  final int typicalTarget;
+
+  const HealthUnit(this.label, this.base, this.typicalTarget);
+
+  /// [baseAmount] (steps, minutes, ml…) in this unit, rounded to whole.
+  int fromBase(num baseAmount) => (baseAmount / base).round();
+
+  /// [amount] of this unit in the base unit.
+  double toBase(num amount) => amount * base;
+
+  static const _words = {
+    steps: ['step', 'steps'],
+    workouts: ['workout', 'workouts', 'session', 'sessions'],
+    minutes: ['min', 'mins', 'minute', 'minutes'],
+    hours: ['h', 'hr', 'hrs', 'hour', 'hours'],
+    glasses: ['glass', 'glasses'],
+    ml: ['ml', 'milliliter', 'milliliters', 'millilitre', 'millilitres'],
+    flOz: ['oz', 'fl oz', 'floz', 'fl. oz', 'ounce', 'ounces', 'fluid ounce', 'fluid ounces'],
+    cups: ['cup', 'cups'],
+  };
+
+  /// The unit [text] names, if it's one of [among] (null if it isn't, or
+  /// isn't a unit we know, such as "bottles").
+  static HealthUnit? match(String text, List<HealthUnit> among) {
+    final word = text.trim().toLowerCase();
+    for (final unit in among) {
+      if (_words[unit]!.contains(word)) return unit;
+    }
+    return null;
+  }
+
+  static HealthUnit? fromName(Object? name) => values.where((u) => u.name == name).firstOrNull;
+}
+
 /// Something a habit can be filled in from: Apple Health on iPhone, Health
-/// Connect on Android. Each counts in whole units a day.
+/// Connect on Android. Counts in whole [HealthUnit]s a day.
 enum HealthMetric {
-  steps('Steps', 'steps', 8000, HealthGroup.activity, android: true),
-  exerciseMinutes('Exercise', 'minutes', 30, HealthGroup.activity, android: true),
-  workouts('Workouts', 'workouts', 1, HealthGroup.activity, android: true),
-  sleepHours('Sleep', 'hours', 7, HealthGroup.sleep, android: true),
-  mindfulMinutes('Mindful minutes', 'minutes', 10, HealthGroup.mindfulness, android: false, writable: true),
-  water('Water', 'glasses', 8, HealthGroup.nutrition, android: true, writable: true);
+  steps('Steps', [HealthUnit.steps], HealthGroup.activity, android: true),
+  exerciseMinutes('Exercise', [HealthUnit.minutes, HealthUnit.hours], HealthGroup.activity, android: true),
+  workouts('Workouts', [HealthUnit.workouts], HealthGroup.activity, android: true),
+  sleepHours('Sleep', [HealthUnit.hours, HealthUnit.minutes], HealthGroup.sleep, android: true),
+  mindfulMinutes('Mindful minutes', [HealthUnit.minutes, HealthUnit.hours], HealthGroup.mindfulness,
+      android: false, writable: true),
+  water('Water', [HealthUnit.glasses, HealthUnit.ml, HealthUnit.flOz, HealthUnit.cups], HealthGroup.nutrition,
+      android: true, writable: true);
 
   final String label;
 
-  /// What the habit counts in (water: 250 ml glasses).
-  final String unit;
-  final int defaultTarget;
+  /// The units it can count in, the usual one first.
+  final List<HealthUnit> units;
   final HealthGroup group;
 
   /// Health Connect has it (Apple Health has every one).
@@ -34,11 +90,21 @@ enum HealthMetric {
   /// Logging the habit can also log it to Health.
   final bool writable;
 
-  const HealthMetric(this.label, this.unit, this.defaultTarget, this.group,
-      {required this.android, this.writable = false});
+  const HealthMetric(this.label, this.units, this.group, {required this.android, this.writable = false});
 
-  /// Milliliters in one glass of water.
-  static const glassMl = 250;
+  HealthUnit get defaultUnit => units.first;
+
+  /// The usual unit's word ("glasses").
+  String get unit => defaultUnit.label;
+
+  int get defaultTarget => defaultTargetIn(defaultUnit);
+
+  /// A sensible target counted in [unit]: 7 hours of sleep is 420 minutes.
+  int defaultTargetIn(HealthUnit unit) => switch (this) {
+        sleepHours => unit.fromBase(7 * 60),
+        mindfulMinutes => unit == HealthUnit.hours ? 1 : 10,
+        _ => unit.typicalTarget,
+      };
 
   bool availableOn({required bool isAndroid}) => !isAndroid || android;
 
@@ -70,24 +136,32 @@ enum HealthMetric {
   }
 }
 
-/// A habit filled in from Health: which [metric], whether logging it also
-/// logs to Health ([logToHealth], for writable metrics), and the day it was
-/// linked (days before it are never filled in).
+/// A habit filled in from Health: which [metric], the [unit] it counts in,
+/// whether logging it also logs to Health ([logToHealth], for writable
+/// metrics), and the day it was linked (days before it are never filled in).
 class HealthLink extends Equatable {
   final HealthMetric metric;
+  final HealthUnit unit;
   final bool logToHealth;
   final DateTime linkedOn;
 
-  const HealthLink({required this.metric, this.logToHealth = false, required this.linkedOn});
+  /// [unit] defaults to the metric's usual one (and must be one of its own).
+  HealthLink({required this.metric, HealthUnit? unit, this.logToHealth = false, required this.linkedOn})
+      : unit = unit != null && metric.units.contains(unit) ? unit : metric.defaultUnit;
 
   /// Logging also logs to Health (only for metrics that can be written).
   bool get logsToHealth => logToHealth && metric.writable;
 
-  HealthLink copyWith({HealthMetric? metric, bool? logToHealth}) =>
-      HealthLink(metric: metric ?? this.metric, logToHealth: logToHealth ?? this.logToHealth, linkedOn: linkedOn);
+  HealthLink copyWith({HealthMetric? metric, HealthUnit? unit, bool? logToHealth}) => HealthLink(
+        metric: metric ?? this.metric,
+        unit: unit ?? (metric == null ? this.unit : null),
+        logToHealth: logToHealth ?? this.logToHealth,
+        linkedOn: linkedOn,
+      );
 
   Map<String, dynamic> toJson() => {
         'metric': metric.name,
+        if (unit != metric.defaultUnit) 'unit': unit.name,
         if (logToHealth) 'log': true,
         'linkedOn': '${linkedOn.year.toString().padLeft(4, '0')}-${linkedOn.month.toString().padLeft(2, '0')}-'
             '${linkedOn.day.toString().padLeft(2, '0')}',
@@ -101,11 +175,12 @@ class HealthLink extends Equatable {
     if (metric == null || linked == null) return null;
     return HealthLink(
       metric: metric,
+      unit: HealthUnit.fromName(json['unit']),
       logToHealth: json['log'] == true,
       linkedOn: DateTime(linked.year, linked.month, linked.day),
     );
   }
 
   @override
-  List<Object?> get props => [metric, logToHealth, linkedOn];
+  List<Object?> get props => [metric, unit, logToHealth, linkedOn];
 }

@@ -85,8 +85,8 @@ class _HealthSectionState extends State<HealthSection> {
     await _choose(_suggestion ?? HealthMetric.values.firstWhere(_available));
   }
 
-  Future<void> _choose(HealthMetric metric, {bool? logToHealth}) async {
-    _draft.setHealth(metric, logToHealth: logToHealth);
+  Future<void> _choose(HealthMetric metric, {HealthUnit? unit, bool? logToHealth}) async {
+    _draft.setHealth(metric, unit: unit, logToHealth: logToHealth);
     final link = _draft.health!;
     await _source.requestAccess(read: {metric}, write: {if (link.logsToHealth) metric});
     // Read again now that access may have been given
@@ -158,6 +158,34 @@ class _HealthSectionState extends State<HealthSection> {
                 ),
             ],
           ),
+          if (link.metric.units.length > 1) ...[
+            const SizedBox(height: 12),
+            Text('Count in', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.textSecondary)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final unit in link.metric.units)
+                  QuoteChoiceChip(
+                    key: Key('healthUnit_${unit.name}'),
+                    label: unit == HealthUnit.glasses ? 'glasses (250 ml)' : (unit == HealthUnit.cups ? 'cups (8 oz)' : unit.label),
+                    selected: link.unit == unit,
+                    onTap: () => _choose(link.metric, unit: unit),
+                  ),
+              ],
+            ),
+          ],
+          if (_draft.healthUnitReplaced != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '"${_draft.healthUnitReplaced}" isn\'t a unit $name counts in, so the target is now '
+                '${_draft.target.text} ${link.unit.label}. Past days stay as they were.',
+                key: const Key('healthUnitReplaced'),
+                style: TextStyle(fontSize: 13, color: palette.warning),
+              ),
+            ),
           const SizedBox(height: 8),
           Text(
             _note(link.metric),
@@ -173,7 +201,7 @@ class _HealthSectionState extends State<HealthSection> {
                 return Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    _preview(link.metric, snapshot.data, name),
+                    _preview(link, snapshot.data, name),
                     key: const Key('healthPreview'),
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: palette.text),
                   ),
@@ -197,22 +225,23 @@ class _HealthSectionState extends State<HealthSection> {
   }
 
   /// "Apple Health shows 4,512 steps today", so a wrong link is plain to see.
-  static String _preview(HealthMetric metric, int? value, String name) {
+  static String _preview(HealthLink link, int? base, String name) {
+    final metric = link.metric;
     final when = metric == HealthMetric.sleepHours ? 'last night' : 'today';
-    if (value == null || value == 0) {
+    if (base == null || base == 0) {
       return '$name has no ${metric.label.toLowerCase()} for $when yet. If that\'s wrong, check permissions.';
     }
-    final amount = NumberFormat.decimalPattern().format(value);
-    return '$name shows $amount ${metric.unit} $when.';
+    final amount = NumberFormat.decimalPattern().format(link.unit.fromBase(base));
+    return '$name shows $amount ${link.unit.label} $when.';
   }
 
   static String _note(HealthMetric metric) => switch (metric) {
         HealthMetric.steps => 'Counts your steps each day.',
         HealthMetric.exerciseMinutes => 'Counts exercise minutes each day.',
         HealthMetric.workouts => 'Counts workouts started each day.',
-        HealthMetric.sleepHours => 'Hours asleep, counted on the morning you wake (to the nearest hour).',
+        HealthMetric.sleepHours => 'Time asleep, counted on the morning you wake.',
         HealthMetric.mindfulMinutes => 'Counts mindful minutes each day.',
-        HealthMetric.water => 'Counts water in 250 ml glasses.',
+        HealthMetric.water => 'Counts the water you log in Health, in the unit you choose.',
       };
 }
 

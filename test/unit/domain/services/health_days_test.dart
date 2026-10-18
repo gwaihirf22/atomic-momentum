@@ -30,21 +30,21 @@ void main() {
       );
     });
 
-    test('sleep counts on the morning you wake, to the nearest hour', () {
+    test('sleep counts on the morning you wake', () {
       final night = [
         span(oct(17, 23), oct(18, 2)),
         span(oct(18, 1), oct(18, 5, 50)), // overlaps the first
         span(oct(18, 14), oct(18, 14, 20)), // a nap that afternoon
       ];
-      expect(HealthDays.sleepHoursByDay(night, oct(18), oct(18)), {oct(18): 7}, reason: '6 h 50 m + 20 m nap');
-      expect(HealthDays.sleepHoursByDay(night, oct(17), oct(17)), {oct(17): 0});
+      expect(HealthDays.sleepMinutesByDay(night, oct(18), oct(18)), {oct(18): 430}, reason: '6 h 50 m + 20 m nap');
+      expect(HealthDays.sleepMinutesByDay(night, oct(17), oct(17)), {oct(17): 0});
     });
 
-    test('workouts count on the day they start; water in 250 ml glasses', () {
+    test('workouts count on the day they start; water in ml', () {
       expect(HealthDays.countByStartDay([oct(18, 7), oct(18, 18), oct(17, 23, 50)], oct(17), oct(18)), {oct(17): 1, oct(18): 2});
       expect(
-        HealthDays.waterGlassesByDay([(at: oct(18, 9), liters: 0.5), (at: oct(18, 12), liters: 0.33)], oct(18), oct(18)),
-        {oct(18): 3},
+        HealthDays.waterMlByDay([(at: oct(18, 9), liters: 0.5), (at: oct(18, 12), liters: 0.33)], oct(18), oct(18)),
+        {oct(18): 830},
       );
     });
   });

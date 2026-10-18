@@ -111,8 +111,8 @@ class Explainer {
         icon: CupertinoIcons.arrow_2_circlepath,
       ),
       ExplainerPoint(
-        'Sleep counts on the morning you wake, to the nearest hour. Water counts in 250 ml glasses.',
-        lead: 'Counting',
+        'Pick the unit you count in (glasses, ml, fl oz, hours or minutes). Sleep counts on the morning you wake.',
+        lead: 'Units',
         icon: CupertinoIcons.moon,
       ),
       ExplainerPoint(

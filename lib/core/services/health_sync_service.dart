@@ -18,6 +18,9 @@ class HealthSyncService {
   /// What the app wrote to Health (the phone's own record, kept a week).
   static const writesKey = 'health_writes_v1';
 
+  /// Rounding slack when converting units (well under any unit's size).
+  static const _tiny = 0.001;
+
   final HealthSource Function() _source;
   final SharedPreferences _prefs;
 
@@ -68,19 +71,21 @@ class HealthSyncService {
     if (delta == 0) return null;
     final source = _source();
     final writes = _writes();
-    if (delta > 0) {
-      final record = await source.log(link.metric, delta, now);
+    // Health keeps exact amounts (ml, minutes); the habit's unit converts
+    final deltaBase = link.unit.toBase(delta);
+    if (deltaBase > 0) {
+      final record = await source.log(link.metric, deltaBase, now);
       if (record == null) return 'Couldn\'t log that to ${source.name}';
-      await _saveWrites([...writes, HealthWrite(habitId: after.id, day: today, amount: delta, record: record)]);
+      await _saveWrites([...writes, HealthWrite(habitId: after.id, day: today, amount: deltaBase, record: record)]);
       return null;
     }
-    var owed = -delta;
+    var owed = -deltaBase;
     final ours = writes.where((w) => w.habitId == after.id && w.day == today).toList();
-    while (owed > 0 && ours.isNotEmpty) {
+    while (owed > _tiny && ours.isNotEmpty) {
       final last = ours.removeLast();
       writes.remove(last);
       await source.remove(last.record);
-      if (last.amount > owed) {
+      if (last.amount > owed + _tiny) {
         // Took back too much: log the rest again
         final rest = await source.log(link.metric, last.amount - owed, last.record.end);
         if (rest != null) writes.add(HealthWrite(habitId: after.id, day: today, amount: last.amount - owed, record: rest));
@@ -90,7 +95,7 @@ class HealthSyncService {
       }
     }
     await _saveWrites(writes);
-    return owed > 0 ? 'That came from ${source.name}. Change it there.' : null;
+    return owed > _tiny ? 'That came from ${source.name}. Change it there.' : null;
   }
 
   /// Days to set per habit id, for the linked [habits].
@@ -106,7 +111,10 @@ class HealthSyncService {
     for (final habit in linked) {
       final metric = habit.health!.metric;
       if (!metric.availableOn(isAndroid: source.isAndroid)) continue;
-      final values = await source.dailyValues(metric, HealthMerge.firstDay(habit, today), today);
+      final base = await source.dailyValues(metric, HealthMerge.firstDay(habit, today), today);
+      // Into what the habit counts in (ml into glasses, minutes into hours)
+      final unit = habit.health!.unit;
+      final values = {for (final e in base.entries) e.key: unit.fromBase(e.value)};
       final days = HealthMerge.daysToSet(habit, values, today);
       if (days.isNotEmpty) result[habit.id] = days;
     }
@@ -119,7 +127,9 @@ class HealthSyncService {
 class HealthWrite {
   final String habitId;
   final DateTime day;
-  final int amount;
+
+  /// How much, in the metric's base unit (ml, minutes).
+  final double amount;
   final HealthRecord record;
 
   const HealthWrite({required this.habitId, required this.day, required this.amount, required this.record});
@@ -136,13 +146,15 @@ class HealthWrite {
   static HealthWrite? fromJson(dynamic json) {
     if (json is! Map) return null;
     final metric = HealthMetric.fromName(json['metric']);
-    final values = [json['day'], json['amount'], json['start'], json['end']];
-    if (metric == null || json['habit'] is! String || values.any((v) => v is! int)) return null;
+    final values = [json['day'], json['start'], json['end']];
+    if (metric == null || json['habit'] is! String || values.any((v) => v is! int) || json['amount'] is! num) {
+      return null;
+    }
     DateTime at(Object? ms) => DateTime.fromMillisecondsSinceEpoch(ms as int);
     return HealthWrite(
       habitId: json['habit'] as String,
       day: at(json['day']),
-      amount: json['amount'] as int,
+      amount: (json['amount'] as num).toDouble(),
       record: (metric: metric, start: at(json['start']), end: at(json['end'])),
     );
   }
