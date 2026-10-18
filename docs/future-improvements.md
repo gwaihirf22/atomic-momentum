@@ -1,8 +1,78 @@
 # Future improvements
 
-Things to do that aren't on the product roadmap, or that are smaller than a roadmap item: performance, polish, loose ends and decisions still to make. The roadmap itself (statistics, onboarding, store readiness, routines, Pro, widgets) is in [strategy/product-strategy.md](strategy/product-strategy.md#4-roadmap).
+Things to do that aren't on the product roadmap, or that are smaller than a roadmap item: performance, polish, loose ends and decisions still to make. The roadmap itself (statistics, onboarding, store readiness, routines, widgets) is in [strategy/product-strategy.md](strategy/product-strategy.md#4-roadmap).
 
 *Last updated October 18, 2026.* Move an item to "Done" with its commit when it's built.
+
+## Next up: Paul's to-dos (October 18, 2026)
+
+In this order. The rest of v1 (the weekly review, rewards and the onboarding tutorial) still stands alongside these; see the roadmap.
+
+### 1. Verify Apple Health more thoroughly
+
+It seems to work well; now check it properly on the real iPhone (`DEV_TOOLS=1 tool/install_on_iphone.sh`), with real data from the Health app and an Apple Watch if there is one.
+
+- **Each metric fills in the right number for today and the past week:**
+  - steps;
+  - exercise minutes (Watch minutes, and a run logged in another app);
+  - workouts;
+  - sleep (counted on the morning you wake);
+  - mindful minutes;
+  - water.
+- **Units:** glasses, ml, fl oz and cups for water; hours and minutes for sleep and exercise. Changing a unit converts the target and the past days.
+- **Logging back:** water and mindful minutes logged in the app appear in Health; − takes back only the app's own entries; changing a Health-filled number shows "That came from Apple Health."
+- **Permissions:** first ask, a refusal, and turning access off later in the Health app.
+- **Edges:** never before the day a habit was linked or started counting, and never past a period's cap.
+- Anything wrong gets a test and a fix. Design: [design/health.md](design/health.md).
+
+### 2. Home screen widgets (moved up from v2)
+
+**What "widgets" means here:** in the code, "widget" means any piece of the Flutter UI. These are home screen and lock screen widgets: a WidgetKit extension written in SwiftUI inside `ios/`, which is Swift Apple requires (see the strategy's platform section). Android's equivalent (app widgets) comes after.
+
+Paul's ideas:
+- **One habit:** its ring and today's progress, with a + to log from the home screen (interactive on iOS 17+; on iOS 16 a tap opens the app).
+- **A group of habits:** a category, or habits you pick, as rows of rings.
+- **Momentum:** the overall momentum ring and its level, for encouragement. Small, plus the round lock screen widget.
+- **Insights:** a small view such as the week's heatmap or "X of Y done today".
+- **A quote:** a bigger widget with the quote of the day, or one of a habit's quotes.
+- **"I will" statements:** a habit's Story sentence ("I will drink water, 8 glasses every day").
+- **A general one:** "I will complete my habits", "I will become a better person", or the person's own words.
+
+How it fits together:
+- **Package:** `home_widget`.
+- **Shared data:** the app writes a small snapshot (today's habits, rings, momentum, the day's quote) into an App Group that the widget reads. A log made in a widget has to merge into history and cancel that habit's pending reminders.
+- **Free account:** a free team may not be able to sign App Groups. If so, widgets wait for the paid account.
+- **Existing designs:** the Inspire design already sketches the quote, momentum and one-habit widgets ([design/inspire.md](design/inspire.md), "Later"), and the drawing code to borrow from is in the ring, `MomentumRing` and the share cards.
+
+### 3. Become an Apple developer and get through App Review
+
+First time through, so here's the path:
+1. **Enroll** in the Apple Developer Program ($99 a year). Identity checks can take a day or more. Then switch `tool/install_on_iphone.sh` to `FULL_ENTITLEMENTS=1` and turn on the time-sensitive and HealthKit capabilities for the app's ID.
+2. **App Store Connect:** create the app (name "Momentum", id `com.paulblake.momentum`), age rating, category, and export compliance (no special encryption).
+3. **Privacy:**
+   - A privacy policy at a public web address; Health apps must have one.
+   - The privacy "nutrition label": no data leaves the phone, no tracking.
+   - The Health usage text is already written (`Info.plist`).
+4. **Screenshots** for the required iPhone sizes, plus the description, keywords and support page.
+5. **Before submitting:**
+   - Confirm the NKJV Scripture licence for app use with HarperCollins (CLAUDE.md, Inspire).
+   - Make the tip page if wanted (`AppLinks.coffee`).
+   - Build with plain `flutter build ipa`; the archive refuses dev tools.
+6. **TestFlight first:** run the real build for a week or two, then submit. Review notes should explain Health (what's read and written, and why). Expect a question or two from Apple; most first rejections are about metadata or privacy wording, not the app.
+
+### 4. Google Play, while Apple reviews
+
+- **Account:** create a Play Console developer account ($25, once), with identity verification.
+- **Testing:** new personal accounts must run a **closed test with at least 12 testers for 14 days** before going to production, so start this early.
+- **Forms:**
+  - the Data safety form;
+  - Health Connect's permissions declaration (Google reviews why each health permission is needed).
+- **Android checks still to do on a phone:**
+  - switching the app icon (the launcher aliases);
+  - Health Connect;
+  - notifications with exact alarms;
+  - the adaptive icon on other launchers.
+- **Build:** use plain `flutter build appbundle`.
 
 ## Performance with a long history
 
