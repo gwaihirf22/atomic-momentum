@@ -100,7 +100,9 @@ void main() {
     });
 
     await measure('Achievements page', () async {
+      // Far down Insights: the list builds it only once it's near the screen
       final shelf = find.byKey(const Key('insightsSeeAllAchievements'));
+      await tester.scrollUntilVisible(shelf, 300, scrollable: find.byType(Scrollable).hitTestable().first);
       await Scrollable.ensureVisible(tester.element(shelf), alignment: 0.4);
       await settle();
       await tester.tap(shelf);
