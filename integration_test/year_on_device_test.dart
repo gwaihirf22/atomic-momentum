@@ -266,7 +266,14 @@ void main() {
         }
         await screenshot('${m}_insights');
         await visit(find.byKey(const Key('heatmapExpand')), '${m}_heatmap', at);
-        await visit(find.byKey(const Key('insightsSeeAllAchievements')), '${m}_achievements', at);
+        // The shelf is far down Insights, and lists only build what's near the screen
+        final shelf = find.byKey(const Key('insightsSeeAllAchievements'));
+        try {
+          await tester.scrollUntilVisible(shelf, 300, scrollable: find.byType(Scrollable).hitTestable().first);
+        } on StateError {
+          // Nothing earned yet: no shelf
+        }
+        await visit(shelf, '${m}_achievements', at);
         await toTop();
 
         if (settings.showInspireTab) {
