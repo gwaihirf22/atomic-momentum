@@ -188,6 +188,13 @@ class HabitProvider extends ChangeNotifier {
   Future<bool> setWhy(String habitId, String text) =>
       _applyNow(habitId, (habit) => habit.setWhy(text), (pending) => pending.why = text);
 
+  /// Counts the habit from an earlier [date] (see [Habit.startFrom]). Shows
+  /// at once and saves behind.
+  Future<bool> startFrom(String habitId, DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    return _applyNow(habitId, (habit) => habit.startFrom(day), (pending) => pending.startFrom = day);
+  }
+
   /// The note on [date]; empty removes it. Shows at once and saves behind.
   Future<bool> setDayNote(String habitId, DateTime date, String text) {
     final day = DateTime(date.year, date.month, date.day);
@@ -245,6 +252,7 @@ class HabitProvider extends ChangeNotifier {
         final pending = _unsaved.remove(habitId)!;
         try {
           Habit? saved;
+          if (pending.startFrom != null) saved = await _updateHabitUseCase.startFrom(habitId, pending.startFrom!);
           if (pending.days.isNotEmpty) {
             saved = await _updateHabitUseCase.setDays(habitId, pending.days);
           }
@@ -477,6 +485,9 @@ class _PendingChange {
   final Map<DateTime, bool> twoMinute = {};
 
   String? why;
+
+  /// The earlier day the habit now counts from.
+  DateTime? startFrom;
 
   /// Day -> note text ('' removes it).
   final Map<DateTime, String> notes = {};

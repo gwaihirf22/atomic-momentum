@@ -87,6 +87,11 @@ class UpdateHabitUseCase {
   /// Why the person keeps the habit (see [Habit.setWhy]).
   Future<Habit> setWhy(String habitId, String text) => _change(habitId, (habit) => habit.setWhy(text));
 
+  /// Counts the habit from an earlier [date] (see [Habit.startFrom]); nothing
+  /// changes if it already counts from then (say a log there came first).
+  Future<Habit> startFrom(String habitId, DateTime date) =>
+      _change(habitId, (habit) => habit.startedOn(date) ? habit : habit.startFrom(date));
+
   /// The note on [date] (see [Habit.setDayNote]).
   Future<Habit> setDayNote(String habitId, DateTime date, String text) =>
       _change(habitId, (habit) => habit.setDayNote(date, text));

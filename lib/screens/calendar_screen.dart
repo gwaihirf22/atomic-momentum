@@ -23,6 +23,8 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/habit_progress_ring.dart';
 import '../presentation/widgets/habit_stepper.dart';
 import '../presentation/widgets/hold_undo_strip.dart';
+import '../presentation/widgets/stat_card.dart';
+import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/tab_swipe.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
@@ -67,8 +69,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   /// Habits due on [day] (rest days of a weekday schedule are left out),
-  /// within the filter.
-  List<Habit> _habitsForDay(DateTime day) {
+  /// within the filter, that were being tracked by then.
+  List<Habit> _habitsForDay(DateTime day) => _dueOn(day).where((habit) => habit.startedOn(day)).toList();
+
+  /// Habits due on [day] by their schedule but added after it: listed last,
+  /// grayed, to start from that day if wanted.
+  List<Habit> _notStartedOn(DateTime day) => _dueOn(day).where((habit) => !habit.startedOn(day)).toList();
+
+  List<Habit> _dueOn(DateTime day) {
     final habits = context.read<HabitProvider>().habits;
     final categories = context.read<CategoryProvider>();
     final filterId = _activeFilterId(habits);
@@ -76,6 +84,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
         .where((habit) => filterId == null || categories.matches(habit, filterId))
         .where((habit) => habit.isDueOn(day))
         .toList();
+  }
+
+  /// Asks, then counts [habit] from [day] (earlier than it was added).
+  Future<void> _startFrom(Habit habit, DateTime day) async {
+    final date = DateFormat.MMMd().format(day);
+    final confirmed = await confirmAdaptive(
+      context,
+      title: 'Start ${habit.name} from $date?',
+      message: habit.isBreak
+          ? '${habit.name} will count from $date. Every day since then counts as clean unless you log slips.'
+          : '${habit.name} will count from $date. The days until you added it count as missed until you log them here.',
+      confirmLabel: 'Start from $date',
+      confirmKey: const Key('startFromConfirm'),
+      cancelKey: const Key('startFromCancel'),
+    );
+    if (!confirmed || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = await context.read<HabitProvider>().startFrom(habit.id, day);
+    messenger.showSnackBar(SnackBar(
+      content: Text(saved
+          ? '${habit.name} now counts from $date'
+          : "Couldn't change when ${habit.name} starts. Please try again."),
+    ));
   }
 
   static double _fractionOn(Habit habit, DateTime day) => habit.fractionDoneOn(day);
@@ -179,6 +210,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       builder: (context, habitProvider, categoryProvider, _) {
         final habits = habitProvider.habits;
         final dayHabits = _habitsForDay(_selectedDay);
+        final notStarted = _notStartedOn(_selectedDay);
         final filterId = _activeFilterId(habits);
 
         return LargeTitleScaffold(
@@ -221,7 +253,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 categories: categoryProvider.filterOptions(habits),
                 // The rings show the selected day
                 stats: categoryProvider.getCategoryStats(
-                  habits.where((h) => h.isDueOn(_selectedDay)).toList(),
+                  habits.where((h) => h.isDueOn(_selectedDay) && h.startedOn(_selectedDay)).toList(),
                   on: _selectedDay,
                 ),
                 selectedId: filterId,
@@ -230,7 +262,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             SliverToBoxAdapter(child: _buildCalendar(context, habits)),
             SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
-            _buildDayHabits(context, dayHabits),
+            _buildDayHabits(context, dayHabits, notStarted),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
@@ -365,17 +397,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildDayHabits(BuildContext context, List<Habit> habits) {
+  Widget _buildDayHabits(BuildContext context, List<Habit> habits, List<Habit> notStarted) {
     final day = _selectedDay;
     // Editing past days is how missed logs are fixed and streaks repaired
     final isEditable = !day.isAfter(_today);
     final categories = context.read<CategoryProvider>();
+    void open(Habit habit) => Navigator.of(context).push(CupertinoPageRoute<void>(
+          builder: (_) => HabitDetailScreen(habitId: habit.id, day: day),
+        ));
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: AppStyle.screenPadding),
       sliver: SliverList.builder(
-        itemCount: habits.length,
+        itemCount: habits.length + notStarted.length,
         itemBuilder: (context, index) {
+          if (index >= habits.length) {
+            final habit = notStarted[index - habits.length];
+            return _NotStartedRow(
+              habit: habit,
+              icon: habitIcon(habit, categories.resolve(habit.categoryId)),
+              onStart: () => _startFrom(habit, day),
+              onOpen: () => open(habit),
+            );
+          }
           final habit = habits[index];
           return _DayHabitRow(
             habit: habit,
@@ -463,6 +507,83 @@ class _DayCell extends StatelessWidget {
   }
 }
 
+/// A habit due on the selected day by its schedule, but added after it:
+/// grayed, with "Start from this day".
+class _NotStartedRow extends StatelessWidget {
+  final Habit habit;
+  final IconData icon;
+  final VoidCallback onStart;
+  final VoidCallback onOpen;
+
+  const _NotStartedRow({required this.habit, required this.icon, required this.onStart, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final added = DateFormat.MMMd().format(habit.trackedFrom);
+    final start = PillButton(
+      key: Key('startFrom_${habit.id}'),
+      label: 'Start from this day',
+      onPressed: onStart,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
+      child: Material(
+        key: Key('notStarted_${habit.id}'),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(AppStyle.cardRadius),
+        clipBehavior: Clip.antiAlias,
+        child: TabSwipeBlocker(
+          child: InkWell(
+            onTap: onOpen,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: LayoutBuilder(builder: (context, constraints) {
+                final twoRows = HabitCard.useTwoRows(context, constraints.maxWidth + 24);
+                final info = Semantics(
+                  label: '${habit.name}, not started yet, added ${DateFormat.MMMMd().format(habit.trackedFrom)}',
+                  excludeSemantics: true,
+                  child: Opacity(
+                    opacity: 0.5,
+                    child: Row(children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration:
+                            BoxDecoration(shape: BoxShape.circle, border: Border.all(color: palette.track, width: 3)),
+                        child: Icon(icon, size: 20, color: palette.textSecondary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(
+                            habit.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: palette.text),
+                          ),
+                          Text('Added $added', style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                );
+                if (twoRows) {
+                  return Column(
+                      crossAxisAlignment: CrossAxisAlignment.end, children: [info, const SizedBox(height: 6), start]);
+                }
+                // Each gets at most half, so neither squeezes the other
+                return Row(children: [Expanded(child: info), const SizedBox(width: 8), Flexible(child: start)]);
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// One habit on the selected day, styled like the habit cards: its icon in
 /// a progress ring (a check when done), the name (crossed out when done),
 /// what was logged, and a −/+ stepper for that day.
@@ -536,100 +657,101 @@ class _DayHabitRow extends StatelessWidget {
       // A swipe on a habit never moves to another tab
       child: TabSwipeBlocker(
         child: Material(
-        key: Key('dayHabit_${habit.id}'),
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(AppStyle.cardRadius),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(children: [
-          InkWell(
-            onTap: onOpen,
-            child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          // Same rule as the habit cards: two rows on narrow phones or large text
-          child: LayoutBuilder(builder: (context, constraints) {
-            final twoRows = HabitCard.useTwoRows(context, constraints.maxWidth + 24);
-            final ring = HabitProgressRing(
-              key: Key('dayHabitIcon_${habit.id}'),
-              icon: icon,
-              color: color,
-              fraction: habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day),
-              isDone: isDone && !habit.isBreak,
-              checkKey: const Key('completedBadge'),
-              semanticLabel: '${habit.name}, $subtitle',
-              onTap: canAdd && !habit.isBreak ? () => onSet(loggedThatDay + 1, periodTotal) : null,
-              // Holding finishes the period (that day gets whatever's left), or clears it
-              onLongPress: canHold ? onHold : null,
-              longPressHint: canAdd ? 'Finish' : 'Clear',
-            );
-            final details = Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  habit.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 16,
-                    height: 1.2,
-                    fontWeight: FontWeight.w600,
-                    // Crossed off, like a done list
-                    decoration: isDone && !habit.isBreak ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    height: 1.2,
-                    color: secondaryLabel(context),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (showTwoMinute)
-                  TwoMinuteButton(
-                    key: Key('dayTwoMinute_${habit.id}'),
-                    description: habit.twoMinute!.description,
+          key: Key('dayHabit_${habit.id}'),
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(AppStyle.cardRadius),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(children: [
+            InkWell(
+              onTap: onOpen,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                // Same rule as the habit cards: two rows on narrow phones or large text
+                child: LayoutBuilder(builder: (context, constraints) {
+                  final twoRows = HabitCard.useTwoRows(context, constraints.maxWidth + 24);
+                  final ring = HabitProgressRing(
+                    key: Key('dayHabitIcon_${habit.id}'),
+                    icon: icon,
                     color: color,
-                    done: habit.isTwoMinuteOn(day),
-                    onChanged: habit.twoMinuteReachedByAmountOn(day) && !habit.usedTwoMinuteButtonOn(day)
-                        ? null
-                        : onSetTwoMinute,
-                  ),
-              ],
-            );
-            final stepper = !isEditable
-                ? null
-                : HabitStepper(
-                    color: color,
-                    removeKey: Key('decrementDay_${habit.id}'),
-                    addKey: Key('incrementDay_${habit.id}'),
-                    removeTooltip: habit.isBreak ? 'Remove a slip from this day' : 'Remove one from this day',
-                    addTooltip: habit.isBreak ? 'Log a slip on this day' : 'Add one to this day',
-                    onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
-                    onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                    fraction: habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day),
+                    isDone: isDone && !habit.isBreak,
+                    checkKey: const Key('completedBadge'),
+                    semanticLabel: '${habit.name}, $subtitle',
+                    onTap: canAdd && !habit.isBreak ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                    // Holding finishes the period (that day gets whatever's left), or clears it
+                    onLongPress: canHold ? onHold : null,
+                    longPressHint: canAdd ? 'Finish' : 'Clear',
                   );
+                  final details = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        habit.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600,
+                          // Crossed off, like a done list
+                          decoration: isDone && !habit.isBreak ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.2,
+                          color: secondaryLabel(context),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (showTwoMinute)
+                        TwoMinuteButton(
+                          key: Key('dayTwoMinute_${habit.id}'),
+                          description: habit.twoMinute!.description,
+                          color: color,
+                          done: habit.isTwoMinuteOn(day),
+                          onChanged: habit.twoMinuteReachedByAmountOn(day) && !habit.usedTwoMinuteButtonOn(day)
+                              ? null
+                              : onSetTwoMinute,
+                        ),
+                    ],
+                  );
+                  final stepper = !isEditable
+                      ? null
+                      : HabitStepper(
+                          color: color,
+                          removeKey: Key('decrementDay_${habit.id}'),
+                          addKey: Key('incrementDay_${habit.id}'),
+                          removeTooltip: habit.isBreak ? 'Remove a slip from this day' : 'Remove one from this day',
+                          addTooltip: habit.isBreak ? 'Log a slip on this day' : 'Add one to this day',
+                          onRemove: canRemove ? () => onSet(loggedThatDay - 1, periodTotal) : null,
+                          onAdd: canAdd ? () => onSet(loggedThatDay + 1, periodTotal) : null,
+                        );
 
-            final topRow = Row(children: [
-              ring,
-              const SizedBox(width: 12),
-              Expanded(child: details),
-              if (stepper != null && !twoRows) ...[const SizedBox(width: 8), HabitCard.guardStepper(stepper)],
-            ]);
-            if (stepper == null || !twoRows) return topRow;
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [topRow, const SizedBox(height: 6), HabitCard.guardStepper(stepper)],
-            );
-          }),
-          ),
-        ),
-          HoldUndoOverlay(undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
-        ]),
+                  final topRow = Row(children: [
+                    ring,
+                    const SizedBox(width: 12),
+                    Expanded(child: details),
+                    if (stepper != null && !twoRows) ...[const SizedBox(width: 8), HabitCard.guardStepper(stepper)],
+                  ]);
+                  if (stepper == null || !twoRows) return topRow;
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [topRow, const SizedBox(height: 6), HabitCard.guardStepper(stepper)],
+                  );
+                }),
+              ),
+            ),
+            HoldUndoOverlay(
+                undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
+          ]),
         ),
       ),
     );

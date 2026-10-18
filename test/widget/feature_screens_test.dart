@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'dart:ui' show SemanticsFlag;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -568,12 +569,17 @@ void main() {
 
   group('Calendar: editing a past day', () {
     testWidgets('+ counts up each tap, completes the day, and − undoes it', (tester) async {
-      await habitProvider.createHabit(const CreateHabitParams(
-        name: 'Stretch',
-        target: 3,
-        color: HabitColor.teal,
-        categoryId: BuiltInCategoryIds.body,
-      ));
+      // Added last month, so the past day is one it was tracked on
+      final added = DateTime(DateTime.now().year, DateTime.now().month - 1, 1);
+      await withClock(
+        Clock.fixed(added),
+        () => habitProvider.createHabit(const CreateHabitParams(
+          name: 'Stretch',
+          target: 3,
+          color: HabitColor.teal,
+          categoryId: BuiltInCategoryIds.body,
+        )),
+      );
       final id = habitProvider.habits.single.id;
 
       await pumpScreen(tester, const CalendarScreen());

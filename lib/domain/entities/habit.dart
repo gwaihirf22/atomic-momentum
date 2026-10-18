@@ -240,12 +240,23 @@ class Habit extends Equatable {
       newHistory[day] = amount;
     }
 
-    final updated = copyWith(history: newHistory);
+    final updated = (amount > 0 ? _startingBy(day) : this).copyWith(history: newHistory);
     if (updated.progressForPeriodContaining(day) > maxPeriodTotal) {
       throw ArgumentError('Total for this period would go past $maxPeriodTotal');
     }
 
-    return updated._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
+    return updated._recalculated(now).copyWith(metadata: updated.metadata.updateModifiedDate());
+  }
+
+  /// This habit counting from [day] if that's earlier than it does now: a
+  /// log on a day before it was added starts it there for good (clearing
+  /// that log later doesn't move the start back).
+  Habit _startingBy(DateTime day) {
+    if (!day.isBefore(trackedFrom)) return this;
+    return copyWith(
+      metadata: metadata.copyWith(createdDate: day),
+      resetAnchorDate: resetAnchorDate ?? _dateOnly(resetAnchor),
+    );
   }
 
   /// Sets what was logged on several days at once (0 clears a day), then
@@ -265,13 +276,14 @@ class Habit extends Equatable {
         newHistory[day] = entry.value;
       }
     }
-    final updated = copyWith(history: newHistory);
+    final logged = [for (final e in amounts.entries) if (e.value > 0) _dateOnly(e.key)]..sort();
+    final updated = (logged.isEmpty ? this : _startingBy(logged.first)).copyWith(history: newHistory);
     for (final day in amounts.keys) {
       if (updated.progressForPeriodContaining(day) > maxPeriodTotal) {
         throw ArgumentError('Total for this period would go past $maxPeriodTotal');
       }
     }
-    return updated._recalculated(now).copyWith(lastUpdatedDate: now, metadata: metadata.updateModifiedDate());
+    return updated._recalculated(now).copyWith(lastUpdatedDate: now, metadata: updated.metadata.updateModifiedDate());
   }
 
   /// What was logged on each day of the period containing [date], from its
@@ -292,6 +304,26 @@ class Habit extends Equatable {
     final trimmed = text.trim();
     if (trimmed.length > maxWhyLength) throw ArgumentError('Keep it under $maxWhyLength characters');
     return copyWith(why: trimmed, metadata: metadata.updateModifiedDate());
+  }
+
+  /// Whether the habit was being tracked on [date]: on or after the day it
+  /// counts from.
+  bool startedOn(DateTime date) => !_dateOnly(date).isBefore(trackedFrom);
+
+  /// Counts the habit from [date], earlier than it was added: the days in
+  /// between are there to log (for a habit being broken, they count as
+  /// clean). Its periods keep their boundaries (the reset day is pinned, as
+  /// older habits fall back to the day they were made for it).
+  Habit startFrom(DateTime date) {
+    final day = _dateOnly(date);
+    final now = clock.now();
+    if (day.isAfter(_dateOnly(now))) throw ArgumentError("A habit can't start in the future");
+    if (!day.isBefore(trackedFrom)) throw ArgumentError('It already counts from ${trackedFrom.month}/${trackedFrom.day}');
+    final updated = copyWith(
+      metadata: metadata.copyWith(createdDate: day, lastModifiedDate: now),
+      resetAnchorDate: resetAnchorDate ?? _dateOnly(resetAnchor),
+    );
+    return updated._recalculated(now);
   }
 
   /// The note on [date]; empty removes it. Days can't be in the future.
@@ -325,7 +357,8 @@ class Habit extends Equatable {
     } else {
       days.removeWhere((d) => _inSamePeriod(d, day));
     }
-    return copyWith(twoMinuteDays: days)._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
+    final updated = (done ? _startingBy(day) : this).copyWith(twoMinuteDays: days);
+    return updated._recalculated(now).copyWith(metadata: updated.metadata.updateModifiedDate());
   }
 
   /// Clears what was logged in the current period.
