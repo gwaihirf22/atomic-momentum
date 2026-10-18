@@ -111,6 +111,27 @@ void main() {
     expect(habit.units, 'drinks');
   });
 
+  testWidgets('the name\'s example is something to break, in Story and in Builder', (tester) async {
+    await openEditor(tester);
+    await tap(tester, 'storyName');
+    expect(find.text('e.g. Drink water'), findsOneWidget);
+    Navigator.of(tester.element(find.byKey(const Key('habitNameField')))).pop();
+    await tester.pumpAndSettle();
+
+    await chooseBreak(tester);
+    await tap(tester, 'storyName');
+    expect(find.text('e.g. Social media'), findsOneWidget);
+    expect(find.text('e.g. Drink water'), findsNothing);
+    Navigator.of(tester.element(find.byKey(const Key('habitNameField')))).pop();
+    await tester.pumpAndSettle();
+
+    await tap(tester, 'switchHabitStyle');
+    expect(find.byType(BuilderAddScreen), findsOneWidget);
+    expect(find.text('e.g. Social media'), findsOneWidget);
+    await tap(tester, 'habitGoalBuild');
+    expect(find.text('e.g. Drink water'), findsOneWidget);
+  });
+
   testWidgets('Builder keeps Break across the switch, with break steps and picks', (tester) async {
     await openEditor(tester);
     await chooseBreak(tester);

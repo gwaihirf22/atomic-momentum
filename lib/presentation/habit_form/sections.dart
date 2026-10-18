@@ -93,8 +93,16 @@ class NameField extends StatelessWidget {
 
   const NameField(this.draft, {super.key, this.autofocus = false, this.prominent = false});
 
+  /// The example in the empty field: something to build, or to break.
+  static String hintFor(HabitDraft draft) => draft.isBreak ? 'e.g. Social media' : 'e.g. Drink water';
+
   @override
   Widget build(BuildContext context) {
+    // The example follows Build | Break
+    return ListenableBuilder(listenable: draft, builder: (context, _) => _field());
+  }
+
+  Widget _field() {
     final field = TextFormField(
       key: const Key('habitNameField'),
       controller: draft.name,
@@ -103,7 +111,7 @@ class NameField extends StatelessWidget {
       style: prominent ? const TextStyle(fontFamily: 'Sora', fontSize: 19, fontWeight: FontWeight.w600) : null,
       decoration: InputDecoration(
         labelText: prominent ? null : 'Habit Name',
-        hintText: 'e.g. Drink water',
+        hintText: hintFor(draft),
         errorMaxLines: 2,
         prefixIcon: prominent ? _IconChip(draft) : null,
       ),
