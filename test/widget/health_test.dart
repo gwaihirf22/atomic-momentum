@@ -154,6 +154,18 @@ void main() {
     expect(habits.habits.single.history[today], 1200);
   });
 
+  testWidgets('in development, Settings can add sample Health data and fill habits in', (tester) async {
+    await addLinked(HealthMetric.steps);
+    await pump(tester, const SettingsScreen());
+    await tester.scrollUntilVisible(find.byKey(const Key('healthSampleData')), 300, scrollable: find.byType(Scrollable).first);
+    health.values[HealthMetric.steps] = {today: 3200};
+    await tester.tap(find.byKey(const Key('healthSampleData')));
+    await tester.pumpAndSettle();
+    expect(health.samplesAdded, 1);
+    expect(find.text('Sample data added to Apple Health'), findsOneWidget);
+    expect(habits.habits.single.history[today], 3200);
+  });
+
   testWidgets('on Android without Health Connect, Settings offers to install it', (tester) async {
     health
       ..isAndroid = true

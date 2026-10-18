@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/injection/injection_container.dart';
@@ -39,6 +40,16 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
     if (mounted) setState(() => _syncing = false);
   }
 
+  Future<void> _addSamples() async {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final habits = context.read<HabitProvider>();
+    final ok = await _source.addSampleData();
+    if (ok) await habits.syncHealth(force: true);
+    messenger?.showSnackBar(SnackBar(
+      content: Text(ok ? 'Sample data added to ${_source.name}' : "Couldn't add sample data (allow writing in ${_source.name})"),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final habits = context.watch<HabitProvider>();
@@ -73,6 +84,16 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
                 subtitle: linked == 0 ? 'No habits linked yet' : (linked == 1 ? '1 habit linked' : '$linked habits linked'),
                 value: healthSyncAgo(habits.lastHealthSync),
                 onTap: _syncing || linked == 0 ? null : _syncNow,
+              ),
+            // Debug builds only: a simulator can't record a run, so write some
+            if (kDebugMode && availability == HealthAvailability.available)
+              SettingsTile(
+                tileKey: const Key('healthSampleData'),
+                icon: CupertinoIcons.lab_flask_solid,
+                iconColor: HabitColor.purple.color,
+                title: 'Add sample Health data',
+                subtitle: 'A run, steps, sleep, mindful minutes and water (testing only)',
+                onTap: _addSamples,
               ),
           ],
         );

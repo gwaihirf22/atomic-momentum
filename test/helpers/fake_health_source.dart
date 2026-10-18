@@ -50,6 +50,14 @@ class FakeHealthSource implements HealthSource {
     return record;
   }
 
+  int samplesAdded = 0;
+
+  @override
+  Future<bool> addSampleData() async {
+    samplesAdded++;
+    return true;
+  }
+
   @override
   Future<bool> remove(HealthRecord record) async {
     removed.add(record);

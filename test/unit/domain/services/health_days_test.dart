@@ -20,6 +20,16 @@ void main() {
       expect(HealthDays.minutesByDay(late, oct(17), oct(18)), {oct(17): 30, oct(18): 20});
     });
 
+    test('exercise is the higher of Watch exercise minutes and logged workouts', () {
+      final run = [span(oct(18, 7), oct(18, 7, 32))];
+      final watch = [span(oct(17, 18), oct(17, 18, 20))];
+      expect(
+        HealthDays.exerciseMinutesByDay(exercise: watch, workouts: run, from: oct(17), to: oct(18)),
+        {oct(17): 20, oct(18): 32},
+        reason: 'no Watch on the 18th: the run counts',
+      );
+    });
+
     test('sleep counts on the morning you wake, to the nearest hour', () {
       final night = [
         span(oct(17, 23), oct(18, 2)),

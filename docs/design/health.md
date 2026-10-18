@@ -6,7 +6,7 @@
   | Metric | Counts in | iPhone | Android |
   |---|---|---|---|
   | Steps | steps | ✓ | ✓ |
-  | Exercise | minutes (Exercise time; on Android, workout durations) | ✓ | ✓ |
+  | Exercise | minutes: the higher of Apple's Exercise minutes (Watch only) and the time in workouts any app logged (on Android, workout time) | ✓ | ✓ |
   | Workouts | workouts started that day | ✓ | ✓ |
   | Sleep | hours | ✓ | ✓ |
   | Mindful minutes | minutes | ✓ | not offered through the package |
@@ -48,8 +48,8 @@
 5. **Android:** minSdk is now 26 (Android 8), which Health Connect needs.
 
 ## Testing by hand
-- **iPhone simulator:**
-  1. In the Health app, add data under Browse → Steps (or Sleep, Water) → Add Data.
+- **iPhone simulator:** a simulator can't record a run, and its Fitness app tends to crash. In a debug build, Settings → Apple Health → **Add sample Health data** writes a 30-minute run, steps, last night's sleep, mindful minutes and water. Allow writing when asked.
+  1. Or add data by hand in the Health app, under Browse → Steps (or Sleep, Water) → Add Data.
   2. In Momentum, link a habit and allow access.
   3. Check that it fills in today and the days since linking.
 - **Android:** use an emulator with the Health Connect app installed.

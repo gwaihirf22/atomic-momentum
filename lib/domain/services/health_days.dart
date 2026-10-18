@@ -49,6 +49,19 @@ class HealthDays {
           day: unionMinutes(spans, from: day, to: DateTime(day.year, day.month, day.day + 1)),
       };
 
+  /// Exercise per day: the higher of Apple's Exercise minutes (Watch only)
+  /// and the time spent in workouts any app logged.
+  static Map<DateTime, int> exerciseMinutesByDay({
+    required Iterable<HealthSpan> exercise,
+    required Iterable<HealthSpan> workouts,
+    required DateTime from,
+    required DateTime to,
+  }) {
+    final watch = minutesByDay(exercise, from, to);
+    final logged = minutesByDay(workouts, from, to);
+    return {for (final day in watch.keys) day: math.max(watch[day]!, logged[day] ?? 0)};
+  }
+
   /// Hours asleep per day, counted toward the day you wake up: from 6 PM
   /// the evening before to 6 PM that day, rounded to the nearest hour.
   static Map<DateTime, int> sleepHoursByDay(Iterable<HealthSpan> asleep, DateTime from, DateTime to) => {
