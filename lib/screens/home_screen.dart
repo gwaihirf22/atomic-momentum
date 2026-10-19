@@ -31,6 +31,8 @@ import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/momentum_ring.dart';
 import 'package:clock/clock.dart';
 import '../presentation/tour/world_scope.dart';
+import '../presentation/tour/tour_anchor.dart';
+import '../presentation/tour/tour_events.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -179,7 +181,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   titleKey: const Key('habitsGreeting'),
                   accessory: momentum == null
                       ? null
-                      : MomentumRing(key: const Key('overallMomentum'), momentum: momentum),
+                      : TourAnchor(
+                          id: TourAnchorId.overallMomentum,
+                          child: MomentumRing(key: const Key('overallMomentum'), momentum: momentum),
+                        ),
                 ),
                 slivers: [
                   if (habitProvider.isLoading)
@@ -418,6 +423,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         message: finishing ? 'Marked done' : 'Cleared',
         finished: finishing,
         onUndo: () {
+          TourEvents.emit(HoldUndone(habit.id));
           _endUndo(habit.id);
           Haptics.selection();
           habitProvider.setDays(habit.id, before);

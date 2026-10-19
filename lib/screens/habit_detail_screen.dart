@@ -46,6 +46,7 @@ import '../presentation/widgets/two_minute_button.dart';
 import 'habit_editor_screen.dart';
 import 'heatmap_screen.dart';
 import '../presentation/tour/world_scope.dart';
+import '../presentation/tour/tour_events.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -78,6 +79,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final start = widget.day == null ? _today : _dateOnly(widget.day!);
     _day = start.isAfter(_today) ? _today : start;
     _month = DateTime(_day.year, _day.month);
+    TourEvents.emit(HabitPageOpened(widget.habitId));
   }
 
   @override

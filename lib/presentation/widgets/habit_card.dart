@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter_slidable/flutter_slidable.dart';
+import '../tour/tour_anchor.dart';
+import '../tour/tour_events.dart';
 import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
@@ -172,16 +175,23 @@ class HabitCard extends StatelessWidget {
             unit: habit.resetFrequency.periodUnit,
           ),
         if (showTwoMinute)
-          TwoMinuteButton(
-            key: Key('twoMinute_${habit.id}'),
-            description: habit.twoMinute!.description,
-            color: color,
-            done: habit.isTwoMinuteOn(now),
-            // Reaching the two-minute amount counts by itself
-            onChanged: onSetTwoMinute == null ||
-                    (habit.twoMinuteReachedByAmountOn(now) && !habit.usedTwoMinuteButtonOn(now))
-                ? null
-                : onSetTwoMinute,
+          TourAnchor(
+            id: TourAnchorId.habitTwoMinute,
+            tag: habit.id,
+            child: TwoMinuteButton(
+              key: Key('twoMinute_${habit.id}'),
+              description: habit.twoMinute!.description,
+              color: color,
+              done: habit.isTwoMinuteOn(now),
+              // Reaching the two-minute amount counts by itself
+              onChanged: onSetTwoMinute == null ||
+                      (habit.twoMinuteReachedByAmountOn(now) && !habit.usedTwoMinuteButtonOn(now))
+                  ? null
+                  : (done) {
+                      if (done) TourEvents.emit(TwoMinuteTapped(habit.id));
+                      onSetTwoMinute!(done);
+                    },
+            ),
           ),
       ],
     );
@@ -209,7 +219,10 @@ class HabitCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: ClipRRect(
+      child: TourAnchor(
+        id: TourAnchorId.habitCard,
+        tag: habit.id,
+        child: ClipRRect(
         borderRadius: BorderRadius.circular(AppStyle.cardRadius),
         child: Slidable(
           key: ValueKey('slidable_${habit.id}'),
@@ -254,7 +267,9 @@ class HabitCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Semantics(
+          child: _SwipeReporter(
+            habitId: habit.id,
+            child: Semantics(
             // Swipe actions are hard to reach with VoiceOver; offer them as actions
             customSemanticsActions: {
               if (onHold != null && _canHold && _canAdd) const CustomSemanticsAction(label: 'Mark done'): onHold!,
@@ -290,7 +305,7 @@ class HabitCard extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 12),
                   child: LayoutBuilder(builder: (context, constraints) {
                     final twoRows = useTwoRows(context, constraints.maxWidth + 12);
-                    final ring = HabitProgressRing(
+                    final ring = TourAnchor(id: TourAnchorId.habitRing, tag: habit.id, child: HabitProgressRing(
                       key: Key('habitIcon_${habit.id}'),
                       icon: paused ? CupertinoIcons.snow : habitIcon(habit, category),
                       color: paused ? palette.ice : color,
@@ -301,9 +316,14 @@ class HabitCard extends StatelessWidget {
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                       // A tap on the ring never logs a slip by accident
                       onTap: _canAdd && !habit.isBreak ? () => onSetProgress(StepSize.up(habit.progress, habit.target)) : null,
-                      onLongPress: _canHold ? onHold : null,
+                      onLongPress: _canHold
+                          ? () {
+                              TourEvents.emit(HoldFinished(habit.id));
+                              onHold!();
+                            }
+                          : null,
                       longPressHint: _canAdd ? 'Finish' : 'Clear',
-                    );
+                    ));
                     final details = Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -341,15 +361,20 @@ class HabitCard extends StatelessWidget {
                         ],
                       ],
                     );
-                    final stepper = HabitStepper(
+                    final stepper = TourAnchor(id: TourAnchorId.habitPlus, tag: habit.id, child: HabitStepper(
                       color: paused ? palette.ice : color,
                       removeKey: Key('decrementHabit_${habit.id}'),
                       addKey: Key('incrementHabit_${habit.id}'),
                       removeTooltip: habit.isBreak ? 'Remove a slip' : stepTooltip(habit, adding: false, one: 'Remove one'),
                       addTooltip: habit.isBreak ? 'Log a slip' : stepTooltip(habit, adding: true, one: 'Add one'),
                       onRemove: _canRemove ? () => onSetProgress(StepSize.down(habit.progress, habit.target)) : null,
-                      onAdd: _canAdd ? () => onSetProgress(StepSize.up(habit.progress, habit.target)) : null,
-                    );
+                      onAdd: _canAdd
+                          ? () {
+                              TourEvents.emit(PlusTapped(habit.id));
+                              onSetProgress(StepSize.up(habit.progress, habit.target));
+                            }
+                          : null,
+                    ));
 
                     if (!twoRows) {
                       // The stepper's guard runs the card's full height on the right
@@ -406,7 +431,9 @@ class HabitCard extends StatelessWidget {
               ]),
             ),
           ),
+          ),
         ),
+      ),
       ),
     );
   }
@@ -489,4 +516,44 @@ class _StreakBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Tells a tour when the card is swiped open ("Swipe right to freeze a day").
+class _SwipeReporter extends StatefulWidget {
+  final String habitId;
+  final Widget child;
+
+  const _SwipeReporter({required this.habitId, required this.child});
+
+  @override
+  State<_SwipeReporter> createState() => _SwipeReporterState();
+}
+
+class _SwipeReporterState extends State<_SwipeReporter> {
+  ValueListenable<ActionPaneType>? _pane;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final pane = Slidable.of(context)?.actionPaneType;
+    if (pane != _pane) {
+      _pane?.removeListener(_changed);
+      _pane = pane?..addListener(_changed);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pane?.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    final type = _pane?.value;
+    if (type == ActionPaneType.start) TourEvents.emit(CardSwiped(widget.habitId, freeze: true));
+    if (type == ActionPaneType.end) TourEvents.emit(CardSwiped(widget.habitId, freeze: false));
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

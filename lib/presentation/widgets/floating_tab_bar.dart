@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../core/feedback/haptics.dart';
 import '../../core/theme/app_palette.dart';
+import '../tour/tour_anchor.dart';
+import '../tour/tour_events.dart';
 
 /// One tab in the [FloatingTabBar].
 class FloatingTab {
@@ -69,7 +71,9 @@ class FloatingTabBar extends StatelessWidget {
     final palette = AppPalette.of(context);
     final shape = BorderRadius.circular(height / 2);
 
-    return MediaQuery.withClampedTextScaling(
+    return TourAnchor(
+      id: TourAnchorId.tabBar,
+      child: MediaQuery.withClampedTextScaling(
       maxScaleFactor: maxLabelScale,
       child: SizedBox(
         height: height,
@@ -132,6 +136,7 @@ class FloatingTabBar extends StatelessWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -151,11 +156,12 @@ class _TabButton extends StatelessWidget {
     final color = selected ? palette.accent : palette.textSecondary;
     void tap() {
       Haptics.selection();
+      if (adding) TourEvents.emit(const AddHabitTapped());
       adding ? onAdd() : onTap();
     }
 
     final Widget icon = adding
-        ? Container(
+        ? TourAnchor(id: TourAnchorId.addHabit, child: Container(
             key: const Key('addHabitButton'),
             width: FloatingTabBar.addOrbSize,
             height: FloatingTabBar.addOrbSize,
@@ -165,7 +171,7 @@ class _TabButton extends StatelessWidget {
               boxShadow: [BoxShadow(color: palette.orbShadow, blurRadius: 10, offset: const Offset(0, 3))],
             ),
             child: const Icon(CupertinoIcons.add, size: 22, color: AppPalette.onOrb),
-          )
+          ))
         : SizedBox(
             key: ValueKey(selected),
             height: FloatingTabBar.addOrbSize,

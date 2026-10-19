@@ -13,7 +13,12 @@ import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
 import 'presentation/providers/quote_provider.dart';
 import 'presentation/providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'presentation/tour/tour.dart';
+import 'presentation/tour/tour_anchor.dart';
 import 'presentation/tour/tour_bubble.dart';
+import 'presentation/tour/tour_controller.dart';
+import 'presentation/tour/tour_layer.dart';
 import 'presentation/tour/world_scope.dart';
 
 void main() async {
@@ -42,7 +47,7 @@ void main() async {
   if (!showIntro) WidgetsBinding.instance.addPostFrameCallback((_) => askPermission());
 }
 
-class MomentumApp extends StatelessWidget {
+class MomentumApp extends StatefulWidget {
   /// The cold-launch intro (main turns it on; tests leave it off).
   final bool showIntro;
   final VoidCallback? onIntroDone;
@@ -51,7 +56,37 @@ class MomentumApp extends StatelessWidget {
   /// pass their own, which builds the example habits in place).
   final WorldController? worlds;
 
-  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone, this.worlds}) : super(key: key);
+  /// The tours (tests pass their own).
+  final Map<TourId, Tour>? tours;
+
+  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone, this.worlds, this.tours}) : super(key: key);
+
+  @override
+  State<MomentumApp> createState() => _MomentumAppState();
+}
+
+class _MomentumAppState extends State<MomentumApp> {
+  late final WorldController _worlds = widget.worlds ?? WorldController();
+
+  /// Where whatever a tour can point at registers.
+  final _anchors = TourAnchors();
+
+  late final TourController _tours = TourController(
+    worlds: _worlds,
+    tours: widget.tours ?? const {},
+    anchors: _anchors,
+    store: sl.isRegistered<SharedPreferences>() ? TourStore(get<SharedPreferences>()) : null,
+  );
+
+  @override
+  void dispose() {
+    _tours.dispose();
+    if (widget.worlds == null) _worlds.dispose();
+    super.dispose();
+  }
+
+  bool get showIntro => widget.showIntro;
+  VoidCallback? get onIntroDone => widget.onIntroDone;
 
   @override
   Widget build(BuildContext context) {
@@ -75,11 +110,9 @@ class MomentumApp extends StatelessWidget {
         ChangeNotifierProvider<QuoteProvider>.value(
           value: get<QuoteProvider>(),
         ),
-        // The person's own habits, or a tour's example world
-        if (worlds case final worlds?)
-          ChangeNotifierProvider<WorldController>.value(value: worlds)
-        else
-          ChangeNotifierProvider<WorldController>(create: (_) => WorldController()),
+        // The person's own habits, or a tour's example world, and the tours
+        ChangeNotifierProvider<WorldController>.value(value: _worlds),
+        ChangeNotifierProvider<TourController>.value(value: _tours),
       ],
       // Above the app there's no MediaQuery yet; this one tracks the device's
       // light/dark setting so "System" follows it as it changes. The home
@@ -119,22 +152,30 @@ class MomentumApp extends StatelessWidget {
                       isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
                       // The world's providers around the root navigator, so
                       // whatever opens on it sees the same habits
-                      child: Stack(children: [
-                        Positioned.fill(
-                          child: WorldScope(
-                            world: world,
-                            child: KeyedSubtree(key: ObjectKey(world), child: ScaffoldMessenger(child: child!)),
+                      child: TourAnchorScope(
+                        anchors: _anchors,
+                        child: Stack(children: [
+                          Positioned.fill(
+                            child: WorldScope(
+                              world: world,
+                              child: KeyedSubtree(key: ObjectKey(world), child: ScaffoldMessenger(child: child!)),
+                            ),
                           ),
-                        ),
-                        // Never mistaken for the person's own habits
-                        if (world.isDemo)
-                          Positioned(
-                            top: MediaQuery.paddingOf(context).top + 4,
-                            left: 0,
-                            right: 0,
-                            child: Center(child: ExampleHabitsPill(onDone: worlds.exitDemo)),
-                          ),
-                      ]),
+                          // A tour, over everything
+                          const Positioned.fill(child: TourLayer()),
+                          // Never mistaken for the person's own habits (a tour
+                          // leaves them with its Skip)
+                          if (world.isDemo)
+                            Positioned(
+                              top: MediaQuery.paddingOf(context).top + 4,
+                              left: 0,
+                              right: 0,
+                              child: Center(
+                                child: ExampleHabitsPill(onDone: _tours.isRunning ? null : worlds.exitDemo),
+                              ),
+                            ),
+                        ]),
+                      ),
                     ),
                   ),
                 ),
