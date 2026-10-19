@@ -40,7 +40,7 @@ class DemoSeed {
   /// The example habits up to [now], built here and now (tests, and where
   /// there are no isolates).
   factory DemoSeed.build(DateTime now) {
-    final stored = YearOfUse.stored(DemoPersona(now), now);
+    final stored = YearOfUse.stored(DemoPersona(now), now, deferStreaks: true);
     return DemoSeed._(_day(now), stored.habits, stored.seen);
   }
 
@@ -53,7 +53,7 @@ class DemoSeed {
     final day = _day(now);
     final cached = _cached;
     if (cached != null && cached.$1 == day) return cached.$2;
-    final building = Isolate.run(() => YearOfUse.stored(DemoPersona(now), now))
+    final building = Isolate.run(() => YearOfUse.stored(DemoPersona(now), now, deferStreaks: true))
         .then((stored) => DemoSeed._(day, stored.habits, stored.seen));
     _cached = (day, building);
     // A failed build is tried again next time

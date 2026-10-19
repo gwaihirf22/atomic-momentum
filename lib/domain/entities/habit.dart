@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
 import 'habit_color.dart';
@@ -514,8 +515,17 @@ class Habit extends Equatable {
     return _recalculated(at).copyWith(lastUpdatedDate: at);
   }
 
+  static const _deferStreaks = #habitDeferStreaks;
+
+  /// Runs [body] with streaks left as they were after each change, for a
+  /// builder making many changes in a row that [refresh]es every habit
+  /// at the end (the tours' example habits): each streak is worked out once
+  /// rather than once a change.
+  static T deferringStreaks<T>(T Function() body) => runZoned(body, zoneValues: {_deferStreaks: true});
+
   Habit _recalculated(DateTime now) {
     final periodProgress = progressForPeriodContaining(now);
+    if (Zone.current[_deferStreaks] == true) return copyWith(progress: periodProgress);
     return copyWith(
       // May be past the target: "10/8" counts as done
       progress: periodProgress,

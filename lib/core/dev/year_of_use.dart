@@ -43,20 +43,27 @@ class YearOfUse {
   /// The year whose last day is [now]'s day.
   static YearPersona personaEnding(DateTime now) => YearPersona(DateTime(now.year, now.month, now.day - (YearPersona.length - 1)));
 
-  /// The persona's habits after every visit up to [until].
-  static List<Habit> build(Persona persona, DateTime until) {
+  /// The persona's habits after every visit up to [until]. With
+  /// [deferStreaks], streaks are worked out once at the end instead of after
+  /// every change (far quicker; for personas whose actions never depend on
+  /// a streak, like the tours').
+  static List<Habit> build(Persona persona, DateTime until, {bool deferStreaks = false}) {
     final habits = <String, Habit>{};
-    for (final day in persona.days) {
-      for (final visit in day.visits) {
-        final at = visit.on(day.date);
-        if (at.isAfter(until)) break;
-        withClock(Clock.fixed(at), () {
-          for (final action in visit.actions) {
-            _apply(habits, action, at);
-          }
-        });
+    void live() {
+      for (final day in persona.days) {
+        for (final visit in day.visits) {
+          final at = visit.on(day.date);
+          if (at.isAfter(until)) break;
+          withClock(Clock.fixed(at), () {
+            for (final action in visit.actions) {
+              _apply(habits, action, at);
+            }
+          });
+        }
       }
     }
+
+    deferStreaks ? Habit.deferringStreaks(live) : live();
     return withClock(Clock.fixed(until), () => [for (final h in habits.values) h.refresh(until)]);
   }
 
@@ -168,8 +175,8 @@ class YearOfUse {
 
   /// [persona]'s habits up to [now] as stored: their JSON, and the ids of
   /// the achievements they've earned (to file as seen).
-  static ({String habits, List<String> seen}) stored(Persona persona, DateTime now) {
-    final habits = build(persona, now);
+  static ({String habits, List<String> seen}) stored(Persona persona, DateTime now, {bool deferStreaks = false}) {
+    final habits = build(persona, now, deferStreaks: deferStreaks);
     return (
       habits: jsonEncode([for (final h in habits) HabitModel.fromDomain(h).toCompactJson()]),
       seen: [for (final a in Achievements.earned(habits, now)) a.id]..sort(),

@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atomic_momentum/core/demo/demo_persona.dart';
 import 'package:atomic_momentum/core/dev/year_of_use.dart';
+import 'package:atomic_momentum/data/models/habit_model.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 
@@ -14,7 +17,7 @@ void main() {
     DateTime(2027, 7, 4, 18, 5),
   ];
 
-  List<Habit> build(DateTime now) => YearOfUse.build(DemoPersona(now), now);
+  List<Habit> build(DateTime now) => YearOfUse.build(DemoPersona(now), now, deferStreaks: true);
   Habit named(List<Habit> habits, String name) => habits.firstWhere((h) => h.name == name);
   DateTime day(DateTime t) => DateTime(t.year, t.month, t.day);
 
@@ -75,6 +78,20 @@ void main() {
     });
   }
 
+  test('working out streaks once at the end builds exactly the same habits', () {
+    for (final now in todays) {
+      final plain = YearOfUse.build(DemoPersona(now), now);
+      final deferred = YearOfUse.build(DemoPersona(now), now, deferStreaks: true);
+      // Everything but the ids (made from a running count) and when it was written
+      String stored(List<Habit> habits) =>
+          jsonEncode([for (final h in habits) HabitModel.fromDomain(h).toJson()
+            ..remove('id')
+            ..remove('_serializedAt')]);
+      expect(stored(deferred), stored(plain), reason: '$now');
+      expect([for (final h in deferred) h.streak], [for (final h in plain) h.streak], reason: '$now');
+    }
+  });
+
   test('builds quickly enough to overlap the launch intro', () {
     // The fastest of three, so a busy machine doesn't fail it; a debug VM in
     // a test, where the app builds it in an isolate during the intro
@@ -84,6 +101,6 @@ void main() {
       build(todays.first);
       if (watch.elapsedMilliseconds < fastest) fastest = watch.elapsedMilliseconds;
     }
-    expect(fastest, lessThan(2000));
+    expect(fastest, lessThan(500));
   });
 }
