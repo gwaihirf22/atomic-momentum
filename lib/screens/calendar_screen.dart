@@ -30,6 +30,7 @@ import '../presentation/widgets/tab_swipe.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
 import 'habit_detail_screen.dart';
+import '../presentation/tour/tour_events.dart';
 
 /// Any day's habits: a month (or week) of days, each inside a ring that fills
 /// with that day's completion, and the selected day's habits below, which
@@ -327,6 +328,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
 
     return TableCalendar<Habit>(
+      key: const Key('calendarGrid'),
       firstDay: DateTime.utc(2020, 1, 1),
       lastDay: DateTime.utc(2030, 12, 31),
       focusedDay: _focusedDay,
@@ -357,6 +359,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       onDaySelected: (selectedDay, focusedDay) {
         if (isSameDay(_selectedDay, selectedDay)) return;
+        TourEvents.emit(const CalendarDaySelected());
         Haptics.selection();
         setState(() {
           _selectedDay = _localDay(selectedDay);

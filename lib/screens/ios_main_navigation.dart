@@ -25,6 +25,8 @@ import 'calendar_screen.dart';
 import 'insights_screen.dart';
 import 'inspire_screen.dart';
 import 'settings_screen.dart';
+import '../presentation/tour/tour_controller.dart';
+import '../presentation/tour/tours.dart';
 
 /// The main tabs, in the bar's order. Inspire can be turned off in Settings.
 enum AppTab {
@@ -262,6 +264,15 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     });
     widget.controller?.current.value = tab;
     _wakeBar();
+    // A tab's first visit brings its tour (never over the example habits)
+    final tour = Tours.forTab(tab);
+    if (!widget.demo && tour != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !Navigator.of(context, rootNavigator: true).canPop()) {
+          TourController.maybeOf(context)?.firstVisit(tour);
+        }
+      });
+    }
   }
 
   void _slideAlongBar(int position) {

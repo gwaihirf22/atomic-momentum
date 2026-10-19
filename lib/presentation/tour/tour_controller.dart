@@ -12,6 +12,7 @@ import 'tour.dart';
 import 'tour_anchor.dart';
 import 'tour_events.dart';
 import 'world_scope.dart';
+import 'package:provider/provider.dart';
 
 /// How a launch begins: a new install takes the Habits tour, someone who
 /// had habits before tours existed is offered it once, everyone else
@@ -126,6 +127,26 @@ class TourController extends ChangeNotifier {
     _offering = false;
     notifyListeners();
     await store?.markSeen(TourId.habits);
+  }
+
+  /// The controller above [context], if there is one (some tests build
+  /// screens without the app around them).
+  static TourController? maybeOf(BuildContext context) {
+    try {
+      return Provider.of<TourController>(context, listen: false);
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  /// A tab, a habit's page or the editor shown for the first time: its
+  /// tour, once the Habits tour is behind them and nothing else is going on.
+  void firstVisit(TourId id) {
+    final store = this.store;
+    if (store == null || isRunning || _offering || worlds.world.isDemo || !tours.containsKey(id)) return;
+    final seen = store.seen;
+    if (!seen.contains(TourId.habits) || seen.contains(id)) return;
+    unawaited(start(id));
   }
 
   /// "Show tours again": each comes back on its next visit.
@@ -259,17 +280,24 @@ class TourController extends ChangeNotifier {
         _ => null,
       };
 
-  /// Scrolls the page showing in the current tab a screen further.
+  /// Scrolls the page on top a screen further: its main list (the tallest
+  /// vertical one on the current route, in the tab showing).
   void _scrollDown() {
     final navigator = worlds.world.nav.navigatorOf(worlds.world.nav.current.value);
     ScrollableState? found;
+    var tallest = 0.0;
     void visit(Element element) {
-      if (found != null) return;
+      final widget = element.widget;
+      if (widget is Offstage && widget.offstage) return;
       if (element is StatefulElement && element.state is ScrollableState) {
         final state = element.state as ScrollableState;
-        if (state.widget.axis == Axis.vertical) {
-          found = state;
-          return;
+        final current = ModalRoute.of(element)?.isCurrent ?? true;
+        if (state.widget.axis == Axis.vertical && current && state.position.hasViewportDimension) {
+          final height = state.position.viewportDimension;
+          if (height > tallest) {
+            tallest = height;
+            found = state;
+          }
         }
       }
       element.visitChildElements(visit);

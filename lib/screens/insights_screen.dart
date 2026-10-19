@@ -28,6 +28,7 @@ import '../presentation/widgets/stat_card.dart';
 import 'achievements_screen.dart';
 import 'habit_detail_screen.dart';
 import 'heatmap_screen.dart';
+import '../presentation/tour/tour_events.dart';
 
 /// How far back the Insights cards look, in weeks (about six months).
 const insightsWeeks = 26;
@@ -90,7 +91,10 @@ class _InsightsScreenState extends State<InsightsScreen> {
                         _habitId = id;
                         _selected = null;
                       }),
-                      onSelect: (day) => setState(() => _selected = day == _selected ? null : day),
+                      onSelect: (day) {
+                        TourEvents.emit(const HeatmapDaySelected());
+                        setState(() => _selected = day == _selected ? null : day);
+                      },
                     ),
                     const SizedBox(height: 14),
                     _TwoMinuteCard(data: data, habits: habits),

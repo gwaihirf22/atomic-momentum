@@ -42,7 +42,33 @@ enum TourAnchorId {
   // Settings
   settingsHelp,
   settingsFreezes,
-  settingsNotifications,
+  settingsNotifications;
+
+  /// The key a screen already gives this widget, for anchors found by key
+  /// rather than wrapped in a [TourAnchor] ([tag] completes keys with an id
+  /// in them). Null for those that are wrapped.
+  String? keyFor(String? tag) => switch (this) {
+        calendarGrid => 'calendarGrid',
+        calendarDayHabit => 'dayHabit_$tag',
+        insightsMomentum => 'insightsMomentum',
+        insightsHeatmap => 'insightsDays',
+        insightsAchievements => 'insightsAchievements',
+        inspireQuote => 'inspireQuoteText',
+        inspireActions => 'inspireActionsFade',
+        inspireSearch => 'inspireSearch',
+        storySentence => 'storySentence',
+        storyHardDay => 'storyHardDay',
+        editorStyleSwitch => 'switchHabitStyle',
+        settingsHelp => 'openTours',
+        settingsFreezes => 'freezeBankTile',
+        settingsNotifications => 'defaultReminderTime',
+        detailRing => 'detailRing',
+        detailFreeze => 'detailFreeze',
+        detailMomentum => 'detailMomentum',
+        detailHeatmap => 'detailHeatmap',
+        detailEdit => 'detailEdit',
+        _ => null,
+      };
 }
 
 /// Marks [child] as something a tour can point at. Free when no tour runs:
@@ -90,6 +116,13 @@ class _TourAnchorState extends State<TourAnchor> {
 class TourAnchors {
   final _anchors = <_TourAnchorState>{};
 
+  /// Where to search for anchors found by key (the scope's own context).
+  BuildContext? _root;
+
+  /// The last widget found by key, kept while it's mounted, so following it
+  /// every frame doesn't search the whole tree.
+  final _byKey = <(TourAnchorId, String?), Element>{};
+
   void _add(_TourAnchorState anchor) => _anchors.add(anchor);
   void _remove(_TourAnchorState anchor) => _anchors.remove(anchor);
 
@@ -99,14 +132,46 @@ class TourAnchors {
     for (final anchor in _anchors) {
       if (anchor.widget.id != id || (tag != null && anchor.widget.tag != tag)) continue;
       final context = anchor._key.currentContext;
-      if (context == null || !context.mounted) continue;
-      if (!TickerMode.valuesOf(context).enabled) continue;
-      if (ModalRoute.of(context)?.isCurrent == false) continue;
-      final box = context.findRenderObject();
-      if (box is! RenderBox || !box.attached || !box.hasSize) continue;
-      return context;
+      if (context != null && _shows(context)) return context;
     }
-    return null;
+    final key = id.keyFor(tag);
+    if (key == null) return null;
+    final cached = _byKey[(id, tag)];
+    if (cached != null && cached.mounted && cached.widget.key == ValueKey(key) && _shows(cached)) return cached;
+    _byKey.remove((id, tag));
+    final found = _search(key);
+    if (found != null) _byKey[(id, tag)] = found;
+    return found;
+  }
+
+  /// Built, in a tab that's showing, on the page on top, laid out.
+  static bool _shows(BuildContext context) {
+    if (!context.mounted || !TickerMode.valuesOf(context).enabled) return false;
+    if (ModalRoute.of(context)?.isCurrent == false) return false;
+    final box = context.findRenderObject();
+    return box is RenderBox && box.attached && box.hasSize;
+  }
+
+  /// The first showing widget keyed [key] below the scope, skipping what's
+  /// kept offstage (tabs not showing).
+  Element? _search(String key) {
+    final root = _root;
+    if (root == null || !root.mounted) return null;
+    final want = ValueKey(key);
+    Element? found;
+    void visit(Element element) {
+      if (found != null) return;
+      final widget = element.widget;
+      if (widget is Offstage && widget.offstage) return;
+      if (widget.key == want && _shows(element)) {
+        found = element;
+        return;
+      }
+      element.visitChildElements(visit);
+    }
+
+    (root as Element).visitChildElements(visit);
+    return found;
   }
 
   /// Where [id] is on screen, in global coordinates, or null.
@@ -126,10 +191,24 @@ class TourAnchors {
 class TourAnchorScope extends InheritedWidget {
   final TourAnchors anchors;
 
-  const TourAnchorScope({super.key, required this.anchors, required super.child});
+  TourAnchorScope({super.key, required this.anchors, required Widget child})
+      : super(child: _Root(anchors: anchors, child: child));
 
   static TourAnchors? maybeOf(BuildContext context) => context.getInheritedWidgetOfExactType<TourAnchorScope>()?.anchors;
 
   @override
   bool updateShouldNotify(TourAnchorScope oldWidget) => oldWidget.anchors != anchors;
+}
+
+/// Tells [anchors] where its scope's tree starts, for anchors found by key.
+class _Root extends StatelessWidget {
+  final TourAnchors anchors;
+  final Widget child;
+  const _Root({required this.anchors, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    anchors._root = context;
+    return child;
+  }
 }

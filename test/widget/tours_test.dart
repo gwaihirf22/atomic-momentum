@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -114,10 +115,11 @@ void main() {
     expect(tours.stepIndex, 6, reason: 'the swipe moved it on');
     await tester.tap(find.text('Next')); // the tab bar; the swipe is closed
     await settle(tester);
-    // The person's own app: tapping Add habit ends it and opens the editor
+    // The person's own app: tapping Add habit ends it and opens the editor,
+    // whose own tour follows
     await tester.tap(find.byKey(const Key('addHabitButton')));
     await settle(tester);
-    expect(tours.isRunning, isFalse);
+    expect(tours.tour?.id, TourId.editor);
     expect(find.byType(HabitEditorScreen), findsOneWidget);
   });
 
@@ -147,7 +149,7 @@ void main() {
   });
 
   testWidgets('Settings → Help → Tours plays a tour again, and Show tours again resets them', (tester) async {
-    await setUpWith({TourStore.key: ['habits']});
+    await setUpWith({TourStore.key: ['habits', 'settings']});
     await tester.pumpWidget(MomentumApp(worlds: worlds));
     await settle(tester);
     final tours = toursIn(tester);
@@ -166,11 +168,93 @@ void main() {
 
     await tester.tap(find.byKey(const Key('openTours')));
     await settle(tester);
+    await tester.scrollUntilVisible(find.byKey(const Key('toursShowAgain')), 200, scrollable: find.byType(Scrollable).last);
     await tester.tap(find.byKey(const Key('toursShowAgain')));
     await settle(tester);
     await tester.tap(find.byKey(const Key('toursShowAgainYes')));
     await settle(tester);
     expect(TourStore(get<SharedPreferences>()).seen, isEmpty);
+  });
+
+  group('every tour finds each of its targets', () {
+    for (final id in Tours.all.keys.where((id) => id != TourId.habits && id != TourId.editor)) {
+      for (final (size, scale) in const [(Size(375, 667), 1.35), (Size(390, 844), 1.0)]) {
+        testWidgets('${id.name} at ${size.width.toInt()}pt, ${(scale * 100).round()}%', (tester) async {
+          await setUpWith({TourStore.key: ['habits']});
+          tester.view.physicalSize = size * 3;
+          tester.view.devicePixelRatio = 3;
+          tester.view.padding = const FakeViewPadding(top: 20 * 3);
+          tester.platformDispatcher.textScaleFactorTestValue = scale * sfWidthAllowance;
+          addTearDown(tester.view.reset);
+          addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+          await tester.pumpWidget(MomentumApp(worlds: worlds));
+          await settle(tester);
+          final tours = toursIn(tester);
+          final tour = Tours.all[id]!;
+          unawaited(tours.start(id));
+          for (var i = 0; i < tour.steps.length; i++) {
+            await settle(tester);
+            await settle(tester);
+            final step = tour.steps[i];
+            expect(tours.stepIndex, i);
+            expect(tester.takeException(), isNull, reason: 'step ${i + 1}');
+            final spotlight = tester.widget<TourSpotlight>(find.byType(TourSpotlight));
+            if (step.anchor != null) {
+              expect(spotlight.target, isNotNull, reason: 'step ${i + 1} finds ${step.anchor!.name}');
+            }
+            final bubble = tester.getRect(find.byType(TourBubble));
+            expect(bubble.top, greaterThanOrEqualTo(0), reason: 'step ${i + 1}');
+            expect(bubble.bottom, lessThanOrEqualTo(size.height), reason: 'step ${i + 1}');
+            await tester.tap(find.text(i == tour.steps.length - 1 ? 'Done' : 'Next'));
+          }
+          await settle(tester);
+          expect(tours.isRunning, isFalse);
+          expect(worlds.world.isDemo, isFalse);
+        });
+      }
+    }
+  });
+
+  testWidgets("a tab's first visit brings its tour, once; not before the Habits tour", (tester) async {
+    await setUpWith({TourStore.key: <String>[]});
+    await tester.pumpWidget(MomentumApp(worlds: worlds));
+    await settle(tester);
+    final tours = toursIn(tester);
+    await tester.tap(find.byKey(const Key('tab_insights')));
+    await settle(tester);
+    expect(tours.isRunning, isFalse, reason: 'the Habits tour comes first');
+
+    await TourStore(get<SharedPreferences>()).markSeen(TourId.habits);
+    await tester.tap(find.byKey(const Key('tab_calendar')));
+    await settle(tester);
+    expect(tours.tour?.id, TourId.calendar);
+    expect(worlds.world.isDemo, isTrue);
+    await tester.tap(find.text('Skip'));
+    await settle(tester);
+    expect(worlds.world.nav.current.value, AppTab.calendar, reason: 'back on their own Calendar');
+    await tester.tap(find.byKey(const Key('tab_habits')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('tab_calendar')));
+    await settle(tester);
+    expect(tours.isRunning, isFalse, reason: 'once only');
+  });
+
+  testWidgets('the first new habit, in Story, brings the editor tour', (tester) async {
+    await setUpWith({TourStore.key: ['habits']});
+    await tester.pumpWidget(MomentumApp(worlds: worlds));
+    await settle(tester);
+    final tours = toursIn(tester);
+    await tester.tap(find.byKey(const Key('addHabitButton')));
+    await settle(tester);
+    expect(tours.tour?.id, TourId.editor);
+    for (var i = 0; i < Tours.editor.steps.length; i++) {
+      await settle(tester);
+      expect(tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target, isNotNull, reason: 'step ${i + 1}');
+      await tester.tap(find.text(i == Tours.editor.steps.length - 1 ? 'Done' : 'Next'));
+    }
+    await settle(tester);
+    expect(tours.isRunning, isFalse);
+    expect(find.byType(HabitEditorScreen), findsOneWidget, reason: 'still adding their habit');
   });
 
   group('fits small phones and large text, in every theme', () {

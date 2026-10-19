@@ -10,6 +10,9 @@ import '../presentation/providers/settings_provider.dart';
 import 'add_habit_screen.dart';
 import 'builder_add_screen.dart';
 import 'story_habit_screen.dart';
+import '../presentation/tour/tour.dart';
+import '../presentation/tour/tour_controller.dart';
+import '../presentation/tour/world_scope.dart';
 
 /// Adds or edits a habit in Story or Builder, switching between them at any
 /// time without losing what's entered: both edit the same draft, owned here.
@@ -36,6 +39,12 @@ class _HabitEditorScreenState extends State<HabitEditorScreen> {
     super.initState();
     _draft = HabitDraft.start(context, widget.editHabit);
     _style = context.read<SettingsProvider>().addHabitStyle;
+    // The first new habit, in Story, brings the editor's tour
+    if (widget.editHabit == null && _style == AddHabitStyle.story && !WorldScope.isDemo(context)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) TourController.maybeOf(context)?.firstVisit(TourId.editor);
+      });
+    }
   }
 
   @override

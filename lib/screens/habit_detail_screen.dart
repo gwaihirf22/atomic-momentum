@@ -47,6 +47,8 @@ import 'habit_editor_screen.dart';
 import 'heatmap_screen.dart';
 import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_events.dart';
+import '../presentation/tour/tour.dart';
+import '../presentation/tour/tour_controller.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -80,6 +82,12 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     _day = start.isAfter(_today) ? _today : start;
     _month = DateTime(_day.year, _day.month);
     TourEvents.emit(HabitPageOpened(widget.habitId));
+    // The first habit page opened brings its tour
+    if (!WorldScope.isDemo(context)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) TourController.maybeOf(context)?.firstVisit(TourId.habitPage);
+      });
+    }
   }
 
   @override
