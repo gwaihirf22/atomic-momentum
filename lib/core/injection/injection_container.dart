@@ -2,6 +2,7 @@ import '../services/achievement_store.dart';
 import '../services/sharer.dart';
 import '../services/app_icon_service.dart';
 import '../services/support_link.dart';
+import '../services/home_widget_bridge.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,6 +85,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<Sharer>(() => const SystemSharer());
   sl.registerLazySingleton<AppIconService>(() => const PlatformAppIconService());
   sl.registerLazySingleton<SupportLink>(() => PlatformSupportLink());
+  sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
   sl.registerLazySingleton<HealthSource>(() => PluginHealthSource());
   // Reads the source when it syncs, so tests can swap in a fake after setup
   sl.registerLazySingleton(() => HealthSyncService(source: () => sl<HealthSource>(), prefs: sl()));

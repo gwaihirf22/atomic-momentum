@@ -8,6 +8,7 @@ import 'core/services/notification_service.dart';
 import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/intro/intro_screen.dart';
+import 'presentation/home_widgets/home_widget_host.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
 import 'presentation/providers/quote_provider.dart';
@@ -68,46 +69,49 @@ class MomentumApp extends StatelessWidget {
         ),
       ],
       // Above the app there's no MediaQuery yet; this one tracks the device's
-      // light/dark setting so "System" follows it as it changes
-      child: MediaQuery.fromView(
-        view: View.of(context),
-        child: Consumer<ThemeProvider>(
-          builder: (context, themeProvider, child) {
-            final palette = themeProvider.paletteIn(context);
+      // light/dark setting so "System" follows it as it changes. The home
+      // screen widgets follow the providers from here
+      child: HomeWidgetHost(
+        child: MediaQuery.fromView(
+          view: View.of(context),
+          child: Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              final palette = themeProvider.paletteIn(context);
 
-            return CupertinoApp(
-              title: 'Atomic Momentum',
-              debugShowCheckedModeBanner: false,
-              theme: IOSTheme.cupertino(palette),
-              home: const IOSMainNavigation(),
-              // Screens built from Material widgets read Theme.of(context), which
-              // CupertinoApp doesn't provide; it also carries the palette
-              // (AppPalette.of) every widget draws with
-              // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
-              // it no SnackBar can show
-              builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-                // Status bar icons that show on the theme's background (Android
-                // takes this; iOS follows the navigation bars too)
-                value: (palette.brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
-                    .copyWith(statusBarColor: Colors.transparent),
-                child: Theme(
-                  data: IOSTheme.material(palette),
-                  child: IntroGate(
-                    enabled: showIntro,
-                    onDone: onIntroDone,
-                    // Fades into Habits once they've loaded (a long history takes a moment)
-                    isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
-                    child: ScaffoldMessenger(child: child!),
+              return CupertinoApp(
+                title: 'Atomic Momentum',
+                debugShowCheckedModeBanner: false,
+                theme: IOSTheme.cupertino(palette),
+                home: const IOSMainNavigation(),
+                // Screens built from Material widgets read Theme.of(context), which
+                // CupertinoApp doesn't provide; it also carries the palette
+                // (AppPalette.of) every widget draws with
+                // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
+                // it no SnackBar can show
+                builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+                  // Status bar icons that show on the theme's background (Android
+                  // takes this; iOS follows the navigation bars too)
+                  value: (palette.brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+                      .copyWith(statusBarColor: Colors.transparent),
+                  child: Theme(
+                    data: IOSTheme.material(palette),
+                    child: IntroGate(
+                      enabled: showIntro,
+                      onDone: onIntroDone,
+                      // Fades into Habits once they've loaded (a long history takes a moment)
+                      isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
+                      child: ScaffoldMessenger(child: child!),
+                    ),
                   ),
                 ),
-              ),
-              localizationsDelegates: const [
-                GlobalMaterialLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-              ],
-            );
-          },
+                localizationsDelegates: const [
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                ],
+              );
+            },
+          ),
         ),
       ),
     );

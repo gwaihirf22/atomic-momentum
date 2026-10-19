@@ -17,7 +17,18 @@ import UIKit
     if let registrar = self.registrar(forPlugin: "Storefront") {
       StorefrontChannel.register(messenger: registrar.messenger())
     }
+    if let registrar = self.registrar(forPlugin: "Widgets") {
+      WidgetChannel.register(messenger: registrar.messenger())
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // A home screen widget tapped outside its + (momentum://habit/<id>)
+  override func application(
+    _ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if WidgetChannel.open(url) { return true }
+    return super.application(app, open: url, options: options)
   }
 }
 
@@ -61,5 +72,82 @@ enum StorefrontChannel {
         result(await Storefront.current?.countryCode)
       }
     }
+  }
+}
+
+/// The home screen widgets (ios/MomentumWidgets): the app saves their
+/// snapshot to the App Group, takes the taps queued on their + and logs them
+/// (lib/presentation/home_widgets/home_widget_sync.dart), and opens the habit
+/// a widget was tapped on.
+enum WidgetChannel {
+  private static var channel: FlutterMethodChannel?
+
+  /// Widget taps waiting for the app to log them (the intent stays running,
+  /// so iOS keeps the app awake, until the app says they're applied).
+  private static var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
+
+  /// A habit whose widget opened the app before Flutter was listening.
+  private static var openedHabit: String?
+
+  /// How long a tap waits for the app before leaving it queued for later.
+  private static let wait: TimeInterval = 8
+
+  @MainActor
+  static func register(messenger: FlutterBinaryMessenger) {
+    let channel = FlutterMethodChannel(name: "momentum/widgets", binaryMessenger: messenger)
+    self.channel = channel
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "save":
+        if let json = call.arguments as? String { WidgetStore.saveSnapshot(json) }
+        result(nil)
+      case "takeLogs":
+        result(WidgetStore.takeLogs())
+      case "applied":
+        resumeAll()
+        result(nil)
+      case "takeOpenedHabit":
+        result(openedHabit)
+        openedHabit = nil
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    if #available(iOS 17.0, *) {
+      AppHook.logsWaiting = { await logsWaiting() }
+    }
+  }
+
+  /// A widget's tap is queued: has the app log it, and waits until it has
+  /// (or gives up after a few seconds; the tap stays queued for next time).
+  @MainActor
+  private static func logsWaiting() async {
+    let id = UUID()
+    await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+      waiters[id] = continuation
+      channel?.invokeMethod("logsWaiting", arguments: nil)
+      DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
+        waiters.removeValue(forKey: id)?.resume()
+      }
+    }
+  }
+
+  private static func resumeAll() {
+    let waiting = waiters.values
+    waiters.removeAll()
+    waiting.forEach { $0.resume() }
+  }
+
+  /// Handles momentum://habit/<id>; false for any other link.
+  static func open(_ url: URL) -> Bool {
+    guard url.scheme == "momentum" else { return false }
+    if url.host == "habit", let id = url.pathComponents.dropFirst().first {
+      openedHabit = id
+      channel?.invokeMethod("openHabit", arguments: id) { reply in
+        // Flutter showed it (it answers nil); otherwise it asks at launch
+        if reply == nil { openedHabit = nil }
+      }
+    }
+    return true
   }
 }

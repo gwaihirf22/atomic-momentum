@@ -20,6 +20,18 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<!-- momentum://habit/<id>: a home screen widget opening its habit -->
+			<key>CFBundleURLName</key>
+			<string>com.paulblake.momentum</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>momentum</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>

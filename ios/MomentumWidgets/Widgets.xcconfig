@@ -1,0 +1,4 @@
+// The widget extension's settings: only the app's version (from Flutter), so
+// the extension always matches the app. Not the Runner's xcconfigs, which
+// bring in CocoaPods.
+#include "../Flutter/Generated.xcconfig"

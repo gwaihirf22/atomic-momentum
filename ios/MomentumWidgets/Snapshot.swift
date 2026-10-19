@@ -1,0 +1,168 @@
+import SwiftUI
+
+/// What the app wrote for the widgets
+/// (lib/presentation/home_widgets/widget_snapshot.dart, version 1). Everything
+/// is worked out by the app; the widgets only lay it out.
+struct Snapshot: Decodable {
+  let v: Int
+  let day: String
+  let looks: Looks
+  let momentum: MomentumInfo?
+  let today: TodayCount
+  let habits: [HabitInfo]
+  let quote: QuoteInfo?
+
+  static let supportedVersion = 1
+
+  /// The latest snapshot, or nil before the app has written one (or when it
+  /// was written by a newer version these widgets can't read).
+  static func load() -> Snapshot? {
+    guard let data = WidgetStore.snapshotJSON()?.data(using: .utf8),
+          let snapshot = try? JSONDecoder().decode(Snapshot.self, from: data),
+          snapshot.v == supportedVersion
+    else { return nil }
+    return snapshot
+  }
+
+  func habit(_ id: String?) -> HabitInfo? {
+    habits.first { $0.id == id }
+  }
+
+  /// The habit a widget shows before one is picked: the first one due and
+  /// not yet done, else the first.
+  var firstHabit: HabitInfo? {
+    habits.first { $0.due && !$0.done } ?? habits.first
+  }
+
+  /// When the widgets should next redraw by themselves: the soonest end of a
+  /// period (usually midnight), when progress starts again from nothing.
+  func nextChange(after now: Date) -> Date? {
+    habits.compactMap(\.periodEndDate).filter { $0 > now }.min()
+  }
+}
+
+struct Looks: Decodable {
+  let light: Look
+  let dark: Look
+
+  func look(for scheme: ColorScheme) -> Look { scheme == .dark ? dark : light }
+}
+
+/// The app's palette for one of its themes (AppPalette).
+struct Look: Decodable {
+  let theme: String
+  let background, surface, raised, track, text, textSecondary: String
+  let accent, gauge, orbStart, orbEnd, onOrb: String
+  let good, goodTint, gold, flame, warning: String
+
+  var orb: LinearGradient {
+    LinearGradient(colors: [Color(hex: orbStart), Color(hex: orbEnd)], startPoint: .topLeading, endPoint: .bottomTrailing)
+  }
+}
+
+struct MomentumInfo: Decodable {
+  let score: Int
+  let trend: Int
+  let level: String
+  let formed: Int
+  let habits: Int
+  let rising: Int
+
+  var isAtomic: Bool { score >= 90 }
+
+  /// The next level up and the points to it ("6 to Unstoppable"); nil at Atomic.
+  var toNext: (level: String, points: Int)? {
+    let levels = [(40, "Rolling"), (70, "Strong"), (80, "Unstoppable"), (90, "Atomic")]
+    guard let next = levels.first(where: { score < $0.0 }) else { return nil }
+    return (next.1, next.0 - score)
+  }
+
+  /// 0–4: which of the five levels the score is in.
+  var levelIndex: Int { [40, 70, 80, 90].filter { score >= $0 }.count }
+}
+
+struct TodayCount: Decodable {
+  let done: Int
+  let due: Int
+
+  var fraction: Double { due == 0 ? 0 : Double(done) / Double(due) }
+}
+
+struct ColorPair: Decodable {
+  let light: String
+  let dark: String
+
+  func color(for scheme: ColorScheme) -> Color { Color(hex: scheme == .dark ? dark : light) }
+}
+
+struct RecentInfo: Decodable {
+  let mark: String
+  let fraction: Double
+}
+
+struct HabitInfo: Decodable, Identifiable {
+  let id: String
+  let name: String
+  let color: ColorPair
+  let onColor: ColorPair
+  let isBreak: Bool
+  var progress: Int
+  let target: Int
+  let units: String
+  var text: String
+  var done: Bool
+  let due: Bool
+  let period: String
+  let periodEnds: String?
+  var next: Int?
+  let step: Int
+  let addLabel: String?
+  let streak: Int
+  let streakLabel: String?
+  let atRisk: Bool
+  let momentum: Int?
+  let recent: [RecentInfo]
+
+  var periodEndDate: Date? { periodEnds.flatMap(WidgetStore.parseLocal) }
+
+  var fraction: Double { target == 0 ? 0 : min(Double(progress) / Double(target), 1) }
+
+  /// The habit as it stands at [date]: once its period has ended the new one
+  /// starts from nothing (until the app writes again).
+  func at(_ date: Date) -> HabitInfo {
+    guard let ends = periodEndDate, ends <= date else { return self }
+    var fresh = self
+    fresh.progress = 0
+    fresh.done = false
+    let unitsSuffix = units.isEmpty ? "" : " \(units)"
+    if isBreak {
+      fresh.text = target == 0 ? "Clean \(period)" : "0 of \(target)\(unitsSuffix) \(period)"
+      fresh.next = nil
+    } else {
+      fresh.text = "0 of \(target)\(unitsSuffix)"
+      fresh.next = WidgetStore.stepUp(0, step: max(step, 1), target: target)
+    }
+    return fresh
+  }
+}
+
+struct QuoteInfo: Decodable {
+  let id: String
+  let text: String
+  let author: String
+}
+
+extension Color {
+  /// "#RRGGBB".
+  init(hex: String) {
+    var value: UInt64 = 0
+    Scanner(string: hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))).scanHexInt64(&value)
+    self.init(
+      .sRGB,
+      red: Double((value >> 16) & 0xFF) / 255,
+      green: Double((value >> 8) & 0xFF) / 255,
+      blue: Double(value & 0xFF) / 255,
+      opacity: 1
+    )
+  }
+}
