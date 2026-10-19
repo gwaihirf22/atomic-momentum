@@ -61,7 +61,22 @@ v1 roadmap item 5. The strategy wants the tutorial to teach the method ("Momentu
   - isolation: everything done in an example world leaves the person's storage byte-for-byte the same, schedules nothing, and widgets never see an example;
   - a guard against screens reaching past their world (`test/unit/core/world_isolation_guard_test.dart`).
 
+### P2–P4: the engine, the seven tours, How-to (2026-10-19, overnight)
+- **Engine** (1b93520): `TourAnchor`/`TourAnchors` (wrapped anchors, or found by the key a widget already has, `TourAnchorId.keyFor`), `TourEvents` (+, hold, Undo, 2 min, swipe, habit page, heatmap and Calendar days, Add habit), `Tour`/`TourStep`/`TourWait`/`TourMove` (`tour.dart`), `TourController` (worlds, step moves, revealing targets, Next or the gesture, Skip, `TourStore` `tours_seen_v1`), `TourLayer` in `MomentumApp`. Every step lets touches through the spotlight and keeps Next and Skip.
+- **Tours** (`tours.dart`): Habits (first launch; ends at Add habit in the person's own app), Calendar, Insights, a habit's page (on the example habits), Inspire, Settings, and the first new habit's Story editor (on the person's own screen). Each runs on its first visit once the Habits tour is behind them (`TourController.firstVisit`).
+- **First launch** (`TourStart`): a new install takes the Habits tour as the intro ends, then notification permission is asked; people with habits from before are offered it once ("Take the Habits tour?").
+- **Giving way**: Android's back steps back (skips on the first step); a notification or widget tap ends a tour; so does coming back after 10 minutes or on a new day.
+- **Settings → Help**: How to, and Tours (play any again; "Show tours again").
+- **How to** (`lib/presentation/howto/`, `lib/screens/how_to_screen.dart`): eleven guides, each a page of `PhonePicture`s (the real app on a tab or a habit's page, on the example habits, at 390 × 844 scaled to fit, inert, in the reader's theme, cropped around and ringed on its target) with a sentence or two.
+- **Tests**: every step of every tour finds its target at 375 pt / 135% and 390 pt; the Habits tour in all three themes at both sizes with real fonts; doing each thing for real moves on; the offer; replay; first visits once; give-way cases; every guide picture rings its target in all three themes at 375 pt / 135%.
+
 ## Left
+- **Paul's review** of the screenshots (`tool/tour_screens.sh`), and any wording or style changes.
+- **More guides**: the Story/Builder editor pictures (a picture of the editor needs a scene that opens it), Health, sharing, home-screen widgets (iOS PNGs).
+- **VoiceOver/TalkBack pass on devices**; Reduce Motion is handled in the spotlight.
+- **A habit page's tour** starts on the example habits and returns to the tab, not to the person's own page.
+
+### Original plan, for reference
 
 ### P2: the engine
 - **Anchors:** `TourAnchor(id, tag, child)` registers a GlobalKey in the nearest `TourAnchorScope` (the root one, or a miniature's own). It resolves only visible copies (TickerMode on, current route, on screen). About 25 thin wrappers:
