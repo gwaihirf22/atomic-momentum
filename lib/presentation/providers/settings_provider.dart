@@ -35,6 +35,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _quietStartKey = 'quietHoursStart';
   static const _quietEndKey = 'quietHoursEnd';
   static const _showInspireTabKey = 'showInspireTab';
+  static const _playIntroKey = 'playIntro';
   static const _quoteFamiliesOffKey = 'quoteFamiliesOff';
 
   /// New habits remind at this time unless changed.
@@ -117,6 +118,14 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAllowTimeSensitive(bool allow) async {
     await _prefs.setBool(_allowTimeSensitiveKey, allow);
+    notifyListeners();
+  }
+
+  /// Whether the intro plays on a cold launch (on until turned off).
+  bool get playIntro => _prefs.getBool(_playIntroKey) ?? true;
+
+  Future<void> setPlayIntro(bool play) async {
+    await _prefs.setBool(_playIntroKey, play);
     notifyListeners();
   }
 

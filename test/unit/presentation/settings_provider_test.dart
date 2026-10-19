@@ -132,4 +132,10 @@ void main() {
     expect(families, containsAll([QuoteFamily.puritans, QuoteFamily.thinkers]));
     expect(families, isNot(contains(QuoteFamily.scripture)));
   });
+
+  test('the launch intro plays until turned off, and stays off', () async {
+    expect(settings.playIntro, isTrue);
+    await settings.setPlayIntro(false);
+    expect(SettingsProvider(await SharedPreferences.getInstance()).playIntro, isFalse);
+  });
 }

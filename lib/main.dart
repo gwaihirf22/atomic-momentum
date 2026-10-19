@@ -25,8 +25,11 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // The intro plays on a cold launch, unless a notification tap opened the
-  // app (then it goes straight to the habit)
-  final showIntro = NotificationService.focusRequests.value == null;
+  // app (then it goes straight to the habit) or it's turned off in Settings
+  final showIntro = IntroScreen.shouldPlay(
+    fromNotification: NotificationService.focusRequests.value != null,
+    enabled: get<SettingsProvider>().playIntro,
+  );
 
   // Ask for notification permission once the app is on screen (after the
   // intro, so the system prompt doesn't cover it)

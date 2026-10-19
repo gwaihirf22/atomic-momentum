@@ -145,6 +145,9 @@ void main() {
     await launch(tester);
     await tester.tap(find.byKey(const Key('tab_settings')));
     await tester.pumpAndSettle();
+    // Below Display's rows, clear of the tab bar
+    await tester.scrollUntilVisible(find.byKey(const Key('openCategories')).hitTestable(), 200,
+        scrollable: find.byType(Scrollable).hitTestable().first);
     await tester.tap(find.byKey(const Key('openCategories')));
     await tester.pumpAndSettle();
 

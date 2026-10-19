@@ -98,6 +98,15 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
             if (get<AppIconService>().isSupported) const _AppIconSetting(),
+            SettingsSwitchTile(
+              tileKey: const Key('introSwitch'),
+              icon: CupertinoIcons.play_circle_fill,
+              iconColor: HabitColor.deepPurple.color,
+              title: 'Launch intro',
+              subtitle: 'The Atomic Momentum animation when the app opens',
+              value: settings.playIntro,
+              onChanged: settings.setPlayIntro,
+            ),
             SettingsTile(
               tileKey: const Key('dayStartSetting'),
               icon: CupertinoIcons.sunrise_fill,

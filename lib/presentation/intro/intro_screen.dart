@@ -11,6 +11,11 @@ import 'momentum_mark.dart';
 /// then the mark rises over "Atomic Momentum" and the intro fades into the
 /// app. About two and a half seconds; a tap skips to the end.
 class IntroScreen extends StatefulWidget {
+  /// Whether a cold launch plays the intro: not when a notification tap
+  /// opened the app (it goes straight to the habit), nor when it's turned
+  /// off in Settings → Display → Launch intro ([enabled]).
+  static bool shouldPlay({required bool fromNotification, required bool enabled}) => enabled && !fromNotification;
+
   /// The whole intro, and with Reduce Motion (the final frame alone).
   static const duration = Duration(milliseconds: 2400);
   static const reducedDuration = Duration(milliseconds: 800);

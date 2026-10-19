@@ -7,6 +7,7 @@ import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/core/theme/ios_theme.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
+import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 
 /// The cold-launch intro: Building, Rolling, Strong, Unstoppable, ATOMIC over
 /// a MOMENTUM that holds still, then the mark, then the app.
@@ -230,6 +231,29 @@ void main() {
       expect(find.byKey(const Key('intro')), findsNothing);
       expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
       expect(done, 1);
+    });
+
+    test('a cold launch plays it unless a notification opened the app or it is turned off', () {
+      expect(IntroScreen.shouldPlay(fromNotification: false, enabled: true), isTrue);
+      expect(IntroScreen.shouldPlay(fromNotification: true, enabled: true), isFalse);
+      expect(IntroScreen.shouldPlay(fromNotification: false, enabled: false), isFalse);
+      expect(IntroScreen.shouldPlay(fromNotification: true, enabled: false), isFalse);
+    });
+
+    testWidgets('Settings → Display → Launch intro turns it off for the next launch', (tester) async {
+      tester.view.physicalSize = const Size(390, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(const MomentumApp());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('tab_settings')));
+      await tester.pumpAndSettle();
+      final settings = get<SettingsProvider>();
+      expect(settings.playIntro, isTrue);
+      await tester.tap(find.byKey(const Key('introSwitch')));
+      await tester.pumpAndSettle();
+      expect(settings.playIntro, isFalse);
+      expect(IntroScreen.shouldPlay(fromNotification: false, enabled: settings.playIntro), isFalse);
     });
 
     testWidgets('has no intro unless asked (tests, and launches from a notification)', (tester) async {
