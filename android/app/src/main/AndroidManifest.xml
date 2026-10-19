@@ -35,6 +35,16 @@
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
             </intent-filter>
+            <!-- For Flutter's tools only (flutter run / drive look for MAIN and
+                 LAUNCHER on an <activity>, not an alias, then start it by name).
+                 The data scheme keeps it off the home screen: the launcher asks
+                 for MAIN + LAUNCHER with no data, which only the enabled icon
+                 alias below answers -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+                <data android:scheme="momentum-tools"/>
+            </intent-filter>
         </activity>
         <!-- The launcher icons, one alias each, only one enabled: Settings → App
              icon switches them (MainActivity.kt). Names match AppIcons in
