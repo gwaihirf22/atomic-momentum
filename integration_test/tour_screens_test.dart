@@ -39,7 +39,8 @@ void main() {
       await _wait(tester, 1400);
       await binding.takeScreenshot('${prefix}_step${i + 1}');
       if (!tours.isRunning) break;
-      await tours.next();
+      // Not awaited: its frames come from the pumping above
+      unawaited(tours.next());
     }
   }
 
