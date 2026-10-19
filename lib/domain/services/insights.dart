@@ -23,7 +23,17 @@ class DayRecord {
   /// How much was done, summed over the habits counted (0 to [due]).
   final double amount;
 
-  const DayRecord({required this.day, this.due = 0, this.done = 0, this.twoMinute = 0, this.amount = 0});
+  /// Habits frozen (or on vacation) that day: not counted in [due].
+  final int frozen;
+
+  const DayRecord({
+    required this.day,
+    this.due = 0,
+    this.done = 0,
+    this.twoMinute = 0,
+    this.amount = 0,
+    this.frozen = 0,
+  });
 
   /// 0 to 1: how much of the day's habits was done.
   double get level => due == 0 ? 0 : (amount / due).clamp(0.0, 1.0);
@@ -104,11 +114,16 @@ class Insights {
     final done = List<int>.filled(index.length, 0);
     final tiny = List<int>.filled(index.length, 0);
     final amount = List<double>.filled(index.length, 0);
+    final frozen = List<int>.filled(index.length, 0);
     for (final habit in habits) {
       for (final entry in _daysOf(habit, now).entries) {
         final i = index[entry.key];
         if (i == null) continue;
         final mark = entry.value;
+        if (mark.mark == PeriodMark.frozen) {
+          frozen[i]++;
+          continue;
+        }
         due[i]++;
         if (mark.mark == PeriodMark.done) done[i]++;
         if (mark.mark == PeriodMark.twoMinute) tiny[i]++;
@@ -117,7 +132,14 @@ class Insights {
     }
     return [
       for (final entry in index.entries)
-        DayRecord(day: entry.key, due: due[entry.value], done: done[entry.value], twoMinute: tiny[entry.value], amount: amount[entry.value]),
+        DayRecord(
+          day: entry.key,
+          due: due[entry.value],
+          done: done[entry.value],
+          twoMinute: tiny[entry.value],
+          amount: amount[entry.value],
+          frozen: frozen[entry.value],
+        ),
     ];
   }
 
@@ -133,7 +155,9 @@ class Insights {
     return cached[today] ??= () {
       final out = <DateTime, RecentPeriod>{};
       for (final period in periods(habit, now)) {
-        if (period.mark == PeriodMark.untracked || period.mark == PeriodMark.rest) continue;
+        // Frozen days are kept to show as frozen; rest days and days before
+        // the habit was tracked aren't
+        if (!period.mark.isDue && period.mark != PeriodMark.frozen) continue;
         if (period.isOneDay) {
           out[period.start] = period;
         } else if (period.mark == PeriodMark.done || period.mark == PeriodMark.twoMinute) {
@@ -193,7 +217,7 @@ class Insights {
     for (final habit in habits) {
       // From the start, to know whether a streak was going before [from]
       final habitPeriods = periods(habit, now)
-          .where((p) => p.mark != PeriodMark.untracked && p.mark != PeriodMark.rest && p.mark != PeriodMark.current)
+          .where((p) => p.mark.isDue && p.mark != PeriodMark.current)
           .toList();
       var streak = 0;
       PeriodMark? previous;
@@ -230,7 +254,7 @@ class Insights {
       for (final period in periods(habit, now)) {
         if (period.start.isBefore(first) || !period.isOneDay) continue;
         final mark = period.mark;
-        if (mark == PeriodMark.untracked || mark == PeriodMark.rest || mark == PeriodMark.current) continue;
+        if (!mark.isDue || mark == PeriodMark.current) continue;
         final weekday = period.start.weekday;
         due[weekday]++;
         if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) kept[weekday]++;

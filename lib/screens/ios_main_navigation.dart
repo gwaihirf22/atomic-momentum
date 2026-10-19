@@ -9,6 +9,7 @@ import '../core/feedback/haptics.dart';
 import '../core/injection/injection_container.dart';
 import '../core/services/achievement_celebrations.dart';
 import '../core/services/achievement_store.dart';
+import '../core/services/freeze_bank.dart';
 import '../core/services/notification_service.dart';
 import '../core/theme/app_palette.dart';
 import '../domain/services/achievements.dart';
@@ -175,8 +176,13 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     final now = clock.now();
     final weekStart = context.read<SettingsProvider>().firstDayOfWeek;
     final started = store.started;
+    // Streak milestones and habits formed fill the freeze bank (once each)
+    final bank = sl.isRegistered<FreezeBank>() ? get<FreezeBank>() : null;
+    bank?.check(now);
+    final earned = Achievements.earned(_habits.habits, now, weekStart: weekStart);
+    final credit = bank?.credit([for (final a in earned) if (Achievements.earnsFreeze(a)) a.id], now);
     final decision = AchievementCelebrations.decide(
-      earned: Achievements.earned(_habits.habits, now, weekStart: weekStart),
+      earned: earned,
       started: started,
       seen: store.seen,
       now: now,
@@ -193,7 +199,15 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
         .firstOrNull;
     _celebrating = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (mounted) await showAchievementSheet(context, achievement, isNew: true, next: next);
+      final credited = await credit;
+      final FreezeEarned? freeze = credited == null
+          ? null
+          : credited.added.contains(achievement.id)
+              ? (added: true, available: bank!.available)
+              : credited.full.contains(achievement.id)
+                  ? (added: false, available: bank!.available)
+                  : null;
+      if (mounted) await showAchievementSheet(context, achievement, isNew: true, next: next, freeze: freeze);
       _celebrating = false;
     });
   }

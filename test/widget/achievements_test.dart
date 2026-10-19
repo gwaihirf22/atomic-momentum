@@ -1,13 +1,16 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/achievement_store.dart';
+import 'package:atomic_momentum/core/services/freeze_bank.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/repositories/habit_repository.dart';
+import 'package:atomic_momentum/domain/services/achievements.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -38,8 +41,16 @@ void main() {
     );
     final habit = habits.habits.single;
     id = habit.id;
-    await get<HabitRepository>().saveHabit(habit.copyWith(history: {for (final d in days) ago(d): 1}));
-    if (started) await get<AchievementStore>().markSeen(const []);
+    final seeded = habit.copyWith(history: {for (final d in days) ago(d): 1});
+    await get<HabitRepository>().saveHabit(seeded);
+    // The fun ones depend on the weekday (Weekend warrior): out of the way
+    // of what these tests watch
+    if (started) {
+      await get<AchievementStore>().markSeen([
+        for (final a in Achievements.earned([seeded], now))
+          if (a.kind == AchievementKind.fun) a.id,
+      ]);
+    }
   }
 
   tearDown(resetDependencies);
@@ -73,6 +84,9 @@ void main() {
       expect(find.text('NEW ACHIEVEMENT'), findsOneWidget);
       expect(find.text('7 days'), findsOneWidget);
       expect(find.textContaining('Next: 21 days'), findsOneWidget);
+      // A streak milestone earns a freeze
+      expect(find.text('+1 freeze · 4 of 5'), findsOneWidget);
+      expect(get<FreezeBank>().available, 4);
 
       await tap(tester, find.byKey(const Key('achievementDone')));
       expect(sheet(), findsNothing);
@@ -122,7 +136,11 @@ void main() {
 
       await tap(tester, find.byKey(const Key('insightsSeeAllAchievements')));
       expect(find.byType(AchievementsScreen), findsOneWidget);
-      expect(find.text('3 earned'), findsOneWidget, reason: '7 days, 21 days and a perfect week');
+      // 7 days, 21 days and a perfect week, and the fun ones (depending on the weekday)
+      final shown = tester.element(find.byType(AchievementsScreen)).read<HabitProvider>().habits;
+      final shelf = Achievements.earned(shown, now).where((a) => a.onShelf).length;
+      expect(shelf, greaterThanOrEqualTo(3));
+      expect(find.text('$shelf earned'), findsOneWidget);
       expect(find.text('Up next'), findsOneWidget);
     });
   });

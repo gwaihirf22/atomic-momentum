@@ -9,6 +9,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/reset_frequency.dart';
 import '../../domain/services/achievements.dart';
 import '../services/achievement_store.dart';
+import '../services/freeze_bank.dart';
 import 'year_persona.dart';
 
 /// Settings → Developer → "Load a year of use" (debug builds only): the
@@ -30,6 +31,7 @@ class YearOfUse {
   static const keys = [
     SharedPreferencesDataSource.habitsKey,
     AchievementStore.key,
+    FreezeBank.key,
     QuoteRepositoryImpl.mineKey,
     QuoteRepositoryImpl.savedKey,
     QuoteRepositoryImpl.chosenTodayKey,
@@ -151,7 +153,8 @@ class YearOfUse {
     final year = await Isolate.run(() => _stored(now));
     await prefs.setString(SharedPreferencesDataSource.habitsKey, year.habits);
     await prefs.setStringList(AchievementStore.key, year.seen);
-    for (final key in [QuoteRepositoryImpl.mineKey, QuoteRepositoryImpl.savedKey, QuoteRepositoryImpl.chosenTodayKey]) {
+    // A fresh bank: three freezes, the year's milestones filed as earned
+    for (final key in [FreezeBank.key, QuoteRepositoryImpl.mineKey, QuoteRepositoryImpl.savedKey, QuoteRepositoryImpl.chosenTodayKey]) {
       await prefs.remove(key);
     }
   }

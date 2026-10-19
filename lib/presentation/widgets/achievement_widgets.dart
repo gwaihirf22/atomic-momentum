@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 import '../../core/feedback/haptics.dart';
+import '../../core/services/freeze_bank.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/services/achievements.dart';
 import 'large_title_scaffold.dart';
@@ -39,6 +41,7 @@ class AchievementMedal extends StatelessWidget {
       null => (null, palette.track, palette.textSecondary),
       AchievementKind.formed => (null, palette.gold, palette.onAccent),
       AchievementKind.clean => (null, palette.good, palette.onAccent),
+      AchievementKind.fun => (null, palette.ice, palette.onColor(palette.ice)),
       _ => (palette.orb, null, AppPalette.onOrb),
     };
     final medal = Container(
@@ -187,6 +190,7 @@ Future<void> showAchievementSheet(
   Achievement achievement, {
   bool isNew = false,
   AchievementProgress? next,
+  FreezeEarned? freeze,
 }) {
   if (isNew) Haptics.completed();
   return showModalBottomSheet<void>(
@@ -196,16 +200,21 @@ Future<void> showAchievementSheet(
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: AppPalette.of(context).surface,
-    builder: (context) => AchievementSheet(achievement: achievement, isNew: isNew, next: next),
+    builder: (context) => AchievementSheet(achievement: achievement, isNew: isNew, next: next, freeze: freeze),
   );
 }
+
+/// What a milestone did for the freeze bank: added one (and how many there
+/// are now), or found it full.
+typedef FreezeEarned = ({bool added, int available});
 
 class AchievementSheet extends StatelessWidget {
   final Achievement achievement;
   final bool isNew;
   final AchievementProgress? next;
+  final FreezeEarned? freeze;
 
-  const AchievementSheet({super.key, required this.achievement, this.isNew = false, this.next});
+  const AchievementSheet({super.key, required this.achievement, this.isNew = false, this.next, this.freeze});
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +263,24 @@ class AchievementSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, height: 1.45, color: palette.textSecondary),
           ),
+          if (freeze case final f?) ...[
+            const SizedBox(height: 14),
+            Container(
+              key: const Key('achievementFreeze'),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(color: palette.tint(palette.ice), borderRadius: BorderRadius.circular(20)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(CupertinoIcons.snow, size: 16, color: palette.ice),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    f.added ? '+1 freeze · ${f.available} of ${FreezeBank.cap}' : 'Freeze bank full (${FreezeBank.cap} of ${FreezeBank.cap})',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: palette.text),
+                  ),
+                ),
+              ]),
+            ),
+          ],
           if (n != null) ...[
             const SizedBox(height: 18),
             Container(

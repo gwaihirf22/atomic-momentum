@@ -171,6 +171,34 @@ class UpdateHabitUseCase {
     }
   }
 
+  /// Spends (or takes back) a freeze on the period containing [date].
+  Future<Habit> setFrozenForDate(String habitId, DateTime date, bool frozen) async {
+    try {
+      final habit = await _getHabitById(habitId);
+      final updatedHabit = frozen ? habit.freeze(date) : habit.unfreeze(date);
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } on ArgumentError catch (e) {
+      throw ValidationException(e.message.toString());
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to save the freeze: $e');
+    }
+  }
+
+  /// Starts or ends vacation mode on a habit, on [day].
+  Future<Habit> setOnVacation(String habitId, DateTime day, bool on) async {
+    try {
+      final habit = await _getHabitById(habitId);
+      final updatedHabit = on ? habit.startPause(day) : habit.endPause(day);
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to save vacation mode: $e');
+    }
+  }
+
   /// Brings every habit up to date and saves the ones that changed: those
   /// whose period rolled over (progress becomes the new period's total, an
   /// expired streak drops to 0), and any whose stored streak was worked out

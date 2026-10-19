@@ -52,7 +52,8 @@ class StreakWarningPlanner {
     DateTime now, {
     QuietHours quiet = QuietHours.off,
   }) {
-    if (!settings.enabled || !_warns(habit)) return const [];
+    // On vacation nothing is due, so nothing is at stake
+    if (!settings.enabled || !_warns(habit) || habit.isOnVacation) return const [];
 
     final deadline = habit.streakDeadline(now);
     if (deadline == null) return const [];

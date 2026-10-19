@@ -8,6 +8,7 @@ import '../../domain/usecases/get_habits_usecase.dart';
 import '../../domain/usecases/create_habit_usecase.dart';
 import '../../domain/usecases/update_habit_usecase.dart';
 import '../../domain/usecases/delete_habit_usecase.dart';
+import '../../core/services/freeze_bank.dart';
 import '../../core/services/health_sync_service.dart';
 import '../../core/services/streak_warning_service.dart';
 import '../../domain/repositories/category_repository.dart';
@@ -47,6 +48,9 @@ class HabitProvider extends ChangeNotifier {
   // Null disables filling habits in from Apple Health / Health Connect
   final HealthSyncService? _health;
 
+  // Null: freezes cost nothing (tests that don't exercise the bank)
+  final FreezeBank? _freezes;
+
   HabitProvider({
     required GetHabitsUseCase getHabitsUseCase,
     required CreateHabitUseCase createHabitUseCase,
@@ -57,7 +61,9 @@ class HabitProvider extends ChangeNotifier {
     ReminderService? reminderService,
     CategoryRepository? categoryRepository,
     HealthSyncService? healthSync,
+    FreezeBank? freezeBank,
   })  : _streakWarnings = streakWarningService,
+        _freezes = freezeBank,
         _health = healthSync,
         _reminders = reminderService,
         _categoryRepository = categoryRepository,
@@ -125,6 +131,8 @@ class HabitProvider extends ChangeNotifier {
       // A full reload schedules everything afresh
       await _streakWarnings?.syncAll(_habits, replace: true);
       await _reminders?.syncAll(_habits, replace: true);
+      // Habits being broken that ended a frozen day clean, while closed
+      await _returnUnneededFreezes();
       // Not awaited: Health can be slow, and the list is already showing
       syncHealth();
     } catch (e) {
@@ -420,6 +428,115 @@ class HabitProvider extends ChangeNotifier {
     );
   }
 
+  // Freezes and vacation mode
+
+  /// The bank freezes come from, if there is one.
+  FreezeBank? get freezes => _freezes;
+
+  /// Spends a freeze on [habitId]'s period containing [date]: it's neither
+  /// kept nor missed. False (with [error] saying why) if it can't go there or
+  /// the bank is empty.
+  Future<bool> freeze(String habitId, DateTime date) async {
+    final habit = getHabitById(habitId);
+    if (habit == null) return false;
+    final now = clock.now();
+    final day = DateTime(date.year, date.month, date.day);
+    final why = habit.whyNoFreeze(day, now);
+    if (why != null) {
+      _error = why;
+      notifyListeners();
+      return false;
+    }
+    final bank = _freezes;
+    if (bank != null && !await bank.spend(now)) {
+      _error = 'No freezes left';
+      notifyListeners();
+      return false;
+    }
+    final saved = await _applyNow(habitId, (h) => h.freeze(day), (pending) => pending.frozen[day] = true);
+    if (!saved) await bank?.refund(now);
+    return saved;
+  }
+
+  /// Takes the freeze off [habitId]'s period containing [date]; it goes back
+  /// to the bank.
+  Future<bool> unfreeze(String habitId, DateTime date) async {
+    final habit = getHabitById(habitId);
+    if (habit == null || !habit.isFrozenOn(date)) return false;
+    final day = DateTime(date.year, date.month, date.day);
+    final saved = await _applyNow(habitId, (h) => h.unfreeze(day), (pending) => pending.frozen[day] = false);
+    if (saved) await _freezes?.refund(clock.now());
+    return saved;
+  }
+
+  /// "Your freeze came back", once, for the Habits screen to show.
+  String? _freezeNotice;
+  String? takeFreezeNotice() {
+    final notice = _freezeNotice;
+    _freezeNotice = null;
+    return notice;
+  }
+
+  bool _returningFreezes = false;
+
+  /// Gives back freezes that turned out not to be needed: the frozen period
+  /// was kept anyway (or, breaking a habit, ended clean).
+  Future<void> _returnUnneededFreezes() async {
+    if (_returningFreezes) return;
+    _returningFreezes = true;
+    try {
+      final now = clock.now();
+      for (final habit in List.of(_habits)) {
+        final days = habit.unneededFreezes(now);
+        if (days.isEmpty) continue;
+        final saved = await _applyNow(
+          habit.id,
+          (h) => days.fold(h, (updated, day) => updated.unfreeze(day)),
+          (pending) {
+            for (final day in days) {
+              pending.frozen[day] = false;
+            }
+          },
+        );
+        if (!saved) continue;
+        await _freezes?.refund(now, days.length);
+        _freezeNotice = habit.isBreak
+            ? 'No slips while ${habit.name} was frozen, so the freeze came back.'
+            : 'You kept ${habit.name} anyway, so its freeze came back.';
+      }
+    } finally {
+      _returningFreezes = false;
+    }
+  }
+
+  /// Vacation mode is on (any habit has an open pause).
+  bool get onVacation => _habits.any((h) => h.isOnVacation);
+
+  /// Pauses every habit from today: nothing is due, no reminders or
+  /// warnings, streaks and momentum hold. Costs no freezes.
+  Future<bool> startVacation() => _setVacation(true);
+
+  /// Ends vacation mode; today stays paused.
+  Future<bool> endVacation() => _setVacation(false);
+
+  Future<bool> _setVacation(bool on) async {
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    var allSaved = true;
+    for (final habit in List.of(_habits)) {
+      if (!habit.schedule.isPeriodic || habit.isOnVacation == on) continue;
+      final saved = await _applyNow(
+        habit.id,
+        (h) => on ? h.startPause(today) : h.endPause(today),
+        (pending) => pending
+          ..vacation = on
+          ..vacationDay = today,
+      );
+      allSaved &= saved;
+    }
+    return allSaved;
+  }
+
   Future<bool> _applyNow(
     String habitId,
     Habit Function(Habit) change,
@@ -472,6 +589,12 @@ class HabitProvider extends ChangeNotifier {
           for (final entry in pending.twoMinute.entries) {
             saved = await _updateHabitUseCase.setTwoMinuteForDate(habitId, entry.key, entry.value);
           }
+          for (final entry in pending.frozen.entries) {
+            saved = await _updateHabitUseCase.setFrozenForDate(habitId, entry.key, entry.value);
+          }
+          if (pending.vacation != null) {
+            saved = await _updateHabitUseCase.setOnVacation(habitId, pending.vacationDay!, pending.vacation!);
+          }
           if (pending.why != null) saved = await _updateHabitUseCase.setWhy(habitId, pending.why!);
           if (pending.quoteIds != null) saved = await _updateHabitUseCase.setQuotes(habitId, pending.quoteIds!);
           for (final entry in pending.notes.entries) {
@@ -500,6 +623,8 @@ class HabitProvider extends ChangeNotifier {
     // Finishing a habit drops its remaining reminders; not awaited, so taps
     // never wait on notifications
     _reminders?.syncAll(_habits);
+    // A frozen period kept anyway gives its freeze back
+    await _returnUnneededFreezes();
     return allSaved;
   }
 
@@ -556,6 +681,7 @@ class HabitProvider extends ChangeNotifier {
       }
       // A new day: the reminder window moves on even if nothing changed
       await _reminders?.syncAll(_habits);
+      await _returnUnneededFreezes();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
@@ -698,4 +824,11 @@ class _PendingChange {
 
   /// Day -> note text ('' removes it).
   final Map<DateTime, String> notes = {};
+
+  /// Day -> frozen (a freeze spent) or not (taken back).
+  final Map<DateTime, bool> frozen = {};
+
+  /// Vacation mode started (true) or ended (false) on [vacationDay].
+  bool? vacation;
+  DateTime? vacationDay;
 }

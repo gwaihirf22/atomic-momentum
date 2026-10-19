@@ -22,6 +22,13 @@ enum PeriodMark {
 
   /// Before the habit was tracked.
   untracked,
+
+  /// Frozen, or on vacation, and not kept: neither counted nor missed.
+  frozen;
+
+  /// Whether the period counts toward what was due (rest days, frozen
+  /// periods and days before the habit was tracked don't).
+  bool get isDue => this != rest && this != untracked && this != frozen;
 }
 
 class RecentPeriod {
@@ -75,6 +82,7 @@ RecentPeriod _markFor(Habit habit, DateTime start, DateTime end, {required bool 
   if (!end.isAfter(tracked)) return RecentPeriod(start, end, PeriodMark.untracked, 0);
   final outcome = habit.periodOutcome(start, end);
   if (!habit.isDueOn(start)) return RecentPeriod(start, end, PeriodMark.rest, outcome.fraction);
+  if (habit.skipsPeriod(start)) return RecentPeriod(start, end, PeriodMark.frozen, outcome.fraction);
   if (outcome.completed) return RecentPeriod(start, end, PeriodMark.done, 1);
   if (outcome.twoMinute) return RecentPeriod(start, end, PeriodMark.twoMinute, outcome.fraction);
   if (isCurrent) return RecentPeriod(start, end, PeriodMark.current, outcome.fraction);

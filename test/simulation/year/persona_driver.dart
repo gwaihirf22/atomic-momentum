@@ -86,6 +86,7 @@ class PersonaDriver {
         }
       case DayNote(:final habit, :final text):
         ok = await habits.setDayNote(id(habit), now, text);
+        ref.habits[habit]!.note(now, text);
         if (habits.getHabitById(id(habit))!.dayNotes[day(now)] != text) problem(now, '$habit: the day note didn\'t stick');
       case StartFrom(:final habit, day: final date):
         final anchor = habits.getHabitById(id(habit))!.schedule.anchor;

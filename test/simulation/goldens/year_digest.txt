@@ -14,11 +14,14 @@
   quote of the day on 13 days, another quote: 0
   earned: 1 day without smoking (Smoking) *
   earned: 1 day within your limit (Social media)
+  earned: Clean sweep *
   earned: 7 days (Drink water) *
   earned: 7 days (Spanish)
   earned: 7 days (Read)
+  earned: Weekend warrior
   earned: 7 days without smoking (Smoking) *
   earned: 7 days within your limit (Social media)
+  earned: Respawned (Gym) *
   earned: Never missed twice *
 == Nov 2026
   Drink water      streak 41 (best 41), momentum 58 rolling; this month 24 kept, 4 small, 2 missed
@@ -34,11 +37,13 @@
   overall momentum 54
   notifications: 142 reminders, 9 warnings, 0 nudges
   quote of the day on 30 days, another quote: 6
+  earned: Respawned (Spanish) *
   earned: 21 days (Drink water) *
   earned: 21 days (Read) *
   earned: Comeback (Spanish) *
   earned: 7 in a row (Run) *
   earned: New best (Spanish) *
+  earned: No ice required *
   earned: 30 days without smoking (Smoking) *
   earned: 7 in a row (Gym) *
   earned: Comeback (Gym)
@@ -59,10 +64,12 @@
   overall momentum 73
   notifications: 151 reminders, 9 warnings, 0 nudges
   quote of the day on 31 days, another quote: 6
+  earned: Respawned (Run) *
   earned: New best (Spanish) *
   earned: Never missed twice *
   earned: Habit formed (Smoking) *
   earned: 66 days (Drink water) *
+  earned: Dear diary *
   earned: 21 in a row (Gym) *
   earned: 66 days (Read) *
   earned: Habit formed (Social media) *
@@ -81,6 +88,7 @@
   overall momentum 80
   notifications: 175 reminders, 4 warnings, 0 nudges
   quote of the day on 31 days, another quote: 2
+  earned: Juggler *
   earned: Comeback (Run) *
   earned: 3 months (Budget review) *
   earned: 7 days (Meditate)
@@ -89,6 +97,7 @@
   earned: Habit formed (Call Mum) *
   earned: 21 days (Meditate) *
   earned: New best (Spanish) *
+  earned: Respawned (Meditate) *
   earned: Habit formed (Run) *
   earned: 90 days without smoking (Smoking) *
   earned: 12 weeks (Call Mum) *
@@ -97,6 +106,7 @@
   earned: Habit formed (Gym) *
   earned: 100 days (Drink water) *
   earned: New best (Run) *
+  earned: Respawned (Read)
 == Feb 2027
   Drink water      streak 130 (best 130), momentum 93 atomic; this month 22 kept, 6 small, 0 missed
   Read             streak 28 (best 93), momentum 88 unstoppable; this month 21 kept, 4 small, 3 missed
@@ -117,6 +127,7 @@
   earned: New best (Meditate) *
   earned: 21 in a row (Run) *
   earned: Habit formed (Spanish) *
+  earned: Overachiever (Journal) *
 == Mar 2027
   Drink water      streak 11 (best 147), momentum 92 atomic; this month 21 kept, 7 small, 2 missed
   Read             streak 56 (best 93), momentum 92 atomic; this month 26 kept, 2 small, 3 missed
@@ -133,6 +144,8 @@
   overall momentum 86
   notifications: 197 reminders, 7 warnings, 0 nudges
   quote of the day on 31 days, another quote: 3
+  earned: Respawned (Journal) *
+  earned: Respawned (Drink water) *
   earned: Showed up anyway *
   earned: Comeback (Drink water) *
   earned: 7 days (Journal) *
@@ -156,8 +169,10 @@
   notifications: 191 reminders, 4 warnings, 0 nudges
   quote of the day on 30 days, another quote: 4
   earned: Habit formed (Meditate) *
+  earned: Speedrunner (Drink water)
   earned: Showed up anyway
   earned: 21 days (Journal) *
+  earned: Respawned (Call Mum) *
 == May 2027
   Drink water      streak 70 (best 147), momentum 90 atomic; this month 24 kept, 6 small, 1 missed
   Read             streak 18 (best 94) at risk, momentum 92 atomic; this month 25 kept, 1 small, 4 missed

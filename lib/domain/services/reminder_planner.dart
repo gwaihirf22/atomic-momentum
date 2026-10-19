@@ -72,7 +72,8 @@ class ReminderPlanner {
     QuietHours quiet = QuietHours.off,
   }) {
     final reminder = habit.reminder;
-    if (reminder == null || !reminder.enabled) return const [];
+    // Vacation mode: nothing is due until it's turned off
+    if (reminder == null || !reminder.enabled || habit.isOnVacation) return const [];
 
     final today = _dateOnly(now);
     final days = reminder.isSmart
@@ -87,7 +88,9 @@ class ReminderPlanner {
     DateTime at(DateTime day) => quiet.shift(_at(day, reminder.time.hour, reminder.time.minute));
     return [
       for (final day in days)
-        if (at(day).isAfter(now) && (habit.isBreak || !habit.wasKeptOnDate(day)))
+        // Not for a period already kept, frozen or on vacation (habits being
+        // broken check in every other day)
+        if (at(day).isAfter(now) && !habit.isPausedOn(day) && (habit.isBreak || !habit.wasKeptOnDate(day)))
           PlannedReminder(
             habitId: habit.id,
             at: at(day),

@@ -116,7 +116,7 @@ class HabitStats {
       _ => 6,
     };
     final recent = recentPeriods(habit, now, count: count).where((p) {
-      if (p.mark == PeriodMark.untracked || p.mark == PeriodMark.rest) return false;
+      if (!p.mark.isDue) return false;
       return p.mark != PeriodMark.current;
     }).toList();
     final kept = recent.where((p) => p.mark == PeriodMark.done || p.mark == PeriodMark.twoMinute).length;
@@ -159,7 +159,7 @@ class HabitStats {
     var kept = 0;
     for (var d = 0; d < 7; d++) {
       final day = DateTime(start.year, start.month, start.day + d);
-      if (day.isAfter(today) || !habit.isDueOn(day)) continue;
+      if (day.isAfter(today) || !habit.isDueOn(day) || habit.skipsPeriod(habit.schedule.periodStart(day))) continue;
       due++;
       if (habit.wasKeptOnDate(day)) kept++;
     }

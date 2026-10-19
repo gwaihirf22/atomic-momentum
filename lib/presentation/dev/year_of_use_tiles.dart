@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/services/freeze_bank.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/dev/year_of_use.dart';
 import '../../core/injection/injection_container.dart';
@@ -90,6 +91,7 @@ Future<void> _restore(BuildContext context) async {
 Future<void> _reload(BuildContext context) async {
   final habits = context.read<HabitProvider>();
   final quotes = context.read<QuoteProvider>();
+  if (sl.isRegistered<FreezeBank>()) get<FreezeBank>().reload();
   await habits.loadHabits();
   await quotes.load();
 }

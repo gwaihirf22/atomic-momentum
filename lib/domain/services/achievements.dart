@@ -30,7 +30,14 @@ enum AchievementKind {
   /// The current streak passed the habit's longest. A moment, not kept on
   /// the shelf.
   personalBest,
+
+  /// Just for fun, in the app's own voice (or the atoms'). Celebrated after
+  /// the real milestones.
+  fun,
 }
+
+/// What the freeze bank remembers for good, for the freeze achievements.
+typedef FreezeRecord = ({DateTime? firstSpentOn, DateTime? fundReachedOn});
 
 /// Something earned: a milestone a habit (or all of them) reached.
 class Achievement {
@@ -108,6 +115,19 @@ class Achievements {
   static const perfectWeekGoals = [1, 4, 12];
   static const comebackLength = 7;
 
+  // The fun ones
+  static const overachieverTimes = 3;
+  static const speedrunLength = 5;
+  static const sweepHabits = 5;
+  static const diaryNotes = 10;
+  static const lapDays = 365;
+  static const jugglerHabits = 10;
+  static const noIceLength = 30;
+
+  /// Where [earned] reads the freeze bank's record when it isn't given one
+  /// (set up with the app's dependencies).
+  static FreezeRecord Function()? freezeSource;
+
   /// Streaks shorter than this aren't worth a "new best".
   static const minBest = 3;
 
@@ -121,7 +141,7 @@ class Achievements {
 
   /// The last [earned] and [next], with what they were worked out from: the
   /// main screen, Insights and the Achievements page ask with the same habits.
-  static ({List<Habit> habits, DateTime day, int weekStart, List<Achievement> earned})? _lastEarned;
+  static ({List<Habit> habits, DateTime day, int weekStart, FreezeRecord? freezes, List<Achievement> earned})? _lastEarned;
   static ({List<Habit> habits, DateTime day, List<AchievementProgress> next})? _lastNext;
 
   static bool _same(List<Habit> a, List<Habit> b) {
@@ -133,25 +153,39 @@ class Achievements {
   }
 
   /// Everything earned up to [now], oldest first.
-  static List<Achievement> earned(List<Habit> habits, DateTime now, {int weekStart = DateTime.monday}) {
+  static List<Achievement> earned(List<Habit> habits, DateTime now, {int weekStart = DateTime.monday, FreezeRecord? freezes}) {
+    final record = freezes ?? freezeSource?.call();
     final day = DateTime(now.year, now.month, now.day);
     final last = _lastEarned;
-    if (last != null && last.day == day && last.weekStart == weekStart && _same(last.habits, habits)) return last.earned;
-    final result = List<Achievement>.unmodifiable(_earned(habits, now, weekStart));
-    _lastEarned = (habits: List.of(habits), day: day, weekStart: weekStart, earned: result);
+    if (last != null &&
+        last.day == day &&
+        last.weekStart == weekStart &&
+        last.freezes == record &&
+        _same(last.habits, habits)) {
+      return last.earned;
+    }
+    final result = List<Achievement>.unmodifiable(_earned(habits, now, weekStart, record));
+    _lastEarned = (habits: List.of(habits), day: day, weekStart: weekStart, freezes: record, earned: result);
     return result;
   }
 
-  static List<Achievement> _earned(List<Habit> habits, DateTime now, int weekStart) {
+  /// Whether [a] adds a freeze to the bank: streak milestones (built or
+  /// broken) and habits formed.
+  static bool earnsFreeze(Achievement a) =>
+      a.kind == AchievementKind.streak || a.kind == AchievementKind.clean || a.kind == AchievementKind.formed;
+
+  static List<Achievement> _earned(List<Habit> habits, DateTime now, int weekStart, FreezeRecord? freezes) {
     final earned = <Achievement>[];
     final tinyDays = <DateTime>[];
     final comebackDays = <DateTime>[];
+    final noIceDays = <DateTime>[];
 
     for (final habit in habits) {
       if (!habit.schedule.isPeriodic) continue;
       final walk = _walk(habit, now);
       tinyDays.addAll(walk.tinyDays);
       comebackDays.addAll(walk.comebacks);
+      if (walk.noIceOn != null) noIceDays.add(walk.noIceOn!);
 
       for (final goal in streakGoals(habit)) {
         final day = walk.reached[goal];
@@ -183,6 +217,8 @@ class Achievements {
           earnedOn: walk.bestOn!,
         ));
       }
+
+      earned.addAll(_funFor(habit, walk, now));
 
       final formedOn = _formedOn(habit, now);
       if (formedOn != null) {
@@ -228,6 +264,20 @@ class Achievements {
         unit: 'COMEBACKS',
         message: '$goal times you came straight back after a miss.',
         earnedOn: comebackDays[goal - 1],
+      ));
+    }
+
+    earned.addAll(_funAcross(habits, now, freezes));
+    if (noIceDays.isNotEmpty) {
+      noIceDays.sort();
+      earned.add(Achievement(
+        id: 'fun_noIce',
+        kind: AchievementKind.fun,
+        title: 'No ice required',
+        badge: '$noIceLength',
+        unit: 'NO FREEZE',
+        message: '$noIceLength in a row without a single freeze. Freezes? Never heard of her.',
+        earnedOn: noIceDays.first,
       ));
     }
 
@@ -432,12 +482,16 @@ class Achievements {
     var longestBefore = 0; // the longest run before the current one
     var runEnded = false;
     var best = 0;
+    var tinyInARow = 0;
+    var iceInRun = false;
     // A habit being broken is clean "so far" all day: the day counts once it's over
     final current = habit.schedule.periodStart(now);
 
     for (final period in Insights.periods(habit, now)) {
       final mark = period.mark;
-      if (mark == PeriodMark.untracked || mark == PeriodMark.rest || mark == PeriodMark.current) continue;
+      // A freeze inside a run (or its one-miss gap) rules out "No ice required"
+      if (mark == PeriodMark.frozen && (walk.streak > 0 || streakBeforeMiss > 0)) iceInRun = true;
+      if (!mark.isDue || mark == PeriodMark.current) continue;
       if (habit.isBreak && period.start == current) continue;
       final missedBefore = previous == PeriodMark.missed || previous == PeriodMark.partial;
       if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
@@ -451,10 +505,15 @@ class Achievements {
           longestBefore = best;
           walk.runStart = period.start;
           walk.bestOn = null;
+          iceInRun = false;
+          if (runEnded) walk.respawnOn ??= day;
         }
         walk.streak = (continues ? before : 0) + 1;
         if (walk.streak > best) best = walk.streak;
         if (mark == PeriodMark.twoMinute) walk.tinyDays.add(day);
+        tinyInARow = mark == PeriodMark.twoMinute ? tinyInARow + 1 : 0;
+        if (tinyInARow >= speedrunLength) walk.speedrunOn ??= day;
+        if (walk.streak >= noIceLength && !iceInRun) walk.noIceOn ??= day;
         for (final goal in goals) {
           if (walk.streak >= goal) walk.reached.putIfAbsent(goal, () => day);
         }
@@ -470,12 +529,150 @@ class Achievements {
         if (missedBefore && streakBeforeMiss > 0) runEnded = true;
         streakBeforeMiss = missedBefore ? 0 : walk.streak;
         walk.streak = 0;
+        tinyInARow = 0;
       }
       previous = mark;
     }
     // A miss that ends a streak only counts as ended after the second
     if (previous == PeriodMark.missed || previous == PeriodMark.partial) walk.streak = streakBeforeMiss;
     return walk;
+  }
+
+  // The fun ones: titles and lines in the app's voice ("I…"), or the atoms'.
+
+  static List<Achievement> _funFor(Habit habit, _Walk walk, DateTime now) {
+    Achievement fun(String id, String title, String badge, String unit, String message, DateTime on) => Achievement(
+          id: '${id}_${habit.id}',
+          kind: AchievementKind.fun,
+          title: title,
+          badge: badge,
+          unit: unit,
+          message: message,
+          habitId: habit.id,
+          habitName: habit.name,
+          earnedOn: on,
+        );
+    final today = DateTime(now.year, now.month, now.day);
+    final out = <Achievement>[];
+
+    final over = _overachievedOn(habit, today);
+    if (over != null) {
+      final units = habit.units.isEmpty ? '' : ' ${habit.units}';
+      out.add(fun('fun_over', 'Overachiever', '$overachieverTimes×', 'TARGET',
+          "I asked for ${habit.target}$units. You brought ${habit.target * overachieverTimes}. I'm not mad, just impressed.",
+          over));
+    }
+    if (walk.speedrunOn != null) {
+      out.add(fun('fun_tiny5', 'Speedrunner', '$speedrunLength', 'TWO-MIN',
+          "Five two-minute versions in a row. We're not saying you're gaming it. We're saying we see you. (The atoms)",
+          walk.speedrunOn!));
+    }
+    if (walk.respawnOn != null) {
+      out.add(fun('fun_respawn', 'Respawned', '1UP', 'RESPAWN', 'The streak died. You did not.', walk.respawnOn!));
+    }
+    final lap = DateTime(habit.trackedFrom.year, habit.trackedFrom.month, habit.trackedFrom.day + lapDays);
+    if (!lap.isAfter(today)) {
+      out.add(fun('fun_lap', 'A lap around the sun', '$lapDays', 'DAYS',
+          "A whole year with ${habit.name}. I'd get you a cake, but I'm an app.", lap));
+    }
+    return out;
+  }
+
+  /// The day a period's total first reached [overachieverTimes] times the
+  /// target (habits being built).
+  static DateTime? _overachievedOn(Habit habit, DateTime today) {
+    if (habit.isBreak || habit.target <= 0) return null;
+    final goal = habit.target * overachieverTimes;
+    final totals = <DateTime, int>{};
+    DateTime? first;
+    for (final day in habit.history.keys.toList()..sort()) {
+      final amount = habit.history[day] ?? 0;
+      if (amount <= 0 || day.isAfter(today)) continue;
+      final start = habit.schedule.periodStart(day);
+      final total = (totals[start] ?? 0) + amount;
+      totals[start] = total;
+      if (total >= goal) {
+        first = day;
+        break;
+      }
+    }
+    return first;
+  }
+
+  static List<Achievement> _funAcross(List<Habit> habits, DateTime now, FreezeRecord? freezes) {
+    Achievement fun(String id, String title, String badge, String unit, String message, DateTime on) => Achievement(
+          id: id,
+          kind: AchievementKind.fun,
+          title: title,
+          badge: badge,
+          unit: unit,
+          message: message,
+          earnedOn: on,
+        );
+    final today = DateTime(now.year, now.month, now.day);
+    final out = <Achievement>[];
+    final periodic = habits.where((h) => h.schedule.isPeriodic).toList();
+
+    if (periodic.isNotEmpty) {
+      final first = periodic.map((h) => h.trackedFrom).reduce((a, b) => a.isBefore(b) ? a : b);
+      final days = Insights.days(periodic, from: first, to: today, now: now);
+      final sweep = days.where((d) => d.due >= sweepHabits && d.done == d.due).firstOrNull;
+      if (sweep != null) {
+        out.add(fun('fun_sweep', 'Clean sweep', 'ALL', 'DONE',
+            'Every habit, done in full, on a $sweepHabits-habit day. Not one left. I checked twice.', sweep.day));
+      }
+      for (var i = 1; i < days.length; i++) {
+        final sunday = days[i];
+        final saturday = days[i - 1];
+        if (sunday.day.weekday != DateTime.sunday) continue;
+        bool kept(DayRecord d) => !d.isEmpty && d.done + d.twoMinute == d.due;
+        if (kept(saturday) && kept(sunday)) {
+          out.add(fun('fun_weekend', 'Weekend warrior', 'SAT', '+ SUN',
+              'Every habit kept, all weekend. Most people rest on weekends. The atoms are taking notes.', sunday.day));
+          break;
+        }
+      }
+    }
+
+    final noted = {
+      for (final h in habits)
+        for (final d in h.dayNotes.keys)
+          if (!d.isAfter(today)) d,
+    }.toList()
+      ..sort();
+    if (noted.length >= diaryNotes) {
+      out.add(fun('fun_diary', 'Dear diary', '$diaryNotes', 'NOTES',
+          "Notes on $diaryNotes days. I read them all. I'm not crying, you're crying.", noted[diaryNotes - 1]));
+    }
+
+    final started = periodic.map((h) => h.trackedFrom).where((d) => !d.isAfter(today)).toList()..sort();
+    if (started.length >= jugglerHabits) {
+      out.add(fun('fun_juggler', 'Juggler', '$jugglerHabits', 'HABITS',
+          '$jugglerHabits habits at once. The atoms have unionized.', started[jugglerHabits - 1]));
+    }
+
+    final postcard = [
+      for (final h in periodic)
+        for (final p in h.pauses)
+          if (p.to != null && !p.to!.isAfter(today) && (h.history[p.to!] ?? 0) > 0) p.to!,
+    ]..sort();
+    if (postcard.isNotEmpty) {
+      out.add(fun('fun_postcard', 'Postcard', 'HI', 'AGAIN',
+          "Logged a habit on the day vacation ended. Welcome back. Your habits didn't move. Neither did I.",
+          postcard.first));
+    }
+
+    final firstFreeze = freezes?.firstSpentOn;
+    if (firstFreeze != null && !firstFreeze.isAfter(today)) {
+      out.add(fun('fun_firstFreeze', 'Brain freeze', '1ST', 'FREEZE',
+          "Your first freeze. I'll pretend I didn't see that. (That's literally what it's for.)", firstFreeze));
+    }
+    final fund = freezes?.fundReachedOn;
+    if (fund != null && !fund.isAfter(today)) {
+      out.add(fun('fun_fund', 'Rainy-day fund', '5', 'FREEZES',
+          'A full bank of freezes for a month, untouched. Have you ever had a bad day?', fund));
+    }
+    return out;
   }
 
   static String _key(DateTime day) => '${day.year}-${day.month}-${day.day}';
@@ -503,4 +700,10 @@ class _Walk {
   DateTime? bestOn;
   int bestLength = 0;
   DateTime? runStart;
+
+  /// The fun ones: five two-minute periods in a row; the first kept after a
+  /// streak ended; a run of 30 with no freeze in it.
+  DateTime? speedrunOn;
+  DateTime? respawnOn;
+  DateTime? noIceOn;
 }

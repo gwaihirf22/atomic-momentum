@@ -5,6 +5,7 @@ import 'reset_frequency.dart';
 import 'streak_data.dart';
 import 'reminder_settings.dart';
 import 'habit_metadata.dart';
+import 'habit_pause.dart';
 import 'habit_schedule.dart';
 import 'habit_goal.dart';
 import 'habit_notify.dart';
@@ -69,6 +70,14 @@ class Habit extends Equatable {
   /// Filled in from Apple Health / Health Connect, or null.
   final HealthLink? health;
 
+  /// Days a freeze was spent on, one per period (date-only): that period is
+  /// neither kept nor missed, unless it was kept anyway.
+  final Set<DateTime> frozenDays;
+
+  /// Vacation mode's stretches; periods they touch are paused like frozen
+  /// ones. The last is open while vacation mode is on.
+  final List<HabitPause> pauses;
+
   bool get isBreak => goal.isBreak;
 
   static const maxWhyLength = 300;
@@ -113,6 +122,8 @@ class Habit extends Equatable {
     this.goal = HabitGoal.build,
     this.notify = HabitNotify.standard,
     this.health,
+    this.frozenDays = const {},
+    this.pauses = const [],
   });
 
   static int _idCounter = 0;
@@ -511,7 +522,7 @@ class Habit extends Equatable {
       streak: StreakCalculator.calculate(
         history: history,
         target: target,
-        schedule: schedule,
+        schedule: _scoringSchedule,
         now: now,
         twoMinute: _twoMinuteLog,
         breakRule: _breakRule,
@@ -527,7 +538,7 @@ class Habit extends Equatable {
     return StreakCalculator.streakDeadline(
       history: history,
       target: target,
-      schedule: schedule,
+      schedule: _scoringSchedule,
       now: now ?? clock.now(),
       twoMinute: _twoMinuteLog,
     );
@@ -538,7 +549,7 @@ class Habit extends Equatable {
     return StreakCalculator.nextMissAt(
       history: history,
       target: target,
-      schedule: schedule,
+      schedule: _scoringSchedule,
       now: now ?? clock.now(),
       twoMinute: _twoMinuteLog,
     );
@@ -550,7 +561,7 @@ class Habit extends Equatable {
   late final Momentum momentum = MomentumCalculator.calculate(
     history: history,
     target: target,
-    schedule: schedule,
+    schedule: _scoringSchedule,
     start: _momentumStart,
     now: lastUpdatedDate,
     twoMinute: _twoMinuteLog,
@@ -564,7 +575,7 @@ class Habit extends Equatable {
             if (!entry.key.isAfter(date)) entry.key: entry.value,
         },
         target: target,
-        schedule: schedule,
+        schedule: _scoringSchedule,
         start: _momentumStart,
         now: date,
         twoMinute: _twoMinuteLog,
@@ -598,7 +609,7 @@ class Habit extends Equatable {
   List<({double score, double formed})> momentumPoints(List<DateTime> at) => MomentumCalculator.points(
         history: history,
         target: target,
-        schedule: schedule,
+        schedule: _scoringSchedule,
         start: _momentumStart,
         at: at,
         twoMinute: _twoMinuteLog,
@@ -606,6 +617,136 @@ class Habit extends Equatable {
       );
 
   TwoMinuteLog get _twoMinuteLog => TwoMinuteLog(days: twoMinuteDays, minimum: twoMinute?.minimum);
+
+  // Freezes and vacation mode
+
+  /// The schedule streaks and momentum count by: periods that are paused
+  /// and weren't kept are skipped like rest days.
+  late final HabitSchedule _scoringSchedule =
+      frozenDays.isEmpty && pauses.isEmpty ? schedule : PausedSchedule(schedule, _skipsPeriod);
+
+  /// Starts of the periods a freeze was spent on.
+  late final Set<DateTime> _frozenPeriods = {for (final d in frozenDays) schedule.periodStart(d)};
+
+  final Map<DateTime, bool> _skipCache = {};
+
+  bool _skipsPeriod(DateTime start) =>
+      _skipCache.putIfAbsent(start, () => isPausedPeriod(start) && !_keptPeriod(start));
+
+  /// Whether the period starting at [start] is frozen or on vacation and
+  /// wasn't kept: neither counted nor missed.
+  bool skipsPeriod(DateTime start) => schedule.isPeriodic && _skipsPeriod(start);
+
+  /// Whether the period starting at [start] is frozen or on vacation (kept
+  /// or not).
+  bool isPausedPeriod(DateTime start) {
+    if (!schedule.isPeriodic) return false;
+    if (_frozenPeriods.contains(start)) return true;
+    if (pauses.isEmpty) return false;
+    final end = schedule.nextPeriodStart(start);
+    // Vacation mode still on pauses up to today; later days aren't decided yet
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return pauses.any((p) => p.overlaps(start, end) && (!p.isOpen || !start.isAfter(today)));
+  }
+
+  /// Kept in a way that beats a freeze: done or two-minute for a habit being
+  /// built; for one being broken, at or under the limit (a slip is what a
+  /// freeze covers).
+  bool _keptPeriod(DateTime start) {
+    final total = _periodTotals[start] ?? 0;
+    if (isBreak) return total <= target;
+    if (total >= target && target > 0) return true;
+    final minimum = twoMinute?.minimum;
+    return _twoMinutePeriods.contains(start) || (minimum != null && minimum > 0 && total >= minimum);
+  }
+
+  /// Whether the period containing [date] is frozen or on vacation.
+  bool isPausedOn(DateTime date) => isPausedPeriod(schedule.periodStart(date));
+
+  /// Whether a freeze was spent on the period containing [date].
+  bool isFrozenOn(DateTime date) => schedule.isPeriodic && _frozenPeriods.contains(schedule.periodStart(date));
+
+  /// Whether vacation mode covers the period containing [date].
+  bool isOnVacationOn(DateTime date) {
+    if (!schedule.isPeriodic || pauses.isEmpty) return false;
+    final start = schedule.periodStart(date);
+    final end = schedule.nextPeriodStart(start);
+    return pauses.any((p) => p.overlaps(start, end));
+  }
+
+  /// Vacation mode is on for this habit.
+  bool get isOnVacation => pauses.isNotEmpty && pauses.last.isOpen;
+
+  /// How far back a freeze can reach (to cover the miss that would end a
+  /// streak), and how far ahead.
+  static const freezeDaysBack = 7;
+  static const freezeDaysAhead = 30;
+
+  /// Why a freeze can't go on the period containing [date], or null if it
+  /// can: a habit that never resets, a rest day, before the habit was
+  /// tracked, too far back or ahead, already frozen, or already kept.
+  String? whyNoFreeze(DateTime date, DateTime now) {
+    final day = _dateOnly(date);
+    final today = _dateOnly(now);
+    if (!schedule.isPeriodic) return "This habit doesn't reset, so there's nothing to freeze";
+    if (!schedule.isDueOn(day)) return 'A rest day needs no freeze';
+    if (day.isBefore(trackedFrom)) return 'Before this habit was tracked';
+    final start = schedule.periodStart(day);
+    if (start.isBefore(schedule.periodStart(DateTime(today.year, today.month, today.day - freezeDaysBack)))) {
+      return 'Freezes reach back a week at most';
+    }
+    if (day.isAfter(DateTime(today.year, today.month, today.day + freezeDaysAhead))) {
+      return 'Freezes reach a month ahead at most';
+    }
+    if (_frozenPeriods.contains(start)) return 'Already frozen';
+    if (!isBreak && _keptPeriod(start)) return 'Already kept: no freeze needed';
+    return null;
+  }
+
+  /// Spends a freeze on the period containing [date] (the bank is the
+  /// caller's business). Throws if it can't go there ([whyNoFreeze]).
+  Habit freeze(DateTime date) {
+    final now = clock.now();
+    final why = whyNoFreeze(date, now);
+    if (why != null) throw ArgumentError(why);
+    final day = _dateOnly(date);
+    final days = {...frozenDays.where((d) => !_inSamePeriod(d, day)), day};
+    return copyWith(frozenDays: days)._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
+  }
+
+  /// Takes the freeze off the period containing [date].
+  Habit unfreeze(DateTime date) {
+    final now = clock.now();
+    final day = _dateOnly(date);
+    final days = {...frozenDays.where((d) => !_inSamePeriod(d, day))};
+    if (days.length == frozenDays.length) return this;
+    return copyWith(frozenDays: days)._recalculated(now).copyWith(metadata: metadata.updateModifiedDate());
+  }
+
+  /// Frozen days whose freeze turned out not to be needed by [now]: the
+  /// period was done or kept with the two-minute version, or, for a habit
+  /// being broken, it ended without a slip. Their freezes go back to the bank.
+  List<DateTime> unneededFreezes(DateTime now) => [
+        for (final day in frozenDays)
+          if (_keptPeriod(schedule.periodStart(day)) &&
+              (!isBreak || !schedule.nextPeriodStart(day).isAfter(now)))
+            day,
+      ];
+
+  /// Starts vacation mode on [day] (nothing happens if it's already on).
+  Habit startPause(DateTime day) {
+    if (isOnVacation || !schedule.isPeriodic) return this;
+    final now = clock.now();
+    return copyWith(pauses: [...pauses, HabitPause(from: day)])._recalculated(now);
+  }
+
+  /// Ends vacation mode on [day] (that day stays paused).
+  Habit endPause(DateTime day) {
+    if (!isOnVacation) return this;
+    final now = clock.now();
+    return copyWith(pauses: [...pauses.take(pauses.length - 1), pauses.last.closedOn(_dateOnly(day))])._recalculated(now);
+  }
 
   /// Creation day, or the earliest logged day if that's earlier (seeded or
   /// backfilled history counts too).
@@ -692,6 +833,8 @@ class Habit extends Equatable {
       goal: goal,
       notify: notify ?? this.notify,
       health: removeHealth ? null : (health ?? this.health),
+      frozenDays: updated.frozenDays,
+      pauses: updated.pauses,
     );
 
     // A new target, frequency or reset day changes how history adds up
@@ -831,6 +974,8 @@ class Habit extends Equatable {
     HabitGoal? goal,
     HabitNotify? notify,
     HealthLink? health,
+    Set<DateTime>? frozenDays,
+    List<HabitPause>? pauses,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -857,6 +1002,8 @@ class Habit extends Equatable {
       goal: goal ?? this.goal,
       notify: notify ?? this.notify,
       health: health ?? this.health,
+      frozenDays: frozenDays ?? this.frozenDays,
+      pauses: pauses ?? this.pauses,
     );
   }
 
@@ -893,6 +1040,8 @@ class Habit extends Equatable {
       if (goal != HabitGoal.build) 'goal': goal.name,
       if (!notify.isStandard) 'notify': notify.toJson(),
       if (health != null) 'health': health!.toJson(),
+      if (frozenDays.isNotEmpty) 'frozen': twoMinuteDaysToJson(frozenDays),
+      if (pauses.isNotEmpty) 'pauses': [for (final p in pauses) p.toJson()],
     };
   }
 
@@ -978,6 +1127,8 @@ class Habit extends Equatable {
       goal: HabitGoal.fromJson(json['goal']),
       notify: HabitNotify.fromJson(json['notify']),
       health: HealthLink.fromJson(json['health']),
+      frozenDays: twoMinuteDaysFromJson(json['frozen']),
+      pauses: HabitPause.listFromJson(json['pauses']),
     );
   }
 
@@ -1007,6 +1158,8 @@ class Habit extends Equatable {
         goal,
         notify,
         health,
+        frozenDays,
+        pauses,
       ];
 
   @override

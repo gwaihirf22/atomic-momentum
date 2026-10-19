@@ -63,6 +63,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// Delete and other destructive actions.
   final Color danger;
 
+  /// Freezes: a frozen day, the freeze bank (3:1 on [surface]).
+  final Color ice;
+
   /// The floating tab bar: translucent over the blurred content behind it,
   /// with a hairline edge and a soft shadow.
   final Color bar;
@@ -94,6 +97,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.flame,
     required this.warning,
     required this.danger,
+    required this.ice,
     required this.bar,
     required this.barEdge,
     required this.barShadow,
@@ -122,6 +126,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFFF8A3D),
     warning: Color(0xFFFFB020),
     danger: Color(0xFFFF6B6B),
+    ice: Color(0xFF8EC5FF),
     bar: Color(0xC71C1F26),
     barEdge: Color(0x14FFFFFF),
     barShadow: Color(0x80000000),
@@ -150,6 +155,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFD9480F),
     warning: Color(0xFFB45309),
     danger: Color(0xFFD93025),
+    ice: Color(0xFF2B73B8),
     bar: Color(0xCCFFFFFF),
     barEdge: Color(0x14000000),
     barShadow: Color(0x2414161C),
@@ -178,6 +184,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     flame: Color(0xFFB3541A),
     warning: Color(0xFF9A5A0C),
     danger: Color(0xFFA8432F),
+    ice: Color(0xFF3F7095),
     bar: Color(0xD1FBF6EC),
     barEdge: Color(0x1A3B2F22),
     barShadow: Color(0x29503C1E),

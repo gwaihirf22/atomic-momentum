@@ -3,6 +3,8 @@ import '../services/sharer.dart';
 import '../services/app_icon_service.dart';
 import '../services/support_link.dart';
 import '../services/home_widget_bridge.dart';
+import '../services/freeze_bank.dart';
+import '../../domain/services/achievements.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -86,6 +88,13 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<AppIconService>(() => const PlatformAppIconService());
   sl.registerLazySingleton<SupportLink>(() => PlatformSupportLink());
   sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
+  sl.registerLazySingleton(() => FreezeBank(sl()));
+  // The freeze achievements read what the bank remembers
+  Achievements.freezeSource = () {
+    if (!sl.isRegistered<FreezeBank>()) return (firstSpentOn: null, fundReachedOn: null);
+    final bank = sl<FreezeBank>();
+    return (firstSpentOn: bank.firstSpentOn, fundReachedOn: bank.fundReachedOn);
+  };
   sl.registerLazySingleton<HealthSource>(() => PluginHealthSource());
   // Reads the source when it syncs, so tests can swap in a fake after setup
   sl.registerLazySingleton(() => HealthSyncService(source: () => sl<HealthSource>(), prefs: sl()));
@@ -118,6 +127,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
     reminderService: sl(),
     categoryRepository: sl(),
     healthSync: sl(),
+    freezeBank: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list
   sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));

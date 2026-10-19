@@ -45,6 +45,12 @@ class RefHabit {
   /// Days the "2 min" button was used.
   final Set<DateTime> tapped = {};
 
+  /// Days with a note.
+  final Set<DateTime> notes = {};
+
+  /// Writes (or with empty text, removes) the note on [date].
+  void note(DateTime date, String text) => text.isEmpty ? notes.remove(day(date)) : notes.add(day(date));
+
   RefHabit(CreateHabitParams params, DateTime addedOn)
       : name = params.name,
         goal = params.goal,
@@ -425,14 +431,22 @@ class RefHabit {
   /// The day each streak milestone in [goals] was first reached, plus the
   /// comebacks (kept right after a single miss), the day a new streak
   /// reached [comebackLength] after one ended, and the days kept small.
-  ({Map<int, DateTime> reached, List<DateTime> comebacks, DateTime? comebackOn, List<DateTime> tiny}) walk(
-      DateTime now, List<int> goals, {int comebackLength = 7}) {
+  ({
+    Map<int, DateTime> reached,
+    List<DateTime> comebacks,
+    DateTime? comebackOn,
+    List<DateTime> tiny,
+    DateTime? speedrunOn,
+    DateTime? respawnOn,
+    DateTime? noIceOn,
+  }) walk(DateTime now, List<int> goals, {int comebackLength = 7}) {
     final reached = <int, DateTime>{};
     final comebacks = <DateTime>[];
     final tiny = <DateTime>[];
-    DateTime? comebackOn;
+    DateTime? comebackOn, speedrunOn, respawnOn, noIceOn;
     var streak = 0, before = 0;
     var runEnded = false;
+    var tinyInARow = 0;
     RefPeriod? previous;
     for (final p in periods(now)) {
       if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
@@ -443,8 +457,13 @@ class RefHabit {
       final when = isOneDay(p) ? p.start : keptOn(p);
       if (p.kept) {
         if (afterMiss && before > 0) comebacks.add(when);
+        final startsRun = afterMiss ? before == 0 : streak == 0;
+        if (startsRun && runEnded) respawnOn ??= when;
         streak = afterMiss ? (before > 0 ? before + 1 : 1) : streak + 1;
         if (p.mark == RefMark.twoMinute) tiny.add(when);
+        tinyInARow = p.mark == RefMark.twoMinute ? tinyInARow + 1 : 0;
+        if (tinyInARow >= 5) speedrunOn ??= when;
+        if (streak >= 30) noIceOn ??= when;
         for (final g in goals) {
           if (streak >= g) reached.putIfAbsent(g, () => when);
         }
@@ -453,10 +472,19 @@ class RefHabit {
         if (afterMiss && before > 0) runEnded = true;
         before = afterMiss ? 0 : streak;
         streak = 0;
+        tinyInARow = 0;
       }
       previous = p;
     }
-    return (reached: reached, comebacks: comebacks, comebackOn: comebackOn, tiny: tiny);
+    return (
+      reached: reached,
+      comebacks: comebacks,
+      comebackOn: comebackOn,
+      tiny: tiny,
+      speedrunOn: speedrunOn,
+      respawnOn: respawnOn,
+      noIceOn: noIceOn,
+    );
   }
 
   double _credit(RefPeriod p, double s) {
@@ -469,6 +497,20 @@ class RefHabit {
   /// Score now minus the score a week ago, at the same time of day.
   double trend(DateTime now) =>
       momentum(now) - momentum(DateTime(now.year, now.month, now.day - 7, now.hour, now.minute));
+
+  /// The day a period's total first reached three times the target.
+  DateTime? overachievedOn(DateTime now) {
+    if (isBreak || target <= 0) return null;
+    final totals = <DateTime, int>{};
+    for (final d in amounts.keys.toList()..sort()) {
+      final amount = amounts[d]!;
+      if (amount <= 0 || d.isAfter(day(now))) continue;
+      final start = periodOf(d).$1;
+      totals[start] = (totals[start] ?? 0) + amount;
+      if (totals[start]! >= 3 * target) return d;
+    }
+    return null;
+  }
 
   /// Whether it counts toward overall momentum at [at]: once something is
   /// logged; a habit being broken once a period has passed since it began.
@@ -629,6 +671,16 @@ class Reference {
         out['${h.isBreak ? 'clean' : 'streak'}_${entry.key}_$id'] = entry.value;
       }
       if (w.comebackOn != null) out['comeback_$id'] = w.comebackOn!;
+      // The fun ones
+      if (w.speedrunOn != null) out['fun_tiny5_$id'] = w.speedrunOn!;
+      if (w.respawnOn != null) out['fun_respawn_$id'] = w.respawnOn!;
+      if (w.noIceOn != null && (out['fun_noIce'] == null || w.noIceOn!.isBefore(out['fun_noIce']!))) {
+        out['fun_noIce'] = w.noIceOn!;
+      }
+      final over = h.overachievedOn(now);
+      if (over != null) out['fun_over_$id'] = over;
+      final lap = DateTime(h.trackedFrom.year, h.trackedFrom.month, h.trackedFrom.day + 365);
+      if (!lap.isAfter(day(now))) out['fun_lap_$id'] = lap;
       tiny.addAll(w.tiny);
       comebacks.addAll(w.comebacks);
       for (final entry in h.dayEnds(now).entries) {
@@ -650,6 +702,43 @@ class Reference {
     for (final goal in const [1, 4, 12]) {
       if (weeks.length >= goal) out['perfectWeek_$goal'] = weeks[goal - 1];
     }
+    out.addAll(_funAcross(now));
+    return out;
+  }
+
+  /// Clean sweep, Weekend warrior, Dear diary and Juggler.
+  Map<String, DateTime> _funAcross(DateTime now) {
+    final out = <String, DateTime>{};
+    final today = day(now);
+    final tracked = [for (final h in live) if (h.periodic) h];
+    if (tracked.isNotEmpty) {
+      final first = tracked.map((h) => h.trackedFrom).reduce((a, b) => a.isBefore(b) ? a : b);
+      final records = days(first, today, now);
+      for (final entry in records.entries) {
+        if (entry.value.due >= 5 && entry.value.done == entry.value.due) {
+          out['fun_sweep'] = entry.key;
+          break;
+        }
+      }
+      bool kept(RefDay? d) => d != null && d.due > 0 && d.done + d.twoMinute == d.due;
+      for (final entry in records.entries) {
+        if (entry.key.weekday != DateTime.sunday) continue;
+        final saturday = DateTime(entry.key.year, entry.key.month, entry.key.day - 1);
+        if (kept(records[saturday]) && kept(entry.value)) {
+          out['fun_weekend'] = entry.key;
+          break;
+        }
+      }
+      final started = [for (final h in tracked) if (!h.trackedFrom.isAfter(today)) h.trackedFrom]..sort();
+      if (started.length >= 10) out['fun_juggler'] = started[9];
+    }
+    final noted = {
+      for (final h in live)
+        for (final d in h.notes)
+          if (!d.isAfter(today)) d,
+    }.toList()
+      ..sort();
+    if (noted.length >= 10) out['fun_diary'] = noted[9];
     return out;
   }
 

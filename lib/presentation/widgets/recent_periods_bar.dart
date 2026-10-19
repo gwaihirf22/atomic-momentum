@@ -35,6 +35,7 @@ class RecentPeriodsBar extends StatelessWidget {
       if (count(PeriodMark.partial) > 0) '${count(PeriodMark.partial)} partly done',
       if (count(PeriodMark.missed) > 0) '${count(PeriodMark.missed)} missed',
       if (count(PeriodMark.rest) > 0) '${count(PeriodMark.rest)} rest',
+      if (count(PeriodMark.frozen) > 0) '${count(PeriodMark.frozen)} frozen',
     ];
     final tracked = periods.where((p) => p.mark != PeriodMark.untracked).length;
     final span = tracked == 1 ? 'This $unit' : 'Last $tracked ${unit}s';
@@ -82,6 +83,17 @@ class RecentPeriodsBar extends StatelessWidget {
             width: barWidth,
             height: 3,
             decoration: BoxDecoration(color: palette.textSecondary.withValues(alpha: 0.35), shape: BoxShape.circle),
+          ),
+        );
+      case PeriodMark.frozen:
+        // Held as it was: an icy bar, neither kept nor missed
+        return Container(
+          width: barWidth,
+          height: barHeight,
+          decoration: BoxDecoration(
+            color: palette.ice.withValues(alpha: 0.25),
+            border: Border.all(color: palette.ice, width: 1),
+            borderRadius: radius,
           ),
         );
       case PeriodMark.missed:
