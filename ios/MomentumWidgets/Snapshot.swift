@@ -59,6 +59,8 @@ struct Look: Decodable {
   let background, surface, raised, track, text, textSecondary: String
   let accent, gauge, orbStart, orbEnd, onOrb: String
   let good, goodTint, gold, flame, warning: String
+  /// Freezes (missing in snapshots from before them).
+  let ice: String?
 
   var orb: LinearGradient {
     LinearGradient(colors: [Color(hex: orbStart), Color(hex: orbEnd)], startPoint: .topLeading, endPoint: .bottomTrailing)
@@ -117,6 +119,8 @@ struct HabitInfo: Decodable, Identifiable {
   let units: String
   var text: String
   var done: Bool
+  /// Frozen or on vacation today (and not kept): held as it is.
+  var frozen: Bool?
   let due: Bool
   let period: String
   let periodEnds: String?
@@ -152,6 +156,7 @@ struct HabitInfo: Decodable, Identifiable {
     var fresh = self
     fresh.progress = 0
     fresh.done = false
+    fresh.frozen = false
     let unitsSuffix = units.isEmpty ? "" : " \(units)"
     if isBreak {
       fresh.text = target == 0 ? "Clean \(period)" : "0 of \(target)\(unitsSuffix) \(period)"

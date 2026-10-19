@@ -59,6 +59,14 @@ void main() {
     expect((h['recent'] as List).last, {'mark': 'current', 'fraction': 0.63});
   });
 
+  test('a frozen habit is held as it is: frozen, and no +', () {
+    final read = withClock(Clock.fixed(now), () => make('Read').freeze(today));
+    final h = habitIn(snapshot([read]), 0);
+    expect(h['frozen'], isTrue);
+    expect(h['next'], isNull);
+    expect(habitIn(snapshot([make('Read')]), 0)['frozen'], isFalse);
+  });
+
   test('a done habit has no next step', () {
     final h = habitIn(snapshot([logged(make('Read', target: 20, units: 'pages'), 20)]), 0);
     expect(h['done'], isTrue);

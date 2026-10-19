@@ -48,6 +48,35 @@ class RefHabit {
   /// Days with a note.
   final Set<DateTime> notes = {};
 
+  /// Starts of the periods a freeze went on.
+  final Set<DateTime> frozen = {};
+
+  /// Vacation mode's stretches (to is null while it's on).
+  final List<(DateTime, DateTime?)> pauses = [];
+
+  void freeze(DateTime date) {
+    frozen.add(periodOf(date).$1);
+    changed();
+  }
+
+  /// Vacation mode on (from [date]) or off (on [date], which stays paused).
+  void vacation(bool on, DateTime date) {
+    if (on) {
+      if (pauses.isEmpty || pauses.last.$2 != null) pauses.add((day(date), null));
+    } else if (pauses.isNotEmpty && pauses.last.$2 == null) {
+      pauses[pauses.length - 1] = (pauses.last.$1, day(date));
+    }
+    changed();
+  }
+
+  bool get onVacation => pauses.isNotEmpty && pauses.last.$2 == null;
+
+  /// Whether the period from [s] to [end] is frozen or on vacation (as of
+  /// [today]: vacation mode still on covers the days so far).
+  bool paused(DateTime s, DateTime end, DateTime today) =>
+      frozen.contains(s) ||
+      pauses.any((p) => p.$1.isBefore(end) && (p.$2 == null ? !s.isAfter(today) : !p.$2!.isBefore(s)));
+
   /// Writes (or with empty text, removes) the note on [date].
   void note(DateTime date, String text) => text.isEmpty ? notes.remove(day(date)) : notes.add(day(date));
 
@@ -242,6 +271,10 @@ class RefHabit {
     } else {
       mark = total > 0 ? RefMark.partial : RefMark.missed;
     }
+    // Frozen or on vacation, and not kept: skipped
+    if (due && !untracked && mark != RefMark.done && mark != RefMark.twoMinute && paused(s, end, today)) {
+      return RefPeriod(s, end, RefMark.frozen, total, isCurrent);
+    }
     return RefPeriod(s, end, mark, total, isCurrent);
   }
 
@@ -294,7 +327,7 @@ class RefHabit {
     // broken, once it slipped: that's a miss already)
     final due = [
       for (final p in periods(now))
-        if (p.mark != RefMark.untracked && p.mark != RefMark.rest)
+        if (p.mark != RefMark.untracked && !p.skipped)
           if (!p.isCurrent || p.kept || p.mark == RefMark.slipped) p,
     ];
     // Runs of kept periods, a single miss bridged
@@ -370,7 +403,7 @@ class RefHabit {
     final walk = _RefScore(alpha);
     var result = 0.0;
     for (final p in periods(at)) {
-      if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
+      if (p.mark == RefMark.untracked || p.skipped) continue;
       final credit = _credit(p, walk.s);
       if (!p.isCurrent) {
         walk.end(credit, p.kept);
@@ -402,7 +435,7 @@ class RefHabit {
           if (tapped.contains(d)) tappedIn = true;
           continue;
         }
-        if (p.mark == RefMark.rest) {
+        if (p.skipped) {
           out[d] = 100 * walk.s;
           continue;
         }
@@ -414,7 +447,7 @@ class RefHabit {
         final counted = walk.next(credit, so.kept);
         out[d] = 100 * (credit >= 1 || (so.mark == RefMark.twoMinute && counted > walk.s) ? counted : walk.s);
       }
-      if (p.mark != RefMark.rest && !p.isCurrent) walk.end(_credit(p, walk.s), p.kept);
+      if (!p.skipped && !p.isCurrent) walk.end(_credit(p, walk.s), p.kept);
     }
     return out;
   }
@@ -447,9 +480,11 @@ class RefHabit {
     var streak = 0, before = 0;
     var runEnded = false;
     var tinyInARow = 0;
+    var iceInRun = false;
     RefPeriod? previous;
     for (final p in periods(now)) {
-      if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
+      if (p.mark == RefMark.frozen && (streak > 0 || before > 0)) iceInRun = true;
+      if (p.mark == RefMark.untracked || p.skipped) continue;
       // A day being broken counts once it's over; any other period under
       // way once it's kept
       if (p.isCurrent && (isBreak || !p.kept)) continue;
@@ -458,12 +493,13 @@ class RefHabit {
       if (p.kept) {
         if (afterMiss && before > 0) comebacks.add(when);
         final startsRun = afterMiss ? before == 0 : streak == 0;
+        if (startsRun) iceInRun = false;
         if (startsRun && runEnded) respawnOn ??= when;
         streak = afterMiss ? (before > 0 ? before + 1 : 1) : streak + 1;
         if (p.mark == RefMark.twoMinute) tiny.add(when);
         tinyInARow = p.mark == RefMark.twoMinute ? tinyInARow + 1 : 0;
         if (tinyInARow >= 5) speedrunOn ??= when;
-        if (streak >= 30) noIceOn ??= when;
+        if (streak >= 30 && !iceInRun) noIceOn ??= when;
         for (final g in goals) {
           if (streak >= g) reached.putIfAbsent(g, () => when);
         }
@@ -547,7 +583,7 @@ class _RefScore {
   }
 }
 
-enum RefMark { done, twoMinute, partial, missed, slipped, current, rest, untracked }
+enum RefMark { done, twoMinute, partial, missed, slipped, current, rest, untracked, frozen }
 
 class RefPeriod {
   final DateTime start;
@@ -560,6 +596,9 @@ class RefPeriod {
 
   bool get kept => mark == RefMark.done || mark == RefMark.twoMinute;
   bool get missed => mark == RefMark.missed || mark == RefMark.partial || mark == RefMark.slipped;
+
+  /// Neither kept nor missed: a rest day, or frozen / on vacation and not kept.
+  bool get skipped => mark == RefMark.rest || mark == RefMark.frozen;
 
   @override
   String toString() => 'RefPeriod(${start.month}/${start.day}, $mark, $total)';
@@ -578,6 +617,9 @@ class RefDay {
 class Reference {
   final Map<String, RefHabit> habits = {};
 
+  /// The day the first freeze was spent.
+  DateTime? firstFreezeOn;
+
   Iterable<RefHabit> get live => habits.values.where((h) => !h.deleted);
 
   /// The heatmap from [from] to [to] across the live habits.
@@ -595,7 +637,7 @@ class Reference {
 
     for (final h in live) {
       for (final p in h.periods(now)) {
-        if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
+        if (p.mark == RefMark.untracked || p.skipped) continue;
         if (h.isOneDay(p)) {
           add(p.start, h, p);
         } else if (p.kept) {
@@ -615,7 +657,7 @@ class Reference {
       // The period under way counts once it's kept
       final ended = [
         for (final p in h.periods(now))
-          if (p.mark != RefMark.untracked && p.mark != RefMark.rest && (!p.isCurrent || p.kept)) p,
+          if (p.mark != RefMark.untracked && !p.skipped && (!p.isCurrent || p.kept)) p,
       ];
       var streak = 0, before = 0;
       RefPeriod? previous;
@@ -643,7 +685,7 @@ class Reference {
     for (final h in live) {
       for (final p in h.periods(now)) {
         if (p.start.isBefore(day(from)) || !h.isOneDay(p)) continue;
-        if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
+        if (p.mark == RefMark.untracked || p.skipped) continue;
         // The day under way counts once it's kept
         if (p.isCurrent && !p.kept) continue;
         due[p.start.weekday]++;
@@ -739,6 +781,14 @@ class Reference {
     }.toList()
       ..sort();
     if (noted.length >= 10) out['fun_diary'] = noted[9];
+    final postcards = [
+      for (final h in tracked)
+        for (final p in h.pauses)
+          if (p.$2 != null && !p.$2!.isAfter(today) && (h.amounts[p.$2!] ?? 0) > 0) p.$2!,
+    ]..sort();
+    if (postcards.isNotEmpty) out['fun_postcard'] = postcards.first;
+    final first = firstFreezeOn;
+    if (first != null && !first.isAfter(today)) out['fun_firstFreeze'] = first;
     return out;
   }
 

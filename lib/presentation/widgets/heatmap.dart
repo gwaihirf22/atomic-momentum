@@ -8,12 +8,14 @@ import '../../domain/services/insights.dart';
 /// What a day on the heatmap says: "Tue, Oct 6: 4 of 4 kept · perfect day".
 String heatmapDaySummary(DayRecord record) {
   final date = DateFormat.MMMEd().format(record.day);
-  if (record.isEmpty) return '$date: nothing due';
+  final frozen = record.frozen == 0 ? null : '${record.frozen} frozen';
+  if (record.isEmpty) return frozen == null ? '$date: nothing due' : '$date: $frozen';
   final kept = record.done + record.twoMinute;
   return [
     '$date: $kept of ${record.due} kept',
     if (record.perfect) 'perfect day',
     if (record.twoMinute > 0) '${record.twoMinute} with 2 min',
+    if (frozen != null) frozen,
   ].join(' · ');
 }
 
@@ -525,6 +527,15 @@ class _HeatmapPainter extends CustomPainter {
       final rect = RRect.fromRectAndRadius(rectFor(record.day), radius);
       fill.color = record.isEmpty ? shades[0].withValues(alpha: 0.5) : shades[Heatmap.shadeOf(record)];
       canvas.drawRRect(rect, fill);
+      // Only frozen (or on vacation) that day: an icy outline, not a miss
+      if (record.isEmpty && record.frozen > 0) {
+        canvas.drawRRect(
+          rect.deflate(0.75),
+          stroke
+            ..color = palette.ice
+            ..strokeWidth = 1.5,
+        );
+      }
       if (record.perfect) {
         canvas.drawRRect(
           rect.deflate(0.5),

@@ -232,6 +232,41 @@ void main() {
     expectClean(phone, 'two_minute_version');
   });
 
+  test('14. freezes and vacation mode: nothing for a frozen day or while away, streaks held', () async {
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await createAll(phone, [habit('Run'), habit('Read'), habit('Water', target: 8, units: 'glasses')]);
+      String bank() => '${phone.habits.freezes?.available} left';
+      for (final day in days()) {
+        await phone.checkIn(on(day, 7, 30));
+        final d = day.day + (day.month == 10 ? 0 : 100);
+        // Run, with 3 freezes: one planned ahead (the 9th, set on the 7th);
+        // one on the day that's then done anyway (the 16th: it comes back);
+        // one after a miss (the 22nd, set on the 23rd); one on the day (the
+        // 27th), leaving none for the 29th
+        Future<void> freeze(String label, DateTime which) async {
+          await phone.at(on(day, 8), 'freeze     Run $label', () => phone.freeze('Run', which));
+          await phone.at(on(day, 8, 1), 'bank       ${bank()}', () async {});
+        }
+
+        if (d == 7) await freeze('on the 9th', DateTime(day.year, day.month, 9));
+        if (d == 16 || d == 27 || d == 29) await freeze('today', day);
+        if (d == 23) await freeze('yesterday', DateTime(day.year, day.month, 22));
+        // Away from the 11th to the 14th: vacation mode for all of them
+        if (d == 11) await phone.at(on(day, 7, 45), 'vacation   on', () => phone.vacation(true));
+        if (d == 14) await phone.at(on(day, 20), 'vacation   off', () => phone.vacation(false));
+        final away = d >= 11 && d <= 14;
+        final runSkips = {9, 22, 27}.contains(d);
+        if (!away) await doHabits(phone, on(day, 12), names: [if (!runSkips) 'Run', 'Read', 'Water']);
+        if (d == 16) await phone.at(on(day, 12, 1), 'bank       ${bank()} (kept anyway: back)', () async {});
+        await phone.checkIn(on(day, 21));
+      }
+      await phone.advanceTo(end);
+      expect(phone.habits.getHabitById(phone.id('Run'))!.isFrozenOn(DateTime(2026, 10, 29)), isFalse,
+          reason: 'none left by then');
+    });
+    expectClean(phone, 'freezes_and_vacation');
+  });
+
   test('6. custom days, messages and edits: changes take effect at once', () async {
     final phone = await SimulatedPhone.run(start, (phone) async {
       await createAll(phone, [

@@ -9,6 +9,7 @@ import '../domain/entities/category.dart';
 import '../core/feedback/haptics.dart';
 import '../core/exceptions/friendly_error.dart';
 import '../core/theme/app_palette.dart';
+import '../core/theme/app_style.dart';
 import '../core/theme/ios_typography.dart';
 import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
@@ -111,8 +112,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final HabitProvider _habitsForNotices;
 
   /// A change that couldn't go to Health (it came from Health itself).
+  /// Freezes today (or takes the freeze back), from the card's swipe actions.
+  Future<void> _toggleFreeze(HabitProvider habits, Habit habit) async {
+    final now = clock.now();
+    final frozen = habit.isFrozenOn(now);
+    final ok = frozen ? await habits.unfreeze(habit.id, now) : await habits.freeze(habit.id, now);
+    if (!mounted) return;
+    final left = habits.freezes?.available;
+    final message = !ok
+        ? habits.error ?? "Couldn't freeze ${habit.name}"
+        : frozen
+            ? 'Unfrozen: the freeze is back${left == null ? '' : ' ($left left)'}'
+            : '${habit.name} is frozen for today${left == null ? '' : ' · $left left'}';
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Also "Your freeze came back" (a frozen day kept anyway).
   void _showHealthNotice() {
-    final notice = _habitsForNotices.takeHealthNotice();
+    final notice = _habitsForNotices.takeHealthNotice() ?? _habitsForNotices.takeFreezeNotice();
     if (notice == null || !mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(notice)));
   }
@@ -161,6 +178,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   else if (habitProvider.hasError)
                     SliverFillRemaining(hasScrollBody: false, child: _buildErrorState(habitProvider.error!, palette))
                   else ...[
+                    if (habitProvider.onVacation)
+                      SliverToBoxAdapter(child: _VacationBanner(onEnd: habitProvider.endVacation)),
                     SliverToBoxAdapter(
                       child: CategoryFilterHeader(
                         selected: categoryProvider.selectedCategory,
@@ -319,6 +338,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onSetTwoMinute: (done) => _setTwoMinute(habitProvider, habit, done),
                 onHold: () => _hold(habitProvider, habit),
                 holdUndo: _holdUndos[habit.id],
+                onFreeze: () => _toggleFreeze(habitProvider, habit),
               ),
           ],
         ),
@@ -477,6 +497,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       SnackBar(
         content: Text(success ? '${habit.name} deleted' : "Couldn't delete ${habit.name}. Please try again."),
         duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+}
+/// While vacation mode is on: nothing is due, with a way to end it.
+class _VacationBanner extends StatelessWidget {
+  final VoidCallback onEnd;
+
+  const _VacationBanner({required this.onEnd});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppStyle.screenPadding, 4, AppStyle.screenPadding, 8),
+      child: Container(
+        key: const Key('vacationBanner'),
+        padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+        decoration: BoxDecoration(color: palette.tint(palette.ice), borderRadius: BorderRadius.circular(14)),
+        child: Row(children: [
+          Icon(CupertinoIcons.airplane, size: 18, color: palette.ice),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'On vacation · nothing is due. Streaks and momentum hold.',
+              style: TextStyle(fontSize: 14, color: palette.text),
+            ),
+          ),
+          TextButton(key: const Key('vacationEnd'), onPressed: onEnd, child: const Text('Turn off')),
+        ]),
       ),
     );
   }

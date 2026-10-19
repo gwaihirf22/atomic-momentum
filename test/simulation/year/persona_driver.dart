@@ -108,6 +108,18 @@ class PersonaDriver {
       case DeleteHabit(:final habit):
         ok = await habits.deleteHabit(id(habit));
         ref.habits[habit]!.deleted = true;
+      case FreezeDay(:final habit, day: final date):
+        // Only where the app allows one (not a kept day, within reach)
+        if (habits.getHabitById(id(habit))!.whyNoFreeze(date, now) == null) {
+          ok = await habits.freeze(id(habit), date);
+          ref.habits[habit]!.freeze(date);
+          ref.firstFreezeOn ??= day(now);
+        }
+      case VacationMode(:final on):
+        ok = on ? await habits.startVacation() : await habits.endVacation();
+        for (final r in ref.live) {
+          if (r.periodic) r.vacation(on, now);
+        }
       case KeepQuote(:final habit, :final quoteId):
         ok = await habits.addQuote(id(habit), quoteId);
       case AddMyQuote(:final text, :final author):

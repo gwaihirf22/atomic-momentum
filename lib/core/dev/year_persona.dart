@@ -65,7 +65,13 @@ class YearPersona {
   static const inspireShown = 260;
   static const spanishDeleted = 265;
   static const holidayFrom = 290;
-  static const holidayTo = 303; // inclusive
+  static const holidayTo = 303; // inclusive, in vacation mode
+
+  /// Freezes: Drink water two days ahead; Read on the day; Read the day
+  /// after (each only where one can go, as the app allows).
+  static const freezeAhead = 61;
+  static const freezeToday = 120;
+  static const freezeAfter = 202;
   static const myQuoteDeleted = 330;
 
   /// The quote from the library kept with Read.
@@ -187,7 +193,13 @@ class YearPersona {
 
   PersonaDay _plan(int i, PersonaDay? yesterday) {
     final day = date(i);
-    if (isHoliday(i)) return PersonaDay(i, day, const []);
+    // Away: vacation mode on as it starts, off on the last evening
+    if (isHoliday(i)) {
+      return PersonaDay(i, day, [
+        if (i == holidayFrom) const PersonaVisit(7, 30, [VacationMode(true)]),
+        if (i == holidayTo) const PersonaVisit(21, 0, [VacationMode(false)]),
+      ]);
+    }
     final dice = _dice('day', i);
     final morningVisit = i == 0 || dice.nextDouble() > 0.15;
     final eveningVisit = i == 0 || dice.nextDouble() > 0.05;
@@ -237,6 +249,12 @@ class YearPersona {
       inspireShown => [const ChangeSetting(InspireTabSetting(true))],
       spanishDeleted => [const DeleteHabit(spanish)],
       myQuoteDeleted => [const DeleteMyQuote()],
+      _ => const <PersonaAction>[],
+    });
+    morning.addAll(switch (i) {
+      freezeAhead => [FreezeDay(water, date(freezeAhead + 2))],
+      freezeToday => [FreezeDay(read, date(freezeToday))],
+      freezeAfter => [FreezeDay(read, date(freezeAfter - 1))],
       _ => const <PersonaAction>[],
     });
     if (i > 0 && dice.nextDouble() < 0.12) morning.add(const AnotherQuote());
@@ -519,6 +537,25 @@ final class DeleteMyQuote extends PersonaAction {
   const DeleteMyQuote();
   @override
   String toString() => 'own quote deleted';
+}
+
+/// Spends a freeze on [habit]'s period containing [day], where the app
+/// allows one.
+final class FreezeDay extends PersonaAction {
+  @override
+  final String habit;
+  final DateTime day;
+  const FreezeDay(this.habit, this.day);
+  @override
+  String toString() => 'freeze $habit on ${day.month}/${day.day}';
+}
+
+/// Settings → Vacation mode, on or off.
+final class VacationMode extends PersonaAction {
+  final bool on;
+  const VacationMode(this.on);
+  @override
+  String toString() => 'vacation mode ${on ? 'on' : 'off'}';
 }
 
 /// Inspire's "Another quote".

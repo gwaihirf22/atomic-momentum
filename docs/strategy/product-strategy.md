@@ -50,9 +50,11 @@ Finishing a step logs it and moves on to the next one.
 - **Patterns:** your best days (done: "Your week" on Insights) and times (not yet).
 - **Weekly review** (not yet): a Sunday summary with your wins, the times you didn't miss twice, and next week's focus. Designed to look good when shared as an image.
 - **Statistics** include two-minute days, shown apart from full days (done).
-- **Rewards** (not yet; Paul's idea, built with statistics):
-  - a week straight earns a freeze day; a month straight earns a break day; the user spends them when life gets in the way;
-  - can be turned off in Settings, with a gentle note: try to do your habits, but life gets in the way, and that's okay and how it's meant to work.
+- **Rewards** (done October 19, as Paul reshaped them; [design/freezes.md](../design/freezes.md)):
+  - **freezes:** one bank (start with 3, hold 5); streak milestones and habits formed earn one each; a freeze holds one habit's day exactly as it was, ahead, on the day or after a miss;
+  - **vacation mode** instead of break days: pauses every habit, costs nothing;
+  - **fun achievements** in the app's voice, mixed in with the real ones;
+  - the explainer keeps the gentle note: life gets in the way, and that's okay.
 - **Achievements** (done): streak milestones, habit formed, comebacks, perfect weeks, two-minute days and more. Separate from rewards, shown on Insights and each habit's page, and celebrated when earned.
 - **Sharing** (done): designed cards (an achievement, a streak, the heatmap, momentum, a quote) in four styles, sent as pictures.
 - **Celebrations:** satisfying completion animations and haptics. "Make it satisfying" is the book's fourth law. (Haptics and the achievement celebration are done.)
@@ -124,7 +126,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 
 | Phase | Contents, in order |
 |---|---|
-| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); weekly review and rewards (earned freeze and break days) still to come. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
+| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); rewards done as freezes and vacation mode; weekly review still to come. 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Tips outside the US, if wanted (in-app purchases). |
 | **v2** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)), sync between devices (accounts; possibly a paid extra, since it needs a server), Apple Watch. Logging from Apple Health was brought forward and is done. |
 

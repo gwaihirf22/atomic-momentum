@@ -316,7 +316,7 @@ void main() {
   group('on the habit page', () {
     testWidgets('quotes are chosen for the habit, shown, and taken off', (tester) async {
       await pump(tester, HabitDetailScreen(habitId: habitId));
-      await tester.ensureVisible(find.byKey(const Key('detailAddQuote')));
+      await tester.scrollUntilVisible(find.byKey(const Key('detailAddQuote')), 300, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       expect(find.text('A line to come back to on the days it\'s hard.'), findsOneWidget);
 
@@ -342,7 +342,7 @@ void main() {
       await habits.addQuote(habitId, 'kjv-proverbs-24-16');
       await settings.setQuoteFamily(QuoteFamily.scripture, false);
       await pump(tester, HabitDetailScreen(habitId: habitId));
-      await tester.ensureVisible(find.byKey(const Key('detailQuote_kjv-proverbs-24-16')));
+      await tester.scrollUntilVisible(find.byKey(const Key('detailQuote_kjv-proverbs-24-16')), 300, scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       expect(find.text('For a righteous man may fall seven times and rise again.'), findsOneWidget);
     });

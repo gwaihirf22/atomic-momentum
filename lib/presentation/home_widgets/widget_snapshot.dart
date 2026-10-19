@@ -104,7 +104,9 @@ class WidgetSnapshot {
     Quote? Function(String id)? findQuote,
   }) {
     final periodic = habit.schedule.isPeriodic;
-    final canAdd = !habit.isBreak && habit.progress < habit.target;
+    // Frozen or on vacation (and not kept): held as it is, no +
+    final paused = periodic && habit.skipsPeriod(habit.schedule.periodStart(now));
+    final canAdd = !paused && !habit.isBreak && habit.progress < habit.target;
     final units = habit.units.isEmpty ? '' : ' ${habit.units}';
     final streak = habit.streak.current;
     Map<String, String> colors(Color Function(AppPalette p) of) => {
@@ -124,6 +126,7 @@ class WidgetSnapshot {
       'units': habit.units,
       'text': habit.isBreak ? BreakWording.status(habit, now) : '${habit.progress} of ${habit.target}$units',
       'done': !habit.isBreak && habit.isCompleted,
+      'frozen': paused,
       'due': periodic && habit.isDueOn(now),
       'period': _periodWord(habit),
       // When this period's progress no longer counts (the widget shows the
@@ -302,6 +305,7 @@ class WidgetSnapshot {
         'gold': _hex(p.gold),
         'flame': _hex(p.flame),
         'warning': _hex(p.warning),
+        'ice': _hex(p.ice),
       };
 
   /// "#RRGGBB" (palette colors are opaque).

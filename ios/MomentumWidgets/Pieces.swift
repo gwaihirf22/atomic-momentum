@@ -174,13 +174,13 @@ extension Look {
     theme: "dark", background: "#0E1013", surface: "#171A20", raised: "#22262E", track: "#2A2E36",
     text: "#F4F4F6", textSecondary: "#9A9DA6", accent: "#FFB020", gauge: "#FFB020",
     orbStart: "#FFC24D", orbEnd: "#FF7A1A", onOrb: "#1A1206", good: "#6EE7A0", goodTint: "#12301F",
-    gold: "#FFC24D", flame: "#FF8A3D", warning: "#FFB020")
+    gold: "#FFC24D", flame: "#FF8A3D", warning: "#FFB020", ice: "#8EC5FF")
 
   static let light = Look(
     theme: "light", background: "#F4F5F7", surface: "#FFFFFF", raised: "#ECEEF1", track: "#E3E5EA",
     text: "#111318", textSecondary: "#5F636B", accent: "#C26A08", gauge: "#F29A0C",
     orbStart: "#FFC24D", orbEnd: "#F27A12", onOrb: "#1A1206", good: "#17723A", goodTint: "#DDF5E6",
-    gold: "#7A5200", flame: "#D9480F", warning: "#B45309")
+    gold: "#7A5200", flame: "#D9480F", warning: "#B45309", ice: "#2B73B8")
 
   static func fallback(for scheme: ColorScheme) -> Look { scheme == .dark ? charged : light }
 }

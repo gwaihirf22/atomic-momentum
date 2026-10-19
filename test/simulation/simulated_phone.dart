@@ -183,6 +183,13 @@ class SimulatedPhone {
 
   Future<void> edit(String name, UpdateHabitParams params) => habits.updateHabitDetails(id(name), params);
 
+  /// Spends a freeze on [name]'s period containing [day] (or takes it back).
+  Future<void> freeze(String name, DateTime day, {bool on = true}) =>
+      on ? habits.freeze(id(name), day) : habits.unfreeze(id(name), day);
+
+  /// Turns vacation mode on or off.
+  Future<void> vacation(bool on) => on ? habits.startVacation() : habits.endVacation();
+
   Future<void> delete(String name) => habits.deleteHabit(id(name));
 
   /// The habits as stored, as Settings → Developer keeps them aside.
@@ -300,6 +307,8 @@ class SimulatedPhone {
       if (!habit.isBreak && habit.wasKeptOnDate(r.at)) {
         _fail(r.at, 'reminder for "${habit.name}", already done for this period');
       }
+      if (habit.isOnVacation) _fail(r.at, 'reminder for "${habit.name}" while on vacation');
+      if (habit.isFrozenOn(r.at)) _fail(r.at, 'reminder for "${habit.name}" on a frozen day');
       if (habit.isBreak && r.body != ReminderPlanner.checkInBody && r.body != reminder.customMessage?.trim()) {
         _fail(r.at, 'check-in for "${habit.name}" with the wrong message "${r.body}"');
       }
@@ -320,6 +329,7 @@ class SimulatedPhone {
     final current = habit.refresh(justBefore);
     if (current.streak.current == 0) _fail(r.at, 'streak warning for "${habit.name}" with no streak at stake');
     if (habit.wasKeptOnDate(r.at)) _fail(r.at, 'streak warning for "${habit.name}", already done for this period');
+    if (habit.isOnVacation) _fail(r.at, 'streak warning for "${habit.name}" while on vacation');
 
     // The lead time is measured on the clock: "4 hours before midnight" is
     // 20:00 even on the day the clocks change

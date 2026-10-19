@@ -20,6 +20,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/inspire/quote_widgets.dart';
 import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
+import '../presentation/widgets/freezes_settings_section.dart';
 import '../presentation/widgets/health_settings_section.dart';
 import '../presentation/widgets/settings_list.dart';
 import 'app_icon_screen.dart';
@@ -326,6 +327,7 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
         ),
+        const FreezesSettingsSection(),
         SettingsSection(
           header: 'Inspire',
           footer: 'A quote for each day, from the sources you choose and quotes you add.',

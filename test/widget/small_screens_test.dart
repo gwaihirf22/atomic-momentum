@@ -303,8 +303,26 @@ void main() {
               current: 30,
               goal: 90,
             ),
+            freeze: (added: false, available: 5),
           ),
         ),
+    'Fun achievement, earning a freeze': () => Scaffold(
+          body: AchievementSheet(
+            isNew: true,
+            achievement: Achievement(
+              id: 'fun_tiny5_x',
+              kind: AchievementKind.fun,
+              title: 'Speedrunner',
+              badge: '5',
+              unit: 'TWO-MIN',
+              message: "Five two-minute versions in a row. We're not saying you're gaming it. We're saying we see you. (The atoms)",
+              habitName: 'Late night stretching before bed',
+              earnedOn: DateTime(2026, 10, 17),
+            ),
+            freeze: (added: true, available: 4),
+          ),
+        ),
+    'Freezes explainer': () => const Scaffold(body: InfoSheet(topic: InfoTopic.freezes)),
     'Two-minute explainer, a long example': () => const Scaffold(
           body: InfoSheet(
             topic: InfoTopic.twoMinute,
@@ -383,6 +401,17 @@ void main() {
         await tester.tap(find.byKey(const Key('detailHealthOfferLink')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'Health sheet at $setting');
+      });
+
+      testWidgets('Habit page with a frozen day, and Habits on vacation, at $setting', (tester) async {
+        final id = habits.habits.firstWhere((h) => h.name.startsWith('Drink water every')).id;
+        await habits.freeze(id, DateTime.now());
+        await pump(tester, HabitDetailScreen(habitId: id), width: width, scale: scale);
+        expectNothingCutOff(tester, 'Habit page, frozen, at $setting');
+        await habits.startVacation();
+        await pump(tester, const HomeScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('vacationBanner')), findsOneWidget);
+        expectNothingCutOff(tester, 'Habits on vacation at $setting');
       });
 
       testWidgets('Settings with quiet hours on at $setting', (tester) async {
@@ -526,6 +555,8 @@ void main() {
       'Edit habit, logging water back to Health',
       'Momentum explainer',
       'Achievement celebration, a long name',
+      'Fun achievement, earning a freeze',
+      'Freezes explainer',
       'Every day (full screen)',
       'Share preview, hiding a name',
     ]) {

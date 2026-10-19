@@ -134,7 +134,7 @@ void main() {
     expect(habits.getHabitById(id)!.getProgressForDate(today), 5, reason: 'today is untouched');
   });
 
-  testWidgets('the week opens to the month; future days can not be chosen', (tester) async {
+  testWidgets('the week opens to the month; a day ahead can be chosen, but only to freeze it', (tester) async {
     await openFromCard(tester);
     await tap(tester, 'detailMonthToggle');
     final first = DateTime(now.year, now.month, 1);
@@ -142,7 +142,11 @@ void main() {
     if (now.day < DateUtils.getDaysInMonth(now.year, now.month)) {
       final tomorrow = DateTime(now.year, now.month, now.day + 1);
       await tap(tester, dayKey(tomorrow));
-      expect(find.text('TODAY'), findsOneWidget, reason: 'still on today');
+      expect(find.text('TODAY'), findsNothing, reason: 'on tomorrow now');
+      final plus = tester.widget<Semantics>(
+          find.descendant(of: find.byKey(const Key('detailPlus')), matching: find.byType(Semantics)).first);
+      expect(plus.properties.enabled, isFalse, reason: 'nothing can be logged ahead');
+      expect(find.byKey(const Key('detailFreeze')), findsOneWidget);
     }
     await tap(tester, 'detailPrevMonth');
     final lastMonth = DateTime(now.year, now.month - 1, 1);

@@ -6,7 +6,8 @@ enum InfoTopic {
   twoMinute('About two-minute days'),
   momentum('About momentum'),
   inspire('About Inspire'),
-  health('About filling in from Health');
+  health('About filling in from Health'),
+  freezes('About freezes');
 
   /// What the (i) button reads as to VoiceOver.
   final String buttonLabel;
@@ -41,7 +42,37 @@ class Explainer {
         InfoTopic.momentum => momentum,
         InfoTopic.inspire => inspire,
         InfoTopic.health => health,
+        InfoTopic.freezes => freezes,
       };
+
+  static const freezes = Explainer(
+    title: 'Freezes',
+    intro: 'Life gets in the way, and that\'s okay. A freeze holds one habit exactly as it was for one day '
+        '(or week, or month): neither kept nor missed.',
+    points: [
+      ExplainerPoint(
+        'The streak doesn\'t grow or break, momentum stays put, and that day\'s reminders and warnings stop.',
+        lead: 'What it does',
+        badge: '1',
+      ),
+      ExplainerPoint(
+        'Ahead (up to a month), on the day, or after a miss (up to a week back), from the habit\'s page. '
+        'If you end up keeping that day anyway, the freeze comes back.',
+        lead: 'When',
+        badge: '2',
+      ),
+      ExplainerPoint(
+        'You start with 3 and can hold 5. Every streak milestone and every habit formed earns one more.',
+        lead: 'Earning them',
+        badge: '3',
+      ),
+      ExplainerPoint(
+        'Away for a while? Vacation mode (Settings) pauses every habit at once, without spending freezes.',
+        lead: 'Longer breaks',
+        badge: '4',
+      ),
+    ],
+  );
 
   static const twoMinute = Explainer(
     title: 'Two-minute days',

@@ -651,10 +651,13 @@ class _DayHabitRow extends StatelessWidget {
     final loggedThatDay = habit.getProgressForDate(day);
     final periodTotal = habit.progressForPeriodContaining(day);
     final isDone = habit.wasCompletedOnDate(day);
-    final subtitle = habit.isBreak
+    final status = habit.isBreak
         ? BreakWording.status(habit, day,
             current: habit.schedule.periodStart(day) == habit.schedule.periodStart(clock.now()))
         : _withTwoMinute(_subtitle(loggedThatDay, periodTotal));
+    // Frozen or on vacation, and not kept: neither kept nor missed
+    final paused = habit.skipsPeriod(habit.schedule.periodStart(day));
+    final subtitle = paused ? '$status · ${habit.isFrozenOn(day) ? 'frozen' : 'on vacation'}' : status;
     final showTwoMinute = isEditable && habit.twoMinute != null && habit.schedule.isPeriodic && !isDone;
     // For a habit being broken, + logs a slip (room well past the limit)
     final canAdd = isEditable && periodTotal < (habit.isBreak ? habit.maxPeriodTotal : habit.target);

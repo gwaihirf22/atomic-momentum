@@ -119,6 +119,8 @@ First time through, so here's the path:
 
 ## Done
 
+- **Freezes, vacation mode and fun achievements** (October 19): the rewards idea, as Paul reshaped it. See [design/freezes.md](design/freezes.md).
+
 - **Loading a year off the main isolate** (`2cafdc0`), with decode-once storage and cached statistics (`76f7dc2`, `3ee1b35`, `e60195e`).
 - **The intro waits out a stalled start** (`9e858f5`) and **holds until habits load** (`d469056`). The 4 s hold (`IntroScreen.maxHold`) is never reached in release, since habits load well inside the 2.4 s intro.
 - **A year on a real iPhone** (15 Pro Max, release build with `DEV_TOOLS=1`, "Load a year of use"): Paul saw no lag on launch, a fresh relaunch, or opening Insights. The intro took longer than the loading, and it stays.

@@ -242,6 +242,7 @@ class YearRun {
         RefMark.missed => PeriodMark.missed,
         RefMark.slipped || RefMark.current => PeriodMark.current,
         RefMark.rest => PeriodMark.rest,
+        RefMark.frozen => PeriodMark.frozen,
         RefMark.untracked => PeriodMark.untracked,
       };
 
@@ -371,7 +372,7 @@ class YearRun {
       final all = r.periods(now);
       final recent = [
         for (final p in all.sublist(all.length > count ? all.length - count : 0))
-          if (p.mark != RefMark.untracked && p.mark != RefMark.rest && (!p.isCurrent || p.kept)) p,
+          if (p.mark != RefMark.untracked && !p.skipped && (!p.isCurrent || p.kept)) p,
       ];
       final refKeptCount = recent.where((p) => p.kept).length;
       if (stats.best != best || stats.kept != refKeptCount || stats.due != recent.length) {
@@ -423,6 +424,8 @@ class YearRun {
           continue;
         }
         if (!r.isBreak && r.period(d, at).kept) continue;
+        // Nothing while on vacation, or for a frozen day
+        if (r.onVacation || r.period(r.periodOf(d).$1, at).mark == RefMark.frozen) continue;
         final id = phone.id(r.name);
         final came = phone.delivered.any((n) => n.habitId == id && n.isReminder && n.at == at);
         if (!came) problem(at, 'no reminder for ${r.name} on ${_d(d)} at ${_hm(at)}, though it was still to do');
@@ -472,7 +475,7 @@ class YearRun {
       final monthStart = DateTime(lastDay.year, lastDay.month, 1);
       var kept = 0, small = 0, missed = 0;
       for (final p in r.periods(at)) {
-        if (p.start.isBefore(monthStart) || p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
+        if (p.start.isBefore(monthStart) || p.mark == RefMark.untracked || p.skipped) continue;
         if (p.mark == RefMark.done) kept++;
         if (p.mark == RefMark.twoMinute) small++;
         if (p.missed) missed++;

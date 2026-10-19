@@ -86,7 +86,8 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   }
 
   void _select(DateTime day) {
-    if (day.isAfter(_today)) return;
+    // Days ahead only as far as a freeze can go
+    if (day.isAfter(DateTime(_today.year, _today.month, _today.day + Habit.freezeDaysAhead))) return;
     Haptics.selection();
     setState(() {
       _day = day;
@@ -423,16 +424,19 @@ class _DayCard extends StatelessWidget {
     final periodTotal = habit.progressForPeriodContaining(day);
     final logged = habit.getProgressForDate(day);
     final isDone = habit.wasCompletedOnDate(day);
+    final now = clock.now();
+    // A day ahead can only be frozen
+    final future = day.isAfter(DateTime(now.year, now.month, now.day));
     // For a habit being broken, + logs a slip, and holding does nothing
-    final canAdd = periodTotal < (habit.isBreak ? habit.maxPeriodTotal : habit.target);
-    final canClear = isDone && habit.resetFrequency.isPeriodic && !habit.isBreak;
+    final canAdd = !future && periodTotal < (habit.isBreak ? habit.maxPeriodTotal : habit.target);
+    final canClear = !future && isDone && habit.resetFrequency.isPeriodic && !habit.isBreak;
     final canHold = !habit.isBreak && (canAdd || canClear);
     final units = habit.units.isEmpty ? '' : ' ${habit.units}';
     final everyDay = habit.resetFrequency == ResetFrequency.daily && habit.resetInterval == 1;
     final of = habit.isBreak
         ? BreakWording.underNumber(habit, periodTotal)
         : 'of ${habit.target}$units${everyDay ? '' : ' ${habit.schedule.periodLabel}'}';
-    final showTwoMinute = habit.twoMinute != null && habit.resetFrequency.isPeriodic && !isDone;
+    final showTwoMinute = !future && habit.twoMinute != null && habit.resetFrequency.isPeriodic && !isDone;
     // Scales with text size, within the card
     final ring = ringSize * math.min(1.25, MediaQuery.textScalerOf(context).scale(1));
 
@@ -445,7 +449,10 @@ class _DayCard extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                isToday ? 'TODAY' : DateFormat.MMMEd().format(day).toUpperCase(),
+                [
+                  isToday ? 'TODAY' : DateFormat.MMMEd().format(day).toUpperCase(),
+                  if (habit.isFrozenOn(day)) 'FROZEN' else if (habit.isOnVacationOn(day)) 'ON VACATION',
+                ].join(' · '),
                 key: const Key('detailDayLabel'),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: palette.textSecondary),
               ),
@@ -466,8 +473,12 @@ class _DayCard extends StatelessWidget {
                       builder: (context, value, child) => CustomPaint(
                         painter: RingPainter(
                           fraction: value,
-                          // A slipped day shows in the warning color
-                          color: habit.isBreak && !isDone ? palette.warning : color,
+                          // A frozen day shows icy; a slipped day in the warning color
+                          color: habit.skipsPeriod(habit.schedule.periodStart(day))
+                              ? palette.ice
+                              : habit.isBreak && !isDone
+                                  ? palette.warning
+                                  : color,
                           stroke: 12,
                         ),
                         child: child,
@@ -478,11 +489,11 @@ class _DayCard extends StatelessWidget {
                           label: '$periodTotal $of',
                           hint: 'Type an amount',
                           excludeSemantics: true,
-                          onTap: onType,
+                          onTap: future ? null : onType,
                           child: GestureDetector(
                             key: const Key('detailNumber'),
                             behavior: HitTestBehavior.opaque,
-                            onTap: onType,
+                            onTap: future ? null : onType,
                             child: SizedBox(
                               width: ring - 48,
                               height: ring - 48,
@@ -570,6 +581,7 @@ class _DayCard extends StatelessWidget {
                   ),
                 ],
               ),
+              _FreezeRow(habit: habit, day: day, isToday: isToday),
             ],
           ),
         ),
@@ -663,7 +675,8 @@ class _DaysCard extends StatelessWidget {
         color: color,
         selected: day == selected,
         isToday: day == today,
-        enabled: !day.isAfter(today),
+        enabled: !day.isAfter(DateTime(today.year, today.month, today.day + Habit.freezeDaysAhead)),
+        future: day.isAfter(today),
         showLetter: showLetter,
         onTap: () => onSelect(day),
       );
@@ -777,20 +790,26 @@ class _DayCell extends StatelessWidget {
     required this.selected,
     required this.isToday,
     required this.enabled,
+    this.future = false,
     required this.showLetter,
     required this.onTap,
   });
+
+  /// After today: can only be frozen.
+  final bool future;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final hasNote = habit.dayNotes.containsKey(day);
     final due = habit.isDueOn(day);
-    final fraction = enabled ? habit.fractionDoneOn(day) : 0.0;
+    final frozen = habit.skipsPeriod(habit.schedule.periodStart(day));
+    final fraction = enabled && !future ? habit.fractionDoneOn(day) : 0.0;
     final total = habit.progressForPeriodContaining(day);
     final label = StringBuffer(DateFormat.MMMMEEEEd().format(day))
-      ..write(enabled ? ', $total of ${habit.target}' : '')
+      ..write(enabled && !future ? ', $total of ${habit.target}' : '')
       ..write(!due ? ', rest day' : '')
+      ..write(frozen ? ', frozen' : '')
       ..write(hasNote ? ', has a note' : '');
 
     return Semantics(
@@ -803,7 +822,7 @@ class _DayCell extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? onTap : null,
         child: Opacity(
-          opacity: !enabled ? 0.35 : due ? 1 : 0.55,
+          opacity: !enabled ? 0.35 : future ? 0.6 : due ? 1 : 0.55,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 1, vertical: 2),
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -823,7 +842,8 @@ class _DayCell extends StatelessWidget {
                   width: 32,
                   height: 32,
                   child: CustomPaint(
-                    painter: RingPainter(fraction: fraction, color: color, stroke: 3.5),
+                    // A frozen day: a full ring of ice
+                    painter: RingPainter(fraction: frozen ? 1 : fraction, color: frozen ? palette.ice : color, stroke: 3.5),
                     child: Center(
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
@@ -1700,6 +1720,99 @@ class _HealthSheet extends StatelessWidget {
           SizedBox(height: AppStyle.cardGap),
         ]),
       ),
+    );
+  }
+}
+
+/// Under the day's buttons: "Freeze · 3 left" for a day that can be frozen,
+/// "Frozen" with Unfreeze for one that is, and "Freeze yesterday" when the
+/// streak is at risk (to cover the miss). Nothing for a day that's kept,
+/// too far back, or on a habit that doesn't reset.
+class _FreezeRow extends StatelessWidget {
+  final Habit habit;
+  final DateTime day;
+  final bool isToday;
+
+  const _FreezeRow({required this.habit, required this.day, required this.isToday});
+
+  static final _noBank = ChangeNotifier();
+
+  Future<void> _run(BuildContext context, Future<bool> Function(HabitProvider) action, String done) async {
+    final habits = context.read<HabitProvider>();
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final ok = await action(habits);
+    if (ok) Haptics.selection();
+    messenger?.showSnackBar(SnackBar(content: Text(ok ? done : habits.error ?? "Couldn't do that")));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bank = context.read<HabitProvider>().freezes;
+    return ListenableBuilder(
+      listenable: bank ?? _noBank,
+      builder: (context, _) => _content(context, bank?.available),
+    );
+  }
+
+  Widget _content(BuildContext context, int? left) {
+    final palette = AppPalette.of(context);
+    final now = clock.now();
+    final buttons = <Widget>[];
+    String leftText(int n) => n == 1 ? '1 left' : '$n left';
+
+    if (habit.isFrozenOn(day)) {
+      buttons.add(PillButton(
+        key: const Key('detailUnfreeze'),
+        label: 'Unfreeze',
+        icon: CupertinoIcons.snow,
+        onPressed: () => _run(context, (h) => h.unfreeze(habit.id, day), 'Unfrozen: the freeze is back in the bank'),
+      ));
+    } else if (!habit.isOnVacationOn(day) && habit.whyNoFreeze(day, now) == null) {
+      final empty = left != null && left <= 0;
+      buttons.add(PillButton(
+        key: const Key('detailFreeze'),
+        label: empty ? 'No freezes left' : 'Freeze${left == null ? '' : ' · ${leftText(left)}'}',
+        icon: CupertinoIcons.snow,
+        onPressed: empty ? null : () => _run(context, (h) => h.freeze(habit.id, day), 'Frozen: this day is held as it was'),
+      ));
+    }
+
+    // At risk today: the miss before can still be covered
+    if (isToday && habit.streak.atRisk && !habit.isBreak) {
+      final missed = habit.schedule.previousDuePeriodStart(habit.schedule.periodStart(day));
+      final empty = left != null && left <= 0;
+      if (habit.whyNoFreeze(missed, now) == null && !empty) {
+        final n = habit.resetInterval;
+        final unit = habit.resetFrequency.periodUnit;
+        final word = n > 1
+            ? 'the last $n ${unit}s'
+            : habit.resetFrequency == ResetFrequency.daily
+                ? 'yesterday'
+                : 'last $unit';
+        buttons.add(PillButton(
+          key: const Key('detailFreezeMissed'),
+          label: 'Freeze $word',
+          icon: CupertinoIcons.snow,
+          onPressed: () => _run(context, (h) => h.freeze(habit.id, missed), 'Frozen: the miss no longer counts'),
+        ));
+      }
+    }
+
+    if (buttons.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Column(children: [
+        Wrap(alignment: WrapAlignment.center, spacing: 8, runSpacing: 6, children: buttons),
+        if (habit.isFrozenOn(day))
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'Neither kept nor missed: the streak and momentum hold.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: palette.ice),
+            ),
+          ),
+      ]),
     );
   }
 }

@@ -271,6 +271,7 @@ private struct GroupRow: View {
   }
 
   private var detail: String {
+    if habit.frozen == true { return "Frozen today" }
     if habit.atRisk && !habit.done { return habit.isBreak ? "Don't slip twice" : "Don't miss twice" }
     if habit.done, let streak = habit.streakLabel { return "Done · \(streak)" }
     if habit.done { return "Done" }

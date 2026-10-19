@@ -154,6 +154,11 @@ private struct HabitSmall: View {
             Button(intent: LogHabitIntent(habitId: habit.id)) { PlusOrb(look: look) }
               .buttonStyle(.plain)
               .accessibilityLabel(habit.addLabel ?? "Add one")
+          } else if habit.frozen == true {
+            VStack(alignment: .trailing, spacing: 1) {
+              Image(systemName: "snowflake").font(.system(size: 18, weight: .semibold)).foregroundStyle(Color(hex: look.ice ?? look.accent))
+              Text("Frozen").font(.sora(14, bold: true)).foregroundStyle(Color(hex: look.ice ?? look.accent))
+            }
           } else if habit.done {
             VStack(alignment: .trailing, spacing: 1) {
               Text("Done").font(.sora(16, bold: true)).foregroundStyle(Color(hex: look.good))
@@ -256,7 +261,7 @@ extension HabitInfo {
   static let placeholder = HabitInfo(
     id: "placeholder", name: "Drink water", category: nil,
     color: ColorPair(light: "#1E7FD0", dark: "#4FA8F5"), onColor: ColorPair(light: "#FFFFFF", dark: "#0E1013"),
-    isBreak: false, progress: 5, target: 8, units: "glasses", text: "5 of 8 glasses", done: false, due: true,
+    isBreak: false, progress: 5, target: 8, units: "glasses", text: "5 of 8 glasses", done: false, frozen: false, due: true,
     period: "today", periodEnds: nil, next: 6, step: 1, addLabel: "Add one", streak: 23, streakLabel: "23 day streak",
     atRisk: false, momentum: 74, recent: [], quotes: nil,
     sentence: [SentencePart(t: "I will ", k: nil), SentencePart(t: "drink water", k: true), SentencePart(t: " ", k: nil),

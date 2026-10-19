@@ -133,6 +133,13 @@ class YearOfUse {
         for (final entry in habits.entries.toList()) {
           habits[entry.key] = entry.value.removeQuote(myQuoteId);
         }
+      case FreezeDay(:final habit, :final day):
+        final h = habits[habit];
+        if (h != null && h.whyNoFreeze(day, now) == null) set(habit, h.freeze(day));
+      case VacationMode(:final on):
+        for (final entry in habits.entries.toList()) {
+          habits[entry.key] = on ? entry.value.startPause(today) : entry.value.endPause(today);
+        }
       // Settings, own quotes and "Another quote" are left as the person has them
       case AddMyQuote() || AnotherQuote() || ChangeSetting():
         break;

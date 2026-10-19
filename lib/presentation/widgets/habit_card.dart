@@ -63,6 +63,9 @@ class HabitCard extends StatelessWidget {
   /// A held change that can still be undone: covers the card with Undo.
   final HoldUndo? holdUndo;
 
+  /// Freezes (or unfreezes) today, from the swipe actions; null: no Freeze.
+  final VoidCallback? onFreeze;
+
   const HabitCard({
     Key? key,
     required this.habit,
@@ -75,6 +78,7 @@ class HabitCard extends StatelessWidget {
     this.highlighted = false,
     this.onHold,
     this.holdUndo,
+    this.onFreeze,
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
@@ -116,6 +120,16 @@ class HabitCard extends StatelessWidget {
       runSpacing: 2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (habit.isFrozenOn(now) || habit.isOnVacationOn(now))
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(CupertinoIcons.snow, size: 12, color: palette.ice),
+            const SizedBox(width: 3),
+            Text(
+              habit.isFrozenOn(now) ? 'Frozen today' : 'On vacation',
+              key: Key('habitFrozen_${habit.id}'),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.ice),
+            ),
+          ]),
         if (showStats)
           _MomentumChip(key: Key('habitMomentum_${habit.id}'), momentum: habit.momentum, color: color),
         if (habit.streak.current > 0)
@@ -172,8 +186,11 @@ class HabitCard extends StatelessWidget {
     final logged = habit.history.values.any((amount) => amount > 0) || habit.twoMinuteDays.isNotEmpty;
     final showStats = habit.schedule.isPeriodic && (logged || (habit.isBreak && habit.streak.current > 0));
     final showTwoMinute = showsTwoMinuteButton(habit, now);
-    final hasStatsRow = showStats || showTwoMinute;
+    // A frozen day (or vacation) says so even before anything is logged
+    final hasStatsRow = showStats || showTwoMinute || habit.isFrozenOn(now) || habit.isOnVacationOn(now);
     Widget stats() => _stats(palette, showStats: showStats, showTwoMinute: showTwoMinute, now: now);
+    // Today can be frozen (or already is)
+    final canFreeze = onFreeze != null && (habit.isFrozenOn(now) || habit.whyNoFreeze(now, now) == null);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -182,10 +199,28 @@ class HabitCard extends StatelessWidget {
         child: Slidable(
           key: ValueKey('slidable_${habit.id}'),
           groupTag: 'habits',
+          // Swipe right: freeze today (or take the freeze back)
+          startActionPane: canFreeze
+              ? ActionPane(
+                  motion: const BehindMotion(),
+                  extentRatio: 0.26,
+                  children: [
+                    SlidableAction(
+                      key: Key('freezeHabit_${habit.id}'),
+                      onPressed: (_) => onFreeze!(),
+                      backgroundColor: palette.ice,
+                      foregroundColor: palette.onColor(palette.ice),
+                      icon: CupertinoIcons.snow,
+                      label: habit.isFrozenOn(now) ? 'Unfreeze' : 'Freeze',
+                    ),
+                  ],
+                )
+              : null,
           endActionPane: ActionPane(
             motion: const BehindMotion(),
             extentRatio: 0.44,
             children: [
+
               SlidableAction(
                 key: Key('editHabit_${habit.id}'),
                 onPressed: (_) => onEdit(),
@@ -211,6 +246,8 @@ class HabitCard extends StatelessWidget {
               if (onHold != null && _canHold && _canClear) const CustomSemanticsAction(label: 'Clear'): onHold!,
               const CustomSemanticsAction(label: 'Edit'): onEdit,
               const CustomSemanticsAction(label: 'Delete'): onDelete,
+              if (canFreeze)
+                CustomSemanticsAction(label: habit.isFrozenOn(now) ? 'Unfreeze today' : 'Freeze today'): onFreeze!,
               if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
                 const CustomSemanticsAction(label: 'Did the two-minute version'): () => onSetTwoMinute!(true),
             },
