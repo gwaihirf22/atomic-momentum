@@ -75,6 +75,9 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// The glow under the orb.
   final Color orbShadow;
 
+  /// What dims the screen behind a tour's spotlight.
+  final Color scrim;
+
   const AppPalette({
     required this.theme,
     required this.brightness,
@@ -102,6 +105,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.barEdge,
     required this.barShadow,
     required this.orbShadow,
+    required this.scrim,
   });
 
   static const dark = AppPalette(
@@ -131,6 +135,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     barEdge: Color(0x14FFFFFF),
     barShadow: Color(0x80000000),
     orbShadow: Color(0x73FF8A3D),
+    scrim: Color(0xB8000000),
   );
 
   static const light = AppPalette(
@@ -160,6 +165,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     barEdge: Color(0x14000000),
     barShadow: Color(0x2414161C),
     orbShadow: Color(0x59F27A12),
+    scrim: Color(0x9E111318),
   );
 
   static const sepia = AppPalette(
@@ -189,6 +195,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     barEdge: Color(0x1A3B2F22),
     barShadow: Color(0x29503C1E),
     orbShadow: Color(0x4DC9671C),
+    scrim: Color(0xA32A2016),
   );
 
   static AppPalette forTheme(AppTheme theme) => switch (theme) {
