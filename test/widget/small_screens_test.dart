@@ -368,6 +368,23 @@ void main() {
         expectNothingCutOff(tester, 'Habit page month at $setting');
       });
 
+      testWidgets('Habit page offering Health, and its sheet, at $setting', (tester) async {
+        await habits.createHabit(const CreateHabitParams(
+          name: 'Walk around the block every evening',
+          target: 6000,
+          units: 'steps',
+          color: HabitColor.green,
+          categoryId: BuiltInCategoryIds.body,
+        ));
+        await pump(tester, HabitDetailScreen(habitId: habits.habits.last.id), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('detailHealthOffer')), 300,
+            scrollable: find.byType(Scrollable).first);
+        expectNothingCutOff(tester, 'Health offer at $setting');
+        await tester.tap(find.byKey(const Key('detailHealthOfferLink')));
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'Health sheet at $setting');
+      });
+
       testWidgets('Settings with quiet hours on at $setting', (tester) async {
         await get<SettingsProvider>().setQuietHours(const QuietHours(enabled: true));
         await pump(tester, const SettingsScreen(), width: width, scale: scale);

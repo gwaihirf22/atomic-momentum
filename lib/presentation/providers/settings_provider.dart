@@ -37,6 +37,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _showInspireTabKey = 'showInspireTab';
   static const _playIntroKey = 'playIntro';
   static const _quoteFamiliesOffKey = 'quoteFamiliesOff';
+  static const _healthCardDismissedKey = 'healthCardDismissed';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -153,6 +154,19 @@ class SettingsProvider extends ChangeNotifier {
       for (final f in QuoteFamily.values)
         if (!families.contains(f)) f.name,
     ]);
+    notifyListeners();
+  }
+
+  /// Habits whose page no longer offers "Fill in from Apple Health" (the
+  /// person said Not now).
+  Set<String> get healthCardDismissed => (_prefs.getStringList(_healthCardDismissedKey) ?? const []).toSet();
+
+  /// Stops offering Health on [habitId]'s page. Ids not in [habitIds] (habits
+  /// since deleted) are dropped at the same time.
+  Future<void> dismissHealthCard(String habitId, {required Iterable<String> habitIds}) async {
+    final existing = habitIds.toSet();
+    final dismissed = {...healthCardDismissed.where(existing.contains), habitId};
+    await _prefs.setStringList(_healthCardDismissedKey, dismissed.toList()..sort());
     notifyListeners();
   }
 

@@ -17,10 +17,13 @@ import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../domain/entities/category.dart';
 import '../domain/entities/habit.dart';
+import '../domain/entities/health_link.dart';
 import '../domain/entities/reset_frequency.dart';
 import '../domain/services/habit_stats.dart';
 import '../domain/services/achievements.dart';
 import '../domain/services/insights.dart';
+import '../presentation/habit_form/habit_draft.dart';
+import '../presentation/habit_form/health_section.dart';
 import '../presentation/habit_form/sentence.dart';
 import '../presentation/help/explainers.dart';
 import '../presentation/inspire/habit_quotes_card.dart';
@@ -208,6 +211,11 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   // ------------------------------------------------------------ build
 
+  /// The editor for [habit] (Edit in the bar, or the row at the bottom).
+  void _openEditor(Habit habit) => Navigator.of(context, rootNavigator: true).push(
+        CupertinoPageRoute<void>(builder: (_) => HabitEditorScreen(editHabit: habit)),
+      );
+
   @override
   Widget build(BuildContext context) {
     final habit = context.watch<HabitProvider>().habits.where((h) => h.id == widget.habitId).firstOrNull;
@@ -227,22 +235,31 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     return LargeTitleScaffold(
       title: habit.name,
       backgroundColor: palette.background,
-      trailing: habit.resetFrequency.isPeriodic
-          ? CupertinoButton(
-              key: const Key('detailShare'),
-              padding: EdgeInsets.zero,
-              minSize: 44,
-              onPressed: () => showShareSheet(
-                context,
-                card: (look, hideName) =>
-                    StreakShareCard(habit: habit, look: look, now: clock.now(), hideName: hideName),
-                fileName: 'momentum-streak.png',
-                canHideName: true,
-                hideNameByDefault: habit.isBreak,
-              ),
-              child: const Icon(CupertinoIcons.share, semanticLabel: 'Share streak'),
-            )
-          : null,
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (habit.resetFrequency.isPeriodic)
+          CupertinoButton(
+            key: const Key('detailShare'),
+            padding: EdgeInsets.zero,
+            minSize: 44,
+            onPressed: () => showShareSheet(
+              context,
+              card: (look, hideName) =>
+                  StreakShareCard(habit: habit, look: look, now: clock.now(), hideName: hideName),
+              fileName: 'momentum-streak.png',
+              canHideName: true,
+              hideNameByDefault: habit.isBreak,
+            ),
+            child: const Icon(CupertinoIcons.share, semanticLabel: 'Share streak'),
+          ),
+        // The habit's basics and notifications, as in Contacts or Reminders
+        CupertinoButton(
+          key: const Key('detailEditTop'),
+          padding: const EdgeInsets.only(left: 12),
+          minSize: 44,
+          onPressed: () => _openEditor(habit),
+          child: const Text('Edit'),
+        ),
+      ]),
       header: _Header(habit: habit, category: category, color: color),
       slivers: [
         SliverPadding(
@@ -298,6 +315,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
               onAdd: () => _editNote(habit, _day),
               onOpen: (day) => _editNote(habit, day),
             ),
+            if (habit.health == null && !habit.isBreak) _HealthOffer(habit: habit),
             const SizedBox(height: 18),
             // The habit's basics and its notifications live in the editor
             Center(
@@ -305,9 +323,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
                 key: const Key('detailEdit'),
                 label: 'Edit habit & notifications',
                 icon: CupertinoIcons.chevron_right,
-                onPressed: () => Navigator.of(context, rootNavigator: true).push(
-                  CupertinoPageRoute<void>(builder: (_) => HabitEditorScreen(editHabit: habit)),
-                ),
+                onPressed: () => _openEditor(habit),
               ),
             ),
           ]),
@@ -1498,6 +1514,9 @@ class _HealthLine extends StatelessWidget {
               style: TextStyle(fontSize: 13, color: palette.textSecondary),
             ),
           ),
+          // Syncs happen on their own (opening, coming back, midnight); this
+          // is for a Watch that has only just caught up
+          const _SyncNowButton(),
         ]),
         if (blocked) ...[
           const SizedBox(height: 6),
@@ -1515,6 +1534,172 @@ class _HealthLine extends StatelessWidget {
           ),
         ],
       ]),
+    );
+  }
+}
+
+/// "Sync now" beside a linked habit's Health line.
+class _SyncNowButton extends StatefulWidget {
+  const _SyncNowButton();
+
+  @override
+  State<_SyncNowButton> createState() => _SyncNowButtonState();
+}
+
+class _SyncNowButtonState extends State<_SyncNowButton> {
+  bool _syncing = false;
+
+  Future<void> _sync() async {
+    setState(() => _syncing = true);
+    try {
+      await context.read<HabitProvider>().syncHealth(force: true);
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CupertinoButton(
+      key: const Key('detailHealthSyncNow'),
+      padding: const EdgeInsets.only(left: 8),
+      minSize: 44,
+      onPressed: _syncing ? null : _sync,
+      child: _syncing
+          ? const CupertinoActivityIndicator(radius: 8)
+          : const Text('Sync now', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+/// At the bottom of a habit's page: "Fill in from Apple Health?", when the
+/// habit's name suggests something Health records (Walk → steps) and it
+/// isn't linked yet. Link opens Health's section in a sheet, set to the
+/// suggestion; Not now stops offering it for this habit.
+class _HealthOffer extends StatefulWidget {
+  final Habit habit;
+
+  const _HealthOffer({required this.habit});
+
+  @override
+  State<_HealthOffer> createState() => _HealthOfferState();
+}
+
+class _HealthOfferState extends State<_HealthOffer> {
+  late final HealthSource _source = get<HealthSource>();
+  late final Future<HealthAvailability> _availability = _source.availability();
+
+  HealthMetric? get _suggestion => HealthMetric.suggestFor(widget.habit.name, widget.habit.units,
+      available: (m) => m.availableOn(isAndroid: _source.isAndroid));
+
+  Future<void> _link(HealthMetric metric) async {
+    final draft = HabitDraft.start(context, widget.habit)..setHealth(metric);
+    final habits = context.read<HabitProvider>();
+    final save = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: AppPalette.of(context).surface,
+      builder: (context) => _HealthSheet(draft: draft, sourceName: _source.name),
+    );
+    // Not disposed: the sheet may still be closing; it holds nothing else
+    if (save == true && draft.health != null) await draft.save(habits);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+    final suggestion = _suggestion;
+    if (suggestion == null || settings.healthCardDismissed.contains(widget.habit.id)) return const SizedBox.shrink();
+    return FutureBuilder<HealthAvailability>(
+      future: _availability,
+      builder: (context, snapshot) {
+        if (snapshot.data != HealthAvailability.available) return const SizedBox.shrink();
+        final palette = AppPalette.of(context);
+        final name = _source.name;
+        return Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: StatCard(
+            key: const Key('detailHealthOffer'),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(CupertinoIcons.heart_fill, size: 16, color: palette.danger),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Fill in from $name?',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: palette.text)),
+                ),
+              ]),
+              const SizedBox(height: 6),
+              Text(
+                'Your ${suggestion.label.toLowerCase()} in $name can fill this habit in for you. '
+                'The higher of $name and what you log counts.',
+                style: TextStyle(fontSize: 14, color: palette.textSecondary),
+              ),
+              const SizedBox(height: 10),
+              Wrap(spacing: 8, runSpacing: 4, children: [
+                PillButton(
+                  key: const Key('detailHealthOfferLink'),
+                  label: 'Link ${suggestion.label.toLowerCase()}',
+                  onPressed: () => _link(suggestion),
+                ),
+                TextButton(
+                  key: const Key('detailHealthOfferNotNow'),
+                  onPressed: () => settings.dismissHealthCard(widget.habit.id,
+                      habitIds: context.read<HabitProvider>().habits.map((h) => h.id)),
+                  child: const Text('Not now'),
+                ),
+              ]),
+            ]),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Health's section for one habit, in a sheet; Save keeps the link.
+class _HealthSheet extends StatelessWidget {
+  final HabitDraft draft;
+  final String sourceName;
+
+  const _HealthSheet({required this.draft, required this.sourceName});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(sourceName,
+                    style: TextStyle(
+                        fontFamily: LargeTitleHeader.fontFamily,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: palette.text)),
+              ),
+            ),
+            const InfoButton(topic: InfoTopic.health),
+          ]),
+          const SizedBox(height: 14),
+          HealthSection(draft, showHeader: false),
+          const SizedBox(height: 18),
+          ListenableBuilder(
+            listenable: draft,
+            builder: (context, _) => OrbButton(
+              key: const Key('detailHealthSave'),
+              label: 'Save',
+              onPressed: draft.health == null ? null : () => Navigator.of(context).pop(true),
+            ),
+          ),
+          SizedBox(height: AppStyle.cardGap),
+        ]),
+      ),
     );
   }
 }

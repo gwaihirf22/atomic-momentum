@@ -218,4 +218,11 @@ void main() {
     expect(find.byType(HabitEditorScreen), findsOneWidget);
     expect(find.text('Edit Habit'), findsOneWidget);
   });
+
+  testWidgets('Edit in the bar opens the editor, without scrolling', (tester) async {
+    await openFromCard(tester);
+    await tap(tester, 'detailEditTop');
+    expect(find.byType(HabitEditorScreen), findsOneWidget);
+    expect(find.text('Edit Habit'), findsOneWidget);
+  });
 }

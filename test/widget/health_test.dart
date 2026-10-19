@@ -150,6 +150,74 @@ void main() {
     expect(find.textContaining('From Apple Health · sleep'), findsOneWidget);
   });
 
+  Future<String> addPlain(String name, {String units = '', HabitGoal goal = HabitGoal.build, int target = 1}) async {
+    await habits.createHabit(CreateHabitParams(
+      name: name,
+      target: target,
+      units: units,
+      color: HabitColor.green,
+      categoryId: BuiltInCategoryIds.body,
+      goal: goal,
+    ));
+    return habits.habits.last.id;
+  }
+
+  group("the habit page offers Health when the habit's name suggests it", () {
+    testWidgets('Link opens Health set to the suggestion; Save links the habit', (tester) async {
+      final id = await addPlain('Walk', target: 5000, units: 'steps');
+      health.values[HealthMetric.steps] = {today: 3200};
+      await pump(tester, HabitDetailScreen(habitId: id));
+      expect(find.text('Fill in from Apple Health?'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('detailHealthOfferLink')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('healthSection')), findsOneWidget);
+      expect(health.accessRequests.last, {HealthMetric.steps});
+      await tester.tap(find.byKey(const Key('detailHealthSave')));
+      await tester.pumpAndSettle();
+
+      final walk = habits.getHabitById(id)!;
+      expect(walk.health?.metric, HealthMetric.steps);
+      expect(walk.target, 5000, reason: 'its own target kept');
+      expect(find.byKey(const Key('detailHealthOffer')), findsNothing, reason: 'linked now');
+      expect(find.textContaining('From Apple Health · steps'), findsOneWidget);
+    });
+
+    testWidgets('Not now stops offering it for that habit, after a restart too', (tester) async {
+      final id = await addPlain('Meditate', target: 10, units: 'minutes');
+      await pump(tester, HabitDetailScreen(habitId: id));
+      await tester.tap(find.byKey(const Key('detailHealthOfferNotNow')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('detailHealthOffer')), findsNothing);
+      expect(get<SettingsProvider>().healthCardDismissed, {id});
+    });
+
+    testWidgets('not for a habit being broken, a name Health knows nothing about, or a phone without Health',
+        (tester) async {
+      final quit = await addPlain('Smoking', goal: HabitGoal.quit, target: 0);
+      await pump(tester, HabitDetailScreen(habitId: quit));
+      expect(find.byKey(const Key('detailHealthOffer')), findsNothing);
+
+      final call = await addPlain('Call Mum');
+      await pump(tester, HabitDetailScreen(habitId: call));
+      expect(find.byKey(const Key('detailHealthOffer')), findsNothing);
+
+      health.available = HealthAvailability.unsupported;
+      final walk = await addPlain('Walk', target: 5000, units: 'steps');
+      await pump(tester, HabitDetailScreen(habitId: walk));
+      expect(find.byKey(const Key('detailHealthOffer')), findsNothing);
+    });
+  });
+
+  testWidgets("Sync now on a linked habit's page reads Health again", (tester) async {
+    final id = await addLinked(HealthMetric.steps);
+    await pump(tester, HabitDetailScreen(habitId: id));
+    health.values[HealthMetric.steps] = {today: 4321};
+    await tester.tap(find.byKey(const Key('detailHealthSyncNow')));
+    await tester.pumpAndSettle();
+    expect(habits.getHabitById(id)!.history[today], 4321);
+  });
+
   testWidgets('Settings syncs now and counts linked habits', (tester) async {
     await addLinked(HealthMetric.steps);
     health.values[HealthMetric.steps] = {today: 1200};
