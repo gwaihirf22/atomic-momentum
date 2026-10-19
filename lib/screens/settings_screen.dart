@@ -26,6 +26,7 @@ import '../presentation/widgets/freezes_settings_section.dart';
 import '../presentation/widgets/health_settings_section.dart';
 import '../presentation/widgets/settings_list.dart';
 import 'app_icon_screen.dart';
+import 'tours_screen.dart';
 import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
 
@@ -57,6 +58,20 @@ class SettingsScreen extends StatelessWidget {
 
     return SliverList.list(
       children: [
+        if (!demo)
+          SettingsSection(
+            header: 'Help',
+            children: [
+              SettingsTile(
+                tileKey: const Key('openTours'),
+                icon: CupertinoIcons.play_circle_fill,
+                iconColor: HabitColor.orange.color,
+                title: 'Tours',
+                subtitle: 'Short guided looks at each part of the app',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ToursScreen())),
+              ),
+            ],
+          ),
         SettingsSection(
           header: 'Display',
           footer: 'Habits greetings follow your day. Working nights? Set when you wake up.',

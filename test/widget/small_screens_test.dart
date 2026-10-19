@@ -64,6 +64,11 @@ import '../helpers/fake_app_icon_service.dart';
 import '../helpers/fake_support_link.dart';
 import '../helpers/fake_health_source.dart';
 import '../helpers/real_fonts.dart';
+import 'package:atomic_momentum/presentation/tour/tour_anchor.dart';
+import 'package:atomic_momentum/presentation/tour/tour_controller.dart';
+import 'package:atomic_momentum/presentation/tour/tours.dart';
+import 'package:atomic_momentum/presentation/tour/world_scope.dart';
+import 'package:atomic_momentum/screens/tours_screen.dart';
 
 /// Every screen on the smallest supported iPhone (the SE, 375pt wide) and
 /// just above the habit card's breakpoint, at the default text size and at
@@ -175,6 +180,9 @@ void main() {
         ChangeNotifierProvider<CategoryProvider>.value(value: get<CategoryProvider>()),
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
         ChangeNotifierProvider<QuoteProvider>.value(value: get<QuoteProvider>()),
+        ChangeNotifierProvider<TourController>(
+          create: (_) => TourController(worlds: WorldController(), tours: Tours.all, anchors: TourAnchors()),
+        ),
       ],
       child: MaterialApp(
         theme: IOSTheme.material(palette).copyWith(platform: TargetPlatform.iOS),
@@ -208,6 +216,7 @@ void main() {
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
     'App icon': () => const AppIconScreen(),
+    'Tours': () => const ToursScreen(),
     'Insights': () => const InsightsScreen(),
     'Inspire': () => const InspireScreen(),
     'Quote search': () => const QuoteSearchScreen(),

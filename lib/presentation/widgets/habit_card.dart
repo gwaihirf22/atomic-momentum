@@ -106,6 +106,13 @@ class HabitCard extends StatelessWidget {
 
   /// The "2 min" button shows while today is due and not yet complete, for a
   /// habit whose two-minute version is set to show on its card.
+  /// Closes every card left swiped open (a tour moving on).
+  static void closeSwipes() {
+    for (final card in _SwipeReporterState._all) {
+      if (card.mounted && card._pane?.value != ActionPaneType.none) Slidable.of(card.context)?.close();
+    }
+  }
+
   static bool showsTwoMinuteButton(Habit habit, DateTime now) {
     final tiny = habit.twoMinute;
     return tiny != null &&
@@ -532,6 +539,15 @@ class _SwipeReporter extends StatefulWidget {
 class _SwipeReporterState extends State<_SwipeReporter> {
   ValueListenable<ActionPaneType>? _pane;
 
+  /// Every card showing, so a tour can close any it left swiped open.
+  static final _all = <_SwipeReporterState>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _all.add(this);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -544,6 +560,7 @@ class _SwipeReporterState extends State<_SwipeReporter> {
 
   @override
   void dispose() {
+    _all.remove(this);
     _pane?.removeListener(_changed);
     super.dispose();
   }

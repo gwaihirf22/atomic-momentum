@@ -1,3 +1,6 @@
+import 'core/demo/demo_world.dart';
+import 'package:clock/clock.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +22,7 @@ import 'presentation/tour/tour_anchor.dart';
 import 'presentation/tour/tour_bubble.dart';
 import 'presentation/tour/tour_controller.dart';
 import 'presentation/tour/tour_layer.dart';
+import 'presentation/tour/tours.dart';
 import 'presentation/tour/world_scope.dart';
 
 void main() async {
@@ -38,13 +42,27 @@ void main() async {
   );
 
   // Ask for notification permission once the app is on screen (after the
-  // intro, so the system prompt doesn't cover it)
+  // intro, so the system prompt doesn't cover it; on a first launch, after
+  // the first tour)
   void askPermission() {
     if (NotificationService.isSupported) NotificationService.requestPermission();
   }
 
-  runApp(MomentumApp(showIntro: showIntro, onIntroDone: askPermission));
-  if (!showIntro) WidgetsBinding.instance.addPostFrameCallback((_) => askPermission());
+  // Tours: a new install takes the Habits tour (its example habits built
+  // while the intro plays); someone who had habits before tours is offered it
+  final prefs = get<SharedPreferences>();
+  final tourStart = TourStart.of(prefs, fromNotification: NotificationService.focusRequests.value != null);
+  if (tourStart == TourStart.firstRun) unawaited(DemoSeed.forDay(clock.now()));
+
+  runApp(MomentumApp(
+    showIntro: showIntro,
+    onIntroDone: tourStart == TourStart.firstRun ? null : askPermission,
+    tourStart: tourStart,
+    onFirstTourDone: askPermission,
+  ));
+  if (!showIntro && tourStart != TourStart.firstRun) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => askPermission());
+  }
 }
 
 class MomentumApp extends StatefulWidget {
@@ -59,7 +77,21 @@ class MomentumApp extends StatefulWidget {
   /// The tours (tests pass their own).
   final Map<TourId, Tour>? tours;
 
-  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone, this.worlds, this.tours}) : super(key: key);
+  /// Whether this launch begins with the Habits tour, or offers it.
+  final TourStart tourStart;
+
+  /// The first launch's tour ended (finished or skipped).
+  final VoidCallback? onFirstTourDone;
+
+  const MomentumApp({
+    Key? key,
+    this.showIntro = false,
+    this.onIntroDone,
+    this.worlds,
+    this.tours,
+    this.tourStart = TourStart.none,
+    this.onFirstTourDone,
+  }) : super(key: key);
 
   @override
   State<MomentumApp> createState() => _MomentumAppState();
@@ -73,10 +105,29 @@ class _MomentumAppState extends State<MomentumApp> {
 
   late final TourController _tours = TourController(
     worlds: _worlds,
-    tours: widget.tours ?? const {},
+    tours: widget.tours ?? Tours.all,
     anchors: _anchors,
     store: sl.isRegistered<SharedPreferences>() ? TourStore(get<SharedPreferences>()) : null,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    switch (widget.tourStart) {
+      case TourStart.firstRun:
+        // Starts under the intro, so the example habits are there as it fades
+        _tours.onEnd = (id, {required finished}) {
+          if (id != TourId.habits) return;
+          _tours.onEnd = null;
+          widget.onFirstTourDone?.call();
+        };
+        WidgetsBinding.instance.addPostFrameCallback((_) => _tours.start(TourId.habits));
+      case TourStart.offer:
+        WidgetsBinding.instance.addPostFrameCallback((_) => _tours.offer());
+      case TourStart.none:
+        break;
+    }
+  }
 
   @override
   void dispose() {

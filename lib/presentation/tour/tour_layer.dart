@@ -68,6 +68,24 @@ class _TourLayerState extends State<TourLayer> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final tours = _tours;
+    if (tours != null && tours.isOffering) {
+      return TourSpotlight(
+        target: null,
+        bubble: TourBubble(
+          eyebrow: 'New',
+          text: 'Short tours show you around the app, on example habits. Take the Habits tour?',
+          actions: [
+            TextButton(
+              key: const Key('tourOfferNotNow'),
+              onPressed: tours.declineOffer,
+              child: const Text('Not now'),
+            ),
+            const SizedBox(width: 4),
+            TourNextButton(key: const Key('tourOfferStart'), label: 'Start', onPressed: tours.acceptOffer),
+          ],
+        ),
+      );
+    }
     final tour = tours?.tour;
     final step = tours?.step;
     if (tours == null || tour == null || step == null) return const SizedBox.shrink();

@@ -61,6 +61,11 @@ final class BackToTabs extends TourMove {
   const BackToTabs();
 }
 
+/// Closes habit cards left swiped open.
+final class CloseSwipes extends TourMove {
+  const CloseSwipes();
+}
+
 /// Leaves the example habits for the person's own (the first tour's last
 /// step: "Your turn").
 final class ToOwnHabits extends TourMove {
@@ -102,9 +107,19 @@ class TourStep {
 class Tour {
   final TourId id;
   final String title;
+
+  /// What it shows, in a few words (Settings → Tours).
+  final String summary;
   final TourWorld world;
   final AppTab tab;
   final List<TourStep> steps;
 
-  const Tour({required this.id, required this.title, required this.world, required this.tab, required this.steps});
+  const Tour({
+    required this.id,
+    required this.title,
+    this.summary = '',
+    required this.world,
+    required this.tab,
+    required this.steps,
+  });
 }

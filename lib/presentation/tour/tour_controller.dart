@@ -3,12 +3,33 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../data/datasources/shared_preferences_datasource.dart';
+
 import '../../screens/habit_detail_screen.dart';
 import '../../screens/ios_main_navigation.dart';
+import '../widgets/habit_card.dart';
 import 'tour.dart';
 import 'tour_anchor.dart';
 import 'tour_events.dart';
 import 'world_scope.dart';
+
+/// How a launch begins: a new install takes the Habits tour, someone who
+/// had habits before tours existed is offered it once, everyone else
+/// nothing (tours then come on each tab's first visit).
+enum TourStart {
+  firstRun,
+  offer,
+  none;
+
+  /// Decided from what's stored: tours never started, with or without
+  /// habits. A launch from a notification tap goes straight to the habit.
+  static TourStart of(SharedPreferences prefs, {bool fromNotification = false}) {
+    if (fromNotification || prefs.containsKey(TourStore.key)) return none;
+    final habits = prefs.getString(SharedPreferencesDataSource.habitsKey);
+    final hasHabits = habits != null && habits.trim() != '[]' && habits.trim().isNotEmpty;
+    return hasHabits ? offer : firstRun;
+  }
+}
 
 /// Which tours have been seen: the one key tours write to the person's own
 /// storage.
@@ -77,6 +98,38 @@ class TourController extends ChangeNotifier {
     if (name == null || demo == null) return null;
     return demo.habits.habits.where((h) => h.name == name).firstOrNull?.id;
   }
+
+  bool _offering = false;
+
+  /// "New: short tours" is showing (to people who had habits before tours).
+  bool get isOffering => _offering;
+
+  /// Offers the Habits tour, once: whatever the answer, it isn't offered
+  /// again.
+  Future<void> offer() async {
+    if (isRunning || _offering) return;
+    _offering = true;
+    notifyListeners();
+    await store?.start();
+  }
+
+  /// "Start".
+  Future<void> acceptOffer() async {
+    _offering = false;
+    notifyListeners();
+    await start(TourId.habits);
+  }
+
+  /// "Not now": the Habits tour counts as seen, so the other tabs' tours
+  /// still come on their first visit.
+  Future<void> declineOffer() async {
+    _offering = false;
+    notifyListeners();
+    await store?.markSeen(TourId.habits);
+  }
+
+  /// "Show tours again": each comes back on its next visit.
+  Future<void> showAgain() async => store?.reset();
 
   Future<void> start(TourId id) async {
     final tour = tours[id];
@@ -155,6 +208,8 @@ class TourController extends ChangeNotifier {
           if (id != null && navigator != null) {
             unawaited(navigator.push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: id))));
           }
+        case CloseSwipes():
+          HabitCard.closeSwipes();
         case ToOwnHabits():
           worlds.exitDemo(tab: AppTab.habits);
       }

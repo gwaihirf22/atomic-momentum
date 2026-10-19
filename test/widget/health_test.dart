@@ -233,6 +233,8 @@ void main() {
     await addLinked(HealthMetric.steps);
     await pump(tester, const SettingsScreen());
     await tester.scrollUntilVisible(find.byKey(const Key('healthSampleData')), 300, scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(find.byKey(const Key('healthSampleData')));
+    await tester.pumpAndSettle();
     health.values[HealthMetric.steps] = {today: 3200};
     await tester.tap(find.byKey(const Key('healthSampleData')));
     await tester.pumpAndSettle();

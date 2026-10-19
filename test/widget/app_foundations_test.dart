@@ -187,6 +187,8 @@ void main() {
         child: const MaterialApp(home: SettingsScreen()),
       ));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const Key('addHabitStyleSetting')), 200,
+          scrollable: find.byType(Scrollable).first);
 
       expect(find.descendant(of: find.byKey(const Key('addHabitStyleSetting')), matching: find.text('Story')),
           findsOneWidget);
