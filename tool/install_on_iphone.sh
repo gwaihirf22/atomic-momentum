@@ -8,9 +8,11 @@
 # the Runner target, and Developer Mode on the phone.
 #
 # With a free (personal) team, signing leaves out time-sensitive
-# notifications (Runner-PersonalTeam.entitlements), and the install expires
-# after 7 days: run this again to renew it (the app's data stays). With the
-# paid program, set FULL_ENTITLEMENTS=1 to sign with Runner.entitlements.
+# notifications and the widgets' App Group (Runner-PersonalTeam.entitlements;
+# the widget extension gets none, so widgets only say to open the app), and
+# the install expires after 7 days: run this again to renew it (the app's
+# data stays). With the paid program, set FULL_ENTITLEMENTS=1 to sign the app
+# and the widgets with their own entitlements.
 #
 # DEV_TOOLS=1 keeps Settings → Developer in the release build (sample habits,
 # "Load a year of use", the notification tester), for testing real speed
@@ -24,8 +26,14 @@ if [ -z "$device" ]; then
   exit 1
 fi
 
+# Each target's entitlements are its own setting (RUNNER_ENTITLEMENTS,
+# WIDGETS_ENTITLEMENTS), so overriding one doesn't touch the other
 entitlements="Runner/Runner-PersonalTeam.entitlements"
-[ "${FULL_ENTITLEMENTS:-0}" = "1" ] && entitlements="Runner/Runner.entitlements"
+widgets_entitlements=""
+if [ "${FULL_ENTITLEMENTS:-0}" = "1" ]; then
+  entitlements="Runner/Runner.entitlements"
+  widgets_entitlements="MomentumWidgets/MomentumWidgets.entitlements"
+fi
 
 echo "Building for $device (entitlements: $entitlements)"
 defines=()
@@ -41,7 +49,7 @@ fi
 derived="build/ios/device-derived"
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
   -destination "id=$device" -derivedDataPath "$derived" -allowProvisioningUpdates \
-  CODE_SIGN_ENTITLEMENTS="$entitlements" build | grep -E "error:|warning: .*(sign|profile)|BUILD (SUCCEEDED|FAILED)" || true
+  RUNNER_ENTITLEMENTS="$entitlements" WIDGETS_ENTITLEMENTS="$widgets_entitlements" build | grep -E "error:|warning: .*(sign|profile)|BUILD (SUCCEEDED|FAILED)" || true
 
 app="$derived/Build/Products/Release-iphoneos/Runner.app"
 [ -d "$app" ] || { echo "Build failed (no Runner.app)" >&2; exit 1; }

@@ -2,17 +2,13 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Runner.entitlements without time-sensitive notifications, which a free
-	     (personal) team can't sign. Used only by tool/install_on_iphone.sh;
-	     those notifications then arrive as ordinary ones. -->
+	<!-- Runner.entitlements without time-sensitive notifications or the
+	     widgets' App Group, which a free (personal) team may not sign. Used
+	     only by tool/install_on_iphone.sh; those notifications then arrive as
+	     ordinary ones, and the widgets say to open the app. -->
 	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>com.apple.developer.healthkit.access</key>
 	<array/>
-	<!-- Shared with the home screen widgets -->
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>group.com.paulblake.momentum</string>
-	</array>
 </dict>
 </plist>

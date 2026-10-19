@@ -648,7 +648,8 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Charged AppIcon-Light";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(RUNNER_ENTITLEMENTS)";
+				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
@@ -720,7 +721,8 @@
 			baseConfigurationReference = 330905B742A99B60761D0246 /* Widgets.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(WIDGETS_ENTITLEMENTS)";
+				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
@@ -748,7 +750,8 @@
 			baseConfigurationReference = 330905B742A99B60761D0246 /* Widgets.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(WIDGETS_ENTITLEMENTS)";
+				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
@@ -889,7 +892,8 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Charged AppIcon-Light";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(RUNNER_ENTITLEMENTS)";
+				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
@@ -914,7 +918,8 @@
 				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Charged AppIcon-Light";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(RUNNER_ENTITLEMENTS)";
+				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
@@ -936,7 +941,8 @@
 			baseConfigurationReference = 330905B742A99B60761D0246 /* Widgets.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "$(WIDGETS_ENTITLEMENTS)";
+				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 9EWP23T2HE;
 				ENABLE_BITCODE = NO;
