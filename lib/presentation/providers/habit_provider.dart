@@ -78,13 +78,12 @@ class HabitProvider extends ChangeNotifier {
   String? get error => _error;
   /// Average momentum across habits that reset and have been tracked: built
   /// habits once something is logged, habits being broken once a period has
-  /// passed (a clean run logs nothing). Null when there's nothing to average.
+  /// passed (a clean run logs nothing). Each counts as much as it has formed
+  /// ([Momentum.overall]), so starting a habit doesn't drag it down. Null
+  /// when there's nothing to average.
   Momentum? get overallMomentum {
     final now = clock.now();
-    final scores = _habits.where((h) => h.countsTowardMomentumAt(now)).map((h) => h.momentum).toList();
-    if (scores.isEmpty) return null;
-    double average(double Function(Momentum m) of) => scores.map(of).reduce((a, b) => a + b) / scores.length;
-    return Momentum(score: average((m) => m.score), trend: average((m) => m.trend));
+    return Momentum.overall([for (final h in _habits) if (h.countsTowardMomentumAt(now)) h.momentum]);
   }
 
   bool get isLoading => _state == HabitProviderState.loading;

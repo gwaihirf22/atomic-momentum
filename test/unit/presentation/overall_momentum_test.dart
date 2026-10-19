@@ -49,9 +49,25 @@ void main() {
     await habits.updateProgressForDate(b, DateTime(now.year, now.month, now.day - 1), 1);
     await habits.updateProgressForDate(never, DateTime(now.year, now.month, now.day - 1), 1);
 
-    final scoreA = habits.getHabitById(a)!.momentum.score;
-    final scoreB = habits.getHabitById(b)!.momentum.score;
-    expect(habits.overallMomentum!.score, closeTo((scoreA + scoreB) / 2, 0.001));
+    // Each weighed by how formed it is
+    final ma = habits.getHabitById(a)!.momentum, mb = habits.getHabitById(b)!.momentum;
+    expect(ma.formed, greaterThan(mb.formed));
+    expect(habits.overallMomentum!.score,
+        closeTo((ma.score * ma.formed + mb.score * mb.formed) / (ma.formed + mb.formed), 0.001));
+  });
+
+  test('starting a habit barely moves it', () async {
+    final now = DateTime.now();
+    final read = await add('Read');
+    for (var i = 1; i <= 90; i++) {
+      await habits.updateProgressForDate(read, DateTime(now.year, now.month, now.day - i), 1);
+    }
+    final before = habits.overallMomentum!.score;
+    expect(before, greaterThan(80));
+
+    final run = await add('Run');
+    await habits.updateProgressForDate(run, DateTime(now.year, now.month, now.day - 1), 1);
+    expect(habits.overallMomentum!.score, closeTo(before, 2.5), reason: 'not halved by a habit a day old');
   });
 
   test('a habit being broken counts once a day has passed, though it logs nothing', () async {

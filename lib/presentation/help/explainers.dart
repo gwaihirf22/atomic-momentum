@@ -84,11 +84,13 @@ class Explainer {
         icon: CupertinoIcons.chevron_down,
       ),
       ExplainerPoint(
-        "Coming back after a slump? It climbs fastest when it's low.",
+        'Never miss twice: show up the next time after a miss and win back half of what it cost. '
+        "After a slump, it climbs fastest when it's low.",
         icon: CupertinoIcons.chevron_up,
       ),
       ExplainerPoint(
-        'Each habit has its own. The ring on Habits is the average of all of them.',
+        'Each habit has its own. The ring on Habits blends them, and a new habit counts more as it forms, '
+        "so starting one won't drag it down.",
         icon: CupertinoIcons.circle_grid_hex,
       ),
     ],

@@ -147,7 +147,7 @@ void main() {
       expect(months[3].score!, closeTo(h.momentum.score, 1e-9));
     });
 
-    test('averages the habits tracked at each month end', () {
+    test('averages the habits tracked at each month end, each as formed as it is', () {
       final at = DateTime(2024, 3, 20, 12);
       final steady = habit(id: 'a', created: DateTime(2024, 1, 1), at: at, history: {
         for (var d = 1; d < 80; d++) DateTime(2024, 1, d): 1,
@@ -155,7 +155,9 @@ void main() {
       final late = habit(id: 'b', created: DateTime(2024, 3, 1), at: at, history: {DateTime(2024, 3, 2): 1});
       final months = Insights.momentumByMonth([steady, late], at, count: 2);
       expect(months[0].score!, closeTo(steady.momentumSeries([DateTime(2024, 2, 29, 23, 59)]).single, 1e-9));
-      expect(months[1].score!, closeTo((steady.momentum.score + late.momentum.score) / 2, 1e-9));
+      // Each weighed by how formed it is, as on the Habits ring
+      final a = steady.momentum, b = late.momentum;
+      expect(months[1].score!, closeTo((a.score * a.formed + b.score * b.formed) / (a.formed + b.formed), 1e-9));
     });
 
     test('asking for fewer months first (the widgets) never shortens a later, longer ask (the Insights tab)', () {

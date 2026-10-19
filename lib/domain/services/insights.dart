@@ -147,41 +147,41 @@ class Insights {
 
   /// Overall momentum at the end of each of the last [count] months, oldest
   /// first, the last being this month so far. Habits count once they're
-  /// tracked, as for the Habits ring.
+  /// tracked, each as much as it had formed, as for the Habits ring.
   static List<MonthMomentum> momentumByMonth(List<Habit> habits, DateTime now, {int count = 6}) {
     final times = [
       for (var i = count - 1; i >= 1; i--) DateTime(now.year, now.month - i + 1, 0, 23, 59),
       now,
     ];
     final sums = List<double>.filled(times.length, 0);
-    final counts = List<int>.filled(times.length, 0);
+    final weights = List<double>.filled(times.length, 0);
     for (final habit in habits) {
       if (!habit.schedule.isPeriodic) continue;
-      final scores = _monthEnds(habit, times);
+      final points = _monthEnds(habit, times);
       for (var i = 0; i < times.length; i++) {
-        final score = scores[i];
-        if (score == null) continue;
-        sums[i] += score;
-        counts[i]++;
+        final point = points[i];
+        if (point == null) continue;
+        sums[i] += point.score * point.formed;
+        weights[i] += point.formed;
       }
     }
     return [
       for (var i = 0; i < times.length; i++)
-        MonthMomentum(DateTime(times[i].year, times[i].month), counts[i] == 0 ? null : sums[i] / counts[i]),
+        MonthMomentum(DateTime(times[i].year, times[i].month), weights[i] == 0 ? null : sums[i] / weights[i]),
     ];
   }
 
   /// A habit's momentum at each of [times] (null where it doesn't count
   /// yet), kept per habit for the day of the last one and how many months
   /// were asked for (the Insights tab asks for 6, the widgets for 2).
-  static final _monthCache = Expando<Map<(DateTime, int), List<double?>>>('month momentum');
+  static final _monthCache = Expando<Map<(DateTime, int), List<({double score, double formed})?>>>('month momentum');
 
-  static List<double?> _monthEnds(Habit habit, List<DateTime> times) {
+  static List<({double score, double formed})?> _monthEnds(Habit habit, List<DateTime> times) {
     final cached = _monthCache[habit] ??= {};
     if (cached.length > 4) cached.clear();
     return cached[(_date(times.last), times.length)] ??= () {
-      final scores = habit.momentumSeries(times);
-      return [for (var i = 0; i < times.length; i++) habit.countsTowardMomentumAt(times[i]) ? scores[i] : null];
+      final points = habit.momentumPoints(times);
+      return [for (var i = 0; i < times.length; i++) habit.countsTowardMomentumAt(times[i]) ? points[i] : null];
     }();
   }
 

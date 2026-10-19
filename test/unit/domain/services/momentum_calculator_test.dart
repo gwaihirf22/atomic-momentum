@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:atomic_momentum/domain/entities/habit_schedule.dart';
 import 'package:atomic_momentum/domain/entities/momentum.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
 import 'package:atomic_momentum/domain/services/momentum_calculator.dart';
 
 void main() {
@@ -125,6 +126,82 @@ void main() {
       final never = HabitSchedule(frequency: ResetFrequency.never, anchor: start);
       expect(calc(everyDay(10), schedule: never, now: day(9)), Momentum.none);
       expect(calc(everyDay(10), target: 0, now: day(9)), Momentum.none);
+    });
+  });
+
+  group('never miss twice: a comeback gives back half a miss', () {
+    final alpha = MomentumCalculator.smoothing(daily);
+    DateTime evening(int offset) => day(offset).add(const Duration(hours: 21));
+    double plain(double s, double done) => s * (1 - alpha) + done * alpha;
+
+    test('kept right after one miss: half of what the miss cost comes back', () {
+      final before = calc(everyDay(65), now: evening(64)).score;
+      final afterMiss = calc(everyDay(65), now: day(66).add(const Duration(hours: 1))).score;
+      expect(afterMiss, closeTo(plain(before, 0), 1e-9), reason: 'the miss costs what it always did');
+
+      final comeback = calc(everyDay(67, skip: {65}), now: evening(66)).score;
+      expect(comeback, closeTo(plain(afterMiss, 100) + (before - afterMiss) / 2, 1e-9));
+    });
+
+    test('kept with the two-minute version counts as a comeback too', () {
+      Momentum withTiny(DateTime now) => MomentumCalculator.calculate(
+            history: everyDay(67, skip: {65, 66}),
+            target: 1,
+            schedule: daily,
+            start: start,
+            now: now,
+            twoMinute: TwoMinuteLog(days: {day(66)}),
+          );
+      final before = calc(everyDay(65), now: evening(64)).score;
+      final afterMiss = calc(everyDay(65), now: day(66).add(const Duration(hours: 1))).score;
+      // Two-minute holds the score where it was, then the refund
+      expect(withTiny(evening(66)).score, closeTo(afterMiss + (before - afterMiss) / 2, 1e-9));
+    });
+
+    test('two misses in a row give nothing back', () {
+      final history = everyDay(68, skip: {65, 66});
+      var s = calc(everyDay(65), now: evening(64)).score;
+      s = plain(plain(plain(s, 0), 0), 100);
+      expect(calc(history, now: evening(67)).score, closeTo(s, 1e-9));
+    });
+
+    test('a refund never takes the score past 100', () {
+      final score = calc(everyDay(800, skip: {700}), now: evening(799)).score;
+      expect(score, lessThanOrEqualTo(100));
+    });
+
+    test('partial days are misses for the rule, and the series agrees with the score every day', () {
+      // Target 2: full days, one miss then a comeback, two misses, a partial
+      // day then a comeback, a partial day then a miss
+      final history = {
+        ...everyDay(120, amount: 2),
+        day(40): 0,
+        day(60): 0, day(61): 0,
+        day(80): 1,
+        day(100): 1, day(101): 0,
+      };
+      final times = [for (var i = 0; i < 120; i++) evening(i)];
+      final points = MomentumCalculator.points(history: history, target: 2, schedule: daily, start: start, at: times);
+      for (var i = 0; i < times.length; i++) {
+        final one = calc(history, target: 2, now: times[i]);
+        expect(points[i].score, closeTo(one.score, 1e-9), reason: 'day $i');
+        expect(points[i].formed, closeTo(one.formed, 1e-12), reason: 'day $i');
+      }
+      // The partial day (half done) counts once it's over; the comeback
+      // after it gets half of its cost back
+      final before = points[79].score, partial = plain(before, 50);
+      expect(points[80].score, before, reason: 'a partly done today is not counted yet');
+      expect(points[81].score, closeTo(plain(partial, 100) + (before - partial) / 2, 1e-9));
+    });
+  });
+
+  group('how formed a habit is (its weight in the overall)', () {
+    test('what steady practice would score: about 0.8 at 66 days, at least one period', () {
+      expect(calc(everyDay(66), now: day(66).add(const Duration(hours: 9))).formed, closeTo(0.8, 0.001));
+      final alpha = MomentumCalculator.smoothing(daily);
+      expect(calc({}, now: day(0).add(const Duration(hours: 9))).formed, closeTo(alpha, 1e-12));
+      expect(calc(everyDay(66, skip: {for (var i = 0; i < 66; i++) i}), now: day(66).add(const Duration(hours: 9))).formed,
+          closeTo(0.8, 0.001), reason: 'periods count, kept or not');
     });
   });
 }

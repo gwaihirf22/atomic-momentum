@@ -2,7 +2,7 @@
   Drink water      streak 13 (best 13), momentum 25 building; this month 11 kept, 2 small, 0 missed
   Read             streak 12 (best 12), momentum 25 building; this month 12 kept, 0 small, 1 missed
   Gym              streak 1 (best 1) at risk, momentum 10 building; this month 2 kept, 0 small, 4 missed
-  Run              streak 4 (best 4), momentum 24 building; this month 4 kept, 0 small, 1 missed
+  Run              streak 4 (best 4), momentum 25 building; this month 4 kept, 0 small, 1 missed
   Call Mum         streak 1 (best 1), momentum 16 building; this month 1 kept, 0 small, 1 missed
   Budget review    streak 0 (best 0), momentum 0 building; this month 0 kept, 0 small, 0 missed
   Finish 12 books  0 of 12
@@ -21,17 +21,17 @@
   earned: 7 days within your limit (Social media)
   earned: Never missed twice *
 == Nov 2026
-  Drink water      streak 41 (best 41), momentum 57 rolling; this month 24 kept, 4 small, 2 missed
+  Drink water      streak 41 (best 41), momentum 58 rolling; this month 24 kept, 4 small, 2 missed
   Read             streak 41 (best 41), momentum 61 rolling; this month 26 kept, 3 small, 1 missed
-  Gym              streak 10 (best 10), momentum 46 rolling; this month 10 kept, 0 small, 3 missed
-  Run              streak 14 (best 14), momentum 63 rolling; this month 10 kept, 0 small, 0 missed
-  Call Mum         streak 4 (best 4), momentum 44 rolling; this month 3 kept, 0 small, 1 missed
+  Gym              streak 10 (best 10), momentum 47 rolling; this month 10 kept, 0 small, 3 missed
+  Run              streak 14 (best 14), momentum 64 rolling; this month 10 kept, 0 small, 0 missed
+  Call Mum         streak 4 (best 4), momentum 47 rolling; this month 3 kept, 0 small, 1 missed
   Budget review    streak 1 (best 1), momentum 18 building; this month 0 kept, 0 small, 0 missed
   Finish 12 books  1 of 12
   Smoking          streak 42 (best 42), momentum 64 rolling; this month 29 kept, 0 small, 1 missed
-  Social media     streak 39 (best 39), momentum 60 rolling; this month 28 kept, 0 small, 2 missed
-  Spanish          streak 2 (best 15), momentum 51 rolling; this month 22 kept, 0 small, 8 missed
-  overall momentum 52
+  Social media     streak 39 (best 39), momentum 61 rolling; this month 28 kept, 0 small, 2 missed
+  Spanish          streak 2 (best 15), momentum 52 rolling; this month 22 kept, 0 small, 8 missed
+  overall momentum 54
   notifications: 142 reminders, 9 warnings, 0 nudges
   quote of the day on 30 days, another quote: 6
   earned: 21 days (Drink water) *
@@ -46,17 +46,17 @@
   earned: 4 weeks (Call Mum) *
   earned: Showed up anyway *
 == Dec 2026
-  Drink water      streak 71 (best 71), momentum 75 strong; this month 24 kept, 6 small, 1 missed
-  Read             streak 69 (best 69), momentum 77 strong; this month 25 kept, 3 small, 3 missed
-  Gym              streak 21 (best 21) at risk, momentum 64 rolling; this month 11 kept, 0 small, 2 missed
-  Run              streak 6 (best 15), momentum 69 rolling; this month 7 kept, 0 small, 3 missed
-  Call Mum         streak 9 (best 9), momentum 76 strong; this month 4 kept, 0 small, 0 missed
+  Drink water      streak 71 (best 71), momentum 76 strong; this month 24 kept, 6 small, 1 missed
+  Read             streak 69 (best 69), momentum 78 strong; this month 25 kept, 3 small, 3 missed
+  Gym              streak 21 (best 21) at risk, momentum 66 rolling; this month 11 kept, 0 small, 2 missed
+  Run              streak 6 (best 15), momentum 71 strong; this month 7 kept, 0 small, 3 missed
+  Call Mum         streak 9 (best 9), momentum 78 strong; this month 4 kept, 0 small, 0 missed
   Budget review    streak 2 (best 2), momentum 33 building; this month 0 kept, 0 small, 0 missed
   Finish 12 books  2 of 12
   Smoking          streak 73 (best 73), momentum 83 unstoppable; this month 31 kept, 0 small, 0 missed
-  Social media     streak 68 (best 68), momentum 79 strong; this month 29 kept, 0 small, 2 missed
-  Spanish          streak 10 (best 18), momentum 70 strong; this month 26 kept, 0 small, 5 missed
-  overall momentum 70
+  Social media     streak 68 (best 68), momentum 80 unstoppable; this month 29 kept, 0 small, 2 missed
+  Spanish          streak 10 (best 18), momentum 72 strong; this month 26 kept, 0 small, 5 missed
+  overall momentum 73
   notifications: 151 reminders, 9 warnings, 0 nudges
   quote of the day on 31 days, another quote: 6
   earned: New best (Spanish) *
@@ -65,131 +65,132 @@
   earned: 66 days (Drink water) *
   earned: 21 in a row (Gym) *
   earned: 66 days (Read) *
+  earned: Habit formed (Social media) *
 == Jan 2027
-  Drink water      streak 102 (best 102), momentum 87 unstoppable; this month 28 kept, 3 small, 0 missed
+  Drink water      streak 102 (best 102), momentum 88 unstoppable; this month 28 kept, 3 small, 0 missed
   Read             streak 3 (best 93), momentum 81 unstoppable; this month 23 kept, 4 small, 4 missed
-  Gym              streak 32 (best 32), momentum 75 strong; this month 11 kept, 0 small, 2 missed
-  Run              streak 16 (best 16), momentum 85 unstoppable; this month 10 kept, 0 small, 0 missed
-  Call Mum         streak 13 (best 13), momentum 88 unstoppable; this month 4 kept, 0 small, 0 missed
+  Gym              streak 32 (best 32), momentum 80 unstoppable; this month 11 kept, 0 small, 2 missed
+  Run              streak 16 (best 16), momentum 86 unstoppable; this month 10 kept, 0 small, 0 missed
+  Call Mum         streak 13 (best 13), momentum 89 unstoppable; this month 4 kept, 0 small, 0 missed
   Budget review    streak 3 (best 3), momentum 45 rolling; this month 0 kept, 0 small, 0 missed
   Finish 12 books  3 of 12
   Smoking          streak 104 (best 104), momentum 92 atomic; this month 31 kept, 0 small, 0 missed
-  Social media     streak 96 (best 96), momentum 85 unstoppable; this month 28 kept, 0 small, 3 missed
-  Spanish          streak 1 (best 19), momentum 70 strong; this month 21 kept, 0 small, 9 missed
-  Meditate         streak 15 (best 23), momentum 52 rolling; this month 21 kept, 5 small, 5 missed
-  overall momentum 76
+  Social media     streak 96 (best 96), momentum 88 unstoppable; this month 28 kept, 0 small, 3 missed
+  Spanish          streak 1 (best 19), momentum 74 strong; this month 21 kept, 0 small, 9 missed
+  Meditate         streak 15 (best 23), momentum 54 rolling; this month 21 kept, 5 small, 5 missed
+  overall momentum 80
   notifications: 175 reminders, 4 warnings, 0 nudges
   quote of the day on 31 days, another quote: 2
-  earned: Habit formed (Social media) *
   earned: Comeback (Run) *
   earned: 3 months (Budget review) *
   earned: 7 days (Meditate)
-  earned: Habit formed (Call Mum) *
-  earned: Habit formed (Drink water) *
-  earned: 21 days (Meditate)
   earned: Habit formed (Read) *
-  earned: 90 days without smoking (Smoking) *
+  earned: Habit formed (Drink water) *
+  earned: Habit formed (Call Mum) *
+  earned: 21 days (Meditate) *
+  earned: New best (Spanish) *
   earned: Habit formed (Run) *
+  earned: 90 days without smoking (Smoking) *
   earned: 12 weeks (Call Mum) *
   earned: Comeback (Meditate) *
   earned: 90 days within your limit (Social media) *
+  earned: Habit formed (Gym) *
   earned: 100 days (Drink water) *
   earned: New best (Run) *
 == Feb 2027
   Drink water      streak 130 (best 130), momentum 93 atomic; this month 22 kept, 6 small, 0 missed
-  Read             streak 28 (best 93), momentum 86 unstoppable; this month 21 kept, 4 small, 3 missed
-  Gym              streak 8 (best 32), momentum 73 strong; this month 8 kept, 0 small, 4 missed
-  Run              streak 23 (best 23) at risk, momentum 79 strong; this month 7 kept, 0 small, 2 missed
+  Read             streak 28 (best 93), momentum 88 unstoppable; this month 21 kept, 4 small, 3 missed
+  Gym              streak 8 (best 32), momentum 79 strong; this month 8 kept, 0 small, 4 missed
+  Run              streak 23 (best 23) at risk, momentum 83 unstoppable; this month 7 kept, 0 small, 2 missed
   Call Mum         streak 18 (best 18), momentum 95 atomic; this month 4 kept, 0 small, 0 missed
-  Budget review    streak 4 (best 4), momentum 49 rolling; this month 1 kept, 0 small, 0 missed
+  Budget review    streak 4 (best 4), momentum 53 rolling; this month 1 kept, 0 small, 0 missed
   Finish 12 books  4 of 12
   Smoking          streak 132 (best 132), momentum 96 atomic; this month 28 kept, 0 small, 0 missed
-  Social media     streak 121 (best 121) at risk, momentum 89 unstoppable; this month 25 kept, 0 small, 3 missed
-  Spanish          streak 2 (best 19), momentum 76 strong; this month 22 kept, 0 small, 6 missed
-  Meditate         streak 41 (best 41), momentum 73 strong; this month 26 kept, 0 small, 2 missed
+  Social media     streak 121 (best 121) at risk, momentum 92 atomic; this month 25 kept, 0 small, 3 missed
+  Spanish          streak 2 (best 19), momentum 79 strong; this month 22 kept, 0 small, 6 missed
+  Meditate         streak 41 (best 41), momentum 74 strong; this month 26 kept, 0 small, 2 missed
   Journal          streak 1 (best 1), momentum 2 building; this month 1 kept, 0 small, 2 missed
-  overall momentum 74
+  overall momentum 84
   notifications: 168 reminders, 3 warnings, 0 nudges
   quote of the day on 28 days, another quote: 5
   earned: Comeback (Read) *
   earned: New best (Meditate) *
   earned: 21 in a row (Run) *
+  earned: Habit formed (Spanish) *
 == Mar 2027
   Drink water      streak 11 (best 147), momentum 92 atomic; this month 21 kept, 7 small, 2 missed
-  Read             streak 56 (best 93), momentum 90 atomic; this month 26 kept, 2 small, 3 missed
-  Gym              streak 20 (best 32), momentum 81 unstoppable; this month 12 kept, 0 small, 2 missed
-  Run              streak 33 (best 33), momentum 90 atomic; this month 9 kept, 0 small, 0 missed
+  Read             streak 56 (best 93), momentum 92 atomic; this month 26 kept, 2 small, 3 missed
+  Gym              streak 20 (best 32), momentum 87 unstoppable; this month 12 kept, 0 small, 2 missed
+  Run              streak 33 (best 33), momentum 93 atomic; this month 9 kept, 0 small, 0 missed
   Call Mum         streak 21 (best 21), momentum 97 atomic; this month 3 kept, 0 small, 0 missed
-  Budget review    streak 4 (best 4), momentum 49 rolling; this month 0 kept, 0 small, 0 missed
+  Budget review    streak 4 (best 4), momentum 53 rolling; this month 0 kept, 0 small, 0 missed
   Finish 12 books  5 of 12
   Smoking          streak 162 (best 162), momentum 97 atomic; this month 30 kept, 0 small, 1 missed
-  Social media     streak 150 (best 150), momentum 90 atomic; this month 29 kept, 0 small, 2 missed
-  Spanish          streak 21 (best 21), momentum 79 strong; this month 24 kept, 0 small, 7 missed
-  Meditate         streak 17 (best 49), momentum 76 strong; this month 19 kept, 6 small, 5 missed
+  Social media     streak 150 (best 150), momentum 94 atomic; this month 29 kept, 0 small, 2 missed
+  Spanish          streak 21 (best 21), momentum 84 unstoppable; this month 24 kept, 0 small, 7 missed
+  Meditate         streak 17 (best 49), momentum 79 strong; this month 19 kept, 6 small, 5 missed
   Journal          streak 11 (best 11), momentum 25 building; this month 12 kept, 0 small, 7 missed
-  overall momentum 79
+  overall momentum 86
   notifications: 197 reminders, 7 warnings, 0 nudges
   quote of the day on 31 days, another quote: 3
   earned: Showed up anyway *
   earned: Comeback (Drink water) *
   earned: 7 days (Journal) *
   earned: Comeback (Journal)
-  earned: Habit formed (Gym) *
   earned: New best (Spanish) *
   earned: 21 days (Spanish) *
 == Apr 2027
-  Drink water      streak 40 (best 147), momentum 83 unstoppable; this month 20 kept, 9 small, 1 missed
-  Read             streak 86 (best 93), momentum 95 atomic; this month 25 kept, 5 small, 0 missed
-  Gym              streak 1 (best 32), momentum 66 rolling; this month 7 kept, 0 small, 6 missed
-  Run              streak 40 (best 40), momentum 76 strong; this month 7 kept, 0 small, 3 missed
+  Drink water      streak 40 (best 147), momentum 84 unstoppable; this month 20 kept, 9 small, 1 missed
+  Read             streak 86 (best 93), momentum 96 atomic; this month 25 kept, 5 small, 0 missed
+  Gym              streak 1 (best 32), momentum 75 strong; this month 7 kept, 0 small, 6 missed
+  Run              streak 40 (best 40), momentum 87 unstoppable; this month 7 kept, 0 small, 3 missed
   Call Mum         streak 3 (best 21), momentum 81 unstoppable; this month 3 kept, 0 small, 1 missed
-  Budget review    streak 5 (best 5), momentum 51 rolling; this month 1 kept, 0 small, 0 missed
+  Budget review    streak 5 (best 5), momentum 58 rolling; this month 1 kept, 0 small, 0 missed
   Finish 12 books  6 of 12
-  Smoking          streak 191 (best 191), momentum 97 atomic; this month 29 kept, 0 small, 1 missed
-  Social media     streak 177 (best 177), momentum 90 atomic; this month 27 kept, 0 small, 3 missed
-  Spanish          streak 48 (best 48), momentum 85 unstoppable; this month 27 kept, 0 small, 3 missed
-  Meditate         streak 11 (best 49), momentum 82 unstoppable; this month 25 kept, 1 small, 3 missed
-  Journal          streak 8 (best 23), momentum 47 rolling; this month 20 kept, 0 small, 10 missed
-  overall momentum 77
+  Smoking          streak 191 (best 191), momentum 98 atomic; this month 29 kept, 0 small, 1 missed
+  Social media     streak 177 (best 177), momentum 94 atomic; this month 27 kept, 0 small, 3 missed
+  Spanish          streak 48 (best 48), momentum 90 atomic; this month 27 kept, 0 small, 3 missed
+  Meditate         streak 11 (best 49), momentum 84 unstoppable; this month 25 kept, 1 small, 3 missed
+  Journal          streak 8 (best 23), momentum 50 rolling; this month 20 kept, 0 small, 10 missed
+  overall momentum 83
   notifications: 191 reminders, 4 warnings, 0 nudges
   quote of the day on 30 days, another quote: 4
-  earned: Habit formed (Spanish) *
-  earned: Showed up anyway
   earned: Habit formed (Meditate) *
-  earned: 21 days (Journal)
+  earned: Showed up anyway
+  earned: 21 days (Journal) *
 == May 2027
-  Drink water      streak 70 (best 147), momentum 89 unstoppable; this month 24 kept, 6 small, 1 missed
-  Read             streak 18 (best 94) at risk, momentum 91 atomic; this month 25 kept, 1 small, 4 missed
-  Gym              streak 14 (best 32), momentum 84 unstoppable; this month 13 kept, 0 small, 0 missed
-  Run              streak 1 (best 22), momentum 57 rolling; this month 10 kept, 0 small, 6 missed
+  Drink water      streak 70 (best 147), momentum 90 atomic; this month 24 kept, 6 small, 1 missed
+  Read             streak 18 (best 94) at risk, momentum 92 atomic; this month 25 kept, 1 small, 4 missed
+  Gym              streak 14 (best 32), momentum 88 unstoppable; this month 13 kept, 0 small, 0 missed
+  Run              streak 1 (best 22), momentum 62 rolling; this month 10 kept, 0 small, 6 missed
   Call Mum         streak 7 (best 21), momentum 91 atomic; this month 4 kept, 0 small, 0 missed
-  Budget review    streak 5 (best 5), momentum 51 rolling; this month 0 kept, 0 small, 0 missed
+  Budget review    streak 5 (best 5), momentum 58 rolling; this month 0 kept, 0 small, 0 missed
   Finish 12 books  7 of 12
-  Smoking          streak 222 (best 222), momentum 98 atomic; this month 31 kept, 0 small, 0 missed
-  Social media     streak 207 (best 207), momentum 93 atomic; this month 30 kept, 0 small, 1 missed
-  Spanish          streak 1 (best 73), momentum 86 unstoppable; this month 26 kept, 0 small, 5 missed
-  Meditate         streak 40 (best 49), momentum 85 unstoppable; this month 24 kept, 5 small, 2 missed
-  Journal          streak 4 (best 23), momentum 56 rolling; this month 20 kept, 0 small, 11 missed
-  overall momentum 80
+  Smoking          streak 222 (best 222), momentum 99 atomic; this month 31 kept, 0 small, 0 missed
+  Social media     streak 207 (best 207), momentum 96 atomic; this month 30 kept, 0 small, 1 missed
+  Spanish          streak 1 (best 73), momentum 89 unstoppable; this month 26 kept, 0 small, 5 missed
+  Meditate         streak 40 (best 49), momentum 89 unstoppable; this month 24 kept, 5 small, 2 missed
+  Journal          streak 4 (best 23), momentum 59 rolling; this month 20 kept, 0 small, 11 missed
+  overall momentum 84
   notifications: 198 reminders, 7 warnings, 0 nudges
   quote of the day on 31 days, another quote: 1
   earned: New best (Read) *
   earned: 66 days (Spanish) *
   earned: Comeback (Call Mum) *
 == Jun 2027
-  Drink water      streak 99 (best 147), momentum 93 atomic; this month 25 kept, 4 small, 1 missed
-  Read             streak 27 (best 94), momentum 89 unstoppable; this month 25 kept, 2 small, 3 missed
-  Gym              streak 23 (best 32), momentum 78 strong; this month 9 kept, 0 small, 4 missed
-  Run              streak 11 (best 22), momentum 71 strong; this month 12 kept, 0 small, 3 missed
+  Drink water      streak 99 (best 147), momentum 94 atomic; this month 25 kept, 4 small, 1 missed
+  Read             streak 27 (best 94), momentum 92 atomic; this month 25 kept, 2 small, 3 missed
+  Gym              streak 23 (best 32), momentum 87 unstoppable; this month 9 kept, 0 small, 4 missed
+  Run              streak 11 (best 22), momentum 74 strong; this month 12 kept, 0 small, 3 missed
   Call Mum         streak 11 (best 21), momentum 95 atomic; this month 3 kept, 0 small, 0 missed
-  Budget review    streak 6 (best 6), momentum 60 rolling; this month 0 kept, 0 small, 0 missed
+  Budget review    streak 6 (best 6), momentum 66 rolling; this month 0 kept, 0 small, 0 missed
   Finish 12 books  8 of 12
-  Smoking          streak 252 (best 252), momentum 99 atomic; this month 30 kept, 0 small, 0 missed
-  Social media     streak 233 (best 233), momentum 90 atomic; this month 26 kept, 0 small, 4 missed
-  Spanish          streak 15 (best 73), momentum 88 unstoppable; this month 26 kept, 0 small, 4 missed
-  Meditate         streak 66 (best 66), momentum 87 unstoppable; this month 24 kept, 2 small, 3 missed
-  Journal          streak 29 (best 29), momentum 72 strong; this month 25 kept, 0 small, 4 missed
-  overall momentum 84
+  Smoking          streak 252 (best 252), momentum 100 atomic; this month 30 kept, 0 small, 0 missed
+  Social media     streak 233 (best 233), momentum 95 atomic; this month 26 kept, 0 small, 4 missed
+  Spanish          streak 15 (best 73), momentum 91 atomic; this month 26 kept, 0 small, 4 missed
+  Meditate         streak 66 (best 66), momentum 92 atomic; this month 24 kept, 2 small, 3 missed
+  Journal          streak 29 (best 29), momentum 76 strong; this month 25 kept, 0 small, 4 missed
+  overall momentum 88
   notifications: 191 reminders, 4 warnings, 0 nudges
   quote of the day on 30 days, another quote: 5
   earned: 6 months (Budget review) *
@@ -197,64 +198,66 @@
   earned: New best (Journal) *
   earned: 66 days (Meditate) *
 == Jul 2027
-  Drink water      streak 127 (best 147), momentum 91 atomic; this month 22 kept, 6 small, 3 missed
-  Read             streak 57 (best 94), momentum 94 atomic; this month 27 kept, 3 small, 1 missed
-  Gym              streak 35 (best 35), momentum 84 unstoppable; this month 12 kept, 0 small, 1 missed
-  Run              streak 10 (best 22), momentum 71 strong; this month 10 kept, 0 small, 5 missed
+  Drink water      streak 127 (best 147), momentum 94 atomic; this month 22 kept, 6 small, 3 missed
+  Read             streak 57 (best 94), momentum 96 atomic; this month 27 kept, 3 small, 1 missed
+  Gym              streak 35 (best 35), momentum 91 atomic; this month 12 kept, 0 small, 1 missed
+  Run              streak 10 (best 22), momentum 76 strong; this month 10 kept, 0 small, 5 missed
   Call Mum         streak 16 (best 21), momentum 98 atomic; this month 4 kept, 0 small, 0 missed
-  Budget review    streak 7 (best 7), momentum 67 rolling; this month 0 kept, 0 small, 0 missed
+  Budget review    streak 7 (best 7), momentum 72 strong; this month 0 kept, 0 small, 0 missed
   Finish 12 books  9 of 12
   Smoking          streak 283 (best 283), momentum 100 atomic; this month 31 kept, 0 small, 0 missed
-  Social media     streak 258 (best 258) at risk, momentum 87 unstoppable; this month 25 kept, 0 small, 6 missed
-  Meditate         streak 15 (best 78), momentum 85 unstoppable; this month 22 kept, 5 small, 4 missed
-  Journal          streak 6 (best 47), momentum 73 strong; this month 24 kept, 0 small, 7 missed
-  overall momentum 85
+  Social media     streak 258 (best 258) at risk, momentum 93 atomic; this month 25 kept, 0 small, 6 missed
+  Meditate         streak 15 (best 78), momentum 90 atomic; this month 22 kept, 5 small, 4 missed
+  Journal          streak 6 (best 47), momentum 77 strong; this month 24 kept, 0 small, 7 missed
+  overall momentum 89
   notifications: 177 reminders, 3 warnings, 0 nudges
   quote of the day on 31 days, another quote: 6
   earned: Perfect week
+  earned: Habit formed (Journal) *
   earned: New best (Gym) *
 == Aug 2027
-  Drink water      streak 13 (best 147), momentum 75 strong; this month 16 kept, 1 small, 14 missed
-  Read             streak 13 (best 94), momentum 75 strong; this month 15 kept, 2 small, 14 missed
-  Gym              streak 4 (best 36), momentum 63 rolling; this month 5 kept, 0 small, 8 missed
-  Run              streak 6 (best 22), momentum 64 rolling; this month 8 kept, 0 small, 7 missed
+  Drink water      streak 13 (best 147), momentum 76 strong; this month 16 kept, 1 small, 14 missed
+  Read             streak 13 (best 94), momentum 76 strong; this month 15 kept, 2 small, 14 missed
+  Gym              streak 4 (best 36), momentum 68 rolling; this month 5 kept, 0 small, 8 missed
+  Run              streak 6 (best 22), momentum 67 rolling; this month 8 kept, 0 small, 7 missed
   Call Mum         streak 2 (best 21), momentum 79 strong; this month 3 kept, 0 small, 2 missed
-  Budget review    streak 8 (best 8), momentum 73 strong; this month 0 kept, 0 small, 0 missed
+  Budget review    streak 8 (best 8), momentum 77 strong; this month 0 kept, 0 small, 0 missed
   Finish 12 books  9 of 12
   Smoking          streak 314 (best 314), momentum 100 atomic; this month 31 kept, 0 small, 0 missed
-  Social media     streak 289 (best 289), momentum 93 atomic; this month 31 kept, 0 small, 0 missed
-  Meditate         streak 10 (best 78), momentum 65 rolling; this month 12 kept, 1 small, 17 missed
-  Journal          streak 10 (best 47), momentum 58 rolling; this month 12 kept, 0 small, 19 missed
-  overall momentum 74
+  Social media     streak 289 (best 289), momentum 96 atomic; this month 31 kept, 0 small, 0 missed
+  Meditate         streak 10 (best 78), momentum 69 rolling; this month 12 kept, 1 small, 17 missed
+  Journal          streak 10 (best 47), momentum 61 rolling; this month 12 kept, 0 small, 19 missed
+  overall momentum 77
   notifications: 137 reminders, 7 warnings, 0 nudges
   quote of the day on 17 days, another quote: 6
 == Sep 2027
-  Drink water      streak 42 (best 147), momentum 85 unstoppable; this month 26 kept, 3 small, 1 missed
-  Read             streak 42 (best 94), momentum 85 unstoppable; this month 25 kept, 4 small, 1 missed
-  Gym              streak 13 (best 36) at risk, momentum 66 rolling; this month 9 kept, 0 small, 4 missed
-  Run              streak 8 (best 22), momentum 77 strong; this month 12 kept, 0 small, 2 missed
-  Call Mum         streak 4 (best 21), momentum 67 rolling; this month 2 kept, 0 small, 2 missed
-  Budget review    streak 9 (best 9), momentum 78 strong; this month 0 kept, 0 small, 0 missed
+  Drink water      streak 42 (best 147), momentum 87 unstoppable; this month 26 kept, 3 small, 1 missed
+  Read             streak 42 (best 94), momentum 86 unstoppable; this month 25 kept, 4 small, 1 missed
+  Gym              streak 13 (best 36) at risk, momentum 72 strong; this month 9 kept, 0 small, 4 missed
+  Run              streak 8 (best 22), momentum 78 strong; this month 12 kept, 0 small, 2 missed
+  Call Mum         streak 4 (best 21), momentum 77 strong; this month 2 kept, 0 small, 2 missed
+  Budget review    streak 9 (best 9), momentum 81 unstoppable; this month 0 kept, 0 small, 0 missed
   Finish 12 books  11 of 12
   Smoking          streak 344 (best 344), momentum 100 atomic; this month 30 kept, 0 small, 0 missed
-  Social media     streak 316 (best 316), momentum 91 atomic; this month 27 kept, 0 small, 3 missed
-  Meditate         streak 38 (best 78), momentum 78 strong; this month 26 kept, 2 small, 2 missed
-  Journal          streak 32 (best 47), momentum 66 rolling; this month 22 kept, 0 small, 8 missed
-  overall momentum 79
+  Social media     streak 316 (best 316), momentum 95 atomic; this month 27 kept, 0 small, 3 missed
+  Meditate         streak 38 (best 78), momentum 82 unstoppable; this month 26 kept, 2 small, 2 missed
+  Journal          streak 32 (best 47), momentum 73 strong; this month 22 kept, 0 small, 8 missed
+  overall momentum 83
   notifications: 161 reminders, 1 warnings, 0 nudges
   quote of the day on 30 days, another quote: 2
+  earned: Habit formed (Budget review) *
 == Oct 2027
-  Drink water      streak 60 (best 147), momentum 90 atomic; this month 16 kept, 2 small, 0 missed
-  Read             streak 59 (best 94), momentum 88 unstoppable; this month 16 kept, 1 small, 1 missed
-  Gym              streak 20 (best 36), momentum 75 strong; this month 7 kept, 0 small, 1 missed
-  Run              streak 16 (best 22), momentum 78 strong; this month 7 kept, 0 small, 2 missed
-  Call Mum         streak 6 (best 21), momentum 76 strong; this month 2 kept, 0 small, 0 missed
-  Budget review    streak 9 (best 9), momentum 78 strong; this month 0 kept, 0 small, 0 missed
+  Drink water      streak 60 (best 147), momentum 91 atomic; this month 16 kept, 2 small, 0 missed
+  Read             streak 59 (best 94), momentum 90 atomic; this month 16 kept, 1 small, 1 missed
+  Gym              streak 20 (best 36), momentum 82 unstoppable; this month 7 kept, 0 small, 1 missed
+  Run              streak 16 (best 22), momentum 82 unstoppable; this month 7 kept, 0 small, 2 missed
+  Call Mum         streak 6 (best 21), momentum 84 unstoppable; this month 2 kept, 0 small, 0 missed
+  Budget review    streak 9 (best 9), momentum 81 unstoppable; this month 0 kept, 0 small, 0 missed
   Finish 12 books  12 of 12
   Smoking          streak 362 (best 362), momentum 100 atomic; this month 18 kept, 0 small, 0 missed
-  Social media     streak 332 (best 332), momentum 90 atomic; this month 16 kept, 0 small, 2 missed
-  Meditate         streak 4 (best 78), momentum 81 unstoppable; this month 14 kept, 2 small, 2 missed
-  Journal          streak 7 (best 47), momentum 66 rolling; this month 12 kept, 0 small, 6 missed
-  overall momentum 82
+  Social media     streak 332 (best 332), momentum 95 atomic; this month 16 kept, 0 small, 2 missed
+  Meditate         streak 4 (best 78), momentum 83 unstoppable; this month 14 kept, 2 small, 2 missed
+  Journal          streak 7 (best 47), momentum 73 strong; this month 12 kept, 0 small, 6 missed
+  overall momentum 86
   notifications: 97 reminders, 2 warnings, 0 nudges
   quote of the day on 18 days, another quote: 1

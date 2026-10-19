@@ -592,7 +592,10 @@ class Habit extends Equatable {
 
   /// Momentum's score at each of [at] (oldest first), like [momentumAt] for
   /// each but in one pass.
-  List<double> momentumSeries(List<DateTime> at) => MomentumCalculator.series(
+  List<double> momentumSeries(List<DateTime> at) => [for (final point in momentumPoints(at)) point.score];
+
+  /// Like [momentumSeries], with how formed the habit was at each time.
+  List<({double score, double formed})> momentumPoints(List<DateTime> at) => MomentumCalculator.points(
         history: history,
         target: target,
         schedule: schedule,

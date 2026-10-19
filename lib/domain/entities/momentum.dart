@@ -9,7 +9,22 @@ class Momentum extends Equatable {
   /// Points gained (positive) or lost (negative) compared with 7 days ago.
   final double trend;
 
-  const Momentum({required this.score, required this.trend});
+  /// How formed the habit is, 0–1: the score steady practice would have
+  /// reached by now (from the due periods that have ended). It weighs the
+  /// habit in [overall].
+  final double formed;
+
+  const Momentum({required this.score, required this.trend, this.formed = 1});
+
+  /// Overall momentum: the average of [scores], each weighed by how formed
+  /// its habit is, so a habit just started barely moves it. Null when
+  /// there's nothing to average.
+  static Momentum? overall(Iterable<Momentum> scores) {
+    if (scores.isEmpty) return null;
+    final weight = scores.fold(0.0, (sum, m) => sum + m.formed);
+    double average(double Function(Momentum m) of) => scores.fold(0.0, (sum, m) => sum + of(m) * m.formed) / weight;
+    return Momentum(score: average((m) => m.score), trend: average((m) => m.trend), formed: 1);
+  }
 
   /// For habits that never reset, which have no periods to build momentum over.
   static const none = Momentum(score: 0, trend: 0);
@@ -29,7 +44,7 @@ class Momentum extends Equatable {
   bool get isFalling => trend <= -1;
 
   @override
-  List<Object?> get props => [score, trend];
+  List<Object?> get props => [score, trend, formed];
 
   @override
   String toString() => 'Momentum(${score.toStringAsFixed(1)}, trend ${trend.toStringAsFixed(1)})';

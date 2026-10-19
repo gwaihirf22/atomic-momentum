@@ -582,13 +582,15 @@ void main() {
         final history = {for (var i = 1; i <= 10; i++) daysAgo(i): 1};
         final habit = TestData.createTestHabit(target: 1, history: history).refresh();
 
-        expect(habit.momentum, MomentumCalculator.calculate(
+        // Its score and trend (how formed it is counts from its creation)
+        final expected = MomentumCalculator.calculate(
           history: history,
           target: 1,
           schedule: habit.schedule,
           start: daysAgo(10),
           now: habit.lastUpdatedDate,
-        ));
+        );
+        expect((habit.momentum.score, habit.momentum.trend), (expected.score, expected.trend));
         expect(habit.momentum.score, greaterThan(20));
         expect(habit.momentum.isRising, isTrue);
         // Worked out once per habit

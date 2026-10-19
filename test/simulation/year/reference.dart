@@ -351,24 +351,32 @@ class RefHabit {
   }
 
   /// Momentum 0–100 at [at], with only what was logged by then.
-  double momentum(DateTime at) {
-    if (!periodic) return 0;
-    if (day(at).isBefore(trackedFrom)) return 0;
-    final a = alpha;
-    var s = 0.0;
+  double momentum(DateTime at) => _momentum(at).score;
+
+  /// How formed the habit is at [at]: what steady practice would score
+  /// after the periods that have ended (at least one). Its weight in the
+  /// overall.
+  double formed(DateTime at) => 1 - math.pow(1 - alpha, math.max(1, _momentum(at).ended)).toDouble();
+
+  ({double score, int ended}) _momentum(DateTime at) {
+    if (!periodic) return (score: 0, ended: 0);
+    if (day(at).isBefore(trackedFrom)) return (score: 0, ended: 0);
+    final walk = _RefScore(alpha);
+    var result = 0.0;
     for (final p in periods(at)) {
       if (p.mark == RefMark.untracked || p.mark == RefMark.rest) continue;
-      final credit = _credit(p, s);
-      final next = s * (1 - a) + credit * a;
+      final credit = _credit(p, walk.s);
       if (!p.isCurrent) {
-        s = next;
-      } else if (credit >= 1 || (p.mark == RefMark.twoMinute && next > s)) {
+        walk.end(credit, p.kept);
+        result = walk.s;
+      } else {
         // The period under way counts once it's complete, or kept small
         // when that raises the score
-        s = next;
+        final next = walk.next(credit, p.kept);
+        result = credit >= 1 || (p.mark == RefMark.twoMinute && next > walk.s) ? next : walk.s;
       }
     }
-    return 100 * s;
+    return (score: 100 * result, ended: walk.ended);
   }
 
   /// Momentum at the end of each day from [trackedFrom] to today (today
@@ -377,8 +385,7 @@ class RefHabit {
     final out = <DateTime, double>{};
     if (!periodic) return out;
     final today = day(now);
-    final a = alpha;
-    var s = 0.0;
+    final walk = _RefScore(alpha);
     for (final p in periods(now)) {
       if (p.mark == RefMark.untracked) continue;
       var total = 0;
@@ -390,18 +397,18 @@ class RefHabit {
           continue;
         }
         if (p.mark == RefMark.rest) {
-          out[d] = 100 * s;
+          out[d] = 100 * walk.s;
           continue;
         }
         total += amounts[d] ?? 0;
         if (tapped.contains(d)) tappedIn = true;
         // The period as it stood at the end of d
         final so = RefPeriod(p.start, p.end, _markFor(total, tappedIn, isCurrent: true), total, true);
-        final credit = _credit(so, s);
-        final counted = s * (1 - a) + credit * a;
-        out[d] = 100 * (credit >= 1 || (so.mark == RefMark.twoMinute && counted > s) ? counted : s);
+        final credit = _credit(so, walk.s);
+        final counted = walk.next(credit, so.kept);
+        out[d] = 100 * (credit >= 1 || (so.mark == RefMark.twoMinute && counted > walk.s) ? counted : walk.s);
       }
-      if (p.mark != RefMark.rest && !p.isCurrent) s = s * (1 - a) + _credit(p, s) * a;
+      if (p.mark != RefMark.rest && !p.isCurrent) walk.end(_credit(p, walk.s), p.kept);
     }
     return out;
   }
@@ -469,6 +476,32 @@ class RefHabit {
     if (!periodic || deleted) return false;
     if (isBreak) return trackedFrom.isBefore(periodOf(at).$1);
     return amounts.entries.any((e) => e.value > 0 && !e.key.isAfter(at));
+  }
+}
+
+/// The moving average over ended periods (0–1), with the comeback rule:
+/// a kept period right after exactly one missed period gets half of that
+/// miss's cost back.
+class _RefScore {
+  _RefScore(this.a);
+  final double a;
+  double s = 0;
+  int ended = 0;
+  double _owed = 0;
+  int _missRun = 0;
+
+  /// What the score would be after a period earning [credit].
+  double next(double credit, bool kept) {
+    final plain = s * (1 - a) + credit * a;
+    return kept ? math.min(1.0, plain + _owed) : plain;
+  }
+
+  void end(double credit, bool kept) {
+    final after = next(credit, kept);
+    _missRun = kept ? 0 : _missRun + 1;
+    _owed = _missRun == 1 ? math.max(0.0, s - after) / 2 : 0;
+    s = after;
+    ended++;
   }
 }
 
@@ -649,10 +682,18 @@ class Reference {
     return weeks;
   }
 
-  /// Average momentum of the habits that count toward it, or null.
+  /// Momentum of the habits that count toward it, each weighed by how
+  /// formed it is, or null.
   double? overall(DateTime now) {
-    final counted = [for (final h in live) if (h.countsToward(now)) h.momentum(now)];
-    return counted.isEmpty ? null : counted.reduce((a, b) => a + b) / counted.length;
+    final counted = [for (final h in live) if (h.countsToward(now)) h];
+    if (counted.isEmpty) return null;
+    var sum = 0.0, weight = 0.0;
+    for (final h in counted) {
+      final w = h.formed(now);
+      sum += h.momentum(now) * w;
+      weight += w;
+    }
+    return sum / weight;
   }
 }
 
