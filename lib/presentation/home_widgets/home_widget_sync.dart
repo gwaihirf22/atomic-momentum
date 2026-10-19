@@ -138,6 +138,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
       shortQuoteNext: WidgetSnapshot.shortFor(quoteNext, pool, tomorrow),
       categories: categories?.categories ?? const [],
       findQuote: quotes.find,
+      weekStart: settings.firstDayOfWeek,
     );
     final written = jsonEncode(snapshot);
     // The time it was written changes every time; anything else is news

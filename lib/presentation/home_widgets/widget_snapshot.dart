@@ -5,13 +5,18 @@ import '../../core/copy/quotes.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/habit_goal.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/entities/quote.dart';
 import '../../domain/entities/reset_frequency.dart';
+import '../../domain/services/achievements.dart';
+import '../../domain/services/insights.dart';
 import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/services/recent_periods.dart';
 import '../../domain/services/step_size.dart';
+import '../habit_form/sentence.dart';
 import '../widgets/break_wording.dart';
+import '../widgets/heatmap.dart';
 import '../widgets/habit_stepper.dart';
 
 /// What the home screen widgets draw, worked out by the app: the widgets
@@ -46,6 +51,7 @@ class WidgetSnapshot {
     Quote? shortQuoteNext,
     List<Category> categories = const [],
     Quote? Function(String id)? findQuote,
+    int weekStart = DateTime.monday,
   }) {
     final today = DateTime(now.year, now.month, now.day);
     final due = habits.where((h) => h.schedule.isPeriodic && h.isDueOn(today) && h.startedOn(today)).toList();
@@ -70,6 +76,7 @@ class WidgetSnapshot {
       'categories': [
         for (final category in categories) {'id': category.id, 'name': category.name},
       ],
+      'insights': habits.isEmpty ? null : _insights(habits, now, weekStart),
       'quote': quote == null ? null : _quote(quote),
       'quoteNext': quoteNext == null ? null : _quote(quoteNext),
       'shortQuote': shortQuote == null ? null : _quote(shortQuote),
@@ -138,6 +145,10 @@ class WidgetSnapshot {
         for (final period in recentPeriods(habit, now))
           {'mark': period.mark.name, 'fraction': double.parse(period.fraction.toStringAsFixed(2))},
       ],
+      // The habit as Story writes it, without its reminder: "I will drink
+      // water 8 glasses every day."
+      'sentence': _sentence(habit),
+      'hardDay': _hardDay(habit),
       // "Words for this habit", in order; the widget takes a turn a day
       'quotes': [
         if (findQuote != null)
@@ -145,6 +156,108 @@ class WidgetSnapshot {
             if (findQuote(id) case final quote?) _quote(quote),
       ],
     };
+  }
+
+  /// Weeks of days on the Insights widgets' heatmaps (the large one shows
+  /// them all, the medium one the last 15).
+  static const heatmapWeeks = 25;
+
+  /// Insights at a glance: the heatmap's days, this week, this month against
+  /// last, and a few lines from history (as the Insights tab works them out).
+  static Map<String, Object?> _insights(List<Habit> habits, DateTime now, int weekStart) {
+    final today = DateTime(now.year, now.month, now.day);
+    final thisWeek = DateTime(today.year, today.month, today.day - (today.weekday - weekStart + 7) % 7);
+    final from = DateTime(thisWeek.year, thisWeek.month, thisWeek.day - 7 * (heatmapWeeks - 1));
+    final days = Insights.days(habits, from: from, to: today, now: now);
+    final month = DateTime(today.year, today.month);
+    final keptThisMonth = Insights.kept(habits, from: month, now: now);
+    final months = Insights.momentumByMonth(habits, now, count: 2);
+    final periodic = habits.where((h) => h.schedule.isPeriodic).toList();
+    int bestOf(Habit h) => h.streak.longest > h.streak.current ? h.streak.longest : h.streak.current;
+    final longest = periodic.isEmpty ? null : periodic.reduce((a, b) => bestOf(b) > bestOf(a) ? b : a);
+    final best = Insights.weekdays(habits, from: from, now: now).best;
+    final next = Achievements.next(habits, now).firstOrNull;
+    return {
+      'weekStart': weekStart,
+      'from': _day(from),
+      // A character a day from [from] to today: '-' nothing due, '0'–'4' how
+      // full (the heatmap's shades), 'P' a perfect day
+      'days': days.map((d) => d.isEmpty ? '-' : (d.perfect ? 'P' : '${Heatmap.shadeOf(d)}')).join(),
+      'week': [
+        for (var i = 0; i < 7; i++)
+          () {
+            final day = DateTime(thisWeek.year, thisWeek.month, thisWeek.day + i);
+            if (day.isAfter(today)) return null;
+            final record = days.where((d) => d.day == day).firstOrNull;
+            return record == null || record.isEmpty ? null : double.parse(record.level.toStringAsFixed(2));
+          }(),
+      ],
+      'weekToday': (today.weekday - weekStart + 7) % 7,
+      'momentum': months.last.score?.round(),
+      'momentumLast': months.length > 1 ? months.first.score?.round() : null,
+      'kept': keptThisMonth.total == 0 ? null : (100 * keptThisMonth.kept / keptThisMonth.total).round(),
+      'twoMinute': keptThisMonth.twoMinute,
+      'streaksSaved': Insights.kept(habits, from: from, now: now).streaksSaved,
+      'longestStreak': Insights.longestStreak(habits),
+      'longest': longest == null || bestOf(longest) == 0
+          ? null
+          : {
+              'name': longest.name,
+              'label': longest.isBreak
+                  ? BreakWording.streak(longest, bestOf(longest))
+                  : longest.schedule.streakLabel(bestOf(longest)),
+            },
+      'bestDay': best == null ? null : _weekdays[best - 1],
+      'next': next == null
+          ? null
+          : {
+              'title': next.title,
+              'habit': next.habitName,
+              'current': next.current,
+              'goal': next.goal,
+            },
+    };
+  }
+
+  static const _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  /// Story's sentence in parts, the habit's own words marked (`k`), so the
+  /// widget can color them: "I will [drink water] [8 glasses] [every day]."
+  static List<Map<String, Object>> _sentence(Habit habit) {
+    Map<String, Object> plain(String t) => {'t': t};
+    Map<String, Object> key(String t) => {'t': t, 'k': true};
+    final name = HabitSentence.name(habit.name);
+    if (habit.isBreak) {
+      return [
+        plain('I will '),
+        key(HabitSentence.breakVerb(habit.goal)),
+        plain(' '),
+        key(name),
+        if (habit.goal == HabitGoal.limit) ...[
+          plain(' to '),
+          key(HabitSentence.amount(habit.target, habit.units)),
+          plain(' '),
+          key(HabitSentence.perPeriod(habit.resetFrequency)),
+        ],
+        plain('.'),
+      ];
+    }
+    final amount = HabitSentence.amount(habit.target, habit.units);
+    return [
+      plain('I will '),
+      key(name),
+      if (amount.isNotEmpty) ...[plain(' '), key(amount)],
+      plain(' '),
+      key(HabitSentence.schedule(habit.schedule)),
+      plain('.'),
+    ];
+  }
+
+  /// "fill one glass", for "On a hard day, I'll just fill one glass."
+  static String? _hardDay(Habit habit) {
+    final tiny = habit.twoMinute?.description.trim() ?? '';
+    if (tiny.isEmpty || !habit.schedule.isPeriodic) return null;
+    return tiny[0].toLowerCase() + tiny.substring(1);
   }
 
   /// "today", "this week": what the progress is counted over.

@@ -10,6 +10,8 @@ struct MomentumWidgetsBundle: WidgetBundle {
     GroupWidget()
     MomentumWidget()
     QuoteWidget()
+    InsightsWidget()
+    IWillWidget()
     TodayWidget()
   }
 }

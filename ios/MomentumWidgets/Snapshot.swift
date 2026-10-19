@@ -11,6 +11,7 @@ struct Snapshot: Decodable {
   let today: TodayCount
   let habits: [HabitInfo]
   let categories: [CategoryInfo]?
+  let insights: InsightsInfo?
   let quote: QuoteInfo?
   let quoteNext: QuoteInfo?
   let shortQuote: QuoteInfo?
@@ -129,6 +130,10 @@ struct HabitInfo: Decodable, Identifiable {
   let recent: [RecentInfo]
   /// "Words for this habit", in order.
   let quotes: [QuoteInfo]?
+  /// Story's sentence, its own words marked.
+  let sentence: [SentencePart]?
+  /// "fill one glass" (On a hard day, I'll just …).
+  let hardDay: String?
 
   /// The habit's quote for [date]: they take turns, a new one each day.
   func quote(on date: Date) -> QuoteInfo? {
@@ -164,6 +169,56 @@ struct QuoteInfo: Decodable {
   let text: String
   let author: String
   let source: String?
+}
+
+struct SentencePart: Decodable {
+  let t: String
+  let k: Bool?
+}
+
+/// Insights at a glance (WidgetSnapshot._insights).
+struct InsightsInfo: Decodable {
+  let weekStart: Int
+  let from: String
+  /// A character a day from [from] to today: "-" nothing due, "0"–"4" how
+  /// full, "P" a perfect day.
+  let days: String
+  let week: [Double?]
+  let weekToday: Int
+  let momentum: Int?
+  let momentumLast: Int?
+  let kept: Int?
+  let twoMinute: Int
+  let streaksSaved: Int
+  let longestStreak: Int
+  let longest: LongestInfo?
+  let bestDay: String?
+  let next: NextInfo?
+
+  struct LongestInfo: Decodable {
+    let name: String
+    let label: String
+  }
+
+  struct NextInfo: Decodable {
+    let title: String
+    let habit: String?
+    let current: Int
+    let goal: Int
+  }
+
+  /// The last [weeks] weeks of days, week by week (columns), each 7 long;
+  /// nil for days before [from] or after today.
+  func columns(weeks: Int) -> [[Character?]] {
+    let chars = Array(days)
+    let total = chars.count
+    // Days run from a week's start to today; pad the end of this week
+    let padded = chars.map(Optional.some) + Array(repeating: nil, count: (7 - total % 7) % 7)
+    var cols: [[Character?]] = stride(from: 0, to: padded.count, by: 7).map { Array(padded[$0..<min($0 + 7, padded.count)]) }
+    if cols.count > weeks { cols = Array(cols.suffix(weeks)) }
+    while cols.count < weeks { cols.insert(Array(repeating: nil, count: 7), at: 0) }
+    return cols
+  }
 }
 
 struct CategoryInfo: Decodable {

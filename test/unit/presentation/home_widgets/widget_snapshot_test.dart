@@ -10,6 +10,7 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/momentum.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
 import 'package:atomic_momentum/presentation/home_widgets/widget_snapshot.dart';
 
 void main() {
@@ -144,5 +145,47 @@ void main() {
     expect(decoded['v'], WidgetSnapshot.version);
     expect(decoded['written'], '2026-10-18T21:30:00');
     expect(today, DateTime(2026, 10, 18));
+  });
+
+  String sentenceOf(Map<String, Object?> h) => (h['sentence'] as List).map((p) => (p as Map)['t']).join();
+  List<String> keysOf(Map<String, Object?> h) =>
+      [for (final p in h['sentence'] as List) if ((p as Map)['k'] == true) p['t'] as String];
+
+  test("a habit's Story sentence, its own words marked, and its hard-day version", () {
+    final water = make('Drink water', units: 'glasses').copyWith(twoMinute: const TwoMinuteVersion(description: 'Fill one glass'));
+    final h = habitIn(snapshot([water]), 0);
+    expect(sentenceOf(h), 'I will drink water 8 glasses every day.');
+    expect(keysOf(h), ['drink water', '8 glasses', 'every day']);
+    expect(h['hardDay'], 'fill one glass');
+  });
+
+  test('habits being broken read as Story writes them', () {
+    final smoking = habitIn(snapshot([make('Smoking', target: 0, goal: HabitGoal.quit)]), 0);
+    expect(sentenceOf(smoking), 'I will quit smoking.');
+    expect(smoking['hardDay'], isNull);
+    final alcohol = habitIn(snapshot([make('Alcohol', target: 2, units: 'drinks', goal: HabitGoal.limit)]), 0);
+    expect(sentenceOf(alcohol), 'I will keep alcohol to 2 drinks a day.');
+  });
+
+  test('insights: a character a day for the heatmap, this week, and the month', () {
+    var water = make('Water', target: 1);
+    for (var d = 1; d <= 18; d++) {
+      if (d % 5 != 0) water = withClock(Clock.fixed(DateTime(2026, 10, d, 20)), () => water.setProgressForDate(DateTime(2026, 10, d), 1));
+    }
+    final insights = snapshot([water])['insights'] as Map;
+    final from = DateTime.parse(insights['from'] as String);
+    final days = insights['days'] as String;
+    expect(from.weekday, DateTime.monday);
+    expect(days.length, today.difference(from).inDays + 1, reason: 'from the first day shown to today');
+    expect(days.substring(days.length - 18), 'PPPP0PPPP0PPPP0PPP', reason: 'Oct 1 to 18: kept, missed every fifth');
+    expect(days.substring(0, days.length - 18), matches(RegExp(r'^-*$')), reason: 'nothing due before the habit');
+    expect(insights['weekToday'], 6, reason: 'Sunday, in a week starting Monday');
+    expect((insights['week'] as List).length, 7);
+    expect(insights['twoMinute'], 0);
+    expect(insights['longestStreak'], greaterThan(0));
+  });
+
+  test('no habits, no insights', () {
+    expect(snapshot([])['insights'], isNull);
   });
 }
