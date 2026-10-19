@@ -86,6 +86,32 @@ void main() {
     expect(scheduler.scheduled.keys, containsAll(['at_risk', 'other']));
   });
 
+  group('habits that are gone lose their warnings', () {
+    final other = TestData.createTestHabit(id: 'other', target: 1, history: {DateTime(2024, 1, 14): 1})
+        .refresh(DateTime(2024, 1, 15, 12));
+
+    test('a full reload cancels warnings left for habits not in the list, even from before this launch', () async {
+      // Pending from an earlier launch, for a habit replaced since (a year of use loaded)
+      scheduler.byKind['replaced'] = {StreakWarningKind.secondMiss: StreakWarning(
+        kind: StreakWarningKind.secondMiss,
+        at: DateTime(2024, 1, 16, 20),
+        title: 'Read',
+        body: "Don't miss twice",
+      )};
+      await service.syncAll([withStreak, other], replace: true);
+      expect(scheduler.byKind.keys, unorderedEquals(['at_risk', 'other']));
+      expect(scheduler.cancelled, contains('replaced'));
+    });
+
+    test('an ordinary sync drops the habits it scheduled that have gone', () async {
+      await service.syncAll([withStreak, other]);
+      expect(scheduler.byKind.keys, unorderedEquals(['at_risk', 'other']));
+      await service.syncAll([withStreak]);
+      expect(scheduler.byKind.keys, ['at_risk']);
+      expect(scheduler.cancelled, contains('other'));
+    });
+  });
+
   test('swallows scheduler failures so habit updates never break', () async {
     scheduler.throwOnSchedule = true;
     await expectLater(service.sync(withStreak), completes);

@@ -14,6 +14,10 @@ abstract class StreakWarningScheduler {
   /// Cancels every kind of warning for the habit.
   Future<void> cancel(String habitId);
 
+  /// Cancels every pending warning of a habit not in [habitIds], including
+  /// ones scheduled before this launch for habits that have since gone.
+  Future<void> cancelAllExcept(Set<String> habitIds);
+
   /// What the scheduler adds to each warning (the default sound), so a
   /// change to it reschedules them.
   String get detailsKey;
@@ -35,6 +39,9 @@ class LocalNotificationStreakWarningScheduler implements StreakWarningScheduler 
   Future<void> cancel(String habitId) {
     return NotificationService.cancelStreakWarning(habitId);
   }
+
+  @override
+  Future<void> cancelAllExcept(Set<String> habitIds) => NotificationService.cancelStreakWarningsExcept(habitIds);
 
   @override
   String get detailsKey => _defaults().key;
@@ -85,9 +92,25 @@ class StreakWarningService {
 
   /// [replace]: cancel and schedule every habit's warnings afresh (on a
   /// full reload), not only the ones that changed.
+  ///
+  /// Habits that are gone (removed some other way than [cancel], such as a
+  /// year of use loaded or put back) lose their warnings too: the ones this
+  /// session scheduled always, and on [replace] any still pending from before.
   Future<void> syncAll(Iterable<Habit> habits, {bool replace = false}) async {
-    if (replace) _scheduled.clear();
-    for (final habit in habits) {
+    final list = habits.toList();
+    final ids = {for (final h in list) h.id};
+    for (final gone in _scheduled.keys.where((id) => !ids.contains(id)).toList()) {
+      await cancel(gone);
+    }
+    if (replace) {
+      _scheduled.clear();
+      try {
+        await _scheduler.cancelAllExcept(ids);
+      } catch (e) {
+        debugPrint('StreakWarningService: failed to cancel warnings of habits that are gone: $e');
+      }
+    }
+    for (final habit in list) {
       await sync(habit);
     }
   }

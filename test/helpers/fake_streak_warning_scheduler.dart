@@ -27,6 +27,13 @@ class FakeStreakWarningScheduler implements StreakWarningScheduler {
     cancelled.add(habitId);
   }
 
+  @override
+  Future<void> cancelAllExcept(Set<String> habitIds) async {
+    for (final id in byKind.keys.where((id) => !habitIds.contains(id)).toList()) {
+      await cancel(id);
+    }
+  }
+
   /// Stands for the default sound: change it to make the service reschedule.
   @override
   String detailsKey = 'defaults';

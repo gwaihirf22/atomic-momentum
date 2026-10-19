@@ -444,6 +444,31 @@ void main() {
     expectClean(phone, 'quiet_hours');
   });
 
+  test('13. habits replaced from storage: nothing arrives for the ones that are gone', () async {
+    // "Put my habits back" (Settings → Developer) after "Load a year of use":
+    // the loaded habits go without being deleted, and must take their
+    // reminders and streak warnings with them
+    final misses = {DateTime(2026, 10, 6)};
+    late String mine;
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await createAll(phone, [habit('Read')]);
+      mine = phone.storedHabits;
+      await phone.at(on(start, 7, 5), 'loaded     a year of use (Loaded)', () => phone.create(habit('Loaded')));
+      for (final day in days()) {
+        await phone.checkIn(on(day, 7, 30));
+        if (!misses.contains(day)) await doHabits(phone, on(day, 12));
+        if (day == DateTime(2026, 10, 6)) {
+          // A streak is at stake for both, so both have warnings pending
+          await phone.at(on(day, 22), 'put back   my habits (Loaded is gone)', () => phone.replaceStoredHabits(mine));
+        }
+        await phone.checkIn(on(day, 21, 30));
+      }
+      await phone.advanceTo(end);
+    });
+    expect(phone.habits.habits.map((h) => h.name), ['Read']);
+    expectClean(phone, 'habits_replaced');
+  });
+
   test('10. clock changes: reminders keep their time, warnings their lead on the clock', () async {
     final phone = await SimulatedPhone.run(start, (phone) async {
       await createAll(phone, [

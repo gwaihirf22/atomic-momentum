@@ -306,6 +306,26 @@ class NotificationService {
     }
   }
 
+  /// Cancels pending streak warnings for habits not in [habitIds]: habits
+  /// that went without being deleted (a year of use loaded or put back).
+  /// A streak warning's payload is its bare habit id; reminders
+  /// (`reminder|…`) and the tester's notifications are left alone.
+  static Future<void> cancelStreakWarningsExcept(Set<String> habitIds) async {
+    if (!_initialized) return;
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      for (final request in pending) {
+        final payload = request.payload;
+        if (payload == null || payload.isEmpty || payload == testPayload) continue;
+        if (payload.startsWith(reminderPayloadPrefix)) continue;
+        if (request.id == habitTapTestNotificationId || request.id == testNotificationId) continue;
+        if (!habitIds.contains(payload)) await _notificationsPlugin.cancel(request.id);
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel warnings of habits that are gone: $e');
+    }
+  }
+
   static int _getStreakWarningId(String habitId, StreakWarningKind kind) {
     // The second-miss warning keeps the original id, so warnings scheduled by
     // earlier versions are replaced rather than duplicated

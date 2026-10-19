@@ -43,7 +43,10 @@ import '../migration/smart_reminders_migration.dart';
 
 final GetIt sl = GetIt.instance;
 
-Future<void> initializeDependencies({bool seedDefaultHabit = true}) async {
+/// [seedDefaultHabit]: fill empty storage with sample habits (tests only; a new
+/// install starts empty, and test builds have Settings → Developer → "Add sample
+/// habits").
+Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   // External dependencies
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/core/services/reminder_service.dart';
+import 'package:atomic_momentum/data/datasources/shared_preferences_datasource.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/domain/services/reminder_planner.dart';
@@ -183,6 +184,16 @@ class SimulatedPhone {
   Future<void> edit(String name, UpdateHabitParams params) => habits.updateHabitDetails(id(name), params);
 
   Future<void> delete(String name) => habits.deleteHabit(id(name));
+
+  /// The habits as stored, as Settings → Developer keeps them aside.
+  String get storedHabits => get<SharedPreferences>().getString(SharedPreferencesDataSource.habitsKey) ?? '[]';
+
+  /// Puts [stored] back in place of the habits and reloads, as "Load a year
+  /// of use" and "Put my habits back" do: habits go without being deleted.
+  Future<void> replaceStoredHabits(String stored) async {
+    await get<SharedPreferences>().setString(SharedPreferencesDataSource.habitsKey, stored);
+    await habits.loadHabits();
+  }
 
   /// Sets quiet hours, then resyncs as the Settings screen does.
   Future<void> quietHours(QuietHours quiet) async {
