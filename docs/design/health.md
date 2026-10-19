@@ -66,7 +66,58 @@
   3. Check that it fills in today and the days since linking.
 - **Android:** use an emulator with the Health Connect app installed.
 
+## Status (parked 2026-10-19, for the onboarding tutorial)
+Paul asked (2026-10-18) to verify Health pedantically and expand it. He chose: when lowering, "Health wins, but say so"; and all four expansions below.
+
+### Done
+- **The floor:** −, typing and Calendar stop at Health's number with a notice; weekly and monthly − take from earlier days of the period (75ff1e3).
+- **Loose ends found verifying** (b56fde2):
+  - Calendar edits mirror to Health;
+  - deletes are checked, and water uses a 1-second span;
+  - access is re-checked, with "Allow access" on Settings and the habit page;
+  - writes are serialized, and a tap during a sync isn't lost;
+  - a workout two apps recorded counts once;
+  - Android sample data stays within the manifest;
+  - "Add sample Health data" sits behind `DevTools.enabled`.
+- **Health simulation:** 60 days of invariants, in all four zones through `tool/notification_sim.sh` (189d30a).
+- **Device check against the real stores**, passing on iOS and Android; it found Android workouts reading nothing without distance and calories access, now fixed (fc784d7).
+- **d9's habit page:** "Sync now" on a linked habit, and an offer to link an unlinked habit whose name suggests a metric, dismissable per habit (24a00be).
+
+### Left, in order
+1. **More metrics** (`HealthMetric`, `health_link.dart`):
+
+   | Metric | Unit | Health type |
+   |---|---|---|
+   | Walking + running distance | km or mi | `DISTANCE_WALKING_RUNNING` |
+   | Cycling distance | km or mi | `DISTANCE_CYCLING` |
+   | Swimming distance | m or yd | `DISTANCE_SWIMMING` |
+   | Flights climbed | flights | `FLIGHTS_CLIMBED` |
+   | Active energy | kcal | `ACTIVE_ENERGY_BURNED` |
+   | Stand hours | hours (iPhone + Watch only) | `APPLE_STAND_HOUR` |
+   | Weight | kg or lb | `WEIGHT` |
+
+   Each needs exact `HealthUnit` conversions, `suggestFor` words, a quick pick where natural, Info.plist and manifest permissions, and availability per platform. Weight is different: it takes the day's latest value, not a sum. It works as "weigh in" (any value counts) or "stay at or under" (with item 3's break rule). Android: check what each plugin read also touches, as workouts do (see `PluginHealthSource.accessTypes`).
+2. **Workout types:** an optional `HealthLink.workoutTypes` set (running, strength, yoga, cycling, swimming, HIIT, walking) from `HealthWorkoutActivityType`. Exercise minutes and workouts count only those types. The editor shows type chips, and suggestions come from the name ("Yoga" → yoga).
+3. **Break habits from Health:**
+   - `HealthMerge` takes Health's amount as the day's slips, the higher number still winning.
+   - **Caffeine** (`DIETARY_CAFFEINE`), in mg or cups (95 mg).
+   - **Alcoholic drinks:** the `health` package lacks them, so this needs a native channel (`ios/Runner/HealthExtras.swift`, iPhone only).
+   - **Lift the `!habit.isBreak` check** on the habit page's Health offer (`_HealthOffer` in `habit_detail_screen.dart`) and in `HealthSection`.
+   - **Check-ins** add "Apple Health shows 2 drinks today", keeping d9's vacation skip in `ReminderPlanner` (paused days, and everything while `isOnVacation`).
+4. **Background updates** (riskiest; prototype first):
+   - **iOS:** `HKObserverQuery` with `enableBackgroundDelivery` for each linked type, plus the entitlement `com.apple.developer.healthkit.background-delivery`. It wakes a headless Flutter entry point (`@pragma('vm:entry-point')`) that runs the sync and save, then the reminder and warning resync, so a finished goal silences today's reminder.
+   - **Android:** a `workmanager` task about every 15 minutes, since Health Connect has no push.
+   - **Settings:** "Update in the background".
+   - **Fallback:** if Dart can't run reliably in the background, use `BGAppRefreshTask` and say it's opportunistic.
+   - Rebase onto the widgets work's pbxproj before adding Swift files.
+5. **Docs:** CLAUDE.md's Health paragraph, for each of the above.
+
+### Also open
+- **iOS device check:** not rerun after `accessTypes` deduplicated the access list (iPhone behaviour is otherwise the same). Run `tool/device_health_check.sh "iPhone 17 Pro"` next time Health changes.
+- **Paul's real-iPhone checklist:** [future-improvements.md](../future-improvements.md) §1. It covers what a simulator can't: an Apple Watch, another app's runs, and turning access off.
+- **Google Play's Health Connect declaration** must now include distance and total calories (setup checklist above).
+
 ## Later
 - Accounts and sync between devices (possibly a paid extra; the app is otherwise free). History stays the source of truth, and the per-day "higher wins" rule merges cleanly. This phone's own state (last sync, write log, permissions) stays local. Change timestamps per day will be needed first.
-- Background delivery (filling in without opening the app), and a badge on habit cards.
+- A badge on habit cards filled in from Health (background delivery is item 4 above).
 - **From the other session's year simulation:** raising a target re-scores all past days. Health-linked targets can be raised too, so the same question applies.

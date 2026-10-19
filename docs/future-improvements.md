@@ -12,6 +12,8 @@ In this order. The rest of v1 (the weekly review, rewards and the onboarding tut
 
 **Automated (2026-10-19):** `tool/device_health_check.sh` checks every metric, the app's writes and their removal, and cleanup against the real Apple Health (iPhone 17 Pro simulator) and Health Connect (Year_Pixel); it found Android workouts reading nothing without distance and calories access (fixed). Lowering below Health's number now stops there and says so. What a simulator can't do is left for the real iPhone.
 
+**Where Health stands** (what's done, and the expansions left: more metrics, workout types, break habits from Health, background updates): [design/health.md](design/health.md), "Status". Parked on 2026-10-19 for the onboarding tutorial.
+
 It seems to work well; now check it properly on the real iPhone (`DEV_TOOLS=1 tool/install_on_iphone.sh`), with real data from the Health app and an Apple Watch if there is one.
 
 - **Each metric fills in the right number for today and the past week:**
