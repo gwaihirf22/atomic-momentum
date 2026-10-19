@@ -154,6 +154,19 @@ class RefHabit {
       }
     }
     amounts[today] = math.max(0, total - earlier);
+    // Below what the earlier days hold: the rest comes off them, latest first
+    var excess = earlier - total;
+    final days = [
+      for (final d in amounts.keys)
+        if (d.isBefore(today) && (!periodic || !d.isBefore(periodOf(today).$1)) && amounts[d]! > 0) d,
+    ]..sort((a, b) => b.compareTo(a));
+    for (final d in days) {
+      if (excess <= 0) break;
+      final take = math.min(amounts[d]!, excess);
+      amounts[d] = amounts[d]! - take;
+      if (amounts[d] == 0) amounts.remove(d);
+      excess -= take;
+    }
     changed();
   }
 

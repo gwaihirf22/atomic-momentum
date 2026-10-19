@@ -9,6 +9,7 @@ import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/health_link.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -220,8 +221,34 @@ void main() {
       for (var i = 0; i < 5; i++) {
         await settle();
       }
-      expect(habits.takeHealthNotice(), 'That came from Apple Health. Change it there.');
+      // It stops at Health's number, at once, and says so
+      expect(habits.takeHealthNotice(), 'Apple Health shows 3 glasses today. Change it in Apple Health.');
       expect(habits.habits.single.history[today], 3);
+      expect(health.removed, isEmpty, reason: 'nothing of the app\'s to take back');
+    });
+
+    test('water the app logged comes out with −; what another app logged stays', () async {
+      final id = await addWater();
+      health.values[HealthMetric.water] = {today: 250};
+      await habits.syncHealth(force: true);
+      expect(habits.habits.single.history[today], 1);
+      await habits.updateHabitProgress(id, 3);
+      for (var i = 0; i < 5; i++) {
+        await settle();
+      }
+      await habits.syncHealth(force: true);
+      expect(habits.habits.single.history[today], 3);
+
+      await habits.updateHabitProgress(id, 1);
+      for (var i = 0; i < 5; i++) {
+        await settle();
+      }
+      expect(habits.habits.single.history[today], 1);
+      expect(habits.takeHealthNotice(), isNull);
+      await habits.updateHabitProgress(id, 0);
+      await settle();
+      expect(habits.habits.single.history[today], 1, reason: "the other app's glass");
+      expect(habits.takeHealthNotice(), 'Apple Health shows 1 glasses today. Change it in Apple Health.');
     });
 
     test('habits that don\'t log back never write', () async {
@@ -229,6 +256,82 @@ void main() {
       await habits.updateHabitProgress(id, 1000);
       await settle();
       expect(health.logged, isEmpty);
+    });
+  });
+
+  group("Health's number is the floor", () {
+    Future<void> settle() => Future<void>.delayed(Duration.zero).then((_) => Future<void>.delayed(Duration.zero));
+
+    test('− on steps stops at what Health says, and says so; a sync changes nothing after', () async {
+      final id = await addLinked(HealthMetric.steps);
+      health.values[HealthMetric.steps] = {today: 6500};
+      await habits.syncHealth(force: true);
+
+      await habits.updateHabitProgress(id, 5000);
+      await settle();
+      expect(habits.habits.single.history[today], 6500);
+      expect(habits.takeHealthNotice(), 'Apple Health shows 6,500 steps today. Change it in Apple Health.');
+      final shown = habits.habits.single;
+      await habits.syncHealth(force: true);
+      expect(habits.habits.single.history, shown.history, reason: 'nothing to put back: it never went below');
+    });
+
+    test('above Health\'s number you can lower freely; below it, it stops', () async {
+      final id = await addLinked(HealthMetric.steps);
+      health.values[HealthMetric.steps] = {today: 6500};
+      await habits.syncHealth(force: true);
+      await habits.updateHabitProgress(id, 9000);
+      await habits.updateHabitProgress(id, 7000);
+      await settle();
+      expect(habits.habits.single.history[today], 7000);
+      expect(habits.takeHealthNotice(), isNull);
+    });
+
+    test('Calendar: a past day stops at Health\'s number too', () async {
+      final id = await addLinked(HealthMetric.steps);
+      // Counting since yesterday, so a sync looks at it
+      await habits.startFrom(id, yesterday);
+      health.values[HealthMetric.steps] = {yesterday: 4000};
+      await habits.syncHealth(force: true);
+      await habits.updateProgressForDate(id, yesterday, 1000);
+      await settle();
+      expect(habits.habits.single.history[yesterday], 4000);
+      expect(habits.takeHealthNotice(), startsWith('Apple Health shows 4,000 steps on '));
+    });
+
+    test('a day a sync no longer looks at (over a week ago) can be lowered', () async {
+      final id = await addLinked(HealthMetric.steps);
+      final old = DateTime(today.year, today.month, today.day - 10);
+      health.values[HealthMetric.steps] = {old: 4000};
+      await habits.syncHealth(force: true);
+      await habits.updateProgressForDate(id, old, 1000);
+      await settle();
+      expect(habits.habits.single.history[old], 1000);
+      expect(habits.takeHealthNotice(), isNull);
+    });
+
+    test('a weekly habit: − comes off the earlier days, but not below Health\'s', () async {
+      await habits.createHabit(CreateHabitParams(
+        name: 'Workouts',
+        target: 3,
+        units: 'workouts',
+        color: HabitColor.green,
+        categoryId: BuiltInCategoryIds.body,
+        resetFrequency: ResetFrequency.weekly,
+        // Weeks start yesterday, so yesterday and today are one week
+        resetAnchor: yesterday,
+        health: HealthLink(metric: HealthMetric.workouts, linkedOn: yesterday),
+      ));
+      final id = habits.habits.single.id;
+      await habits.startFrom(id, yesterday);
+      health.values[HealthMetric.workouts] = {yesterday: 2};
+      await habits.syncHealth(force: true);
+      expect(habits.habits.single.progress, 2);
+
+      await habits.updateHabitProgress(id, 1);
+      await settle();
+      expect(habits.habits.single.progress, 2);
+      expect(habits.takeHealthNotice(), 'Apple Health shows 2 workouts this week. Change it in Apple Health.');
     });
   });
 

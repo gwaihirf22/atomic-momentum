@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:atomic_momentum/domain/services/momentum_calculator.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
@@ -151,6 +152,43 @@ void main() {
 
         expect(updated.isCompleted, isTrue);
         expect(updated.streak.current, 1);
+      });
+
+      group('lowering a period logged on earlier days', () {
+        // Weeks from Monday; today is Wednesday
+        final monday = DateTime(2026, 10, 12);
+        final tuesday = DateTime(2026, 10, 13);
+        final wednesday = DateTime(2026, 10, 14, 12);
+        Habit weekly(Map<DateTime, int> history) => TestData.createTestHabit(
+              target: 10,
+              resetFrequency: ResetFrequency.weekly,
+              resetAnchorDate: monday,
+              history: history,
+            ).refresh(wednesday);
+
+        test('− takes from today first, then the latest earlier day', () {
+          withClock(Clock.fixed(wednesday), () {
+            final habit = weekly({monday: 2, tuesday: 3});
+            expect(habit.progress, 5);
+            final lower = habit.updateProgress(4);
+            expect(lower.progress, 4);
+            expect(lower.history[tuesday], 2, reason: 'Tuesday is the latest');
+            expect(lower.history[monday], 2);
+            expect(habit.updateProgress(0).history.values.where((v) => v > 0), isEmpty);
+          });
+        });
+
+        test('no day goes below its floor (what Health says); the period stops there', () {
+          withClock(Clock.fixed(wednesday), () {
+            final habit = weekly({monday: 3, tuesday: 5});
+            int floor(DateTime day) => day == tuesday ? 5 : 0;
+            final lower = habit.updateProgress(5, floor: floor);
+            expect(lower.history[tuesday], 5, reason: "Health's day stays");
+            expect(lower.history.containsKey(monday), isFalse, reason: 'the rest came off Monday');
+            final floored = habit.updateProgress(0, floor: floor);
+            expect(floored.progress, 5, reason: 'it stops at the floor');
+          });
+        });
       });
 
       test('updateProgress should throw error for invalid progress', () {

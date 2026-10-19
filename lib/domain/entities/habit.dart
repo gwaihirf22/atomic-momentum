@@ -220,8 +220,14 @@ class Habit extends Equatable {
 
   /// Sets the period progress for today. History stores what was logged on
   /// each day, so today's entry becomes whatever the earlier days of this
-  /// period don't already account for.
-  Habit updateProgress(int newProgress) {
+  /// period don't already account for. Going below what those earlier days
+  /// hold takes the rest from them, the latest first (− on a weekly habit
+  /// whose week was logged on Monday lowers Monday).
+  ///
+  /// [floor] is the least each day may hold (what Apple Health says for a
+  /// linked habit): no day goes below it, so the period may end up above
+  /// [newProgress].
+  Habit updateProgress(int newProgress, {int Function(DateTime day)? floor}) {
     if (newProgress < 0 || newProgress > maxPeriodTotal) {
       throw ArgumentError('Progress must be between 0 and $maxPeriodTotal');
     }
@@ -232,7 +238,27 @@ class Habit extends Equatable {
     final todayAmount = newProgress - loggedEarlierThisPeriod;
 
     final newHistory = Map<DateTime, int>.from(history);
-    newHistory[today] = todayAmount < 0 ? 0 : todayAmount;
+    final todayFloor = floor?.call(today) ?? 0;
+    newHistory[today] = todayAmount < todayFloor ? todayFloor : todayAmount;
+    if (todayAmount < todayFloor) {
+      // What today can't give up comes off the earlier days, the latest
+      // first, none going below its own floor
+      final start = resetFrequency.isPeriodic ? schedule.periodStart(today) : null;
+      final earlier = [
+        for (final day in history.keys)
+          if (day.isBefore(today) && (start == null || !day.isBefore(start)) && history[day]! > 0) day,
+      ]..sort((a, b) => b.compareTo(a));
+      var excess = todayFloor - todayAmount;
+      for (final day in earlier) {
+        if (excess <= 0) break;
+        final room = newHistory[day]! - (floor?.call(day) ?? 0);
+        if (room <= 0) continue;
+        final take = math.min(room, excess);
+        final left = newHistory[day]! - take;
+        left == 0 ? newHistory.remove(day) : newHistory[day] = left;
+        excess -= take;
+      }
+    }
 
     return copyWith(history: newHistory)._recalculated(now).copyWith(
           lastUpdatedDate: now,

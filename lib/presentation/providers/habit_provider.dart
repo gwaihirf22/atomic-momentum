@@ -17,6 +17,7 @@ import '../../core/services/reminder_service.dart';
 import '../../domain/entities/reminder_settings.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:clock/clock.dart';
+import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 
 enum HabitProviderState {
   initial,
@@ -170,27 +171,88 @@ class HabitProvider extends ChangeNotifier {
   /// Sets today's progress. The change shows immediately; returns false if
   /// saving fails (the habit then goes back to what's stored).
   Future<bool> updateHabitProgress(String habitId, int newProgress) {
+    Habit? shown;
     return _applyNow(
       habitId,
-      (habit) => habit.updateProgress(newProgress),
-      (pending) => pending.progress = newProgress,
+      (habit) {
+        final floor = _floorFor(habit);
+        final updated = habit.updateProgress(newProgress, floor: floor);
+        if (updated.progress > newProgress && newProgress < habit.progress) {
+          _sayFloor(updated, updated.progress, clock.now(), period: true);
+        }
+        return shown = updated;
+      },
+      (pending) {
+        if (shown?.health == null) {
+          pending.progress = newProgress;
+        } else {
+          // Linked to Health: saved day by day, as shown (no day below Health's number)
+          pending.progress = null;
+          pending.days.addAll(shown!.periodDays(clock.now()));
+        }
+      },
     );
+  }
+
+  /// The least each day of [habit] may hold (what Health says), or null
+  /// when it isn't linked.
+  int Function(DateTime day)? _floorFor(Habit habit) {
+    final health = _health;
+    if (health == null || habit.health == null || habit.isBreak) return null;
+    return (day) => health.floorOn(habit, day);
+  }
+
+  /// Says that [habit] can't go below Health's number [amount] (for [day],
+  /// or its period so far).
+  void _sayFloor(Habit habit, int amount, DateTime day, {bool period = false}) {
+    final name = _health?.source.name ?? 'Health';
+    final units = habit.units.trim().isEmpty ? '' : ' ${habit.units.trim()}';
+    final now = clock.now();
+    final isToday = day.year == now.year && day.month == now.month && day.day == now.day;
+    final String when;
+    if (!period || habit.schedule.isEveryDay || habit.schedule.hasRestDays) {
+      when = isToday ? 'today' : 'on ${DateFormat.MMMd().format(day)}';
+    } else {
+      when = switch (habit.resetFrequency) {
+        ResetFrequency.weekly when habit.resetInterval == 1 => 'this week',
+        ResetFrequency.monthly when habit.resetInterval == 1 => 'this month',
+        _ => 'so far',
+      };
+    }
+    _healthNotice = '$name shows ${NumberFormat.decimalPattern().format(amount)}$units $when. Change it in $name.';
   }
 
   /// Sets what was logged on several days at once: clearing a period, or
   /// putting one back (undo). Shows immediately and saves in the background
   /// like progress.
   Future<bool> setDays(String habitId, Map<DateTime, int> amounts) {
+    var days = amounts;
     return _applyNow(
       habitId,
-      (habit) => habit.setDays(amounts),
+      (habit) {
+        // Never below what Health says (unless this is Health's own number)
+        final floor = _fromHealth ? null : _floorFor(habit);
+        if (floor == null) return habit.setDays(days);
+        days = Map.of(amounts);
+        DateTime? held;
+        for (final entry in amounts.entries) {
+          final least = floor(entry.key);
+          if (entry.value < least) {
+            days[entry.key] = least;
+            held ??= entry.key;
+          }
+        }
+        final updated = habit.setDays(days);
+        if (held != null) _sayFloor(updated, days[held]!, held);
+        return updated;
+      },
       (pending) {
         // Setting today replaces a waiting progress change (which sets today)
         final now = clock.now();
-        if (amounts.keys.any((d) => d.year == now.year && d.month == now.month && d.day == now.day)) {
+        if (days.keys.any((d) => d.year == now.year && d.month == now.month && d.day == now.day)) {
           pending.progress = null;
         }
-        pending.days.addAll(amounts);
+        pending.days.addAll(days);
       },
     );
   }
@@ -462,23 +524,11 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  /// Retroactively set what was logged on [date]; recomputes the streak.
-  Future<bool> updateProgressForDate(String habitId, DateTime date, int amount) async {
-    try {
-      _setOperationInProgress(true);
-
-      final updatedHabit = await _updateHabitUseCase.updateHistoryForDate(habitId, date, amount);
-      _updateHabitInList(updatedHabit);
-
-      return true;
-    } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
-    } finally {
-      _setOperationInProgress(false);
-    }
-  }
+  /// Retroactively set what was logged on [date] (Calendar); recomputes
+  /// the streak. Goes the way taps do, so today's change reaches Health and
+  /// no day goes below Health's number.
+  Future<bool> updateProgressForDate(String habitId, DateTime date, int amount) =>
+      setDays(habitId, {DateTime(date.year, date.month, date.day): amount});
 
   /// Re-plan every streak warning, e.g. after the warning settings change.
   Future<void> resyncStreakWarnings() async {

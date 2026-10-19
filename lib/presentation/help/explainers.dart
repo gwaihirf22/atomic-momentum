@@ -101,12 +101,13 @@ class Explainer {
         'mindful minutes or water.',
     points: [
       ExplainerPoint(
-        'The higher of Health and what you log counts for each day. Health never takes away what you logged.',
+        "The higher of Health and what you log counts each day. You can't go below Health's number; "
+        'change it in Health.',
         lead: 'Which wins',
         icon: CupertinoIcons.arrow_up_circle,
       ),
       ExplainerPoint(
-        'It checks when you open the app and at midnight, and fills in the past week if you were away.',
+        'It checks when you open or return to the app, at midnight and with Sync now, filling in the past week.',
         lead: 'When',
         icon: CupertinoIcons.arrow_2_circlepath,
       ),
@@ -116,7 +117,7 @@ class Explainer {
         icon: CupertinoIcons.moon,
       ),
       ExplainerPoint(
-        'Water and mindful minutes can go back into Health as you log them, and come out again with −.',
+        'Water and mindful minutes can go back into Health as you log them; − takes out only what Momentum put in.',
         lead: 'Logging back',
         icon: CupertinoIcons.heart,
       ),
