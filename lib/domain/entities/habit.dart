@@ -214,6 +214,18 @@ class Habit extends Equatable {
       return history.values.fold(0, (sum, amount) => sum + amount);
     }
 
+    // A builder making many changes in a row (see [deferringStreaks]) sums
+    // just this period's days: working out every period, as the cache below
+    // does, for each of its many short-lived habits would cost far more
+    if (Zone.current[_deferStreaks] == true) {
+      final start = schedule.periodStart(date);
+      final end = schedule.nextPeriodStart(start);
+      var total = 0;
+      for (final entry in history.entries) {
+        if (!entry.key.isBefore(start) && entry.key.isBefore(end)) total += entry.value;
+      }
+      return total;
+    }
     return _periodTotals[schedule.periodStart(date)] ?? 0;
   }
 
