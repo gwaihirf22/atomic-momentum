@@ -36,7 +36,8 @@ void main() {
 
   Future<void> walk(WidgetTester tester, TourController tours, Tour tour, String prefix) async {
     for (var i = 0; i < tour.steps.length; i++) {
-      await _wait(tester, 1400);
+      await _ready(tester, tours);
+      await _wait(tester, 600);
       await binding.takeScreenshot('${prefix}_step${i + 1}');
       if (!tours.isRunning) break;
       // Not awaited: its frames come from the pumping above
@@ -73,6 +74,15 @@ void main() {
       await walk(tester, tours, tour, tour.id.name);
     }
   }, timeout: const Timeout(Duration(minutes: 20)));
+}
+
+/// Waits, in real time, for the tour's step to be ready (the example
+/// habits are built off the main thread first; a pump alone doesn't wait).
+Future<void> _ready(WidgetTester tester, TourController tours) async {
+  for (var i = 0; i < 100 && tours.isRunning && !tours.isReady; i++) {
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump(const Duration(milliseconds: 16));
+  }
 }
 
 /// Lets frames run for [ms] (the spotlight's pulse never settles).
