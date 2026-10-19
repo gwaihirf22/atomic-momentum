@@ -42,6 +42,8 @@ void main() {
       // Not awaited: its frames come from the pumping above
       unawaited(tours.next());
     }
+    if (tours.isRunning) unawaited(tours.skip());
+    await _wait(tester, 600);
   }
 
   testWidgets('the tours, step by step, in every theme and text size', (tester) async {

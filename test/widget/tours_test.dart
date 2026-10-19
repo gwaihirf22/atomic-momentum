@@ -309,6 +309,17 @@ void main() {
     });
   });
 
+  testWidgets('closing the app mid-tour leaves nothing running', (tester) async {
+    await setUpWith({TourStore.key: ['habits']});
+    await tester.pumpWidget(MomentumApp(worlds: WorldController(seed: (now) async => DemoSeed.build(now))));
+    await settle(tester);
+    unawaited(toursIn(tester).start(TourId.habitPage));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpWidget(Container());
+    await settle(tester);
+    expect(tester.takeException(), isNull);
+  });
+
   group('fits small phones and large text, in every theme', () {
     for (final size in const [Size(375, 667), Size(390, 844)]) {
       for (final scale in const [1.0, 1.35]) {

@@ -116,6 +116,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
 
   Tour? _tour;
   int _step = 0;
+  bool _disposed = false;
   bool _ready = false;
   StreamSubscription<TourEvent>? _events;
 
@@ -251,6 +252,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
     if (step == null) return;
     for (final move in step.before) {
       await _frame();
+      if (_disposed) return;
       final nav = worlds.world.nav;
       switch (move) {
         case ShowTab(:final tab):
@@ -272,7 +274,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
     }
     final anchor = step.anchor;
     if (anchor != null) await _reveal(anchor, step);
-    if (!identical(this.step, step)) return;
+    if (_disposed || !identical(this.step, step)) return;
     _ready = true;
     notifyListeners();
   }
@@ -283,7 +285,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _reveal(TourAnchorId anchor, TourStep step) async {
     for (var tries = 0; tries < 40; tries++) {
       await _frame();
-      if (!identical(this.step, step)) return;
+      if (_disposed || !identical(this.step, step)) return;
       final context = anchors.find(anchor, tag: stepHabitId == null ? null : _tagFor(anchor));
       if (context != null) {
         if (!context.mounted) continue;
@@ -354,6 +356,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _disposed = true;
     WidgetsBinding.instance.removeObserver(this);
     NotificationService.focusRequests.removeListener(_interrupted);
     IOSMainNavigation.tabRequests.removeListener(_interrupted);

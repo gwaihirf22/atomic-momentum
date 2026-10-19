@@ -56,6 +56,10 @@ class WorldController extends ChangeNotifier {
     try {
       final settings = sl.isRegistered<SharedPreferences>() ? get<SharedPreferences>() : null;
       final demo = await DemoWorld.create(await seed(clock.now()), settingsFrom: settings);
+      if (_disposed) {
+        demo.dispose();
+        return;
+      }
       _returnTab = _world.nav.current.value;
       _replace(AppWorld.example(demo, initialTab: tab));
     } finally {
@@ -70,7 +74,13 @@ class WorldController extends ChangeNotifier {
     _replace(AppWorld.real(initialTab: tab ?? _returnTab));
   }
 
+  bool _disposed = false;
+
   void _replace(AppWorld next) {
+    if (_disposed) {
+      next.dispose();
+      return;
+    }
     final old = _world;
     _world = next;
     notifyListeners();
@@ -81,6 +91,7 @@ class WorldController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _world.dispose();
     super.dispose();
   }
