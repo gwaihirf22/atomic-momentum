@@ -185,7 +185,11 @@ class FormCard extends StatelessWidget {
         color: AppPalette.of(context).surface,
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      // Rows (ListTiles, switches) draw their ink on the card, not under it
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      ),
     );
   }
 }
