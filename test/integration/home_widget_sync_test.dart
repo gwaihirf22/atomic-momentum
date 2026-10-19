@@ -12,7 +12,9 @@ import 'package:atomic_momentum/presentation/home_widgets/home_widget_sync.dart'
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
+import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
+import 'package:atomic_momentum/screens/ios_main_navigation.dart';
 import '../helpers/fake_home_widget_bridge.dart';
 
 /// The home screen widgets end to end on the app's side: the snapshot they
@@ -35,6 +37,7 @@ void main() {
         settings: get<SettingsProvider>(),
         theme: get<ThemeProvider>(),
         quotes: get<QuoteProvider>(),
+        categories: get<CategoryProvider>(),
       );
 
   setUp(() async {
@@ -210,14 +213,40 @@ void main() {
 
   test("tapping a habit's widget shows that habit, at launch or while running", () async {
     NotificationService.focusRequests.value = null;
-    bridge.openedHabit = 'habit_a';
+    bridge.opened = 'habit/habit_a';
     await at(() async {
       await pumpEventQueue();
       expect(NotificationService.focusRequests.value?.habitId, 'habit_a');
 
-      bridge.open('habit_b');
+      bridge.open('habit/habit_b');
       expect(NotificationService.focusRequests.value?.habitId, 'habit_b');
     });
     NotificationService.focusRequests.value = null;
+  });
+
+  test('tapping the quote or insights widgets opens their tab', () async {
+    await at(() async {
+      bridge.open('inspire');
+      expect(IOSMainNavigation.tabRequests.value, AppTab.inspire);
+      bridge.open('insights');
+      expect(IOSMainNavigation.tabRequests.value, AppTab.insights);
+      bridge.open('momentum');
+      expect(IOSMainNavigation.tabRequests.value, AppTab.habits);
+    });
+    IOSMainNavigation.tabRequests.value = null;
+  });
+
+  test("the snapshot carries categories, each habit's quotes, and tomorrow's quote", () async {
+    await at(() async {
+      final id = await add('Run');
+      await habits.addQuote(id, 'epictetus-walking-by-walking');
+      await sync.write();
+      expect(bridge.habit('Run')['category'], BuiltInCategoryIds.body);
+      expect((bridge.habit('Run')['quotes'] as List).single['author'], 'Epictetus');
+      expect((bridge.last!['categories'] as List).map((c) => c['id']), contains(BuiltInCategoryIds.body));
+      expect(bridge.last!['quote'], isNotNull);
+      expect(bridge.last!['quoteNext'], isNotNull);
+      expect((bridge.last!['shortQuote']['text'] as String).length, lessThanOrEqualTo(90));
+    });
   });
 }

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/injection/injection_container.dart';
 import '../../core/services/home_widget_bridge.dart';
+import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/quote_provider.dart';
 import '../providers/settings_provider.dart';
@@ -34,6 +35,7 @@ class _HomeWidgetHostState extends State<HomeWidgetHost> {
       settings: context.read<SettingsProvider>(),
       theme: context.read<ThemeProvider>(),
       quotes: context.read<QuoteProvider>(),
+      categories: context.read<CategoryProvider>(),
     )..start();
   }
 

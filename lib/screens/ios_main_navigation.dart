@@ -68,6 +68,10 @@ class IOSMainNavigation extends StatefulWidget {
   /// How long Inspire sits untouched before the bar fades.
   static const barFadeDelay = Duration(seconds: 3);
 
+  /// A tab to show, asked for from outside the tree (a home screen widget's
+  /// tap); cleared once shown.
+  static final tabRequests = ValueNotifier<AppTab?>(null);
+
   /// Opens New Habit over everything (the tab bar included), from anywhere.
   static Future<void> addHabit(BuildContext context) async {
     await Navigator.of(context, rootNavigator: true).push(
@@ -128,9 +132,13 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     _habits = context.read<HabitProvider>()..addListener(_checkAchievementsSoon);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
-    // A notification tap that launched the app arrives before this screen
+    IOSMainNavigation.tabRequests.addListener(_showRequestedTab);
+    // A notification or widget tap that launched the app arrives before this screen
     if (NotificationService.focusRequests.value != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showHabits());
+    }
+    if (IOSMainNavigation.tabRequests.value != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showRequestedTab());
     }
   }
 
@@ -138,6 +146,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   void dispose() {
     _habits.removeListener(_checkAchievementsSoon);
     NotificationService.focusRequests.removeListener(_showHabits);
+    IOSMainNavigation.tabRequests.removeListener(_showRequestedTab);
     _fadeTimer?.cancel();
     _slide.dispose();
     super.dispose();
@@ -304,6 +313,19 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     // Add and Edit open above the tabs; pages and sheets open inside them
     if (mounted) Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
     _navigators[AppTab.habits]!.currentState?.popUntil((route) => route.isFirst);
+  }
+
+  /// A home screen widget asked for a tab (Inspire for the quote widget):
+  /// shows its first page, if the tab is on.
+  void _showRequestedTab() {
+    final tab = IOSMainNavigation.tabRequests.value;
+    if (tab == null || !mounted) return;
+    IOSMainNavigation.tabRequests.value = null;
+    if (!_visible.contains(tab)) return;
+    _endSlide();
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    _navigators[tab]!.currentState?.popUntil((route) => route.isFirst);
+    _switchTo(tab);
   }
 
   @override

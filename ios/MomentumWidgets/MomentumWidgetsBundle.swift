@@ -7,7 +7,9 @@ import WidgetKit
 struct MomentumWidgetsBundle: WidgetBundle {
   var body: some Widget {
     HabitWidget()
+    GroupWidget()
     MomentumWidget()
+    QuoteWidget()
     TodayWidget()
   }
 }

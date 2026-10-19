@@ -1,13 +1,13 @@
 # Home screen widgets
 
-*Started October 18, 2026. Phase 1 built (one habit, momentum, today); phases 2 and 3 to come.*
+*Started October 18, 2026. Phases 1 and 2 built; phase 3 (Insights, "I will") to come.*
 
 Paul wants all six kinds from the mockups (artifact `6FUeW7KVC4sjHMMyDadGac`, one board per kind). They're built in three phases, by how often people would look at them and what each needs underneath:
 
 | Phase | Widgets | Status |
 |---|---|---|
 | 1 | The plumbing; **One habit** (small, medium; + logs from the home screen); **Momentum** (small, medium; lock screen round, rectangle, line); **Today** (lock screen round: "3/6") | Built |
-| 2 | **A group of habits** (large "Today" list with a + per row; four rings; 2×2); **Quote** (the day's quote, a habit's quotes, lock screen) | To do |
+| 2 | **Habits**, a group (Today, a category, or habits picked by hand: large list with a + per row, four rings, 2×2); **Quote** (the day's quote, or a habit's "Words for this habit" taking turns a day at a time; small, medium, large, lock screen) | Built |
 | 3 | **Insights** (today, this week, heatmaps, the month); **I will** (a habit's Story sentence, your own words) | To do |
 
 ## How it works
@@ -24,7 +24,8 @@ Paul wants all six kinds from the mockups (artifact `6FUeW7KVC4sjHMMyDadGac`, on
 - **When it's written.** `HomeWidgetSync` (started by `HomeWidgetHost` in `main.dart`) listens to the habits, settings, theme and quotes, and writes 400 ms after a change, only if something the widgets show changed. Never before habits load, or after a failed load.
 - **The + on a widget.** `LogHabitIntent` (`ios/MomentumWidgets/Shared/`) queues the tap in the App Group, shows the step at once (`WidgetStore.showStep`, the same steps as `StepSize.up`), then has the app log it. It's an `AudioPlaybackIntent`, so iOS runs it in the app's process, starting the app in the background if needed. The app takes the queue (`HomeWidgetBridge.takeLogs`) and logs each tap the way the card's + does (`HabitProvider.updateHabitProgress`; for a tap made before midnight, `updateProgressForDate` on that day). So streaks, momentum, Health, reminders and streak warnings all follow. Then it rewrites the snapshot and lets the intent finish (`applied`; the intent gives up after 8 s, and the tap stays queued for the next launch or resume).
 - **No + on habits being broken.** A stray tap would log a slip.
-- **Tapping a widget** opens `momentum://habit/<id>`; the app shows that habit the way a reminder's tap does (`NotificationService.focusRequests`).
+- **Tapping a widget** opens a `momentum://` link: `habit/<id>` shows that habit the way a reminder's tap does (`NotificationService.focusRequests`); `inspire`, `insights` and `habits` switch to that tab (`IOSMainNavigation.tabRequests`; nothing happens if Inspire is turned off). The Quote widget opens Inspire, or the habit whose words it shows.
+- **Quotes.** The snapshot carries today's quote (as Inspire shows it, "Another quote" included) and tomorrow's turn, so the widget changes at midnight even if the app doesn't run, plus a short one of each (90 characters or fewer) for the small and lock screen sizes, and each habit's own quotes (the widget takes a turn a day, counting days as `QuoteOfTheDay` does). Verses keep "(NKJV)" after the reference.
 - **Looks.** Widgets follow the app's Appearance setting: under System, the day theme (Light or Sepia) in light mode and Charged in dark mode; a chosen theme in both. The lock screen draws in one tint (iOS), so its widgets use no theme colors.
 - **A new period.** Each entry knows when its habit's period ends (`periodEnds`); from then the widget shows it starting over, until the app writes again.
 
@@ -36,7 +37,7 @@ Paul wants all six kinds from the mockups (artifact `6FUeW7KVC4sjHMMyDadGac`, on
 | `lib/presentation/home_widgets/` | `WidgetSnapshot`, `HomeWidgetSync`, `HomeWidgetHost` |
 | `ios/Runner/AppDelegate.swift` | `WidgetChannel`: save, takeLogs, applied, takeOpenedHabit; momentum:// links |
 | `ios/MomentumWidgets/Shared/` | In both targets: `WidgetStore` (App Group keys, the queue, `showStep`), `LogHabitIntent`, `AppHook` |
-| `ios/MomentumWidgets/` | The extension: `MomentumWidgetsBundle`, `HabitWidget` (with `PickHabitIntent`/`HabitEntity` to pick the habit), `MomentumWidget` and `TodayWidget`, `Pieces` (ring, gauge, orb, streak, last 7), Sora fonts |
+| `ios/MomentumWidgets/` | The extension: `MomentumWidgetsBundle`, `HabitWidget` (with `PickHabitIntent`/`HabitEntity` to pick the habit), `GroupWidget` (`PickGroupIntent`: `GroupEntity` Today or a category, or habits picked), `QuoteWidget` (`PickQuoteIntent`: a habit's words), `MomentumWidget` and `TodayWidget`, `Pieces` (ring, gauge, orb, streak, last 7), Sora fonts |
 
 **Xcode:** target `MomentumWidgets`, bundle id `com.paulblake.momentum.widgets`, iOS 17+ (the app stays iOS 16; iOS 16 phones just don't offer the widgets). Its version comes from Flutter through `MomentumWidgets/Widgets.xcconfig`. The app embeds it in "Embed Foundation Extensions", placed before Flutter's "Thin Binary" phase (after it, the build has a cycle). **App Group** `group.com.paulblake.momentum` on both targets, which needs a team that can sign App Groups (the paid account).
 
@@ -48,7 +49,8 @@ Paul wants all six kinds from the mockups (artifact `6FUeW7KVC4sjHMMyDadGac`, on
 
 ## Later
 
-- **Phase 2 and 3 widgets** (above). The quote is already in the snapshot.
+- **Phase 3 widgets** (above): Insights needs the heatmap's levels and this month's numbers in the snapshot; "I will" needs each habit's Story sentence (`habit_form/sentence.dart`) and the person's own words.
+- **Save a quote from the widget** (an intent like the +, through `QuoteProvider`).
 - **"2 min" on the medium habit widget** (a second intent through `setTwoMinute`).
 - **Android app widgets**, from the same snapshot.
 - **Fresh numbers without opening the app:** a background refresh (BGTaskScheduler) to roll the day over and recompute momentum. Until then a new day shows progress starting over, and momentum as of the app's last write.

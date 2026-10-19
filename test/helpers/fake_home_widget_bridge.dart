@@ -21,13 +21,13 @@ class FakeHomeWidgetBridge implements HomeWidgetBridge {
   int appliedCount = 0;
 
   VoidCallback? _onLogsWaiting;
-  ValueChanged<String>? _onOpenHabit;
+  ValueChanged<String>? _onOpen;
 
-  /// The habit whose widget launched the app, if one did.
-  String? openedHabit;
+  /// Where the widget that launched the app leads, if one did.
+  String? opened;
 
-  /// A widget tapped outside its + while the app is running.
-  void open(String habitId) => _onOpenHabit?.call(habitId);
+  /// A widget tapped outside its buttons while the app is running.
+  void open(String route) => _onOpen?.call(route);
 
   Map<String, dynamic>? get last => saved.isEmpty ? null : jsonDecode(saved.last) as Map<String, dynamic>;
 
@@ -58,12 +58,12 @@ class FakeHomeWidgetBridge implements HomeWidgetBridge {
   set onLogsWaiting(VoidCallback? callback) => _onLogsWaiting = callback;
 
   @override
-  Future<String?> takeOpenedHabit() async {
-    final id = openedHabit;
-    openedHabit = null;
-    return id;
+  Future<String?> takeOpened() async {
+    final route = opened;
+    opened = null;
+    return route;
   }
 
   @override
-  set onOpenHabit(ValueChanged<String>? callback) => _onOpenHabit = callback;
+  set onOpen(ValueChanged<String>? callback) => _onOpen = callback;
 }

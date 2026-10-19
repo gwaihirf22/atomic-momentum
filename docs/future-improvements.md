@@ -27,7 +27,7 @@ It seems to work well; now check it properly on the real iPhone (`DEV_TOOLS=1 to
 
 ### 2. Home screen widgets (moved up from v2)
 
-**Under way.** Phase 1 is built on branch `widgets` (one habit with a working +, momentum and the lock screen, today). Phase 2 is a group of habits and Quote; phase 3 is Insights and "I will". Design and status: [design/widgets.md](design/widgets.md).
+**Under way.** Phases 1 and 2 are built: one habit with a working +, a group of habits, momentum and the lock screen, today, and Quote. Phase 3 is Insights and "I will". Widgets reach Paul's iPhone once the paid account can sign the App Group. Design and status: [design/widgets.md](design/widgets.md).
 
 **What "widgets" means here:** in the code, "widget" means any piece of the Flutter UI. These are home screen and lock screen widgets: a WidgetKit extension written in SwiftUI inside `ios/`, which is Swift Apple requires (see the strategy's platform section). Android's equivalent (app widgets) comes after.
 

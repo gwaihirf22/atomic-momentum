@@ -7,11 +7,14 @@ import 'package:flutter/widgets.dart';
 import '../../core/services/home_widget_bridge.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/theme/app_palette.dart';
+import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/services/step_size.dart';
+import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/quote_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
+import '../../screens/ios_main_navigation.dart';
 import 'widget_snapshot.dart';
 
 /// Keeps the home screen widgets in step with the app: rewrites their
@@ -24,6 +27,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
   final SettingsProvider settings;
   final ThemeProvider theme;
   final QuoteProvider quotes;
+  final CategoryProvider? categories;
 
   /// Changes come in bursts (a tap notifies several times); one write after.
   static const delay = Duration(milliseconds: 400);
@@ -34,6 +38,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
     required this.settings,
     required this.theme,
     required this.quotes,
+    this.categories,
   });
 
   Timer? _timer;
@@ -51,18 +56,31 @@ class HomeWidgetSync with WidgetsBindingObserver {
     settings.addListener(_changed);
     theme.addListener(_changed);
     quotes.addListener(_changed);
+    categories?.addListener(_changed);
     bridge.onLogsWaiting = applyLogs;
-    bridge.onOpenHabit = _open;
+    bridge.onOpen = _open;
     WidgetsBinding.instance.addObserver(this);
     _changed();
     // A widget tap that launched the app
-    bridge.takeOpenedHabit().then((id) {
-      if (id != null) _open(id);
+    bridge.takeOpened().then((route) {
+      if (route != null) _open(route);
     });
   }
 
-  /// Shows the habit whose widget was tapped, the way a reminder's tap does.
-  void _open(String habitId) => NotificationService.focusRequests.value = HabitFocusRequest(habitId);
+  /// Goes where a tapped widget leads: a habit (shown the way a reminder's
+  /// tap shows it) or a tab.
+  void _open(String route) {
+    if (route.startsWith('habit/')) {
+      NotificationService.focusRequests.value = HabitFocusRequest(route.substring('habit/'.length));
+      return;
+    }
+    final tab = switch (route) {
+      'inspire' => AppTab.inspire,
+      'insights' => AppTab.insights,
+      _ => AppTab.habits,
+    };
+    IOSMainNavigation.tabRequests.value = tab;
+  }
 
   void dispose() {
     if (!_started) return;
@@ -72,8 +90,9 @@ class HomeWidgetSync with WidgetsBindingObserver {
     settings.removeListener(_changed);
     theme.removeListener(_changed);
     quotes.removeListener(_changed);
+    categories?.removeListener(_changed);
     bridge.onLogsWaiting = null;
-    bridge.onOpenHabit = null;
+    bridge.onOpen = null;
     WidgetsBinding.instance.removeObserver(this);
   }
 
@@ -103,13 +122,22 @@ class HomeWidgetSync with WidgetsBindingObserver {
     _timer?.cancel();
     if (!_started || !_loaded) return;
     final now = clock.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final pool = quotes.from(settings.quoteFamilies);
+    final quote = quotes.today(settings.quoteFamilies, now: now);
+    final quoteNext = QuoteOfTheDay.pick(tomorrow, pool);
     final snapshot = WidgetSnapshot.build(
       habits: habits.habits,
       momentum: habits.overallMomentum,
       now: now,
       light: _lightLook,
       dark: _darkLook,
-      quote: quotes.today(settings.quoteFamilies, now: now),
+      quote: quote,
+      quoteNext: quoteNext,
+      shortQuote: WidgetSnapshot.shortFor(quote, pool, now),
+      shortQuoteNext: WidgetSnapshot.shortFor(quoteNext, pool, tomorrow),
+      categories: categories?.categories ?? const [],
+      findQuote: quotes.find,
     );
     final written = jsonEncode(snapshot);
     // The time it was written changes every time; anything else is news

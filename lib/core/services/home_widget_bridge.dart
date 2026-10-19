@@ -59,20 +59,21 @@ abstract class HomeWidgetBridge {
   /// Called when a widget has queued a tap while the app is running.
   set onLogsWaiting(VoidCallback? callback);
 
-  /// The habit whose widget opened the app (tapped outside its +), once;
-  /// null if a widget didn't open it.
-  Future<String?> takeOpenedHabit();
+  /// Where the widget that opened the app (tapped outside a button) leads,
+  /// once: `habit/<id>`, `inspire`, `insights` or `habits`; null if a widget
+  /// didn't open it.
+  Future<String?> takeOpened();
 
-  /// Called with a habit's id when its widget is tapped while the app is
+  /// Called with where a widget leads when it's tapped while the app is
   /// running.
-  set onOpenHabit(ValueChanged<String>? callback);
+  set onOpen(ValueChanged<String>? callback);
 }
 
 class PlatformHomeWidgetBridge implements HomeWidgetBridge {
   static const _channel = MethodChannel('momentum/widgets');
 
   VoidCallback? _onLogsWaiting;
-  ValueChanged<String>? _onOpenHabit;
+  ValueChanged<String>? _onOpen;
 
   PlatformHomeWidgetBridge() {
     if (isSupported) _channel.setMethodCallHandler(_handle);
@@ -85,8 +86,8 @@ class PlatformHomeWidgetBridge implements HomeWidgetBridge {
     switch (call.method) {
       case 'logsWaiting':
         _onLogsWaiting?.call();
-      case 'openHabit':
-        if (call.arguments is String) _onOpenHabit?.call(call.arguments as String);
+      case 'open':
+        if (call.arguments is String) _onOpen?.call(call.arguments as String);
     }
     return null;
   }
@@ -95,13 +96,13 @@ class PlatformHomeWidgetBridge implements HomeWidgetBridge {
   set onLogsWaiting(VoidCallback? callback) => _onLogsWaiting = callback;
 
   @override
-  set onOpenHabit(ValueChanged<String>? callback) => _onOpenHabit = callback;
+  set onOpen(ValueChanged<String>? callback) => _onOpen = callback;
 
   @override
-  Future<String?> takeOpenedHabit() async {
+  Future<String?> takeOpened() async {
     if (!isSupported) return null;
     try {
-      return await _channel.invokeMethod<String>('takeOpenedHabit');
+      return await _channel.invokeMethod<String>('takeOpened');
     } on MissingPluginException {
       return null;
     } on PlatformException {

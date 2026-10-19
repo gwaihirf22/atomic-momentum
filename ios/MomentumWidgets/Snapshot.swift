@@ -10,7 +10,11 @@ struct Snapshot: Decodable {
   let momentum: MomentumInfo?
   let today: TodayCount
   let habits: [HabitInfo]
+  let categories: [CategoryInfo]?
   let quote: QuoteInfo?
+  let quoteNext: QuoteInfo?
+  let shortQuote: QuoteInfo?
+  let shortQuoteNext: QuoteInfo?
 
   static let supportedVersion = 1
 
@@ -103,6 +107,7 @@ struct RecentInfo: Decodable {
 struct HabitInfo: Decodable, Identifiable {
   let id: String
   let name: String
+  let category: String?
   let color: ColorPair
   let onColor: ColorPair
   let isBreak: Bool
@@ -122,6 +127,14 @@ struct HabitInfo: Decodable, Identifiable {
   let atRisk: Bool
   let momentum: Int?
   let recent: [RecentInfo]
+  /// "Words for this habit", in order.
+  let quotes: [QuoteInfo]?
+
+  /// The habit's quote for [date]: they take turns, a new one each day.
+  func quote(on date: Date) -> QuoteInfo? {
+    guard let quotes, !quotes.isEmpty else { return nil }
+    return quotes[DayNumber.of(date) % quotes.count]
+  }
 
   var periodEndDate: Date? { periodEnds.flatMap(WidgetStore.parseLocal) }
 
@@ -150,6 +163,26 @@ struct QuoteInfo: Decodable {
   let id: String
   let text: String
   let author: String
+  let source: String?
+}
+
+struct CategoryInfo: Decodable {
+  let id: String
+  let name: String
+}
+
+/// Days since 2024-01-01 for a date's calendar day, as the app counts them
+/// (QuoteOfTheDay.dayNumber).
+enum DayNumber {
+  static func of(_ date: Date) -> Int {
+    let calendar = Calendar.current
+    let parts = calendar.dateComponents([.year, .month, .day], from: date)
+    var utc = Calendar(identifier: .gregorian)
+    utc.timeZone = TimeZone(identifier: "UTC")!
+    let day = utc.date(from: parts)!
+    let epoch = utc.date(from: DateComponents(year: 2024, month: 1, day: 1))!
+    return max(0, utc.dateComponents([.day], from: epoch, to: day).day ?? 0)
+  }
 }
 
 extension Color {

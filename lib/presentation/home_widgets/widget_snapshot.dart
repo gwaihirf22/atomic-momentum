@@ -3,10 +3,12 @@ import 'dart:ui' show Color;
 
 import '../../core/copy/quotes.dart';
 import '../../core/theme/app_palette.dart';
+import '../../domain/entities/category.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/entities/quote.dart';
 import '../../domain/entities/reset_frequency.dart';
+import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/services/recent_periods.dart';
 import '../../domain/services/step_size.dart';
 import '../widgets/break_wording.dart';
@@ -23,9 +25,15 @@ class WidgetSnapshot {
 
   static const version = 1;
 
+  /// Quotes short enough for a small or lock screen widget, whole.
+  static const shortQuoteLength = 90;
+
   /// The snapshot for [habits] at [now]. [light] and [dark] are the app's
   /// looks for the phone's light and dark mode (both the same when the
-  /// person picked one), so widgets match the app.
+  /// person picked one), so widgets match the app. [quote] is today's quote
+  /// and [quoteNext] tomorrow's (shown from midnight if the app hasn't
+  /// written by then); [shortQuote] and [shortQuoteNext] the same for small
+  /// widgets. [findQuote] looks up the quotes kept with each habit.
   static Map<String, Object?> build({
     required List<Habit> habits,
     required Momentum? momentum,
@@ -33,6 +41,11 @@ class WidgetSnapshot {
     required AppTheme light,
     required AppTheme dark,
     Quote? quote,
+    Quote? quoteNext,
+    Quote? shortQuote,
+    Quote? shortQuoteNext,
+    List<Category> categories = const [],
+    Quote? Function(String id)? findQuote,
   }) {
     final today = DateTime(now.year, now.month, now.day);
     final due = habits.where((h) => h.schedule.isPeriodic && h.isDueOn(today) && h.startedOn(today)).toList();
@@ -53,8 +66,14 @@ class WidgetSnapshot {
               'rising': tracked.where((h) => h.momentum.isRising).length,
             },
       'today': {'done': due.where((h) => h.wasCompletedOnDate(today)).length, 'due': due.length},
-      'habits': [for (final habit in habits) _habit(habit, now, light: light, dark: dark)],
+      'habits': [for (final habit in habits) _habit(habit, now, light: light, dark: dark, findQuote: findQuote)],
+      'categories': [
+        for (final category in categories) {'id': category.id, 'name': category.name},
+      ],
       'quote': quote == null ? null : _quote(quote),
+      'quoteNext': quoteNext == null ? null : _quote(quoteNext),
+      'shortQuote': shortQuote == null ? null : _quote(shortQuote),
+      'shortQuoteNext': shortQuoteNext == null ? null : _quote(shortQuoteNext),
     };
   }
 
@@ -69,7 +88,14 @@ class WidgetSnapshot {
   }) =>
       jsonEncode(build(habits: habits, momentum: momentum, now: now, light: light, dark: dark, quote: quote));
 
-  static Map<String, Object?> _habit(Habit habit, DateTime now, {required AppTheme light, required AppTheme dark}) {
+
+  static Map<String, Object?> _habit(
+    Habit habit,
+    DateTime now, {
+    required AppTheme light,
+    required AppTheme dark,
+    Quote? Function(String id)? findQuote,
+  }) {
     final periodic = habit.schedule.isPeriodic;
     final canAdd = !habit.isBreak && habit.progress < habit.target;
     final units = habit.units.isEmpty ? '' : ' ${habit.units}';
@@ -81,6 +107,7 @@ class WidgetSnapshot {
     return {
       'id': habit.id,
       'name': habit.name,
+      'category': habit.categoryId,
       'color': colors((p) => p.habitColor(habit.color.color)),
       // A mark drawn on a full ring of that color (the done check)
       'onColor': colors((p) => p.onColor(p.habitColor(habit.color.color))),
@@ -111,6 +138,12 @@ class WidgetSnapshot {
         for (final period in recentPeriods(habit, now))
           {'mark': period.mark.name, 'fraction': double.parse(period.fraction.toStringAsFixed(2))},
       ],
+      // "Words for this habit", in order; the widget takes a turn a day
+      'quotes': [
+        if (findQuote != null)
+          for (final id in habit.quoteIds)
+            if (findQuote(id) case final quote?) _quote(quote),
+      ],
     };
   }
 
@@ -126,12 +159,16 @@ class WidgetSnapshot {
     };
   }
 
-  static Map<String, String> _quote(Quote quote) => {
-        'id': quote.id,
-        'text': quote.text,
-        // Verses carry their translation, as its copyright notice asks
-        'author': quote.source == Quotes.nkjv ? '${quote.author} (NKJV)' : quote.author,
-      };
+  static Map<String, String> _quote(Quote quote) {
+    final verse = quote.source == Quotes.nkjv;
+    return {
+      'id': quote.id,
+      'text': quote.text,
+      // Verses carry their translation, as its copyright notice asks
+      'author': verse ? '${quote.author} (NKJV)' : quote.author,
+      'source': verse ? '' : quote.source,
+    };
+  }
 
   /// The palette colors the widgets draw with.
   static Map<String, String> _look(AppPalette p) => {
@@ -157,6 +194,13 @@ class WidgetSnapshot {
   /// "#RRGGBB" (palette colors are opaque).
   static String _hex(Color color) =>
       '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+  /// What a short quote widget shows: [quote] itself if it's short, else
+  /// the day's turn among the short ones in [pool].
+  static Quote? shortFor(Quote? quote, List<Quote> pool, DateTime day) {
+    if (quote == null || quote.text.length <= shortQuoteLength) return quote;
+    return QuoteOfTheDay.pick(day, [for (final q in pool) if (q.text.length <= shortQuoteLength) q]);
+  }
 
   static String _two(int n) => n.toString().padLeft(2, '0');
 

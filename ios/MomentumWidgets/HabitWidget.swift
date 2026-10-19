@@ -254,9 +254,9 @@ private struct HabitMedium: View {
 
 extension HabitInfo {
   static let placeholder = HabitInfo(
-    id: "placeholder", name: "Drink water",
+    id: "placeholder", name: "Drink water", category: nil,
     color: ColorPair(light: "#1E7FD0", dark: "#4FA8F5"), onColor: ColorPair(light: "#FFFFFF", dark: "#0E1013"),
     isBreak: false, progress: 5, target: 8, units: "glasses", text: "5 of 8 glasses", done: false, due: true,
     period: "today", periodEnds: nil, next: 6, step: 1, addLabel: "Add one", streak: 23, streakLabel: "23 day streak",
-    atRisk: false, momentum: 74, recent: [])
+    atRisk: false, momentum: 74, recent: [], quotes: nil)
 }

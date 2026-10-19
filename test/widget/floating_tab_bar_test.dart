@@ -66,6 +66,28 @@ void main() {
     expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
   });
 
+  testWidgets('a home screen widget can ask for a tab: it shows, on its first page', (tester) async {
+    await launch(tester);
+    IOSMainNavigation.tabRequests.value = AppTab.inspire;
+    await tester.pumpAndSettle();
+    expect(find.byType(InspireScreen).hitTestable(), findsOneWidget);
+    expect(IOSMainNavigation.tabRequests.value, isNull, reason: 'cleared once shown');
+
+    IOSMainNavigation.tabRequests.value = AppTab.insights;
+    await tester.pumpAndSettle();
+    expect(find.byType(InsightsScreen).hitTestable(), findsOneWidget);
+  });
+
+  testWidgets('a widget asking for Inspire while it is turned off changes nothing', (tester) async {
+    await launch(tester);
+    await get<SettingsProvider>().setShowInspireTab(false);
+    await tester.pumpAndSettle();
+    IOSMainNavigation.tabRequests.value = AppTab.inspire;
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('habitsGreeting')).hitTestable(), findsOneWidget);
+    expect(IOSMainNavigation.tabRequests.value, isNull);
+  });
+
   testWidgets('tabs keep their place when you switch away and back', (tester) async {
     await launch(tester);
     await tester.tap(find.byKey(const Key('tab_settings')));

@@ -23,7 +23,7 @@ import UIKit
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // A home screen widget tapped outside its + (momentum://habit/<id>)
+  // A home screen widget tapped outside its buttons (momentum://habit/<id>, momentum://inspire)
   override func application(
     _ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
@@ -86,8 +86,9 @@ enum WidgetChannel {
   /// so iOS keeps the app awake, until the app says they're applied).
   private static var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
 
-  /// A habit whose widget opened the app before Flutter was listening.
-  private static var openedHabit: String?
+  /// Where a widget that opened the app leads ("habit/<id>", "inspire"),
+  /// kept until Flutter is listening.
+  private static var opened: String?
 
   /// How long a tap waits for the app before leaving it queued for later.
   private static let wait: TimeInterval = 8
@@ -106,9 +107,9 @@ enum WidgetChannel {
       case "applied":
         resumeAll()
         result(nil)
-      case "takeOpenedHabit":
-        result(openedHabit)
-        openedHabit = nil
+      case "takeOpened":
+        result(opened)
+        opened = nil
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -138,15 +139,15 @@ enum WidgetChannel {
     waiting.forEach { $0.resume() }
   }
 
-  /// Handles momentum://habit/<id>; false for any other link.
+  /// Handles momentum:// links from widgets (habit/<id>, inspire, insights,
+  /// habits); false for any other link.
   static func open(_ url: URL) -> Bool {
-    guard url.scheme == "momentum" else { return false }
-    if url.host == "habit", let id = url.pathComponents.dropFirst().first {
-      openedHabit = id
-      channel?.invokeMethod("openHabit", arguments: id) { reply in
-        // Flutter showed it (it answers nil); otherwise it asks at launch
-        if reply == nil { openedHabit = nil }
-      }
+    guard url.scheme == "momentum", let host = url.host else { return false }
+    let route = ([host] + url.pathComponents.dropFirst()).joined(separator: "/")
+    opened = route
+    channel?.invokeMethod("open", arguments: route) { reply in
+      // Flutter went there (it answers nil); otherwise it asks at launch
+      if reply == nil { opened = nil }
     }
     return true
   }
