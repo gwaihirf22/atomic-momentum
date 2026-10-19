@@ -44,15 +44,24 @@ class DemoSeed {
     return DemoSeed._(_day(now), stored.habits, stored.seen);
   }
 
-  static DemoSeed? _cached;
+  static (DateTime, Future<DemoSeed>)? _cached;
 
   /// Today's seed, built off the main thread the first time it's asked for
-  /// on a day (so a launch can start it while the intro plays).
-  static Future<DemoSeed> forDay(DateTime now) async {
+  /// on a day (so a launch can start it while the intro plays), and shared
+  /// by everyone who asks that day, even while it's still being built.
+  static Future<DemoSeed> forDay(DateTime now) {
+    final day = _day(now);
     final cached = _cached;
-    if (cached != null && cached.day == _day(now)) return cached;
-    final stored = await Isolate.run(() => YearOfUse.stored(DemoPersona(now), now));
-    return _cached = DemoSeed._(_day(now), stored.habits, stored.seen);
+    if (cached != null && cached.$1 == day) return cached.$2;
+    final building = Isolate.run(() => YearOfUse.stored(DemoPersona(now), now))
+        .then((stored) => DemoSeed._(day, stored.habits, stored.seen));
+    _cached = (day, building);
+    // A failed build is tried again next time
+    building.catchError((Object _) {
+      if (_cached?.$2 == building) _cached = null;
+      return DemoSeed._(day, '[]', const []);
+    });
+    return building;
   }
 
   /// Forgets the cached seed (tests).

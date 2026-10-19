@@ -52,7 +52,12 @@ void main() async {
   // while the intro plays); someone who had habits before tours is offered it
   final prefs = get<SharedPreferences>();
   final tourStart = TourStart.of(prefs, fromNotification: NotificationService.focusRequests.value != null);
-  if (tourStart == TourStart.firstRun) unawaited(DemoSeed.forDay(clock.now()));
+  if (tourStart == TourStart.firstRun) {
+    unawaited(DemoSeed.forDay(clock.now()));
+  } else if (TourStore(prefs).seen.length < Tours.all.length) {
+    // A tour still to come on a tab: its example habits ready ahead of it
+    Timer(const Duration(seconds: 3), () => DemoSeed.forDay(clock.now()));
+  }
 
   runApp(MomentumApp(
     showIntro: showIntro,
