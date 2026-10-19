@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/health_source.dart';
 import 'package:atomic_momentum/domain/entities/health_link.dart';
@@ -30,9 +32,26 @@ class FakeHealthSource implements HealthSource {
   @override
   Future<void> installHealthConnect() async {}
 
+  /// What [ensureAccess] answers (Android: whether access is allowed).
+  bool accessAllowed = true;
+  int accessChecks = 0;
+
+  @override
+  Future<bool> ensureAccess({required Set<HealthMetric> read, Set<HealthMetric> write = const {}}) async {
+    accessChecks++;
+    return accessAllowed;
+  }
+
+  /// When false, [remove] fails (as a store refusing a delete would).
+  bool removeWorks = true;
+
+  /// While set, reads wait for it (to tap during a sync).
+  Completer<void>? holdReads;
+
   @override
   Future<Map<DateTime, int>> dailyValues(HealthMetric metric, DateTime from, DateTime to) async {
     reads++;
+    if (holdReads != null) await holdReads!.future;
     final days = values[metric] ?? const {};
     return {
       for (final e in days.entries)
@@ -61,6 +80,7 @@ class FakeHealthSource implements HealthSource {
 
   @override
   Future<bool> remove(HealthRecord record) async {
+    if (!removeWorks) return false;
     removed.add(record);
     // The fake's records last one second per unit logged
     final amount = record.end.difference(record.start).inSeconds;

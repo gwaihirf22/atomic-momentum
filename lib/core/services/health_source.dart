@@ -37,6 +37,12 @@ abstract class HealthSource {
   /// Opens the store to install Health Connect (Android).
   Future<void> installHealthConnect();
 
+  /// Makes sure reading [read] (and writing [write]) has been asked about.
+  /// iPhone: asks for anything never asked (no sheet otherwise), and true,
+  /// since Apple never says whether reading was allowed. Android: whether
+  /// it's allowed, without asking.
+  Future<bool> ensureAccess({required Set<HealthMetric> read, Set<HealthMetric> write = const {}});
+
   /// [metric] for each day from [from] to [to] (date-only), in its base
   /// unit: steps, workouts, minutes (exercise, sleep, mindful) or ml (water).
   /// The habit's own unit converts it (HealthUnit.fromBase).
@@ -134,6 +140,28 @@ class PluginHealthSource implements HealthSource {
   Future<void> installHealthConnect() => _health.installHealthConnect();
 
   @override
+  Future<bool> ensureAccess({required Set<HealthMetric> read, Set<HealthMetric> write = const {}}) async {
+    if (!isAndroid) return requestAccess(read: read, write: write);
+    try {
+      await _configure();
+      final types = <HealthDataType>[];
+      final access = <HealthDataAccess>[];
+      for (final metric in read) {
+        if (!metric.availableOn(isAndroid: true)) continue;
+        for (final type in _readTypes(metric, android: true)) {
+          types.add(type);
+          access.add(write.contains(metric) && type == _writeType(metric) ? HealthDataAccess.READ_WRITE : HealthDataAccess.READ);
+        }
+      }
+      if (types.isEmpty) return true;
+      return await _health.hasPermissions(types, permissions: access) ?? true;
+    } catch (e) {
+      logWarning('Health: could not check access: $e');
+      return true;
+    }
+  }
+
+  @override
   Future<Map<DateTime, int>> dailyValues(HealthMetric metric, DateTime from, DateTime to) async {
     final first = DateTime(from.year, from.month, from.day);
     final last = DateTime(to.year, to.month, to.day);
@@ -164,7 +192,8 @@ class PluginHealthSource implements HealthSource {
           ),
         HealthMetric.mindfulMinutes => HealthDays.minutesByDay(spans, first, last),
         HealthMetric.sleepHours => HealthDays.sleepMinutesByDay(spans, first, last),
-        HealthMetric.workouts => HealthDays.countByStartDay(points.map((p) => p.dateFrom), first, last),
+        // One session however many apps recorded it (a Watch run and Strava's copy)
+        HealthMetric.workouts => HealthDays.sessionsByStartDay(spans, first, last),
         HealthMetric.water => HealthDays.waterMlByDay([
             for (final p in points)
               if (p.value case NumericHealthValue(:final numericValue)) (at: p.dateFrom, liters: numericValue.toDouble()),
@@ -179,9 +208,11 @@ class PluginHealthSource implements HealthSource {
   @override
   Future<HealthRecord?> log(HealthMetric metric, double baseAmount, DateTime at) async {
     if (!metric.writable || baseAmount <= 0) return null;
-    // Water: an instant; mindful minutes: a session ending now
-    final start =
-        metric == HealthMetric.water ? at : at.subtract(Duration(seconds: (baseAmount * 60).round()));
+    // Water: a second (a span both stores can find again to delete);
+    // mindful minutes: a session ending now
+    final start = metric == HealthMetric.water
+        ? at.subtract(const Duration(seconds: 1))
+        : at.subtract(Duration(seconds: (baseAmount * 60).round()));
     try {
       await _configure();
       final ok = await _health.writeHealthData(
@@ -205,10 +236,10 @@ class PluginHealthSource implements HealthSource {
     DateTime at(int daysAgo, int hour, [int minute = 0]) => DateTime(now.year, now.month, now.day - daysAgo, hour, minute);
     try {
       await _configure();
+      // Health Connect lets the app write only what its manifest declares
+      // (water): the rest is iPhone only
       final types = [
-        HealthDataType.STEPS,
-        HealthDataType.WORKOUT,
-        HealthDataType.SLEEP_ASLEEP,
+        if (!isAndroid) ...[HealthDataType.STEPS, HealthDataType.WORKOUT, HealthDataType.SLEEP_ASLEEP],
         HealthDataType.WATER,
         if (!isAndroid) HealthDataType.MINDFULNESS,
       ];
@@ -218,13 +249,17 @@ class PluginHealthSource implements HealthSource {
       final hour = now.hour;
       // Today: what's happened by now; yesterday: a full day
       final ok = await Future.wait([
+        if (!isAndroid) ...[
         _health.writeHealthData(value: 3200, type: HealthDataType.STEPS, startTime: at(0, 0), endTime: hour > 1 ? at(0, hour - 1) : now),
         _health.writeHealthData(value: 9400, type: HealthDataType.STEPS, startTime: at(1, 8), endTime: at(1, 20)),
         _health.writeWorkoutData(activityType: HealthWorkoutActivityType.RUNNING, start: now.subtract(const Duration(minutes: 40)), end: now.subtract(const Duration(minutes: 8)), totalDistance: 5000, title: 'Sample run'),
         _health.writeWorkoutData(activityType: HealthWorkoutActivityType.RUNNING, start: at(1, 7), end: at(1, 7, 45), totalDistance: 7000, title: 'Sample run'),
         _health.writeHealthData(value: 0, type: HealthDataType.SLEEP_ASLEEP, startTime: at(1, 23, 10), endTime: at(0, 6, 25)),
         _health.writeHealthData(value: 0, type: HealthDataType.SLEEP_ASLEEP, startTime: at(2, 23, 40), endTime: at(1, 6, 50)),
-        _health.writeHealthData(value: 0.75, type: HealthDataType.WATER, unit: HealthDataUnit.LITER, startTime: now, endTime: now),
+        ],
+        _health.writeHealthData(
+            value: 0.75, type: HealthDataType.WATER, unit: HealthDataUnit.LITER,
+            startTime: now.subtract(const Duration(seconds: 1)), endTime: now),
         if (!isAndroid)
           _health.writeHealthData(value: 10, type: HealthDataType.MINDFULNESS, startTime: now.subtract(const Duration(minutes: 15)), endTime: now.subtract(const Duration(minutes: 5))),
       ]);
@@ -239,7 +274,10 @@ class PluginHealthSource implements HealthSource {
   Future<bool> remove(HealthRecord record) async {
     try {
       await _configure();
-      return await _health.delete(type: _writeType(record.metric), startTime: record.start, endTime: record.end);
+      // A second past the end, so older zero-length water writes are found too
+      // (both stores only ever delete what this app wrote)
+      final end = record.end.isAfter(record.start) ? record.end : record.end.add(const Duration(seconds: 1));
+      return await _health.delete(type: _writeType(record.metric), startTime: record.start, endTime: end);
     } catch (e) {
       logWarning('Health: could not remove ${record.metric.name}: $e');
       return false;

@@ -1480,19 +1480,40 @@ class _HealthLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final source = get<HealthSource>();
-    final synced = healthSyncAgo(context.watch<HabitProvider>().lastHealthSync).toLowerCase();
+    final habits = context.watch<HabitProvider>();
+    final synced = healthSyncAgo(habits.lastHealthSync).toLowerCase();
+    final what = habit.health!.metric.label.toLowerCase();
+    // Not allowed (Android says so), or a whole week of nothing (iPhone never says)
+    final blocked = habits.healthAccessMissing || habits.healthReadsNothing(habit);
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Row(children: [
-        Icon(CupertinoIcons.heart_fill, size: 14, color: palette.danger),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            'From ${source.name} · ${habit.health!.metric.label.toLowerCase()} · synced $synced',
-            key: const Key('detailHealth'),
-            style: TextStyle(fontSize: 13, color: palette.textSecondary),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(CupertinoIcons.heart_fill, size: 14, color: palette.danger),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'From ${source.name} · $what · synced $synced',
+              key: const Key('detailHealth'),
+              style: TextStyle(fontSize: 13, color: palette.textSecondary),
+            ),
           ),
-        ),
+        ]),
+        if (blocked) ...[
+          const SizedBox(height: 6),
+          Text(
+            habits.healthAccessMissing
+                ? "Momentum can't read your $what. Allow it in ${source.name}."
+                : 'Nothing from ${source.name} this week. Is Momentum allowed to read your $what?',
+            key: const Key('detailHealthBlocked'),
+            style: TextStyle(fontSize: 13, color: palette.warning),
+          ),
+          TextButton(
+            key: const Key('detailHealthAllow'),
+            onPressed: () => context.read<HabitProvider>().askHealthAccessAgain(),
+            child: const Text('Allow access'),
+          ),
+        ],
       ]),
     );
   }

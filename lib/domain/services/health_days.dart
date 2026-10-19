@@ -70,6 +70,23 @@ class HealthDays {
               from: DateTime(day.year, day.month, day.day - 1, 18), to: DateTime(day.year, day.month, day.day, 18)),
       };
 
+  /// Workouts per day, by the day each began. Workouts that overlap are
+  /// one session (a Watch run and the copy another app keeps of it).
+  static Map<DateTime, int> sessionsByStartDay(Iterable<HealthSpan> workouts, DateTime from, DateTime to) {
+    final sorted = [...workouts]..sort((a, b) => a.start.compareTo(b.start));
+    final starts = <DateTime>[];
+    DateTime? runEnd;
+    for (final w in sorted) {
+      if (runEnd == null || !w.start.isBefore(runEnd)) {
+        starts.add(w.start);
+        runEnd = w.end;
+      } else if (w.end.isAfter(runEnd)) {
+        runEnd = w.end;
+      }
+    }
+    return countByStartDay(starts, from, to);
+  }
+
   /// How many began on each day (workouts).
   static Map<DateTime, int> countByStartDay(Iterable<DateTime> starts, DateTime from, DateTime to) {
     final counts = {for (final day in _days(from, to)) day: 0};

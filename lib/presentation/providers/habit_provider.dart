@@ -273,9 +273,18 @@ class HabitProvider extends ChangeNotifier {
     try {
       final changes = await health.changes(_habits);
       for (final entry in changes.entries) {
+        // Against the habit as it is now: a tap made while Health was being
+        // read stays if it's higher
+        final current = getHabitById(entry.key);
+        if (current == null) continue;
+        final days = {
+          for (final day in entry.value.entries)
+            if (day.value > (current.history[day.key] ?? 0)) day.key: day.value,
+        };
+        if (days.isEmpty) continue;
         // Numbers from Health aren't logged back to it
         _fromHealth = true;
-        final saved = setDays(entry.key, entry.value);
+        final saved = setDays(entry.key, days);
         _fromHealth = false;
         await saved;
       }
@@ -297,17 +306,49 @@ class HabitProvider extends ChangeNotifier {
     return notice;
   }
 
+  /// Changes waiting to be logged to Health, and whether they're being
+  /// logged: one at a time, in order, so quick taps never race.
+  final List<(Habit, Habit)> _toMirror = [];
+  bool _mirroring = false;
+
   /// Logs a change to a habit that logs to Health, behind the tap. When
   /// Health holds more than the app wrote, its number comes back.
   void _mirrorToHealth(Habit before, Habit after) {
     final health = _health;
     if (health == null || _fromHealth || !(after.health?.logsToHealth ?? false)) return;
-    health.logChange(before, after).then((notice) {
-      if (notice == null) return;
-      _healthNotice = notice;
-      notifyListeners();
-      syncHealth(force: true);
-    });
+    _toMirror.add((before, after));
+    if (!_mirroring) _mirrorNext(health);
+  }
+
+  Future<void> _mirrorNext(HealthSyncService health) async {
+    _mirroring = true;
+    try {
+      while (_toMirror.isNotEmpty) {
+        final (before, after) = _toMirror.removeAt(0);
+        final notice = await health.logChange(before, after);
+        if (notice == null) continue;
+        _healthNotice = notice;
+        notifyListeners();
+        syncHealth(force: true);
+      }
+    } finally {
+      _mirroring = false;
+    }
+  }
+
+  /// Health won't let the app read (Android says so; null until known).
+  bool get healthAccessMissing => _health?.accessAllowed == false;
+
+  /// Health had nothing for [habit] all week (likely not allowed, on iPhone).
+  bool healthReadsNothing(Habit habit) => _health?.readsNothing(habit) ?? false;
+
+  /// Asks for Health access again, then syncs.
+  Future<void> askHealthAccessAgain() async {
+    final health = _health;
+    if (health == null) return;
+    await health.askAgain(_habits);
+    notifyListeners();
+    await syncHealth(force: true);
   }
 
   /// When this phone last read Health, or null.

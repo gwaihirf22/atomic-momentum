@@ -78,4 +78,15 @@ void main() {
       expect(HealthMerge.daysToSet(TestData.createTestHabit(), {oct(18): 5}, today), isEmpty);
     });
   });
+
+  test('a workout two apps recorded counts once; separate ones each count', () {
+    final day = DateTime(2026, 10, 14);
+    DateTime at(int h, [int m = 0]) => DateTime(2026, 10, 14, h, m);
+    final counts = HealthDays.sessionsByStartDay([
+      (start: at(7), end: at(7, 45)), // the Watch's run
+      (start: at(7, 1), end: at(7, 44)), // Strava's copy
+      (start: at(18), end: at(18, 30)), // an evening walk
+    ], day, day);
+    expect(counts[day], 2);
+  });
 }

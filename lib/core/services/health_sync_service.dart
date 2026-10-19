@@ -34,6 +34,33 @@ class HealthSyncService {
 
   HealthSource get source => _source();
 
+  /// Whether reading is allowed, as far as can be told: false only where
+  /// the store says so (Android); null before the first sync.
+  bool? accessAllowed;
+  bool _accessChecked = false;
+
+  static Set<HealthMetric> _reads(List<Habit> linked) => {for (final h in linked) h.health!.metric};
+  static Set<HealthMetric> _writesFor(List<Habit> linked) =>
+      {for (final h in linked) if (h.health!.logsToHealth) h.health!.metric};
+
+  /// Asks again for what the linked [habits] need (Settings' or the habit
+  /// page's "Allow").
+  Future<bool> askAgain(List<Habit> habits) async {
+    final linked = habits.where((h) => h.health != null && !h.isBreak).toList();
+    await source.requestAccess(read: _reads(linked), write: _writesFor(linked));
+    accessAllowed = await source.ensureAccess(read: _reads(linked), write: _writesFor(linked));
+    return accessAllowed!;
+  }
+
+  /// Health had nothing for [habit] on any day of the last week, though it
+  /// was looked at (iPhone never says whether reading was allowed, so this
+  /// is the sign it wasn't).
+  bool readsNothing(Habit habit) {
+    final days = _readValues()[habit.id];
+    if (habit.health == null || days == null || days.length < HealthMerge.window) return false;
+    return days.values.every((v) => v <= _tiny);
+  }
+
   DateTime? get lastSync {
     final ms = _prefs.getInt(lastSyncKey);
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
@@ -167,8 +194,12 @@ class HealthSyncService {
     final ours = writes.where((w) => w.habitId == after.id && w.day == today).toList();
     while (owed > _tiny && ours.isNotEmpty) {
       final last = ours.removeLast();
+      if (!await source.remove(last.record)) {
+        // Still in Health: keep the record, to take it back next time
+        await _saveWrites(writes);
+        return 'Couldn\'t take that back from ${source.name}. Try again.';
+      }
       writes.remove(last);
-      await source.remove(last.record);
       await _adjustValue(after.id, today, -last.amount);
       if (last.amount > owed + _tiny) {
         // Took back too much: log the rest again
@@ -193,6 +224,12 @@ class HealthSyncService {
     final source = _source();
     final available = await source.availability() == HealthAvailability.available;
     if (!available) return const {};
+    // Once a launch: ask about anything never asked (a new phone, a
+    // reinstall); on Android, find out whether it's allowed
+    if (!_accessChecked) {
+      _accessChecked = true;
+      accessAllowed = await source.ensureAccess(read: _reads(linked), write: _writesFor(linked));
+    }
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
     final result = <String, Map<DateTime, int>>{};

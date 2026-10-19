@@ -1,8 +1,8 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/dev/dev_tools.dart';
 import '../../core/injection/injection_container.dart';
 import '../../core/services/health_source.dart';
 import '../../domain/entities/habit_color.dart';
@@ -85,8 +85,17 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
                 value: healthSyncAgo(habits.lastHealthSync),
                 onTap: _syncing || linked == 0 ? null : _syncNow,
               ),
-            // Debug builds only: a simulator can't record a run, so write some
-            if (kDebugMode && availability == HealthAvailability.available)
+            if (habits.healthAccessMissing && linked > 0)
+              SettingsTile(
+                tileKey: const Key('healthAllow'),
+                icon: CupertinoIcons.lock_open_fill,
+                iconColor: HabitColor.orange.color,
+                title: 'Allow access',
+                subtitle: "Momentum can't read from ${_source.name}",
+                onTap: () => context.read<HabitProvider>().askHealthAccessAgain(),
+              ),
+            // Developer tools only: a simulator can't record a run, so write some
+            if (DevTools.enabled && availability == HealthAvailability.available)
               SettingsTile(
                 tileKey: const Key('healthSampleData'),
                 icon: CupertinoIcons.lab_flask_solid,

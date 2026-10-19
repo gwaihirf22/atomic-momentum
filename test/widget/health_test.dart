@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +13,7 @@ import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/health_link.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
+import 'package:atomic_momentum/domain/usecases/update_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/category_provider.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
@@ -256,6 +259,106 @@ void main() {
       await habits.updateHabitProgress(id, 1000);
       await settle();
       expect(health.logged, isEmpty);
+    });
+  });
+
+  group('the fixes found verifying Health', () {
+    Future<void> settle() async {
+      for (var i = 0; i < 6; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    Future<String> addWater() async {
+      await habits.createHabit(CreateHabitParams(
+        name: 'Water',
+        target: 8,
+        units: 'glasses',
+        color: HabitColor.blue,
+        categoryId: BuiltInCategoryIds.body,
+        health: HealthLink(metric: HealthMetric.water, logToHealth: true, linkedOn: yesterday),
+      ));
+      return habits.habits.single.id;
+    }
+
+    test('quick taps are logged to Health in order, and all come out again', () async {
+      final id = await addWater();
+      await habits.updateHabitProgress(id, 1);
+      await habits.updateHabitProgress(id, 2);
+      await habits.updateHabitProgress(id, 3);
+      await settle();
+      expect(health.values[HealthMetric.water]![today], 750);
+      await habits.updateHabitProgress(id, 0);
+      await settle();
+      expect(health.values[HealthMetric.water]![today], 0);
+      expect(habits.takeHealthNotice(), isNull);
+    });
+
+    test("a delete Health refuses is kept, said, and taken back next time", () async {
+      final id = await addWater();
+      await habits.updateHabitProgress(id, 2);
+      await settle();
+      health.removeWorks = false;
+      await habits.updateHabitProgress(id, 0);
+      await settle();
+      expect(habits.takeHealthNotice(), "Couldn't take that back from Apple Health. Try again.");
+      health.removeWorks = true;
+      await habits.updateHabitProgress(id, 2);
+      await settle();
+      await habits.updateHabitProgress(id, 0);
+      await settle();
+      expect(health.values[HealthMetric.water]![today], 0, reason: 'both writes came out');
+    });
+
+    test('Calendar logs today to Health like the card does', () async {
+      final id = await addWater();
+      await habits.updateProgressForDate(id, today, 2);
+      await settle();
+      expect(health.values[HealthMetric.water]![today], 500);
+    });
+
+    test('a tap while Health is being read stays, if it\'s higher', () async {
+      final id = await addLinked(HealthMetric.steps);
+      health.values[HealthMetric.steps] = {today: 3000};
+      health.holdReads = Completer<void>();
+      final sync = habits.syncHealth(force: true);
+      await habits.updateHabitProgress(id, 9000);
+      health.holdReads!.complete();
+      health.holdReads = null;
+      await sync;
+      expect(habits.habits.single.history[today], 9000);
+    });
+
+    testWidgets('where Health says reading isn\'t allowed, Settings and the habit page offer to ask again',
+        (tester) async {
+      final id = await addLinked(HealthMetric.steps);
+      health.isAndroid = true;
+      health.accessAllowed = false;
+      await habits.syncHealth(force: true);
+      expect(habits.healthAccessMissing, isTrue);
+
+      await pump(tester, HabitDetailScreen(habitId: id));
+      expect(find.byKey(const Key('detailHealthBlocked')), findsOneWidget);
+      health.accessAllowed = true;
+      await tester.tap(find.byKey(const Key('detailHealthAllow')));
+      await tester.pumpAndSettle();
+      expect(health.accessRequests, isNotEmpty);
+      expect(habits.healthAccessMissing, isFalse);
+      expect(find.byKey(const Key('detailHealthBlocked')), findsNothing);
+    });
+
+    testWidgets('a week of nothing from Health asks whether Momentum is allowed', (tester) async {
+      final id = await addLinked(HealthMetric.steps);
+      final weekAgo = DateTime(today.year, today.month, today.day - 6);
+      await habits.startFrom(id, weekAgo);
+      health.values[HealthMetric.steps] = {
+        for (var i = 0; i < 7; i++) DateTime(today.year, today.month, today.day - i): 0,
+      };
+      // A link made a week ago (so a sync looks at all seven days)
+      await habits.updateHabitDetails(id, UpdateHabitParams(health: HealthLink(metric: HealthMetric.steps, linkedOn: weekAgo)));
+      await habits.syncHealth(force: true);
+      await pump(tester, HabitDetailScreen(habitId: id));
+      expect(find.textContaining('Is Momentum allowed to read your steps?'), findsOneWidget);
     });
   });
 
