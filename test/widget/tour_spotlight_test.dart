@@ -164,6 +164,31 @@ void main() {
     });
   });
 
+  testWidgets('every step can be done or skipped with Next: a "try it" keeps Next and Skip', (tester) async {
+    var next = 0, skip = 0;
+    await tester.pumpWidget(MaterialApp(
+      theme: IOSTheme.material(AppPalette.sepia),
+      home: Center(
+        child: SizedBox(
+          width: 340,
+          child: TourBubble(
+            eyebrow: 'Try it',
+            text: 'Tap + to log one more glass, or tap Next.',
+            tryIt: true,
+            step: 1,
+            steps: 4,
+            onNext: () => next++,
+            onSkip: () => skip++,
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Next'));
+    await tester.tap(find.text('Skip'));
+    expect((next, skip), (1, 1));
+    expect(find.text('Skip step'), findsNothing);
+  });
+
   testWidgets('a "try it" pulses, but not with Reduce Motion', (tester) async {
     await pump(tester, target: const Rect.fromLTWH(140, 300, 96, 60), tryIt: true);
     expect(tester.hasRunningAnimations, isTrue);

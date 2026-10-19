@@ -5,8 +5,8 @@ import '../../core/theme/app_palette.dart';
 
 /// What a tour says at one step: a small eyebrow (the tour's name, or
 /// "Try it"), one or two short sentences, the steps as dots, and Skip / Next.
-/// On a "try it" step Next gives way to a quieter "Skip step": the step moves
-/// on by itself once the person does the thing.
+/// Every step works both ways (Paul, 2026-10-19): Next always moves on, and
+/// on a "try it" step doing the thing itself moves on too.
 class TourBubble extends StatelessWidget {
   final String eyebrow;
   final String text;
@@ -160,11 +160,10 @@ class _Footer extends StatelessWidget {
       runSpacing: 4,
       spacing: 8,
       children: [
-        if (actions == null && onSkip != null)
-          TextButton(style: quiet, onPressed: onSkip, child: Text(tryIt ? 'Skip step' : 'Skip')),
+        if (actions == null && onSkip != null) TextButton(style: quiet, onPressed: onSkip, child: const Text('Skip')),
         if (steps > 1) _Dots(step: step, steps: steps),
         if (actions != null) Row(mainAxisSize: MainAxisSize.min, children: actions),
-        if (actions == null && !tryIt && onNext != null) TourNextButton(label: nextLabel, onPressed: onNext!),
+        if (actions == null && onNext != null) TourNextButton(label: nextLabel, onPressed: onNext!),
       ],
     );
   }

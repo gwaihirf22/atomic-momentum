@@ -51,7 +51,9 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # but doesn't take clicks. Then:
 ./flutter/bin/flutter run -d "iPhone 17 Pro"
 xcrun simctl io booted screenshot shot.png   # screenshot from the command line
-# After changes, reload BOTH simulators: iPhone 17 Pro and iPhone SE (3rd gen, iOS 18.5)
+# After changes, reload BOTH simulators: iPhone 17 Pro and iPhone SE (3rd generation), each on
+# the newest iOS it runs here (26.0; iOS 27 drops the SE). iOS 27.1 runs only on "iPhone Duo"
+# in this Xcode: check iOS changes there too. "iPhone SE (iOS 18)" stays for older iOS
 
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web
@@ -70,7 +72,7 @@ tool/device_notification_check.sh "iPhone 17 Pro"
 # reads every metric back, logs and takes back water, then cleans up (in-memory storage)
 tool/device_health_check.sh "iPhone 17 Pro"   # or emulator-5554; tap Allow once on iOS
 
-# A year of use on a device (its own simulators "Year iPhone 17 Pro" / "Year iPhone SE",
+# A year of use on a device (its own simulators "Year iPhone 17 Pro" / "Year iPhone SE" / "Year iPhone Duo",
 # or emulator-5554 with fewer days), with screenshots of every screen each month
 tool/device_year_check.sh "Year iPhone 17 Pro"
 
@@ -210,7 +212,7 @@ The smallest supported phone is the **iPhone SE (2nd/3rd gen), 375pt wide**; the
 - **Status (2026-10-19)**: 1517 tests passing, including the notification simulator and the year simulator (coverage last measured at 58.5% on 2026-10-15; use cases, data layer and `habit_provider.dart` were the weakest areas)
 
 ## Key Implementation Details
-- **iOS app lifecycle: scenes** (since 2026-10-19). iOS 27 kills apps without the UIScene lifecycle at launch (`…ForNoSceneLifecycleAdoption`, SIGTRAP), which is how Momentum stopped opening on Paul's iPhone. Info.plist's `UIApplicationSceneManifest` uses Flutter's `FlutterSceneDelegate`; `AppDelegate` is a `FlutterImplicitEngineDelegate` and registers plugins and the app's channels (`momentum/app_icon`, `momentum/storefront`, `momentum/widgets`) in `didInitializeImplicitFlutterEngine`, never in `didFinishLaunching` (no engine or launch options there now). `momentum://` links (widgets) come through the scene, to `WidgetLinks` (a `FlutterSceneLifeCycleDelegate`), not `application(_:open:)`. Test new iOS releases on simulators of the latest iOS
+- **iOS app lifecycle: scenes** (since 2026-10-19). iOS 27 kills apps without the UIScene lifecycle at launch (`…ForNoSceneLifecycleAdoption`, SIGTRAP), which is how Momentum stopped opening on Paul's iPhone. Info.plist's `UIApplicationSceneManifest` uses Flutter's `FlutterSceneDelegate`; `AppDelegate` is a `FlutterImplicitEngineDelegate` and registers plugins and the app's channels (`momentum/app_icon`, `momentum/storefront`, `momentum/widgets`) in `didInitializeImplicitFlutterEngine`, never in `didFinishLaunching` (no engine or launch options there now). `momentum://` links (widgets) come through the scene, to `WidgetLinks` (a `FlutterSceneLifeCycleDelegate`), not `application(_:open:)`. Test new iOS releases on simulators of the latest iOS. A checkout first built on an older Flutter needs `cd ios && pod install` and a clean derived-data folder before its first 3.47 build (else "FlutterImplicitEngineDelegate not found" from a stale precompiled header)
 - **Storage**: habits are JSON in SharedPreferences via `SharedPreferencesDataSource`; a habit keeps its full per-day `history`, and streak, progress and momentum are derived from it (`Habit.refresh`, `StreakCalculator`, `MomentumCalculator`). Categories live under `categories_v1`; quotes of the person's own under `quotes_mine_v1`, saved quote ids under `quotes_saved_v1`; Health's last sync `health_last_sync_v1` and the app's own Health writes `health_writes_v1` (this phone's, never synced)
 - **Dates**: day-only dates are built from calendar fields (`DateTime(y, m, d)`), never with `toLocal()`; table_calendar hands over UTC midnights
 - **Notifications**: `NotificationService` wraps flutter_local_notifications. Reminders use payload `reminder|<habitId>` and are found and replaced as a set; streak warnings use ids hashed from `<habitId>-streak-…`. A full reload (`StreakWarningService.syncAll(replace: true)`, every launch) also cancels pending warnings whose habit is gone, found by their payload (the bare habit id, `NotificationService.cancelStreakWarningsExcept`), since habits can vanish without Delete (Developer → Load a year of use / Put my habits back); scenario 13 of the simulator checks it. A new install starts with no habits (`initializeDependencies` seeds none; test builds have Developer → Add sample habits) iOS keeps at most 64 pending: reminders get what streak warnings leave (`ReminderService.roomFor`). Warning lead times count on the clock (24h before midnight is midnight the day before, even when clocks change). Permission is asked once at first launch, after the first frame

@@ -6,7 +6,11 @@ v1 roadmap item 5. The strategy wants the tutorial to teach the method ("Momentu
 - **Short tours**, one per screen:
   - First launch runs only the **Habits** tour, which says more tours come as you visit other tabs.
   - The first visit to Calendar, Insights, Inspire, Settings, a habit page or the Add-habit editor runs that screen's tour.
-- **Style:** a dimmed screen with a spotlight cut-out, a speech bubble and an arrow. Mostly **Next**, with a few **try it** steps that wait for the real gesture.
+- **Style:** a dimmed screen with a spotlight cut-out, a speech bubble and an arrow.
+- **Every step works both ways** (Paul, 2026-10-19, after trying the preview): the person can do the thing in the spotlight or tap **Next**, on every step.
+  - Steps with an action ("Tap + to log one more glass, or tap Next") move on by themselves when it's done.
+  - The spotlight always lets touches through (on example habits, so nothing real changes), and **Next** and **Skip** are always there.
+  - No step makes you act, and none makes you tap Next, so a step that says "try it" is never followed by one where the target can't be touched.
 - **Example habits:**
   - Tours where history matters (Habits, the habit page, Calendar, Insights) run on **example habits** with 6+ months of use.
   - Inspire, Settings and the editor run on the person's real screen, with Next steps only.
@@ -23,7 +27,7 @@ v1 roadmap item 5. The strategy wants the tutorial to teach the method ("Momentu
   - a rounded hole around the target (6 pt padding, radius 14) with an accent ring that pulses on try-its (not with Reduce Motion);
   - touches absorbed except inside the hole on a try-it.
 - **`RenderCallout`** places the bubble on the side with room (preferring the asked-for side), its arrow at the target's middle, clear of the tab bar. With no room or no target, it sits in the middle without an arrow.
-- **`TourBubble`** (`tour_bubble.dart`): an eyebrow, or a "Try it" chip; one or two sentences; step dots; Skip; an orb Next (`TourNextButton`).
+- **`TourBubble`** (`tour_bubble.dart`): an eyebrow, or a "Try it" chip; one or two sentences; step dots; Skip; an orb Next (`TourNextButton`), on every step.
 - **`ExampleHabitsPill`**: "Example habits · Done".
 - **Settings → Developer → "Tour style preview"** steps through five examples over the real Habits screen.
 - **`tool/tour_screens.sh "<device>"`** screenshots each step in Light, Sepia and Charged at 100% and 135% text, into `build/tour_screens/<device>/`.

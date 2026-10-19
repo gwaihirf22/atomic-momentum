@@ -43,14 +43,15 @@ abstract final class TourStylePreview {
     _Step(
       target: _Target.prefix('incrementHabit_'),
       eyebrow: 'Try it',
-      text: 'Tap + to log one more glass.',
+      text: 'Tap + to log one more glass, or tap Next.',
       tryIt: true,
       example: true,
     ),
     _Step(
       target: _Target.prefix('habitCard_'),
-      eyebrow: 'Habits',
-      text: "Swipe a card right to freeze a day you can't make, or left to edit it.",
+      eyebrow: 'Try it',
+      text: "Swipe a card right to freeze a day you can't make, or tap Next.",
+      tryIt: true,
       example: true,
     ),
     _Step(
