@@ -205,6 +205,9 @@ void main() {
             }
             final bubble = tester.getRect(find.byType(TourBubble));
             expect(bubble.top, greaterThanOrEqualTo(0), reason: 'step ${i + 1}');
+            final text = tester.state<ScrollableState>(
+                find.descendant(of: find.byType(TourBubble), matching: find.byType(Scrollable)));
+            expect(text.position.maxScrollExtent, 0, reason: 'step ${i + 1}: all its words show');
             expect(bubble.bottom, lessThanOrEqualTo(size.height), reason: 'step ${i + 1}');
             await tester.tap(find.text(i == tour.steps.length - 1 ? 'Done' : 'Next'));
           }
@@ -343,6 +346,10 @@ void main() {
               if (step.anchor != null) expect(spotlight.target, isNotNull, reason: 'step ${i + 1}');
               final bubble = tester.getRect(find.byType(TourBubble));
               expect(bubble.top, greaterThanOrEqualTo(20), reason: 'step ${i + 1} below the status bar');
+              // Every word shows: the text never has to scroll
+              final text = tester.state<ScrollableState>(
+                  find.descendant(of: find.byType(TourBubble), matching: find.byType(Scrollable)));
+              expect(text.position.maxScrollExtent, 0, reason: 'step ${i + 1}: all its words show');
               expect(bubble.bottom, lessThanOrEqualTo(size.height), reason: 'step ${i + 1} on screen');
               expect(bubble.left, greaterThanOrEqualTo(0));
               expect(bubble.right, lessThanOrEqualTo(size.width));

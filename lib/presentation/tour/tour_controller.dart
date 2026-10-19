@@ -212,7 +212,8 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
   /// Moves on; after the last step, ends the tour.
   Future<void> next() async {
     final tour = _tour;
-    if (tour == null) return;
+    // Not before the step is showing (its world and target still coming)
+    if (tour == null || !_ready) return;
     if (_step + 1 >= tour.steps.length) return _end(finished: true);
     _step++;
     _ready = false;
@@ -221,7 +222,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> back() async {
-    if (_tour == null || _step == 0) return;
+    if (_tour == null || _step == 0 || !_ready) return;
     _step--;
     _ready = false;
     notifyListeners();

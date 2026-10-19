@@ -37,21 +37,19 @@ abstract final class Tours {
       TourStep(
         anchor: TourAnchorId.habitRing,
         habit: DemoPersona.read,
-        text: 'Hold a ring to finish the whole day in one go (Undo puts it back). Try it, or tap Next.',
+        text: 'Hold a ring to finish the day in one go. Try it, or tap Next.',
         wait: TourWait.hold,
       ),
       TourStep(
         anchor: TourAnchorId.habitTwoMinute,
         habit: DemoPersona.meditate,
-        text: "Missed yesterday? Don't miss twice. On a hard day, tap 2 min: "
-            'the tiny version still keeps your streak.',
+        text: "Missed yesterday? Don't miss twice: on a hard day, tap 2 min. A tiny version keeps the streak.",
         wait: TourWait.twoMinute,
       ),
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.gym,
-        text: "Can't make it today? Swipe right to freeze the day: streak and momentum hold. "
-            'Try it, or tap Next.',
+        text: "Can't make it today? Swipe right to freeze the day, and your streak holds. Or tap Next.",
         wait: TourWait.swipeToFreeze,
       ),
       TourStep(

@@ -230,9 +230,6 @@ class RenderCallout extends RenderShiftedBox {
   static const margin = 16.0;
   static const maxWidth = 340.0;
 
-  /// The least height worth putting a bubble in beside the hole.
-  static const minRoom = 120.0;
-
   Rect? _hole;
   set hole(Rect? value) {
     if (value == _hole) return;
@@ -288,29 +285,31 @@ class RenderCallout extends RenderShiftedBox {
     final hole = _hole;
     arrowAt = null;
 
-    final above = hole == null ? 0.0 : hole.top - TourSpotlight.gap - arrowSize.height - regionTop;
-    final below = hole == null ? 0.0 : regionBottom - (hole.bottom + TourSpotlight.gap + arrowSize.height);
-    if (hole == null || math.max(above, below) < minRoom) {
-      child.layout(
-        BoxConstraints(minWidth: width, maxWidth: width, maxHeight: math.max(0, regionBottom - regionTop)),
-        parentUsesSize: true,
-      );
-      data.offset = Offset((size.width - width) / 2, regionTop + (regionBottom - regionTop - child.size.height) / 2);
+    final region = math.max(0.0, regionBottom - regionTop);
+    // Its full height first: every word shows, wherever it goes
+    child.layout(BoxConstraints(minWidth: width, maxWidth: width, maxHeight: region), parentUsesSize: true);
+    final height = child.size.height;
+    if (hole == null) {
+      data.offset = Offset((size.width - width) / 2, regionTop + (region - height) / 2);
       return;
     }
-    child.layout(
-      BoxConstraints(minWidth: width, maxWidth: width, maxHeight: math.max(above, below)),
-      parentUsesSize: true,
-    );
-    final height = child.size.height;
+    final above = hole.top - TourSpotlight.gap - arrowSize.height - regionTop;
+    final below = regionBottom - (hole.bottom + TourSpotlight.gap + arrowSize.height);
+    final fitsBelow = height <= below, fitsAbove = height <= above;
+    if (!fitsBelow && !fitsAbove) {
+      // No room beside a big target: over its edge, on the roomier side,
+      // arrowless, rather than hiding words
+      final left = (hole.center.dx - width / 2).clamp(margin, size.width - margin - width);
+      data.offset = Offset(left, below >= above ? regionBottom - height : regionTop);
+      return;
+    }
     final preferBelow = switch (_side) {
       BubbleSide.below => true,
       BubbleSide.above => false,
       BubbleSide.auto => hole.center.dy < (regionTop + regionBottom) / 2,
     };
-    final fitsBelow = height <= below, fitsAbove = height <= above;
-    // The preferred side if it fits, else the side that does, else the roomier
-    final goBelow = preferBelow ? (fitsBelow || (!fitsAbove && below >= above)) : (!fitsAbove && (fitsBelow || below > above));
+    // The preferred side if it fits, else the other
+    final goBelow = preferBelow ? fitsBelow : !fitsAbove;
 
     final left = (hole.center.dx - width / 2).clamp(margin, size.width - margin - width);
     final corner = 18.0 + arrowSize.width / 2;

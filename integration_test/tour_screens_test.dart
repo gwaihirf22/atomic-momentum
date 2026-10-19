@@ -79,10 +79,14 @@ void main() {
 /// Waits, in real time, for the tour's step to be ready (the example
 /// habits are built off the main thread first; a pump alone doesn't wait).
 Future<void> _ready(WidgetTester tester, TourController tours) async {
-  for (var i = 0; i < 100 && tours.isRunning && !tours.isReady; i++) {
+  final watch = Stopwatch()..start();
+  while (tours.isRunning && !tours.isReady && watch.elapsed < const Duration(seconds: 60)) {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump(const Duration(milliseconds: 16));
   }
+  // ignore: avoid_print
+  print('TOUR ${tours.tour?.id.name} step ${tours.stepIndex + 1} ready after ${watch.elapsedMilliseconds} ms');
+  expect(!tours.isRunning || tours.isReady, isTrue, reason: 'the step never became ready');
 }
 
 /// Lets frames run for [ms] (the spotlight's pulse never settles).
