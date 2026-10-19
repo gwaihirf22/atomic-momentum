@@ -20,7 +20,14 @@ import '../../domain/usecases/update_habit_usecase.dart';
 /// habit and day, never from the clock or the app's state. It says what the
 /// person does, not what should come of it; working that out is the
 /// simulation's job.
-class YearPersona {
+/// Days of use, each a list of visits with what was done: lived by
+/// [YearOfUse.build]. [YearPersona] is the simulators' year; the tours'
+/// example habits have their own.
+abstract interface class Persona {
+  List<PersonaDay> get days;
+}
+
+class YearPersona implements Persona {
   /// Day 0 (date-only).
   final DateTime start;
 
@@ -85,6 +92,7 @@ class YearPersona {
   bool isHoliday(int day) => day >= holidayFrom && day <= holidayTo;
 
   /// The whole year, day 0 first.
+  @override
   late final List<PersonaDay> days = () {
     final year = <PersonaDay>[];
     for (var i = 0; i < length; i++) {

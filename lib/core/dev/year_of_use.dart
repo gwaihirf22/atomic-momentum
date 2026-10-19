@@ -44,7 +44,7 @@ class YearOfUse {
   static YearPersona personaEnding(DateTime now) => YearPersona(DateTime(now.year, now.month, now.day - (YearPersona.length - 1)));
 
   /// The persona's habits after every visit up to [until].
-  static List<Habit> build(YearPersona persona, DateTime until) {
+  static List<Habit> build(Persona persona, DateTime until) {
     final habits = <String, Habit>{};
     for (final day in persona.days) {
       for (final visit in day.visits) {
@@ -157,7 +157,7 @@ class YearOfUse {
     }
     // A year takes a few seconds to build: off the main thread, so the app
     // keeps drawing
-    final year = await Isolate.run(() => _stored(now));
+    final year = await Isolate.run(() => stored(personaEnding(now), now));
     await prefs.setString(SharedPreferencesDataSource.habitsKey, year.habits);
     await prefs.setStringList(AchievementStore.key, year.seen);
     // A fresh bank: three freezes, the year's milestones filed as earned
@@ -166,10 +166,10 @@ class YearOfUse {
     }
   }
 
-  /// The year ending [now] as stored: the habits' JSON, and its
-  /// achievements' ids (all filed as seen).
-  static ({String habits, List<String> seen}) _stored(DateTime now) {
-    final habits = build(personaEnding(now), now);
+  /// [persona]'s habits up to [now] as stored: their JSON, and the ids of
+  /// the achievements they've earned (to file as seen).
+  static ({String habits, List<String> seen}) stored(Persona persona, DateTime now) {
+    final habits = build(persona, now);
     return (
       habits: jsonEncode([for (final h in habits) HabitModel.fromDomain(h).toCompactJson()]),
       seen: [for (final a in Achievements.earned(habits, now)) a.id]..sort(),

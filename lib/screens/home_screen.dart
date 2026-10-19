@@ -30,6 +30,7 @@ import '../core/services/notification_service.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/momentum_ring.dart';
 import 'package:clock/clock.dart';
+import '../presentation/tour/world_scope.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -62,18 +63,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _habitsForNotices = context.read<HabitProvider>()..addListener(_showHealthNotice);
     _scheduleMidnightReset();
-    NotificationService.focusRequests.addListener(_onFocusRequest);
+    // Taps on notifications are for the person's own habits, never a tour's
+    _demo = WorldScope.isDemo(context);
+    if (!_demo) NotificationService.focusRequests.addListener(_onFocusRequest);
 
-    // Load habits when screen initializes
+    // Load habits when screen initializes (back from a tour they already
+    // are: then only a new day matters, not a whole launch's reload)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final habitProvider = context.read<HabitProvider>();
       final categoryProvider = context.read<CategoryProvider>();
+      final loaded = habitProvider.state == HabitProviderState.loaded;
 
-      habitProvider.loadHabits().then((_) {
+      (loaded ? habitProvider.resetHabitsIfNeeded() : habitProvider.loadHabits()).then((_) {
+        if (!mounted) return;
         // Update available categories after habits are loaded
         categoryProvider.updateAvailableCategories(habitProvider.habits);
         // A notification tap may have launched the app
-        _onFocusRequest();
+        if (!_demo) _onFocusRequest();
       });
     });
   }
@@ -110,6 +116,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   late final HabitProvider _habitsForNotices;
+
+  /// Showing a tour's example habits.
+  bool _demo = false;
 
   /// A change that couldn't go to Health (it came from Health itself).
   /// Freezes today (or takes the freeze back), from the card's swipe actions.

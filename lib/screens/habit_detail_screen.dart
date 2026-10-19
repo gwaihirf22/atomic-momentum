@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../core/injection/injection_container.dart';
 import '../core/services/health_source.dart';
 import '../presentation/widgets/health_settings_section.dart' show healthSyncAgo;
 import '../domain/services/step_size.dart';
@@ -46,6 +45,7 @@ import '../presentation/widgets/stat_card.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'habit_editor_screen.dart';
 import 'heatmap_screen.dart';
+import '../presentation/tour/world_scope.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -1547,7 +1547,7 @@ class _HealthLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final source = get<HealthSource>();
+    final source = WorldScope.healthSourceOf(context);
     final habits = context.watch<HabitProvider>();
     final synced = healthSyncAgo(habits.lastHealthSync).toLowerCase();
     final what = habit.health!.metric.label.toLowerCase();
@@ -1638,7 +1638,7 @@ class _HealthOffer extends StatefulWidget {
 }
 
 class _HealthOfferState extends State<_HealthOffer> {
-  late final HealthSource _source = get<HealthSource>();
+  late final HealthSource _source = WorldScope.healthSourceOf(context);
   late final Future<HealthAvailability> _availability = _source.availability();
 
   HealthMetric? get _suggestion => HealthMetric.suggestFor(widget.habit.name, widget.habit.units,

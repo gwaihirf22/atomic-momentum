@@ -13,7 +13,8 @@ import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
 import 'presentation/providers/quote_provider.dart';
 import 'presentation/providers/settings_provider.dart';
-import 'screens/ios_main_navigation.dart';
+import 'presentation/tour/tour_bubble.dart';
+import 'presentation/tour/world_scope.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +47,11 @@ class MomentumApp extends StatelessWidget {
   final bool showIntro;
   final VoidCallback? onIntroDone;
 
-  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone}) : super(key: key);
+  /// Switches between the person's habits and a tour's example world (tests
+  /// pass their own, which builds the example habits in place).
+  final WorldController? worlds;
+
+  const MomentumApp({Key? key, this.showIntro = false, this.onIntroDone, this.worlds}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +75,11 @@ class MomentumApp extends StatelessWidget {
         ChangeNotifierProvider<QuoteProvider>.value(
           value: get<QuoteProvider>(),
         ),
+        // The person's own habits, or a tour's example world
+        if (worlds case final worlds?)
+          ChangeNotifierProvider<WorldController>.value(value: worlds)
+        else
+          ChangeNotifierProvider<WorldController>(create: (_) => WorldController()),
       ],
       // Above the app there's no MediaQuery yet; this one tracks the device's
       // light/dark setting so "System" follows it as it changes. The home
@@ -77,15 +87,19 @@ class MomentumApp extends StatelessWidget {
       child: HomeWidgetHost(
         child: MediaQuery.fromView(
           view: View.of(context),
-          child: Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
+          child: Consumer2<ThemeProvider, WorldController>(
+            builder: (context, themeProvider, worlds, child) {
               final palette = themeProvider.paletteIn(context);
+              final world = worlds.world;
 
               return CupertinoApp(
                 title: 'Atomic Momentum',
                 debugShowCheckedModeBanner: false,
                 theme: IOSTheme.cupertino(palette),
-                home: const IOSMainNavigation(),
+                // A world of its own: switching remounts everything below,
+                // the editor and sheets on the root navigator included
+                navigatorKey: world.navigatorKey,
+                home: const WorldHome(),
                 // Screens built from Material widgets read Theme.of(context), which
                 // CupertinoApp doesn't provide; it also carries the palette
                 // (AppPalette.of) every widget draws with
@@ -103,7 +117,24 @@ class MomentumApp extends StatelessWidget {
                       onDone: onIntroDone,
                       // Fades into Habits once they've loaded (a long history takes a moment)
                       isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
-                      child: ScaffoldMessenger(child: child!),
+                      // The world's providers around the root navigator, so
+                      // whatever opens on it sees the same habits
+                      child: Stack(children: [
+                        Positioned.fill(
+                          child: WorldScope(
+                            world: world,
+                            child: KeyedSubtree(key: ObjectKey(world), child: ScaffoldMessenger(child: child!)),
+                          ),
+                        ),
+                        // Never mistaken for the person's own habits
+                        if (world.isDemo)
+                          Positioned(
+                            top: MediaQuery.paddingOf(context).top + 4,
+                            left: 0,
+                            right: 0,
+                            child: Center(child: ExampleHabitsPill(onDone: worlds.exitDemo)),
+                          ),
+                      ]),
                     ),
                   ),
                 ),

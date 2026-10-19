@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/injection/injection_container.dart';
-import '../core/services/health_source.dart';
 import '../presentation/habit_form/health_section.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
@@ -24,6 +22,7 @@ import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/unsaved_changes_guard.dart';
 import 'add_habit_screen.dart';
+import '../presentation/tour/world_scope.dart';
 
 /// The parts of the Story sentence that open a sheet.
 enum StoryPart { name, amount, schedule, reminder, tiny, strictness, health }
@@ -106,7 +105,7 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
       StoryPart.reminder =>
         (_draft.isBreak ? 'Check-in' : 'Reminder', <Widget>[ReminderSection(_draft, showHeader: false)]),
       StoryPart.tiny => ('On a hard day', <Widget>[TwoMinuteSection(_draft, showHeader: false, autofocus: !showErrors)]),
-      StoryPart.health => (get<HealthSource>().name, <Widget>[HealthSection(_draft, showHeader: false)]),
+      StoryPart.health => (WorldScope.healthSourceOf(context).name, <Widget>[HealthSection(_draft, showHeader: false)]),
     };
     return showModalBottomSheet<void>(
       context: context,
@@ -280,7 +279,7 @@ class _StoryHabitScreenState extends State<StoryHabitScreen> {
                 Divider(height: 1, indent: 16, color: palette.separator),
                 row(
                   key: const Key('storyHealth'),
-                  title: get<HealthSource>().name,
+                  title: WorldScope.healthSourceOf(context).name,
                   value: valueText(_draft.health?.metric.label ?? 'Off'),
                   onTap: () => _openPart(StoryPart.health),
                 ),

@@ -64,7 +64,18 @@ enum AppTab {
 /// the tab under it. On Inspire the bar fades away after [barFadeDelay]
 /// untouched, and any touch brings it back.
 class IOSMainNavigation extends StatefulWidget {
-  const IOSMainNavigation({Key? key}) : super(key: key);
+  /// Showing a tour's example habits: no celebrations, and taps on
+  /// notifications or widgets are left for the person's own app.
+  final bool demo;
+
+  /// The tab it opens on.
+  final AppTab initialTab;
+
+  /// Lets a tour switch tabs and open pages.
+  final MainNavigationController? controller;
+
+  const IOSMainNavigation({Key? key, this.demo = false, this.initialTab = AppTab.habits, this.controller})
+      : super(key: key);
 
   /// How long Inspire sits untouched before the bar fades.
   static const barFadeDelay = Duration(seconds: 3);
@@ -93,7 +104,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   final _navigators = {for (final tab in AppTab.values) tab: GlobalKey<NavigatorState>()};
   late final _observers = {for (final tab in AppTab.values) tab: _StackObserver(() => _stackChanged(tab))};
 
-  AppTab _current = AppTab.habits;
+  late AppTab _current = widget.initialTab;
 
   /// The tabs in the bar now, in order (Inspire only while it's turned on).
   List<AppTab> _visible = AppTab.values;
@@ -110,7 +121,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   double _width = 0;
 
   /// Tabs are built the first time they're shown, then kept.
-  final _opened = <AppTab>{AppTab.habits};
+  late final _opened = <AppTab>{widget.initialTab};
 
   /// Tabs with a page open on top of their first one: the bar hides there.
   final _deep = <AppTab>{};
@@ -130,7 +141,12 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _habits = context.read<HabitProvider>()..addListener(_checkAchievementsSoon);
+    _habits = context.read<HabitProvider>();
+    widget.controller?._attach(this);
+    // Example habits are quiet: nothing to celebrate, and requests from
+    // notifications and widgets wait for the person's own app
+    if (widget.demo) return;
+    _habits.addListener(_checkAchievementsSoon);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
     IOSMainNavigation.tabRequests.addListener(_showRequestedTab);
@@ -145,6 +161,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
 
   @override
   void dispose() {
+    widget.controller?._detach(this);
     _habits.removeListener(_checkAchievementsSoon);
     NotificationService.focusRequests.removeListener(_showHabits);
     IOSMainNavigation.tabRequests.removeListener(_showRequestedTab);
@@ -243,6 +260,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
       _opened.add(tab);
       _selectedAt = clock.now();
     });
+    widget.controller?.current.value = tab;
     _wakeBar();
   }
 
@@ -323,6 +341,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     if (NotificationService.focusRequests.value == null) return;
     _endSlide();
     if (_current != AppTab.habits) setState(() => _current = AppTab.habits);
+    widget.controller?.current.value = AppTab.habits;
     _wakeBar();
     // Add and Edit open above the tabs; pages and sheets open inside them
     if (mounted) Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
@@ -489,4 +508,45 @@ class _StackObserver extends NavigatorObserver {
 
   @override
   void didReplace({Route? newRoute, Route? oldRoute}) => onChange();
+}
+
+/// Lets a tour drive the tabs from outside: show a tab, reach a tab's own
+/// navigator to open a page, close everything open. [current] follows the
+/// tab showing.
+class MainNavigationController {
+  _IOSMainNavigationState? _state;
+
+  final current = ValueNotifier<AppTab>(AppTab.habits);
+
+  bool get isAttached => _state != null;
+
+  void _attach(_IOSMainNavigationState state) {
+    _state = state;
+    current.value = state._current;
+  }
+
+  void _detach(_IOSMainNavigationState state) {
+    if (_state == state) _state = null;
+  }
+
+  /// Shows [tab] (if it's in the bar), as a tap on it would.
+  void show(AppTab tab) {
+    final state = _state;
+    if (state == null || !state.mounted || !state._visible.contains(tab)) return;
+    state._switchTo(tab);
+  }
+
+  /// [tab]'s own navigator, for opening a page in it.
+  NavigatorState? navigatorOf(AppTab tab) => _state?._navigators[tab]!.currentState;
+
+  /// Closes everything open: sheets and Add/Edit on top, and every tab's
+  /// pages back to its first.
+  void popAllToRoot() {
+    final state = _state;
+    if (state == null || !state.mounted) return;
+    Navigator.of(state.context, rootNavigator: true).popUntil((route) => route.isFirst);
+    for (final key in state._navigators.values) {
+      key.currentState?.popUntil((route) => route.isFirst);
+    }
+  }
 }

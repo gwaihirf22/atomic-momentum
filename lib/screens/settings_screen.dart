@@ -14,6 +14,7 @@ import '../domain/entities/quiet_hours.dart';
 import '../domain/entities/quote.dart';
 import '../domain/entities/streak_warning_settings.dart';
 import '../presentation/dev/tour_style_preview.dart';
+import '../presentation/tour/world_scope.dart';
 import '../presentation/dev/year_of_use_tiles.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
@@ -46,6 +47,7 @@ class SettingsScreen extends StatelessWidget {
     final themeProvider = context.watch<ThemeProvider>();
     final settings = context.watch<SettingsProvider>();
     final streakWarnings = settings.streakWarnings;
+    final demo = WorldScope.isDemo(context);
 
     Future<void> resync() async {
       if (context.mounted) await context.read<HabitProvider>().resyncStreakWarnings();
@@ -99,7 +101,7 @@ class SettingsScreen extends StatelessWidget {
                   if (theme != null) await themeProvider.setDayTheme(theme);
                 },
               ),
-            if (get<AppIconService>().isSupported) const _AppIconSetting(),
+            if (!demo && get<AppIconService>().isSupported) const _AppIconSetting(),
             SettingsSwitchTile(
               tileKey: const Key('introSwitch'),
               icon: CupertinoIcons.play_circle_fill,
@@ -361,9 +363,10 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         const HealthSettingsSection(),
-        const _SupportSection(),
+        if (!demo) const _SupportSection(),
         // Debug builds, and test builds made with DEV_TOOLS; never in a store build
-        if (DevTools.enabled)
+        // Never over a tour's example habits: these act on the person's own data
+        if (DevTools.enabled && !demo)
           SettingsSection(
             header: 'Developer',
             children: [
@@ -388,6 +391,15 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
               ...yearOfUseTiles(context),
+              SettingsTile(
+                tileKey: const Key('openExampleWorld'),
+                icon: CupertinoIcons.sparkles,
+                iconColor: HabitColor.blueGrey.color,
+                title: 'Open example world',
+                subtitle: "The tours' example habits, in memory only. Tap Done at the top to leave",
+                showChevron: false,
+                onTap: () => context.read<WorldController>().enterDemo(),
+              ),
               SettingsTile(
                 tileKey: const Key('tourStylePreview'),
                 icon: CupertinoIcons.scope,

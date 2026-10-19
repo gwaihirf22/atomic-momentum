@@ -44,7 +44,8 @@ void main() {
 
     test('the Developer section is gated on DevTools, nothing else', () {
       final settings = File('lib/screens/settings_screen.dart').readAsStringSync();
-      expect(settings, contains('if (DevTools.enabled)'));
+      // (and hidden over a tour's example habits, where it would act on the real data)
+      expect(settings, contains('if (DevTools.enabled && !demo)'));
       expect(settings, isNot(contains('kDebugMode')));
     });
   });

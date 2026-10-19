@@ -2,7 +2,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
-import '../../core/injection/injection_container.dart';
 import '../../core/services/health_source.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/entities/health_link.dart';
@@ -12,6 +11,7 @@ import '../widgets/adaptive.dart';
 import '../widgets/info_button.dart';
 import 'habit_draft.dart';
 import 'sections.dart' show FormSectionHeader;
+import '../tour/world_scope.dart';
 
 /// Filling a habit in from Apple Health (iPhone) or Health Connect
 /// (Android): a switch, which metric, and for water and mindful minutes
@@ -32,7 +32,7 @@ class HealthSection extends StatefulWidget {
 }
 
 class _HealthSectionState extends State<HealthSection> {
-  late final HealthSource _source = get<HealthSource>();
+  late final HealthSource _source = WorldScope.healthSourceOf(context);
   late final Future<HealthAvailability> _availability = _source.availability();
 
   HabitDraft get _draft => widget.draft;

@@ -42,6 +42,30 @@ class SettingsProvider extends ChangeNotifier {
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
 
+  /// Every key a setting is stored under: the tours' example world copies
+  /// them, so it looks the way the person has the app set up. A test checks
+  /// every key above is listed.
+  static const storedKeys = [
+    _streakWarningEnabledKey,
+    _streakWarningLeadHoursKey,
+    _streakWarningFirstMissKey,
+    _weekStartKey,
+    _reminderHourKey,
+    _reminderMinuteKey,
+    _dayStartHourKey,
+    _dayStartMinuteKey,
+    _addHabitStyleKey,
+    _notifySoundKey,
+    _allowTimeSensitiveKey,
+    _quietEnabledKey,
+    _quietStartKey,
+    _quietEndKey,
+    _showInspireTabKey,
+    _playIntroKey,
+    _quoteFamiliesOffKey,
+    _healthCardDismissedKey,
+  ];
+
   final SharedPreferences _prefs;
   final Locale Function() _deviceLocale;
 

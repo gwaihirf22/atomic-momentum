@@ -238,14 +238,16 @@ class TourNextButton extends StatelessWidget {
 }
 
 /// Shown while a tour runs on example habits, so nobody mistakes them for
-/// their own.
+/// their own. With [onDone], a tap leaves them.
 class ExampleHabitsPill extends StatelessWidget {
-  const ExampleHabitsPill({super.key});
+  final VoidCallback? onDone;
+
+  const ExampleHabitsPill({super.key, this.onDone});
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    return DecoratedBox(
+    final pill = DecoratedBox(
       decoration: BoxDecoration(
         color: palette.surface,
         borderRadius: BorderRadius.circular(16),
@@ -263,7 +265,24 @@ class ExampleHabitsPill extends StatelessWidget {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: palette.text),
             ),
           ),
+          if (onDone != null) ...[
+            Text(' · ', style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+            Text('Done', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: palette.accent)),
+          ],
         ]),
+      ),
+    );
+    final done = onDone;
+    if (done == null) return pill;
+    return Semantics(
+      button: true,
+      label: 'Example habits. Done',
+      hint: 'Back to your own habits',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: done,
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 44), child: Center(widthFactor: 1, child: pill)),
       ),
     );
   }

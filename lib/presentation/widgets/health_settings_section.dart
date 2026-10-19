@@ -3,11 +3,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/dev/dev_tools.dart';
-import '../../core/injection/injection_container.dart';
 import '../../core/services/health_source.dart';
 import '../../domain/entities/habit_color.dart';
 import '../providers/habit_provider.dart';
 import 'settings_list.dart';
+import '../tour/world_scope.dart';
 
 /// "5 min ago", for when Health was last read.
 String healthSyncAgo(DateTime? at, {DateTime? now}) {
@@ -30,7 +30,7 @@ class HealthSettingsSection extends StatefulWidget {
 }
 
 class _HealthSettingsSectionState extends State<HealthSettingsSection> {
-  late final HealthSource _source = get<HealthSource>();
+  late final HealthSource _source = WorldScope.healthSourceOf(context);
   late Future<HealthAvailability> _availability = _source.availability();
   bool _syncing = false;
 
