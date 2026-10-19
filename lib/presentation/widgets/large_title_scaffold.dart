@@ -86,19 +86,24 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
           ),
           trailing: widget.trailing,
         ),
-        child: SafeArea(
-          bottom: false,
-          // Inside the Scaffold, the bottom padding includes the tab bar
-          child: Builder(
-            builder: (context) => CustomScrollView(
-              controller: _controller,
-              physics: widget.physics,
-              slivers: [
-                SliverToBoxAdapter(child: widget.header),
-                ...widget.slivers,
-                // The home indicator, and the tab bar when there is one
-                SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
-              ],
+        // The page's rows (ListTiles, switches) draw their ink here, on the
+        // page, rather than under its background
+        child: Material(
+          type: MaterialType.transparency,
+          child: SafeArea(
+            bottom: false,
+            // Inside the Scaffold, the bottom padding includes the tab bar
+            child: Builder(
+              builder: (context) => CustomScrollView(
+                controller: _controller,
+                physics: widget.physics,
+                slivers: [
+                  SliverToBoxAdapter(child: widget.header),
+                  ...widget.slivers,
+                  // The home indicator, and the tab bar when there is one
+                  SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
+                ],
+              ),
             ),
           ),
         ),

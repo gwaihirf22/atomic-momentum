@@ -171,13 +171,17 @@ class ShareSheetState extends State<ShareSheet> {
             Container(
               decoration: BoxDecoration(color: palette.raised, borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: SwitchListTile.adaptive(
-                key: const Key('shareHideName'),
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Hide habit name'),
-                subtitle: const Text('For the habits you keep to yourself'),
-                value: _hideName,
-                onChanged: (value) => setState(() => _hideName = value),
+              // Its ink draws on this box, not under it
+              child: Material(
+                type: MaterialType.transparency,
+                child: SwitchListTile.adaptive(
+                  key: const Key('shareHideName'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Hide habit name'),
+                  subtitle: const Text('For the habits you keep to yourself'),
+                  value: _hideName,
+                  onChanged: (value) => setState(() => _hideName = value),
+                ),
               ),
             ),
           ],

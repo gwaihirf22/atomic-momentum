@@ -3,32 +3,56 @@ import StoreKit
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     // flutter_local_notifications: lets notifications show while the app is open
     UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
-    GeneratedPluginRegistrant.register(with: self)
-    if let registrar = self.registrar(forPlugin: "AppIcon") {
-      AppIconChannel.register(messenger: registrar.messenger())
-    }
-    if let registrar = self.registrar(forPlugin: "Storefront") {
-      StorefrontChannel.register(messenger: registrar.messenger())
-    }
-    if let registrar = self.registrar(forPlugin: "Widgets") {
-      WidgetChannel.register(messenger: registrar.messenger())
-    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // A home screen widget tapped outside its buttons (momentum://habit/<id>, momentum://inspire)
-  override func application(
-    _ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  /// The app runs on the scene lifecycle (iOS 27 won't launch apps without
+  /// it; Info.plist's UIApplicationSceneManifest), so Flutter makes the
+  /// engine with the first scene and plugins and channels register here.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let messenger = engineBridge.applicationRegistrar.messenger()
+    AppIconChannel.register(messenger: messenger)
+    StorefrontChannel.register(messenger: messenger)
+    WidgetChannel.register(messenger: messenger)
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetLinks") {
+      WidgetLinks.register(with: registrar)
+    }
+  }
+}
+
+/// A home screen widget tapped outside its buttons (momentum://habit/<id>,
+/// momentum://inspire): links that launched the app, or came while it ran.
+/// With scenes these arrive through the scene, which Flutter passes on to
+/// plugins that ask; this is ours.
+class WidgetLinks: NSObject, FlutterPlugin, FlutterSceneLifeCycleDelegate {
+  static func register(with registrar: FlutterPluginRegistrar) {
+    registrar.addSceneDelegate(WidgetLinks())
+  }
+
+  func scene(
+    _ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions?
   ) -> Bool {
-    if WidgetChannel.open(url) { return true }
-    return super.application(app, open: url, options: options)
+    for context in connectionOptions?.urlContexts ?? [] {
+      _ = WidgetChannel.open(context.url)
+    }
+    // Leaves the connection to Flutter
+    return false
+  }
+
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) -> Bool {
+    var handled = false
+    for context in URLContexts where WidgetChannel.open(context.url) {
+      handled = true
+    }
+    return handled
   }
 }
 
