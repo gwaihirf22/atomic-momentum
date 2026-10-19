@@ -69,6 +69,8 @@ import 'package:atomic_momentum/presentation/tour/tour_controller.dart';
 import 'package:atomic_momentum/presentation/tour/tours.dart';
 import 'package:atomic_momentum/presentation/tour/world_scope.dart';
 import 'package:atomic_momentum/screens/tours_screen.dart';
+import 'package:atomic_momentum/core/demo/demo_world.dart';
+import 'package:atomic_momentum/screens/how_to_screen.dart';
 
 /// Every screen on the smallest supported iPhone (the SE, 375pt wide) and
 /// just above the habit card's breakpoint, at the default text size and at
@@ -217,6 +219,7 @@ void main() {
     'Settings': () => const SettingsScreen(),
     'App icon': () => const AppIconScreen(),
     'Tours': () => const ToursScreen(),
+    'How to': () => HowToScreen(seed: (now) async => DemoSeed.build(now)),
     'Insights': () => const InsightsScreen(),
     'Inspire': () => const InspireScreen(),
     'Quote search': () => const QuoteSearchScreen(),

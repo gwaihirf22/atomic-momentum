@@ -29,6 +29,7 @@ import 'app_icon_screen.dart';
 import 'tours_screen.dart';
 import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
+import 'how_to_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -62,6 +63,14 @@ class SettingsScreen extends StatelessWidget {
           SettingsSection(
             header: 'Help',
             children: [
+              SettingsTile(
+                tileKey: const Key('openHowTo'),
+                icon: CupertinoIcons.book_fill,
+                iconColor: HabitColor.teal.color,
+                title: 'How to',
+                subtitle: 'Every part of the app, in pictures',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HowToScreen())),
+              ),
               SettingsTile(
                 tileKey: const Key('openTours'),
                 icon: CupertinoIcons.play_circle_fill,

@@ -114,6 +114,12 @@ class _TourAnchorState extends State<TourAnchor> {
 /// The [TourAnchor]s registered below a [TourAnchorScope], found by id: the
 /// app has one, and each How-to picture its own.
 class TourAnchors {
+  /// Whether hidden tabs are told apart by their tickers being off (the
+  /// app's); a still picture has every ticker off, and only its own tab.
+  final bool tickersShowHidden;
+
+  TourAnchors({this.tickersShowHidden = true});
+
   final _anchors = <_TourAnchorState>{};
 
   /// Where to search for anchors found by key (the scope's own context).
@@ -132,12 +138,14 @@ class TourAnchors {
     for (final anchor in _anchors) {
       if (anchor.widget.id != id || (tag != null && anchor.widget.tag != tag)) continue;
       final context = anchor._key.currentContext;
-      if (context != null && _shows(context)) return context;
+      if (context != null && _shows(context, tickersShowHidden)) return context;
     }
     final key = id.keyFor(tag);
     if (key == null) return null;
     final cached = _byKey[(id, tag)];
-    if (cached != null && cached.mounted && cached.widget.key == ValueKey(key) && _shows(cached)) return cached;
+    if (cached != null && cached.mounted && cached.widget.key == ValueKey(key) && _shows(cached, tickersShowHidden)) {
+      return cached;
+    }
     _byKey.remove((id, tag));
     final found = _search(key);
     if (found != null) _byKey[(id, tag)] = found;
@@ -145,8 +153,8 @@ class TourAnchors {
   }
 
   /// Built, in a tab that's showing, on the page on top, laid out.
-  static bool _shows(BuildContext context) {
-    if (!context.mounted || !TickerMode.valuesOf(context).enabled) return false;
+  static bool _shows(BuildContext context, bool tickersShowHidden) {
+    if (!context.mounted || (tickersShowHidden && !TickerMode.valuesOf(context).enabled)) return false;
     if (ModalRoute.of(context)?.isCurrent == false) return false;
     final box = context.findRenderObject();
     return box is RenderBox && box.attached && box.hasSize;
@@ -163,7 +171,7 @@ class TourAnchors {
       if (found != null) return;
       final widget = element.widget;
       if (widget is Offstage && widget.offstage) return;
-      if (widget.key == want && _shows(element)) {
+      if (widget.key == want && _shows(element, tickersShowHidden)) {
         found = element;
         return;
       }
