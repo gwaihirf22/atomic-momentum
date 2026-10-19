@@ -72,7 +72,8 @@ void main() {
 
     await tap(tester, 'detailFreeze');
     expect(get<FreezeBank>().available, 2);
-    expect(find.text('TODAY · FROZEN'), findsOneWidget);
+    // In place of "TODAY": how long the freeze still holds
+    expect(find.textContaining(RegExp(r'^FROZEN · \d+ (HOURS?|MIN) LEFT$')), findsOneWidget);
     expect(find.textContaining('Neither kept nor missed'), findsOneWidget);
 
     await tap(tester, 'detailUnfreeze');
@@ -130,6 +131,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(shown.getHabitById(id)!.isFrozenOn(now), isTrue);
     expect(find.byKey(Key('habitFrozen_$id')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^Frozen · \d+ (hours?|min) left$')), findsOneWidget);
     expect(find.textContaining('is frozen for today'), findsOneWidget);
     // The first freeze is worth a (fun) celebration
     expect(find.text('Brain freeze'), findsOneWidget);

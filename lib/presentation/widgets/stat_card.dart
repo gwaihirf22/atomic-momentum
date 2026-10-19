@@ -6,14 +6,25 @@ class StatCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
 
-  const StatCard({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
+  /// Instead of the surface (a frozen day's icy card).
+  final Color? color;
+  final Color? borderColor;
+
+  const StatCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.color,
+    this.borderColor,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
         padding: padding,
         decoration: BoxDecoration(
-          color: AppPalette.of(context).surface,
+          color: color ?? AppPalette.of(context).surface,
           borderRadius: BorderRadius.circular(20),
+          border: borderColor == null ? null : Border.all(color: borderColor!, width: 1.2),
         ),
         child: child,
       );

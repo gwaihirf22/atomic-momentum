@@ -33,6 +33,7 @@ import '../presentation/providers/settings_provider.dart';
 import '../presentation/share/share_cards.dart';
 import '../presentation/share/share_sheet.dart';
 import '../presentation/widgets/achievement_widgets.dart';
+import '../presentation/widgets/freeze_time_left.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/heatmap.dart';
 import '../presentation/widgets/break_wording.dart';
@@ -436,9 +437,20 @@ class _DayCard extends StatelessWidget {
     final of = habit.isBreak
         ? BreakWording.underNumber(habit, periodTotal)
         : 'of ${habit.target}$units${everyDay ? '' : ' ${habit.schedule.periodLabel}'}';
-    final showTwoMinute = !future && habit.twoMinute != null && habit.resetFrequency.isPeriodic && !isDone;
+    // Frozen (or on vacation) and not kept: held as it is, so no "2 min"
+    final held = habit.skipsPeriod(habit.schedule.periodStart(day));
+    final showTwoMinute = !future && !held && habit.twoMinute != null && habit.resetFrequency.isPeriodic && !isDone;
     // Scales with text size, within the card
     final ring = ringSize * math.min(1.25, MediaQuery.textScalerOf(context).scale(1));
+    // Frozen (or on vacation) and not kept: the day looks frozen
+    final paused = habit.skipsPeriod(habit.schedule.periodStart(day));
+    final frozen = habit.isFrozenOn(day);
+    final labelStyle = TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.6,
+      color: paused ? palette.ice : palette.textSecondary,
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
@@ -446,16 +458,31 @@ class _DayCard extends StatelessWidget {
       child: Stack(fit: StackFit.passthrough, children: [
         StatCard(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          color: paused ? palette.tint(palette.ice, alpha: 0.16) : null,
+          borderColor: paused ? palette.ice.withValues(alpha: 0.6) : null,
           child: Column(
             children: [
-              Text(
-                [
-                  isToday ? 'TODAY' : DateFormat.MMMEd().format(day).toUpperCase(),
-                  if (habit.isFrozenOn(day)) 'FROZEN' else if (habit.isOnVacationOn(day)) 'ON VACATION',
-                ].join(' · '),
-                key: const Key('detailDayLabel'),
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: palette.textSecondary),
-              ),
+              // Frozen today: how long it still holds, in place of "TODAY"
+              if (frozen && isToday)
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(CupertinoIcons.snow, size: 14, color: palette.ice),
+                  const SizedBox(width: 4),
+                  FreezeTimeLeft(
+                    key: const Key('detailDayLabel'),
+                    ends: habit.schedule.nextPeriodStart(day),
+                    format: (left) => 'FROZEN · ${left.toUpperCase()}',
+                    style: labelStyle,
+                  ),
+                ])
+              else
+                Text(
+                  [
+                    isToday ? 'TODAY' : DateFormat.MMMEd().format(day).toUpperCase(),
+                    if (frozen) 'FROZEN' else if (habit.isOnVacationOn(day)) 'ON VACATION',
+                  ].join(' · '),
+                  key: const Key('detailDayLabel'),
+                  style: labelStyle,
+                ),
               const SizedBox(height: 12),
               Semantics(
                 onLongPressHint: !canHold ? null : canAdd ? 'Finish' : 'Clear',
@@ -467,15 +494,16 @@ class _DayCard extends StatelessWidget {
                     width: ring,
                     height: ring,
                     child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day)),
+                      // Frozen: a full ring of ice
+                      tween: Tween(end: paused ? 1.0 : habit.isBreak ? habit.roomLeftOn(day) : habit.fractionDoneOn(day)),
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeOutCubic,
                       builder: (context, value, child) => CustomPaint(
                         painter: RingPainter(
                           fraction: value,
                           // A frozen day shows icy; a slipped day in the warning color
-                          color: habit.skipsPeriod(habit.schedule.periodStart(day))
-                              ? palette.ice
+                          color: paused
+                              ? palette.ice.withValues(alpha: 0.55)
                               : habit.isBreak && !isDone
                                   ? palette.warning
                                   : color,
@@ -500,6 +528,10 @@ class _DayCard extends StatelessWidget {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  if (paused) ...[
+                                    Icon(CupertinoIcons.snow, size: 22, color: palette.ice),
+                                    const SizedBox(height: 2),
+                                  ],
                                   // Dashed underline: a quiet hint that it can be tapped
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -550,7 +582,7 @@ class _DayCard extends StatelessWidget {
                     key: const Key('detailMinus'),
                     icon: Icons.remove_rounded,
                     label: stepTooltip(habit, adding: false, one: 'Remove one'),
-                    color: color,
+                    color: paused ? palette.ice : color,
                     filled: false,
                     onPressed: logged > 0 ? () => onSet(StepSize.down(logged, habit.target)) : null,
                   ),
@@ -575,7 +607,7 @@ class _DayCard extends StatelessWidget {
                     key: const Key('detailPlus'),
                     icon: Icons.add_rounded,
                     label: stepTooltip(habit, adding: true, one: 'Add one'),
-                    color: color,
+                    color: paused ? palette.ice : color,
                     filled: true,
                     onPressed: canAdd ? () => onSet(StepSize.up(logged, habit.target)) : null,
                   ),

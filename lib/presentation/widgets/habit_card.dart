@@ -9,6 +9,7 @@ import '../../domain/entities/habit.dart';
 import '../../domain/entities/momentum.dart';
 import '../../domain/services/recent_periods.dart';
 import '../../domain/services/step_size.dart';
+import 'freeze_time_left.dart';
 import 'habit_icons.dart';
 import 'break_wording.dart';
 import 'hold_undo_strip.dart';
@@ -108,7 +109,9 @@ class HabitCard extends StatelessWidget {
         tiny.showOnCard &&
         habit.schedule.isPeriodic &&
         habit.isDueOn(now) &&
-        !habit.wasCompletedOnDate(now);
+        !habit.wasCompletedOnDate(now) &&
+        // Frozen or on vacation: held as it is
+        !habit.skipsPeriod(habit.schedule.periodStart(now));
   }
 
   /// Momentum, streak and the "2 min" button; wraps onto another line rather
@@ -124,10 +127,20 @@ class HabitCard extends StatelessWidget {
           Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(CupertinoIcons.snow, size: 12, color: palette.ice),
             const SizedBox(width: 3),
-            Text(
-              habit.isFrozenOn(now) ? 'Frozen today' : 'On vacation',
-              key: Key('habitFrozen_${habit.id}'),
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.ice),
+            Flexible(
+              child: habit.isFrozenOn(now)
+                  // Counts down to the end of the frozen day (or week, or month)
+                  ? FreezeTimeLeft(
+                      key: Key('habitFrozen_${habit.id}'),
+                      ends: habit.schedule.nextPeriodStart(now),
+                      format: (left) => 'Frozen · $left',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.ice),
+                    )
+                  : Text(
+                      'On vacation',
+                      key: Key('habitFrozen_${habit.id}'),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: palette.ice),
+                    ),
             ),
           ]),
         if (showStats)
@@ -191,6 +204,8 @@ class HabitCard extends StatelessWidget {
     Widget stats() => _stats(palette, showStats: showStats, showTwoMinute: showTwoMinute, now: now);
     // Today can be frozen (or already is)
     final canFreeze = onFreeze != null && (habit.isFrozenOn(now) || habit.whyNoFreeze(now, now) == null);
+    // Frozen (or on vacation) and not kept: the card looks frozen
+    final paused = habit.skipsPeriod(habit.schedule.periodStart(now));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -253,7 +268,17 @@ class HabitCard extends StatelessWidget {
             },
             child: Material(
               key: Key('habitCard_${habit.id}'),
-              color: highlighted ? palette.tint(habit.color.color, alpha: 0.22) : palette.surface,
+              color: highlighted
+                  ? palette.tint(habit.color.color, alpha: 0.22)
+                  : paused
+                      ? palette.tint(palette.ice, alpha: 0.16)
+                      : palette.surface,
+              shape: paused
+                  ? RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppStyle.cardRadius),
+                      side: BorderSide(color: palette.ice.withValues(alpha: 0.6), width: 1.2),
+                    )
+                  : null,
               // Fades in and out rather than flashing
               animationDuration: const Duration(milliseconds: 600),
               child: Stack(children: [
@@ -267,8 +292,8 @@ class HabitCard extends StatelessWidget {
                     final twoRows = useTwoRows(context, constraints.maxWidth + 12);
                     final ring = HabitProgressRing(
                       key: Key('habitIcon_${habit.id}'),
-                      icon: habitIcon(habit, category),
-                      color: color,
+                      icon: paused ? CupertinoIcons.snow : habitIcon(habit, category),
+                      color: paused ? palette.ice : color,
                       // A habit being broken shows the room left, not a check
                       fraction: habit.isBreak ? habit.roomLeftOn(now) : habit.progressPercentage,
                       isDone: !habit.isBreak && habit.isCompleted,
@@ -317,7 +342,7 @@ class HabitCard extends StatelessWidget {
                       ],
                     );
                     final stepper = HabitStepper(
-                      color: color,
+                      color: paused ? palette.ice : color,
                       removeKey: Key('decrementHabit_${habit.id}'),
                       addKey: Key('incrementHabit_${habit.id}'),
                       removeTooltip: habit.isBreak ? 'Remove a slip' : stepTooltip(habit, adding: false, one: 'Remove one'),
