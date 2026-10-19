@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:clock/clock.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:health/health.dart';
 import '../../domain/entities/health_link.dart';
 import '../../domain/services/health_days.dart';
@@ -96,6 +96,33 @@ class PluginHealthSource implements HealthSource {
         HealthMetric.water => [HealthDataType.WATER],
       };
 
+  /// What to ask access for, each type once: the types read, plus on
+  /// Android what the plugin reads with every workout (its distance,
+  /// calories and steps), without which reading workouts fails.
+  @visibleForTesting
+  static Map<HealthDataType, HealthDataAccess> accessTypes({
+    required Set<HealthMetric> read,
+    Set<HealthMetric> write = const {},
+    required bool android,
+  }) {
+    final asked = <HealthDataType, HealthDataAccess>{};
+    for (final metric in read) {
+      final types = _readTypes(metric, android: android);
+      for (final type in [
+        ...types,
+        if (android && types.contains(HealthDataType.WORKOUT)) ...[
+          HealthDataType.DISTANCE_DELTA,
+          HealthDataType.TOTAL_CALORIES_BURNED,
+          HealthDataType.STEPS,
+        ],
+      ]) {
+        final writes = write.contains(metric) && type == _writeType(metric);
+        if (writes || !asked.containsKey(type)) asked[type] = writes ? HealthDataAccess.READ_WRITE : HealthDataAccess.READ;
+      }
+    }
+    return asked;
+  }
+
   static HealthDataType _writeType(HealthMetric metric) =>
       metric == HealthMetric.water ? HealthDataType.WATER : HealthDataType.MINDFULNESS;
 
@@ -119,17 +146,9 @@ class PluginHealthSource implements HealthSource {
   Future<bool> requestAccess({required Set<HealthMetric> read, Set<HealthMetric> write = const {}}) async {
     try {
       await _configure();
-      final types = <HealthDataType>[];
-      final access = <HealthDataAccess>[];
-      for (final metric in read) {
-        for (final type in _readTypes(metric, android: isAndroid)) {
-          final writes = write.contains(metric) && type == _writeType(metric);
-          types.add(type);
-          access.add(writes ? HealthDataAccess.READ_WRITE : HealthDataAccess.READ);
-        }
-      }
-      if (types.isEmpty) return true;
-      return await _health.requestAuthorization(types, permissions: access);
+      final asked = accessTypes(read: read, write: write, android: isAndroid);
+      if (asked.isEmpty) return true;
+      return await _health.requestAuthorization([...asked.keys], permissions: [...asked.values]);
     } catch (e) {
       logWarning('Health: could not ask for access: $e');
       return false;
@@ -144,17 +163,9 @@ class PluginHealthSource implements HealthSource {
     if (!isAndroid) return requestAccess(read: read, write: write);
     try {
       await _configure();
-      final types = <HealthDataType>[];
-      final access = <HealthDataAccess>[];
-      for (final metric in read) {
-        if (!metric.availableOn(isAndroid: true)) continue;
-        for (final type in _readTypes(metric, android: true)) {
-          types.add(type);
-          access.add(write.contains(metric) && type == _writeType(metric) ? HealthDataAccess.READ_WRITE : HealthDataAccess.READ);
-        }
-      }
-      if (types.isEmpty) return true;
-      return await _health.hasPermissions(types, permissions: access) ?? true;
+      final asked = accessTypes(read: {for (final m in read) if (m.availableOn(isAndroid: true)) m}, write: write, android: true);
+      if (asked.isEmpty) return true;
+      return await _health.hasPermissions([...asked.keys], permissions: [...asked.values]) ?? true;
     } catch (e) {
       logWarning('Health: could not check access: $e');
       return true;
