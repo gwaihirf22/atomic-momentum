@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -255,6 +256,57 @@ void main() {
     await settle(tester);
     expect(tours.isRunning, isFalse);
     expect(find.byType(HabitEditorScreen), findsOneWidget, reason: 'still adding their habit');
+  });
+
+  group('a tour gives way', () {
+    Future<TourController> running(WidgetTester tester) async {
+      await setUpWith({TourStore.key: ['habits']});
+      await tester.pumpWidget(MomentumApp(worlds: worlds));
+      await settle(tester);
+      final tours = toursIn(tester);
+      unawaited(tours.start(TourId.insights));
+      await settle(tester);
+      await settle(tester);
+      return tours;
+    }
+
+    testWidgets("to Android's back: a step back, and on the first, Skip", (tester) async {
+      final tours = await running(tester);
+      unawaited(tours.next());
+      await settle(tester);
+      expect(tours.stepIndex, 1);
+      unawaited(tester.binding.handlePopRoute());
+      await settle(tester);
+      expect(tours.stepIndex, 0);
+      unawaited(tester.binding.handlePopRoute());
+      await settle(tester);
+      expect(tours.isRunning, isFalse);
+      expect(worlds.world.isDemo, isFalse);
+    });
+
+    testWidgets('to a notification tapped mid-tour', (tester) async {
+      final tours = await running(tester);
+      NotificationService.focusRequests.value = HabitFocusRequest('someone');
+      addTearDown(() => NotificationService.focusRequests.value = null);
+      await settle(tester);
+      expect(tours.isRunning, isFalse);
+      expect(worlds.world.isDemo, isFalse);
+    });
+
+    testWidgets('to a return after more than ten minutes away', (tester) async {
+      final tours = await running(tester);
+      final away = DateTime.now();
+      withClock(Clock.fixed(away), () => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused));
+      withClock(Clock.fixed(away.add(const Duration(minutes: 5))),
+          () => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      await settle(tester);
+      expect(tours.isRunning, isTrue, reason: 'five minutes is fine');
+      withClock(Clock.fixed(away), () => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused));
+      withClock(Clock.fixed(away.add(const Duration(minutes: 11))),
+          () => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+      await settle(tester);
+      expect(tours.isRunning, isFalse);
+    });
   });
 
   group('fits small phones and large text, in every theme', () {

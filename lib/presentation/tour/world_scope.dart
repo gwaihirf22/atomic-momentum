@@ -12,6 +12,7 @@ import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/quote_provider.dart';
 import '../providers/settings_provider.dart';
+import 'tour_controller.dart';
 
 /// What the app shows: the person's own habits, or a tour's example world
 /// ([demo]). Each world has its own root navigator ([navigatorKey]), so
@@ -132,11 +133,60 @@ class WorldHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final world = WorldScope.maybeOf(context) ?? AppWorld.real();
-    return IOSMainNavigation(
-      key: ObjectKey(world),
-      demo: world.isDemo,
-      initialTab: world.initialTab,
-      controller: world.nav,
+    return _TourBack(
+      child: IOSMainNavigation(
+        key: ObjectKey(world),
+        demo: world.isDemo,
+        initialTab: world.initialTab,
+        controller: world.nav,
+      ),
+    );
+  }
+}
+
+/// Android's back during a tour: a step back, and on the first step, Skip.
+class _TourBack extends StatefulWidget {
+  final Widget child;
+  const _TourBack({required this.child});
+
+  @override
+  State<_TourBack> createState() => _TourBackState();
+}
+
+class _TourBackState extends State<_TourBack> {
+  TourController? _tours;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final tours = TourController.maybeOf(context);
+    if (tours != _tours) {
+      _tours?.removeListener(_changed);
+      _tours = tours?..addListener(_changed);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tours?.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tours = _tours;
+    final running = tours?.isRunning ?? false;
+    return PopScope(
+      canPop: !running,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop || tours == null || !tours.isRunning) return;
+        tours.stepIndex == 0 ? tours.skip() : tours.back();
+      },
+      child: widget.child,
     );
   }
 }

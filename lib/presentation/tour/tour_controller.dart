@@ -13,6 +13,8 @@ import 'tour_anchor.dart';
 import 'tour_events.dart';
 import 'world_scope.dart';
 import 'package:provider/provider.dart';
+import 'package:clock/clock.dart';
+import '../../core/services/notification_service.dart';
 
 /// How a launch begins: a new install takes the Habits tour, someone who
 /// had habits before tours existed is offered it once, everyone else
@@ -63,7 +65,7 @@ class TourStore {
 /// Runs one tour at a time: switches to its world and tab, makes each step
 /// ready (pages opened, its target brought into view), listens for the thing
 /// a step waits for, and puts the person back where they were at the end.
-class TourController extends ChangeNotifier {
+class TourController extends ChangeNotifier with WidgetsBindingObserver {
   final WorldController worlds;
   final TourStore? store;
 
@@ -77,7 +79,40 @@ class TourController extends ChangeNotifier {
   /// notification permission then).
   void Function(TourId id, {required bool finished})? onEnd;
 
-  TourController({required this.worlds, required this.tours, required this.anchors, this.store});
+  TourController({required this.worlds, required this.tours, required this.anchors, this.store}) {
+    WidgetsBinding.instance.addObserver(this);
+    // A notification or a widget tapped mid-tour: they want their own app
+    NotificationService.focusRequests.addListener(_interrupted);
+    IOSMainNavigation.tabRequests.addListener(_interrupted);
+  }
+
+  /// When the app went to the background, while a tour ran.
+  DateTime? _awaySince;
+
+  /// How long away before a tour ends on return.
+  static const awayLimit = Duration(minutes: 10);
+
+  void _interrupted() {
+    if (isRunning && (NotificationService.focusRequests.value != null || IOSMainNavigation.tabRequests.value != null)) {
+      unawaited(skip());
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!isRunning) return;
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _awaySince ??= clock.now();
+    } else if (state == AppLifecycleState.resumed) {
+      final since = _awaySince;
+      _awaySince = null;
+      if (since == null) return;
+      final now = clock.now();
+      // Long gone, or a new day (the example habits end yesterday now)
+      final newDay = DateTime(now.year, now.month, now.day) != DateTime(since.year, since.month, since.day);
+      if (newDay || now.difference(since) > awayLimit) unawaited(skip());
+    }
+  }
 
   Tour? _tour;
   int _step = 0;
@@ -319,6 +354,9 @@ class TourController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    NotificationService.focusRequests.removeListener(_interrupted);
+    IOSMainNavigation.tabRequests.removeListener(_interrupted);
     _events?.cancel();
     super.dispose();
   }
