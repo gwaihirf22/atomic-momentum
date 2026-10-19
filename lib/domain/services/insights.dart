@@ -172,13 +172,14 @@ class Insights {
   }
 
   /// A habit's momentum at each of [times] (null where it doesn't count
-  /// yet), kept per habit for the day of the last one.
-  static final _monthCache = Expando<Map<DateTime, List<double?>>>('month momentum');
+  /// yet), kept per habit for the day of the last one and how many months
+  /// were asked for (the Insights tab asks for 6, the widgets for 2).
+  static final _monthCache = Expando<Map<(DateTime, int), List<double?>>>('month momentum');
 
   static List<double?> _monthEnds(Habit habit, List<DateTime> times) {
     final cached = _monthCache[habit] ??= {};
     if (cached.length > 4) cached.clear();
-    return cached[_date(times.last)] ??= () {
+    return cached[(_date(times.last), times.length)] ??= () {
       final scores = habit.momentumSeries(times);
       return [for (var i = 0; i < times.length; i++) habit.countsTowardMomentumAt(times[i]) ? scores[i] : null];
     }();

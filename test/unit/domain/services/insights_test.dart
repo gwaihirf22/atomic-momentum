@@ -157,6 +157,18 @@ void main() {
       expect(months[0].score!, closeTo(steady.momentumSeries([DateTime(2024, 2, 29, 23, 59)]).single, 1e-9));
       expect(months[1].score!, closeTo((steady.momentum.score + late.momentum.score) / 2, 1e-9));
     });
+
+    test('asking for fewer months first (the widgets) never shortens a later, longer ask (the Insights tab)', () {
+      final at = DateTime(2024, 3, 20, 12);
+      final h = habit(created: DateTime(2024, 1, 1), at: at, history: {
+        for (var d = 1; d < 80; d++) DateTime(2024, 1, d): 1,
+      });
+      expect(Insights.momentumByMonth([h], at, count: 2), hasLength(2));
+      final six = Insights.momentumByMonth([h], at);
+      expect(six, hasLength(6));
+      expect(six.last.score!, closeTo(h.momentum.score, 1e-9));
+      expect(Insights.momentumByMonth([h], at, count: 2), hasLength(2));
+    });
   });
 
   group('kept and two-minute days', () {
