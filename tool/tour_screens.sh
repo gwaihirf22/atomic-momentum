@@ -19,6 +19,17 @@ id="${udid:-$device}"
 screens="build/tour_screens/$(echo "$device" | tr -c 'A-Za-z0-9\n' '_')"
 rm -rf "$screens"
 
+if [[ -z "$udid" ]]; then
+  # Android: a permission prompt nobody answered (the real app's first
+  # launch asks for notifications) would sit on top of the app's task and
+  # take every launch, so grant it and close any system screens first
+  adb="${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}/platform-tools/adb"
+  "$adb" -s "$id" shell pm grant "$bundle_id" android.permission.POST_NOTIFICATIONS 2>/dev/null || true
+  for p in com.google.android.permissioncontroller com.google.android.healthconnect.controller; do
+    "$adb" -s "$id" shell am force-stop "$p"
+  done
+fi
+
 status=0
 log=$(mktemp)
 YEAR_SCREENS="$screens" "$flutter" drive \
