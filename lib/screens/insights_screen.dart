@@ -28,6 +28,7 @@ import '../presentation/widgets/stat_card.dart';
 import 'achievements_screen.dart';
 import 'habit_detail_screen.dart';
 import 'heatmap_screen.dart';
+import 'weekly_review_screen.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/tour/tour_gate.dart';
 
@@ -68,6 +69,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
       previous: _data,
     );
     final overall = provider.overallMomentum;
+    final review = weeklyReviewFor(context, habits);
 
     return LargeTitleScaffold(
       title: 'Insights',
@@ -80,6 +82,24 @@ class _InsightsScreenState extends State<InsightsScreen> {
             children: overall == null
                 ? [_EmptyState(palette: palette)]
                 : [
+                    // The latest week in review, until the next one
+                    if (review != null) ...[
+                      WeekSummaryCard(
+                        key: const Key('insightsWeeklyReview'),
+                        review: review,
+                        action: PillButton(
+                          key: const Key('insightsSeeWeek'),
+                          label: 'See your week',
+                          icon: CupertinoIcons.chevron_right,
+                          onPressed: () {
+                            if (!TourGate.isFree) return;
+                            Navigator.of(context)
+                                .push(CupertinoPageRoute<void>(builder: (_) => const WeeklyReviewScreen()));
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     _MomentumCard(overall: overall, data: data),
                     const SizedBox(height: 14),
                     _DaysCard(
@@ -654,7 +674,8 @@ class _WeekCard extends StatelessWidget {
             child: MediaQuery.withClampedTextScaling(
               maxScaleFactor: 1.3,
               child: SizedBox(
-                height: 104,
+                // The tallest bar and both labels, at the clamped 130% text
+                height: 114,
                 child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
                   for (final day in weekdaysStartingOn(weekStart))
                     Expanded(

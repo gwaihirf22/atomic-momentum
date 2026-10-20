@@ -8,6 +8,9 @@ import '../../domain/entities/momentum.dart';
 import '../../domain/services/achievements.dart';
 import '../../domain/services/habit_stats.dart';
 import '../../domain/services/insights.dart';
+import '../../domain/services/weekly_review.dart';
+import '../review/week_strip.dart';
+import '../review/weekly_review_words.dart';
 import '../widgets/achievement_widgets.dart';
 import '../widgets/heatmap.dart';
 import '../widgets/large_title_scaffold.dart';
@@ -359,6 +362,55 @@ class MomentumShareCard extends StatelessWidget {
         Text(line, style: _display(look, 26, color: (change ?? 0) > 0 ? look.good : look.ink2)),
         const Spacer(),
         MomentumChart(months: months, height: 80),
+      ]),
+    );
+  }
+}
+
+/// The week in review: how much was kept, the seven days, and the top wins.
+class WeekShareCard extends StatelessWidget {
+  final WeeklyReview review;
+  final ShareLook look;
+
+  /// Habit names left out of the wins ("A habit").
+  final bool hideName;
+
+  const WeekShareCard({super.key, required this.review, required this.look, this.hideName = false});
+
+  String _title(WeekWin win) {
+    final words = WeeklyReviewWords.win(win);
+    return switch (win) {
+      EarnedWin(:final achievement) => achievementShareTitle(achievement, hideName: hideName),
+      KeptEveryTimeWin() when hideName => 'A habit, every time',
+      StreakWin(:final habit, :final length) when hideName => 'A ${habit.schedule.streakLabel(length)}',
+      _ => words.title,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wins = review.wins(max: 2);
+    return ShareCardFrame(
+      key: const Key('shareCard_week'),
+      look: look,
+      caption: WeeklyReviewWords.momentum(review) == null ? 'My week' : 'Momentum ${WeeklyReviewWords.momentum(review)}',
+      body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('My week', style: _display(look, 30)),
+        Text(WeeklyReviewWords.dates(review), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: look.ink2)),
+        const Spacer(),
+        Text(WeeklyReviewWords.keptShare(review), style: _display(look, 64)),
+        Text(WeeklyReviewWords.kept(review), style: _display(look, 20, color: look.ink2)),
+        const SizedBox(height: 12),
+        WeekStrip(days: review.days, palette: look.palette, labelColor: look.ink2, maxSquare: 30),
+        const Spacer(),
+        for (final win in wins)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text('✦ ${_title(win)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: look.ink)),
+          ),
       ]),
     );
   }

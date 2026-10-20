@@ -48,6 +48,7 @@ import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/home_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
+import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
 import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
@@ -461,6 +462,49 @@ void main() {
         expectNothingCutOff(tester, 'Undo strip at $setting');
         await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
+      });
+
+      // A month of history, so there's a week to review
+      Future<void> monthOfHistory() async {
+        final now = DateTime.now();
+        for (final h in habits.habits.where((h) => h.schedule.isPeriodic && !h.isBreak).take(4)) {
+          for (var i = 30; i >= 1; i--) {
+            if (i % 9 == 0) continue;
+            await habits.updateProgressForDate(h.id, DateTime(now.year, now.month, now.day - i), h.target);
+          }
+        }
+      }
+
+      testWidgets('Week in review at $setting', (tester) async {
+        await monthOfHistory();
+        await pump(tester, const WeeklyReviewScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('weeklyReviewWins')), findsOneWidget, reason: 'a week to review');
+        expectNothingCutOff(tester, 'Week in review at $setting');
+      });
+
+      testWidgets('Insights, led by the week in review, at $setting', (tester) async {
+        await monthOfHistory();
+        await pump(tester, const InsightsScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('insightsWeeklyReview')), findsOneWidget);
+        expectNothingCutOff(tester, 'Insights with the week at $setting');
+      });
+
+      testWidgets('Week in review, shared, at $setting', (tester) async {
+        await monthOfHistory();
+        await pump(
+          tester,
+          Scaffold(
+            body: Center(
+              child: Builder(builder: (context) {
+                final review = weeklyReviewFor(context, habits.habits)!;
+                return WeekShareCard(review: review, look: ShareLook.of(ShareStyle.charged));
+              }),
+            ),
+          ),
+          width: width,
+          scale: scale,
+        );
+        expectNothingCutOff(tester, 'Week share card at $setting');
       });
 
       testWidgets('Arrange, in any order, at $setting', (tester) async {

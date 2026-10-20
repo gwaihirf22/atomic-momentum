@@ -39,6 +39,12 @@ class SettingsProvider extends ChangeNotifier {
   static const _quoteFamiliesOffKey = 'quoteFamiliesOff';
   static const _healthCardDismissedKey = 'healthCardDismissed';
   static const _vacationNoticesKey = 'vacationNotices';
+  static const _weeklyReviewKey = 'weeklyReview';
+  static const _weeklyReviewHourKey = 'weeklyReviewHour';
+  static const _weeklyReviewMinuteKey = 'weeklyReviewMinute';
+
+  /// The week in review arrives on the week's last evening at this time.
+  static const fallbackWeeklyReviewTime = TimeOfDay(hour: 18, minute: 0);
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -66,6 +72,9 @@ class SettingsProvider extends ChangeNotifier {
     _quoteFamiliesOffKey,
     _healthCardDismissedKey,
     _vacationNoticesKey,
+    _weeklyReviewKey,
+    _weeklyReviewHourKey,
+    _weeklyReviewMinuteKey,
   ];
 
   final SharedPreferences _prefs;
@@ -154,6 +163,28 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setVacationNotices(bool on) async {
     await _prefs.setBool(_vacationNoticesKey, on);
+    notifyListeners();
+  }
+
+  /// Whether the week in review is announced with a notification (on until
+  /// turned off; it shows on Insights either way).
+  bool get weeklyReview => _prefs.getBool(_weeklyReviewKey) ?? true;
+
+  Future<void> setWeeklyReview(bool on) async {
+    await _prefs.setBool(_weeklyReviewKey, on);
+    notifyListeners();
+  }
+
+  /// When, on the week's last day, the week in review arrives.
+  TimeOfDay get weeklyReviewTime {
+    final hour = _prefs.getInt(_weeklyReviewHourKey);
+    final minute = _prefs.getInt(_weeklyReviewMinuteKey);
+    return hour == null || minute == null ? fallbackWeeklyReviewTime : TimeOfDay(hour: hour, minute: minute);
+  }
+
+  Future<void> setWeeklyReviewTime(TimeOfDay time) async {
+    await _prefs.setInt(_weeklyReviewHourKey, time.hour);
+    await _prefs.setInt(_weeklyReviewMinuteKey, time.minute);
     notifyListeners();
   }
 
