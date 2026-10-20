@@ -76,11 +76,12 @@ tool/device_health_check.sh "iPhone 17 Pro"   # or emulator-5554; tap Allow once
 # or emulator-5554 with fewer days), with screenshots of every screen each month
 tool/device_year_check.sh "Year iPhone 17 Pro"
 
-# Paul's own iPhone (plugged in, Developer Mode on): a release build, signed with his free
-# personal team (no time-sensitive notifications; Runner-PersonalTeam.entitlements). Free
-# installs expire after 7 days: run it again (data stays). DEV_TOOLS=1 keeps Settings →
-# Developer ("Load a year of use") in the release build, for testing real speed
-DEV_TOOLS=1 tool/install_on_iphone.sh
+# Paul's own iPhone (plugged in, Developer Mode on): a release build, signed with his paid
+# team (9EWP23T2HE, since 2026-10-19). FULL_ENTITLEMENTS=1 signs the App Group (widgets with
+# real data), time-sensitive notifications and HealthKit; without it the script falls back to
+# the free-team entitlements. DEV_TOOLS=1 keeps Settings → Developer ("Load a year of use")
+# in the release build, for testing real speed
+FULL_ENTITLEMENTS=1 DEV_TOOLS=1 tool/install_on_iphone.sh
 # If the phone shows "connecting" forever: plug straight into the Mac (not a dock), re-pair
 # (xcrun devicectl manage unpair/pair --device <id>), and restart the Mac
 # Store builds never have Settings → Developer: build them with plain `flutter build ipa` /
@@ -185,7 +186,7 @@ DEV_TOOLS=1 tool/install_on_iphone.sh
 3. ~~Two-minute version~~ (done)
 4. Statistics: ~~year heatmap, two-minute days, achievements~~ (done: Insights, sharing); still to come: weekly review and rewards (earned freeze/break days, can be turned off)
 5. Onboarding tutorial (tours and How to built 2026-10-19; Paul's review pending)
-6. Store readiness (name "Momentum", icon and app id `com.paulblake.momentum` are done)
+6. Store readiness: **`docs/store/README.md`** is the checklist, with everything left before launch. Store name "Atomic Momentum" (the home screen says "Momentum"), app id `com.paulblake.momentum`, iPhone-only for v1 (iPad soon after), privacy manifests and export compliance in `ios/`, privacy policy and support pages live at paul-blake.com/momentum/privacy and /support (support email momentum@paul-blake.com), the app created in App Store Connect
 
 **Smaller follow-ups, loose ends and open decisions** (performance, app icons, housekeeping) are in `docs/future-improvements.md`; keep it current, and move an item to its "Done" list when it's built. The proposal for keeping launch fast with years of history (load what's needed, compact settled days into checkpoints) is `docs/design/history-compaction.md`.
 

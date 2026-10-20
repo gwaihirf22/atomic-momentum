@@ -48,7 +48,7 @@
 
 ## Setup checklist (Paul)
 1. **Apple Developer:** turn on HealthKit for App ID `com.paulblake.momentum`. In Xcode, check that Runner → Signing & Capabilities shows HealthKit; the entitlement file already has it.
-2. **App Store Connect:** declare health data in App Privacy (used for app functionality, not linked to identity, not used for tracking).
+2. **App Store Connect:** App Privacy is "Data Not Collected": Health data is read and kept on the phone, never sent anywhere, and Apple counts only data that leaves the device (`docs/store/review-notes.md`). Declare it if that ever changes (sync).
 3. **Privacy policy:** publish one and link it in both stores. Health Connect's "why" screen opens the app (the `ViewPermissionUsageActivity` alias); a policy page in the app can come later.
 4. **Google Play Console:** fill in the Health Connect permissions declaration (steps, exercise, sleep, hydration, distance and total calories read; hydration write) before release. Distance and calories are read only because the `health` package reads them with every workout.
 5. **Android:** minSdk is now 26 (Android 8), which Health Connect needs.

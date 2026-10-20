@@ -1,0 +1,77 @@
+# Getting Momentum onto the App Store
+
+The checklist for the first release. The texts are in this folder:
+- [listing.md](listing.md): name, subtitle, description, keywords, categories, screenshots;
+- [privacy-policy.md](privacy-policy.md): to publish at a public address;
+- [review-notes.md](review-notes.md): reviewer notes, privacy-label answers, export compliance, EU trader status.
+
+## Done
+
+- Paid Apple Developer Program (team `9EWP23T2HE`, joined 2026-10-19). Development builds sign with every entitlement: App Group, time-sensitive notifications, HealthKit.
+- Privacy manifests for the app and the widgets, and the export-compliance key.
+- A release archive (`flutter build ipa`) builds and passes the no-dev-tools check.
+
+## To do
+
+**Paul:**
+1. ~~**Create the app in App Store Connect**~~ (done 2026-10-20: "Atomic Momentum", SKU `momentum-ios`).
+2. **The first upload, from Xcode:** open `build/ios/archive/Runner.xcarchive` → Distribute App → App Store Connect.
+   - Xcode creates the Apple Distribution certificate the first time.
+   - Command-line exports fail with "No Accounts" until that certificate exists, or until there's an App Store Connect API key (Users and Access → Integrations) for `xcodebuild -authenticationKeyPath`.
+3. **Decide:**
+   - the seller name (individual vs an LLC);
+   - EU trader status;
+   - the support email (suggested: an address on paul-blake.com, forwarded to Gmail by Cloudflare Email Routing).
+   - Decided 2026-10-20: the store name "Atomic Momentum"; v1 iPhone-only (iPad soon after); the code stays public; policy pages on paul-blake.com.
+4. **The NKJV licence** for app use (HarperCollins).
+
+**Claude:**
+1. **Publish** the privacy policy and support page on paul-blake.com (`/momentum/privacy`, `/momentum/support`), and link the policy from Settings in the app (App Review guideline 5.1.1(i) asks for it in the app as well).
+2. **Screenshots** at 6.9" from the example habits, after the Habits changes now in progress land.
+3. **Fill in the URLs**, and `AppLinks.store` once the App Store link exists.
+
+**Then:**
+- TestFlight for a week or two on Paul's phone: internal testing needs no review.
+- Submit.
+
+## Everything left before launch (audit of 2026-10-20)
+
+Every earlier plan, design doc and note, checked against the code. One at a time; tick them off here.
+
+**Claude can build:**
+- [ ] Vacation notifications (waiting on Paul's yes): a return date with a welcome back, otherwise a check-in every 3 days with "I'm back", a Settings switch
+- [ ] Weekly review (the last open part of v1 roadmap item 4)
+- [ ] Privacy policy and support links in Settings (after the other session's Settings changes land)
+- [ ] Screenshots at 6.9"
+- [x] Publish the policy pages on paul-blake.com: https://paul-blake.com/momentum/privacy and /momentum/support (website commit 5ae688c)
+- [ ] Widgets and Health on Paul's real phone (the widget tab links, `tool/device_health_check.sh`)
+- [ ] The tours work under way in the other session: a welcome page, steps that can't be knocked off course, "Replay tours"
+- [ ] Three moments Paul picked on 2026-10-17 that were never built (still wanted for v1?):
+  - All done today: a celebratory greeting, a glowing ring, a haptic, a gold Calendar dot
+  - "Streak saved" shown on the card
+  - Greetings that use the person's own data
+
+**Paul:**
+- [x] The support email: momentum@paul-blake.com through Cloudflare Email Routing (works, 2026-10-20)
+- [x] Create the app in App Store Connect ("Atomic Momentum", 2026-10-20)
+- [ ] The first upload from Xcode (the archive in ~/code/atomic-momentum-widgets/build/ios/archive)
+- [ ] The seller name (individual or an LLC), and EU trader status
+- [ ] Review the tours
+- [ ] The NKJV licence (HarperCollins)
+- [ ] Check the built-in quotes against their sources (`docs/design/inspire.md`, "Review before release")
+- [ ] Google Play, if v1 includes it: the closed test needs 12 testers for 14 days, so start early
+
+**After launch:**
+- habit stacking, and routines with timers (a Live Activity);
+- "I am someone who…" statements;
+- best times of day;
+- iPad;
+- more Health metrics;
+- more How-to guides;
+- Android widgets.
+
+**Parked:**
+- one habit's own pause, and freezes in Insights;
+- extra widget options;
+- backup and CSV export;
+- Apple Watch, Siri, StandBy.

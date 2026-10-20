@@ -19,6 +19,7 @@
 		40D8FE8CD2D997463F7C6619 /* IWillWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EDA38217A7562C3F5C9D6A3 /* IWillWidget.swift */; };
 		42446468399B1B1B6B9399B6 /* Sora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BCF0CCBB06A23131E7071596 /* Sora-Bold.ttf */; };
 		5532CFB5EC520B79EA0ED810 /* Pieces.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC76E336B490CC607178E1E0 /* Pieces.swift */; };
+		5A6F8D232E2B360853136C36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7611539B60BA665BB79B8D18 /* MomentumWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AEC4980BBFDEF20A17DCC336 /* MomentumWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
@@ -33,6 +34,7 @@
 		B28549264B18922643E164C5 /* InsightsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B356E1CAB3ABD2F11FF86 /* InsightsWidget.swift */; };
 		B403B7561FB75E0BC4AC0A68 /* QuoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698A1D57A7172285EF710CB5 /* QuoteWidget.swift */; };
 		B9BCDB983FB720699277EE46 /* HabitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 677640DD458CA208A3516B98 /* HabitWidget.swift */; };
+		CE0E6739E2F4F976D0114949 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */; };
 		CEF426EF9AFB7F6AA81CCB73 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
 		DA36AF6D322EB4348BC8A6C7 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
 		DE0923EACC8DDDA168B1F950 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
@@ -101,6 +103,7 @@
 		6AC85D89052A375FF71801A7 /* LogHabitIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogHabitIntent.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7E92D562D392CA7CF5038FED /* WidgetStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetStore.swift; sourceTree = "<group>"; };
@@ -126,6 +129,7 @@
 		BCF0CCBB06A23131E7071596 /* Sora-Bold.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Sora-Bold.ttf"; sourceTree = "<group>"; };
 		BEFC1B69D39EDD8DC38DA826 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		C8B872404FA9603F208F77E9 /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F834893F0ABD3ED7724AAD30 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -246,6 +250,7 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -278,6 +283,7 @@
 				698A1D57A7172285EF710CB5 /* QuoteWidget.swift */,
 				123B356E1CAB3ABD2F11FF86 /* InsightsWidget.swift */,
 				3EDA38217A7562C3F5C9D6A3 /* IWillWidget.swift */,
+				7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */,
 			);
 			path = MomentumWidgets;
 			sourceTree = "<group>";
@@ -415,6 +421,7 @@
 				A1B2C3D4E5F6071829304112 /* ding.wav in Resources */,
 				A1B2C3D4E5F6071829304113 /* soft.wav in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+				CE0E6739E2F4F976D0114949 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,6 +431,7 @@
 			files = (
 				1CF61F530445F67387D2C4E7 /* Sora-SemiBold.ttf in Resources */,
 				42446468399B1B1B6B9399B6 /* Sora-Bold.ttf in Resources */,
+				5A6F8D232E2B360853136C36 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -662,7 +670,7 @@
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = iphoneos;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Profile;
@@ -769,7 +777,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 			};
@@ -798,7 +806,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 			};
@@ -859,7 +867,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -914,7 +922,7 @@
 				SUPPORTED_PLATFORMS = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -995,7 +1003,7 @@
 				SKIP_INSTALL = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
 			};
 			name = Debug;
