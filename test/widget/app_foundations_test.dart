@@ -320,7 +320,7 @@ void main() {
           .setMockMethodCallHandler(SystemChannels.platform, null);
     });
 
-    testWidgets('adding one taps lightly; completing a habit taps harder; filters click', (tester) async {
+    testWidgets('adding one taps lightly; completing a habit taps harder, finishing the day hardest; filters click', (tester) async {
       final id = await addWater();
       await tester.pumpWidget(const MomentumApp());
       await tester.pumpAndSettle();
@@ -333,7 +333,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(Key('incrementHabit_$id')));
       await tester.pumpAndSettle();
-      expect(haptics.last, 'HapticFeedbackType.mediumImpact');
+      // Completing it taps harder; as the day's only habit, the day is all
+      // done too, the firmest of all
+      expect(haptics.sublist(haptics.length - 2), ['HapticFeedbackType.mediumImpact', 'HapticFeedbackType.heavyImpact']);
 
       await tester.tap(find.byKey(const Key('categoryRing_body')));
       await tester.pumpAndSettle();

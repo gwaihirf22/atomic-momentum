@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
@@ -74,6 +75,22 @@ void main() {
         tester.widgetList<CustomPaint>(find.descendant(of: dayCell(day), matching: find.byType(CustomPaint)));
     return paints.map((p) => p.painter).whereType<RingPainter>().firstOrNull;
   }
+
+  testWidgets('a day with everything done is gold, ring and all; a day partly done is not', (tester) async {
+    final twoDaysAgo = DateTime(now.year, now.month, now.day - 2);
+    await habitProvider.updateProgressForDate(id, twoDaysAgo, 1);
+    await habitProvider.updateProgressForDate(id, yesterday, 2);
+    await pumpCalendar(tester);
+    await showMonthOf(tester, yesterday);
+    final palette = AppPalette.of(tester.element(dayCell(yesterday)));
+    expect(ringOf(tester, yesterday)!.color, palette.gold);
+    final fill = find.descendant(
+      of: dayCell(yesterday),
+      matching: find.byWidgetPredicate((w) => w is Container && (w.decoration as BoxDecoration?)?.color == palette.goldTint),
+    );
+    expect(fill, findsOneWidget);
+    if (twoDaysAgo.month == yesterday.month) expect(ringOf(tester, twoDaysAgo)!.color, isNot(palette.gold));
+  });
 
   testWidgets("each day's ring fills with that day's completion", (tester) async {
     // Created today, but yesterday was logged (backfilled), so it's tracked

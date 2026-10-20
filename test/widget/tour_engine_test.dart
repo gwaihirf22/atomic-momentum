@@ -72,7 +72,14 @@ void main() {
 
   Map<String, Object?> stored() {
     final prefs = get<SharedPreferences>();
-    return {for (final key in prefs.getKeys()..remove(TourStore.key)) key: prefs.get(key)};
+    // (and which greetings were seen: back from the example habits, their
+    // own Habits screen greets them anew)
+    return {
+      for (final key in prefs.getKeys()
+        ..remove(TourStore.key)
+        ..remove('greetingsSeen'))
+        key: prefs.get(key),
+    };
   }
 
   Future<TourController> pumpApp(WidgetTester tester) async {

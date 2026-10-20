@@ -42,6 +42,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _weeklyReviewKey = 'weeklyReview';
   static const _weeklyReviewHourKey = 'weeklyReviewHour';
   static const _weeklyReviewMinuteKey = 'weeklyReviewMinute';
+  static const _greetingsSeenKey = 'greetingsSeen';
 
   /// The week in review arrives on the week's last evening at this time.
   static const fallbackWeeklyReviewTime = TimeOfDay(hour: 18, minute: 0);
@@ -75,6 +76,7 @@ class SettingsProvider extends ChangeNotifier {
     _weeklyReviewKey,
     _weeklyReviewHourKey,
     _weeklyReviewMinuteKey,
+    _greetingsSeenKey,
   ];
 
   final SharedPreferences _prefs;
@@ -197,6 +199,13 @@ class SettingsProvider extends ChangeNotifier {
     await _prefs.setInt(_weeklyReviewMinuteKey, time.minute);
     notifyListeners();
   }
+
+  /// The Habits greetings shown lately, so each takes its turn (see
+  /// Greetings.remember).
+  Set<String> get greetingsSeen => {...?_prefs.getStringList(_greetingsSeenKey)};
+
+  /// Saved quietly: nothing on screen changes with it.
+  Future<void> setGreetingsSeen(Set<String> seen) => _prefs.setStringList(_greetingsSeenKey, seen.toList());
 
   /// Whether the intro plays on a cold launch (on until turned off).
   bool get playIntro => _prefs.getBool(_playIntroKey) ?? true;

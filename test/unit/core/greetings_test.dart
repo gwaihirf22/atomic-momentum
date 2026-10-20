@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
+import 'dart:math';
+
 import 'package:atomic_momentum/core/copy/greetings.dart';
+import 'package:atomic_momentum/domain/entities/momentum.dart';
 
 void main() {
   test('parts of the day', () {
@@ -73,5 +76,85 @@ void main() {
     for (final line in Greetings.lines.values.expand((l) => l)) {
       expect(line.length, lessThanOrEqualTo(22), reason: line);
     }
+  });
+
+  group('taking turns', () {
+    test('plenty for each part of the day, and none twice', () {
+      for (final part in DayPart.values) {
+        expect(Greetings.lines[part]!.length, greaterThanOrEqualTo(25), reason: part.name);
+        expect(Greetings.lines[part]!.toSet().length, Greetings.lines[part]!.length, reason: part.name);
+      }
+      expect(Greetings.allDone.length, greaterThanOrEqualTo(12));
+    });
+
+    test("no line comes back until the rest of its part of the day have shown", () {
+      final morning = DateTime(2026, 10, 16, 8);
+      final pool = Greetings.lines[DayPart.morning]!;
+      var seen = <String>{};
+      String? last;
+      final shown = <String>[];
+      for (var i = 0; i < pool.length; i++) {
+        last = Greetings.pick(morning, random: Random(i), avoid: last, seen: seen);
+        shown.add(last);
+        seen = Greetings.remember(seen, last);
+      }
+      expect(shown.toSet().length, pool.length, reason: 'every one, once');
+      // Then they start over, never with the one just shown
+      final next = Greetings.pick(morning, random: Random(99), avoid: last, seen: seen);
+      expect(pool, contains(next));
+      expect(next, isNot(last));
+    });
+
+    test('one part of the day running out leaves the others alone', () {
+      final evening = Greetings.lines[DayPart.evening]!;
+      var seen = {Greetings.lines[DayPart.morning]!.first, ...evening.skip(1)};
+      seen = Greetings.remember(seen, evening.first);
+      expect(seen, {Greetings.lines[DayPart.morning]!.first, evening.first});
+    });
+  });
+
+  group("from the person's own day", () {
+    const facts = GreetingFacts(
+      due: 5,
+      done: 2,
+      streak: (name: 'Read', length: 12, unit: 'day'),
+      atRisk: 'Gym',
+      level: MomentumLevel.unstoppable,
+    );
+
+    test("what's left, the longest streak, a habit at risk, the level", () {
+      final lines = Greetings.personal(facts, DayPart.morning);
+      expect(lines, containsAll(['3 to go today', '2 down already', 'Day 12 of Read', 'Gym needs you', 'Unstoppable, truly']));
+      expect(Greetings.personal(const GreetingFacts(due: 3, done: 2), DayPart.evening), contains('Just one to go'));
+      expect(Greetings.personal(const GreetingFacts(streak: (name: 'Review', length: 4, unit: 'week')), DayPart.evening),
+          contains('Review: week 4'));
+    });
+
+    test("names too long for the title, short streaks and empty days say nothing", () {
+      final lines = Greetings.personal(
+        const GreetingFacts(streak: (name: 'Practise the violin', length: 30, unit: 'day'), atRisk: 'Stretch every morning'),
+        DayPart.morning,
+      );
+      expect(lines, isEmpty);
+      expect(Greetings.personal(const GreetingFacts(streak: (name: 'Read', length: 2, unit: 'day')), DayPart.morning),
+          isEmpty);
+    });
+
+    test('everything done: always celebratory', () {
+      const done = GreetingFacts(due: 4, done: 4);
+      expect(done.allDone, isTrue);
+      for (var i = 0; i < 20; i++) {
+        expect(Greetings.allDone, contains(Greetings.pick(DateTime(2026, 10, 16, 20), random: Random(i), facts: done)));
+      }
+    });
+
+    test('now and then, not always', () {
+      final own = Greetings.personal(facts, DayPart.afternoon).toSet();
+      var mine = 0;
+      for (var i = 0; i < 200; i++) {
+        if (own.contains(Greetings.pick(DateTime(2026, 10, 16, 14), random: Random(i), facts: facts))) mine++;
+      }
+      expect(mine, inInclusiveRange(40, 110));
+    });
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -83,6 +84,69 @@ void main() {
       await tester.pumpAndSettle();
       expect(greeting(), isNot(first));
       expect(Greetings.lines[Greetings.partOf(DateTime.now())], contains(greeting()));
+    });
+
+    group('all done today', () {
+      Future<List<String>> twoHabitsWithMomentum() async {
+        final ids = [await addHabit('Stretch'), await addHabit('Read')];
+        final now = DateTime.now();
+        for (final id in ids) {
+          for (var i = 1; i <= 5; i++) {
+            await habits.updateProgressForDate(id, DateTime(now.year, now.month, now.day - i), 1);
+          }
+        }
+        return ids;
+      }
+
+      String greeting(WidgetTester tester) => tester.widget<Text>(find.byKey(const Key('habitsGreeting'))).data!;
+
+      testWidgets('finishing the last habit: a celebratory greeting, a gold glow and a firm haptic', (tester) async {
+        final haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+          return null;
+        });
+        addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+        final ids = await twoHabitsWithMomentum();
+        await pump(tester, const HomeScreen());
+        expect(Greetings.allDone, isNot(contains(greeting(tester))));
+        expect(find.byKey(const Key('momentumGlow')), findsNothing);
+
+        await tester.tap(find.byKey(Key('incrementHabit_${ids[0]}')));
+        await tester.pumpAndSettle();
+        expect(haptics, isNot(contains('HapticFeedbackType.heavyImpact')), reason: 'one of two isn\'t the day');
+        await tester.tap(find.byKey(Key('incrementHabit_${ids[1]}')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byKey(const Key('momentumGlow')), findsOneWidget, reason: 'the burst');
+        await tester.pumpAndSettle();
+        expect(Greetings.allDone, contains(greeting(tester)));
+        expect(haptics, contains('HapticFeedbackType.heavyImpact'));
+        expect(find.byKey(const Key('momentumGlow')), findsOneWidget, reason: 'a soft glow stays');
+
+        // Undone again: an everyday greeting, and the glow goes
+        await tester.tap(find.byKey(Key('decrementHabit_${ids[1]}')));
+        await tester.pumpAndSettle();
+        expect(Greetings.allDone, isNot(contains(greeting(tester))));
+        expect(find.byKey(const Key('momentumGlow')), findsNothing);
+      });
+
+      testWidgets('opened on a day already done: the greeting celebrates, quietly', (tester) async {
+        final haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+          return null;
+        });
+        addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+        final ids = await twoHabitsWithMomentum();
+        for (final id in ids) {
+          await habits.updateHabitProgress(id, 1);
+        }
+        await pump(tester, const HomeScreen());
+        expect(Greetings.allDone, contains(greeting(tester)));
+        expect(find.byKey(const Key('momentumGlow')), findsOneWidget);
+        expect(haptics, isEmpty, reason: 'nothing just happened');
+      });
     });
 
     testWidgets('shows overall momentum once something is logged', (tester) async {

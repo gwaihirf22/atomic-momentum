@@ -13,7 +13,13 @@ class MomentumRing extends StatelessWidget {
   final Momentum momentum;
   final double size;
 
-  const MomentumRing({super.key, required this.momentum, this.size = 56});
+  /// Everything due today is done: a soft gold glow around the ring.
+  final bool glowing;
+
+  /// Goes up when the day has just been finished: a burst of the glow.
+  final int burst;
+
+  const MomentumRing({super.key, required this.momentum, this.size = 56, this.glowing = false, this.burst = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -40,32 +46,36 @@ class MomentumRing extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              width: ringSize,
-              height: ringSize,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(end: momentum.score / 100),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) => CustomPaint(
-                  painter: _GradientRingPainter(fraction: value, palette: palette),
-                  child: child,
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.bolt, size: 14, color: palette.gauge),
-                      Text(
-                        '${momentum.rounded}',
-                        style: TextStyle(
-                          fontFamily: 'Sora',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: palette.text,
+            _Glow(
+              on: glowing,
+              burst: burst,
+              child: SizedBox(
+                width: ringSize,
+                height: ringSize,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(end: momentum.score / 100),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) => CustomPaint(
+                    painter: _GradientRingPainter(fraction: value, palette: palette),
+                    child: child,
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bolt, size: 14, color: palette.gauge),
+                        Text(
+                          '${momentum.rounded}',
+                          style: TextStyle(
+                            fontFamily: 'Sora',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: palette.text,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -89,6 +99,70 @@ class MomentumRing extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A gold glow inside the ring while the day is all done, with a burst
+/// (brighter, and the ring pops) when it has just been finished (none with
+/// Reduce Motion).
+class _Glow extends StatefulWidget {
+  final bool on;
+  final int burst;
+  final Widget child;
+
+  const _Glow({required this.on, required this.burst, required this.child});
+
+  @override
+  State<_Glow> createState() => _GlowState();
+}
+
+class _GlowState extends State<_Glow> with SingleTickerProviderStateMixin {
+  late final _burst = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+
+  @override
+  void didUpdateWidget(_Glow old) {
+    super.didUpdateWidget(old);
+    if (widget.burst != old.burst && !MediaQuery.disableAnimationsOf(context)) _burst.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _burst.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gold = AppPalette.of(context).gold;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: widget.on ? 1 : 0),
+      duration: const Duration(milliseconds: 500),
+      child: widget.child,
+      builder: (context, steady, child) => AnimatedBuilder(
+        animation: _burst,
+        child: child,
+        builder: (context, child) {
+          // Up and back down over the burst
+          final burst = _burst.isAnimating ? math.sin(math.pi * _burst.value) : 0.0;
+          final alpha = (0.4 * steady + 0.45 * burst).clamp(0.0, 0.85);
+          if (alpha <= 0) return child!;
+          // Kept within the ring (the header's scroll view clips just above
+          // it): a warm glow inside, a soft edge, and a pop in size
+          return Transform.scale(
+            scale: 1 + 0.12 * burst,
+            child: DecoratedBox(
+              key: const Key('momentumGlow'),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [gold.withValues(alpha: alpha), gold.withValues(alpha: alpha * 0.15)]),
+                boxShadow: [BoxShadow(color: gold.withValues(alpha: alpha * 0.6), blurRadius: 8)],
+              ),
+              child: child,
+            ),
+          );
+        },
       ),
     );
   }

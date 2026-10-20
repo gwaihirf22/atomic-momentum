@@ -468,6 +468,9 @@ class _DayCell extends StatelessWidget {
 
   /// 0–1, or null when there was nothing to track that day (no ring).
   final double? fraction;
+
+  /// Every habit that day was done: a gold ring with a soft gold fill.
+  bool get perfect => (fraction ?? 0) >= 0.999;
   final bool isSelected;
   final bool isToday;
   final Color accent;
@@ -489,11 +492,14 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     final textColor = isSelected
-        ? AppPalette.of(context).onAccent
+        ? palette.onAccent
         : isToday
             ? accent
-            : labelColor;
+            : perfect
+                ? palette.gold
+                : labelColor;
 
     // table_calendar labels each day for VoiceOver with its date; the
     // selected day's heading reads out how much was done
@@ -502,13 +508,18 @@ class _DayCell extends StatelessWidget {
         width: size,
         height: size,
         child: CustomPaint(
-          painter:
-              fraction == null ? null : RingPainter(fraction: fraction!, color: accent, stroke: 3, trackOpacity: 0.15),
+          painter: fraction == null
+              ? null
+              : RingPainter(fraction: fraction!, color: perfect ? palette.gold : accent, stroke: 3, trackOpacity: 0.15),
           child: Center(
             child: Container(
               width: size * 0.75,
               height: size * 0.75,
-              decoration: isSelected ? BoxDecoration(color: accent, shape: BoxShape.circle) : null,
+              decoration: isSelected
+                  ? BoxDecoration(color: accent, shape: BoxShape.circle)
+                  : perfect
+                      ? BoxDecoration(color: palette.goldTint, shape: BoxShape.circle)
+                      : null,
               alignment: Alignment.center,
               child: Text(
                 '${day.day}',

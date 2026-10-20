@@ -664,7 +664,18 @@ void main() {
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
-    for (final line in Greetings.lines.values.expand((l) => l)) {
+    // The longest a person's own day can make them: 12-letter names, big numbers
+    final own = {
+      for (final part in DayPart.values)
+        for (final facts in const [
+          GreetingFacts(due: 24, done: 12, streak: (name: 'Weight train', length: 365, unit: 'day'), atRisk: 'Weight train'),
+          GreetingFacts(due: 10, done: 9, streak: (name: 'Weight train', length: 104, unit: 'week'), level: MomentumLevel.atomic),
+          GreetingFacts(streak: (name: 'Weight train', length: 120, unit: 'month'), level: MomentumLevel.unstoppable),
+          GreetingFacts(streak: (name: 'Weight train', length: 120, unit: null), level: MomentumLevel.strong),
+        ])
+          ...Greetings.personal(facts, part),
+    };
+    for (final line in [...Greetings.lines.values.expand((l) => l), ...Greetings.allDone, ...own]) {
       await tester.pumpWidget(MaterialApp(
         theme: IOSTheme.material(AppPalette.light).copyWith(platform: TargetPlatform.iOS),
         home: Scaffold(

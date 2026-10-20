@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/habit.dart';
+import '../domain/entities/momentum.dart';
+import '../domain/services/today.dart';
 import '../domain/entities/category.dart';
 import '../core/feedback/haptics.dart';
 import '../core/exceptions/friendly_error.dart';
@@ -49,15 +51,65 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String? _greeting;
   DayPart? _greetingPart;
 
+  /// Whether everything due today was done at the last look (null before
+  /// the habits had loaded), and how many times it has just become so.
+  bool? _allDone;
+  int _burst = 0;
+
   /// The greeting for [now] on the person's own day (Settings → "My day
   /// starts at"); a new one when the part of the day changes.
-  String _greetingFor(DateTime now, TimeOfDay dayStart) {
+  String _greetingFor(DateTime now, TimeOfDay dayStart, GreetingFacts facts) {
     final part = Greetings.partOf(now, dayStart: dayStart);
-    if (_greeting == null || part != _greetingPart) {
-      _greeting = Greetings.pick(now, avoid: _greeting, dayStart: dayStart);
-      _greetingPart = part;
-    }
+    if (_greeting == null || part != _greetingPart) _pickGreeting(now, dayStart, facts);
     return _greeting!;
+  }
+
+  /// A new greeting, taking its turn (one not shown lately), remembered.
+  void _pickGreeting(DateTime now, TimeOfDay dayStart, GreetingFacts facts) {
+    final settings = context.read<SettingsProvider>();
+    final seen = settings.greetingsSeen;
+    final line = Greetings.pick(now, avoid: _greeting, dayStart: dayStart, facts: facts, seen: seen);
+    _greeting = line;
+    _greetingPart = Greetings.partOf(now, dayStart: dayStart);
+    // The example habits' greetings don't take the person's turns
+    if (!_demo) unawaited(settings.setGreetingsSeen(Greetings.remember(seen, line)));
+  }
+
+  /// What the greeting can say from the person's own day.
+  static GreetingFacts _factsOf(Today today, Momentum? momentum) {
+    final best = today.bestStreak;
+    return GreetingFacts(
+      due: today.due,
+      done: today.done,
+      streak: best == null
+          ? null
+          : (
+              name: best.habit.name,
+              length: best.length,
+              unit: best.habit.schedule.interval == 1 ? best.habit.resetFrequency.periodUnit : null,
+            ),
+      atRisk: today.atRisk?.name,
+      level: momentum?.level,
+    );
+  }
+
+  /// Everything due today has just been done (or undone): a celebratory
+  /// greeting, and while the app is open, a burst of the ring's glow and a
+  /// haptic. Opened on a day already done, just the greeting.
+  void _watchAllDone(bool allDone, DateTime now, TimeOfDay dayStart, GreetingFacts facts) {
+    final was = _allDone;
+    _allDone = allDone;
+    if (was == allDone || (was == null && !allDone)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _pickGreeting(now, dayStart, facts);
+        if (was == false && allDone && !_demo) {
+          _burst++;
+          Haptics.allDone();
+        }
+      });
+    });
   }
 
   @override
@@ -107,11 +159,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Back in the app: a fresh greeting
       final now = clock.now();
       final dayStart = context.read<SettingsProvider>().dayStart;
-      setState(() {
-        _greeting = Greetings.pick(now, avoid: _greeting, dayStart: dayStart);
-        _greetingPart = Greetings.partOf(now, dayStart: dayStart);
-      });
       final habits = context.read<HabitProvider>();
+      setState(() => _pickGreeting(now, dayStart, _factsOf(Today.of(habits.habits, now), habits.overallMomentum)));
       // A new day first, then whatever Health has recorded since
       habits.resetHabitsIfNeeded().then((_) => habits.syncHealth());
       _scheduleMidnightReset();
@@ -171,6 +220,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           builder: (context, habitProvider, categoryProvider, child) {
             final momentum = habitProvider.overallMomentum;
             final filteredHabits = categoryProvider.filterHabits(habitProvider.habits);
+            final today = Today.of(habitProvider.habits, now);
+            final facts = _factsOf(today, momentum);
+            if (habitProvider.state == HabitProviderState.loaded) _watchAllDone(today.allDone, now, dayStart, facts);
 
             return SlidableAutoCloseBehavior(
               child: LargeTitleScaffold(
@@ -178,13 +230,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 backgroundColor: palette.background,
                 header: LargeTitleHeader(
                   eyebrow: DateFormat.MMMMEEEEd().format(now),
-                  title: _greetingFor(now, dayStart),
+                  title: _greetingFor(now, dayStart, facts),
                   titleKey: const Key('habitsGreeting'),
                   accessory: momentum == null
                       ? null
                       : TourAnchor(
                           id: TourAnchorId.overallMomentum,
-                          child: MomentumRing(key: const Key('overallMomentum'), momentum: momentum),
+                          child: MomentumRing(
+                            key: const Key('overallMomentum'),
+                            momentum: momentum,
+                            glowing: today.allDone,
+                            burst: _burst,
+                          ),
                         ),
                 ),
                 slivers: [

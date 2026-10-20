@@ -47,9 +47,11 @@ void main() {
     await resetDependencies();
   });
 
+  /// The person's storage, but for which greetings they've seen: back from
+  /// the example habits, their own Habits screen greets them anew.
   Map<String, Object?> stored() {
     final prefs = get<SharedPreferences>();
-    return {for (final key in prefs.getKeys()) key: prefs.get(key)};
+    return {for (final key in prefs.getKeys()..remove('greetingsSeen')) key: prefs.get(key)};
   }
 
   Future<void> settle(WidgetTester tester) async {

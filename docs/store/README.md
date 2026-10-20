@@ -47,10 +47,10 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] Widgets on Paul's real phone: real data through the App Group, logging and taps work (TestFlight build 1, 2026-10-20; not every kind added yet)
 - [ ] Health on Paul's real phone (Watch data, other apps' runs, turning access off; `tool/device_health_check.sh` on iOS)
 - [x] The tours work in the other session: a welcome page, steps that can't be knocked off course, "Replay tours" (2026-10-20)
-- [ ] Three moments Paul picked on 2026-10-17 that were never built (still wanted for v1?):
-  - All done today: a celebratory greeting, a glowing ring, a haptic, a gold Calendar dot
-  - "Streak saved" shown on the card
-  - Greetings that use the person's own data
+- [x] Three moments Paul picked on 2026-10-17 (decided 2026-10-20):
+  - All done today: a celebratory greeting, a glowing ring with a burst, a haptic; on Calendar a gold ring with a soft gold fill (built)
+  - "Streak saved" shown on the card (not wanted: the card has enough on it)
+  - Greetings that use the person's own data, and many more greetings taking turns (built)
 
 **Paul:**
 - [x] The support email: momentum@paul-blake.com through Cloudflare Email Routing (works, 2026-10-20)

@@ -17,6 +17,9 @@ class Haptics {
   /// hold by accident is felt.
   static Future<void> held() => HapticFeedback.heavyImpact();
 
+  /// Everything due today is done: the firmest, for the day's last one.
+  static Future<void> allDone() => HapticFeedback.heavyImpact();
+
   /// Picking a filter or option.
   static Future<void> selection() => HapticFeedback.selectionClick();
 
