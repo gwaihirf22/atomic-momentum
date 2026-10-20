@@ -439,6 +439,13 @@ void main() {
         expectNothingCutOff(tester, 'Settings, vacation with a return date, at $setting');
       });
 
+      testWidgets('Settings, About at the end, at $setting', (tester) async {
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('contactSupport')), 300,
+            scrollable: find.byType(Scrollable).first);
+        expectNothingCutOff(tester, 'Settings, About, at $setting');
+      });
+
       testWidgets('Settings with quiet hours on at $setting', (tester) async {
         await get<SettingsProvider>().setQuietHours(const QuietHours(enabled: true));
         await pump(tester, const SettingsScreen(), width: width, scale: scale);

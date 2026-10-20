@@ -18,6 +18,16 @@ class AppLinks {
   /// The developer's tip page ("Buy me a coffee" in Settings, US only; see
   /// SupportLink). Empty until there is one, which hides the row.
   static const coffee = '';
+
+  /// The privacy policy (Settings → About, and the App Store listing). Its
+  /// text is the website's pages/momentum/privacy.js; docs/store has a copy.
+  static const privacy = 'https://paul-blake.com/momentum/privacy';
+
+  /// Help and the support address (Settings → About, the App Store's
+  /// Support URL).
+  static const support = 'https://paul-blake.com/momentum/support';
+
+  static const supportEmail = 'momentum@paul-blake.com';
 }
 
 /// Hands a picture to the phone's share sheet (Messages, WhatsApp, Telegram,

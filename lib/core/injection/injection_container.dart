@@ -42,6 +42,7 @@ import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
 import '../services/vacation_notice_service.dart';
+import '../services/web_pages.dart';
 import '../../domain/services/streak_warning_planner.dart';
 import '../../domain/services/vacation_notice_planner.dart';
 import '../migration/smart_reminders_migration.dart';
@@ -90,6 +91,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<Sharer>(() => const SystemSharer());
   sl.registerLazySingleton<AppIconService>(() => const PlatformAppIconService());
   sl.registerLazySingleton<SupportLink>(() => PlatformSupportLink());
+  sl.registerLazySingleton<WebPages>(() => const PlatformWebPages());
   sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
   sl.registerLazySingleton(() => FreezeBank(sl()));
   sl.registerLazySingleton(() => HabitOrder(sl()));

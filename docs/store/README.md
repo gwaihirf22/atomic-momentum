@@ -41,7 +41,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 **Claude can build:**
 - [x] Vacation notifications: a return date with a welcome back, otherwise a check-in every 3 days (weekly after two weeks) with "I'm back", a Settings switch (2026-10-20)
 - [ ] Weekly review (the last open part of v1 roadmap item 4)
-- [ ] Privacy policy and support links in Settings (after the other session's Settings changes land)
+- [x] Privacy policy and support links in Settings → About (2026-10-20)
 - [ ] Screenshots at 6.9"
 - [x] Publish the policy pages on paul-blake.com: https://paul-blake.com/momentum/privacy and /momentum/support (website commit 5ae688c)
 - [x] Widgets on Paul's real phone: real data through the App Group, logging and taps work (TestFlight build 1, 2026-10-20; not every kind added yet)

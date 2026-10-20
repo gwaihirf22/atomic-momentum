@@ -6,7 +6,9 @@ import '../core/branding/app_icons.dart';
 import '../core/dev/dev_tools.dart';
 import '../core/injection/injection_container.dart';
 import '../core/services/app_icon_service.dart';
+import '../core/services/sharer.dart';
 import '../core/services/support_link.dart';
+import '../core/services/web_pages.dart';
 import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
 import '../presentation/tour/tour_controller.dart';
@@ -390,6 +392,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         const HealthSettingsSection(),
         if (!demo) const _SupportSection(),
+        if (!demo) const _AboutSection(),
         // Debug builds, and test builds made with DEV_TOOLS; never in a store build
         // Never over a tour's example habits: these act on the person's own data
         if (DevTools.enabled && !demo)
@@ -585,6 +588,47 @@ class _SupportSectionState extends State<_SupportSection> {
               );
             }
           },
+        ),
+      ],
+    );
+  }
+}
+
+/// About: the privacy policy (App Review wants it reachable in the app,
+/// not only in the listing) and the support page, opened in the browser.
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  static Future<void> _open(BuildContext context, String url) async {
+    if (await get<WebPages>().open(url) || !context.mounted) return;
+    await showAdaptiveAlert<void>(
+      context,
+      title: 'Couldn\'t open the page',
+      message: 'Check your connection and try again. It\'s at $url',
+      actions: const [AdaptiveAction(label: 'OK', value: null, isDefault: true)],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsSection(
+      header: 'About',
+      footer: 'Momentum collects nothing: no accounts, no ads, no tracking. Your habits stay on this phone.',
+      children: [
+        SettingsTile(
+          tileKey: const Key('privacyPolicy'),
+          icon: CupertinoIcons.lock_shield_fill,
+          iconColor: HabitColor.green.color,
+          title: 'Privacy policy',
+          onTap: () => _open(context, AppLinks.privacy),
+        ),
+        SettingsTile(
+          tileKey: const Key('contactSupport'),
+          icon: CupertinoIcons.envelope_fill,
+          iconColor: HabitColor.blue.color,
+          title: 'Contact & support',
+          subtitle: AppLinks.supportEmail,
+          onTap: () => _open(context, AppLinks.support),
         ),
       ],
     );
