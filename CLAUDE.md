@@ -51,9 +51,10 @@ The two folders share one repository (one `.git`), so a commit or fetch in eithe
 # but doesn't take clicks. Then:
 ./flutter/bin/flutter run -d "iPhone 17 Pro"
 xcrun simctl io booted screenshot shot.png   # screenshot from the command line
-# After changes, reload BOTH simulators: iPhone 17 Pro and iPhone SE (3rd generation), each on
-# the newest iOS it runs here (26.0; iOS 27 drops the SE). iOS 27.1 runs only on "iPhone Duo"
-# in this Xcode: check iOS changes there too. "iPhone SE (iOS 18)" stays for older iOS
+# After changes, reload BOTH simulators: iPhone 17 Pro and iPhone SE (3rd generation), on iOS 27.0
+# (since 2026-10-20; "Year …" and "Widgets …" ones too). iOS 27.1 runs only on "iPhone Duo" in this
+# Xcode: check iOS changes there too. Older iOS, for testing: "iPhone 17 Pro (iOS 26)" and
+# "iPhone SE (iOS 18)" (18.5, the oldest runtime installed; the app needs 17)
 
 # Build for web (faster for testing)
 ./flutter/bin/flutter build web
