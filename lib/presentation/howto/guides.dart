@@ -201,8 +201,8 @@ abstract final class Guides {
             height: 300,
             alt: 'The categories on Habits',
           ),
-          "Hold a category at the top of Habits, or a habit's name, to open Arrange. Settings → Arrange gets "
-          'there too.',
+          "Hold a category, or a habit's name, on Habits or Calendar to open Arrange. Settings → Arrange "
+          'gets there too.',
         ),
         GuideCard(
           HowToScene(

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
+import 'package:flutter/services.dart' show HapticFeedback;
 import '../core/theme/app_palette.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/category.dart';
@@ -31,6 +32,15 @@ class CategoriesScreen extends StatefulWidget {
   final String? showHabitId;
 
   const CategoriesScreen({Key? key, this.showHabitId}) : super(key: key);
+
+  /// Holding a category, or a habit (its card on Habits, its row on
+  /// Calendar): Arrange, at that habit. Not during a tour, whose steps
+  /// never hold these.
+  static void open(BuildContext context, {String? habitId}) {
+    if (TourController.maybeOf(context)?.isRunning ?? false) return;
+    HapticFeedback.mediumImpact();
+    Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => CategoriesScreen(showHabitId: habitId)));
+  }
 
   @override
   State<CategoriesScreen> createState() => _CategoriesScreenState();

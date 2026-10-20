@@ -14,6 +14,8 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/habit_progress_ring.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
+import 'package:atomic_momentum/screens/categories_screen.dart';
+import 'package:flutter/semantics.dart';
 
 void main() {
   late HabitProvider habitProvider;
@@ -166,5 +168,37 @@ void main() {
     await tester.tap(find.byKey(const Key('calendarFormatToggle')));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Show the whole month'), findsOneWidget);
+  });
+
+  group('holding opens Arrange, as on Habits', () {
+    testWidgets('holding a category', (tester) async {
+      await pumpCalendar(tester);
+      await tester.longPress(find.byKey(const Key('categoryRing_body')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoriesScreen), findsOneWidget);
+    });
+
+    testWidgets("holding a habit's name opens it at that habit; holding its ring still finishes it", (tester) async {
+      await pumpCalendar(tester);
+      await tester.longPress(find.descendant(of: find.byKey(Key('dayHabit_$id')), matching: find.text('Stretch')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<CategoriesScreen>(find.byType(CategoriesScreen)).showHabitId, id);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.byKey(Key('dayHabitIcon_$id')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoriesScreen), findsNothing);
+      expect(habitProvider.habits.single.wasCompletedOnDate(today), isTrue);
+    });
+
+    testWidgets('VoiceOver gets "Arrange habits" on a row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCalendar(tester);
+      final data = tester.getSemantics(find.byKey(Key('dayHabit_$id'))).getSemanticsData();
+      final labels = data.customSemanticsActionIds!.map((id) => CustomSemanticsAction.getAction(id)!.label);
+      expect(labels, contains('Arrange habits'));
+      handle.dispose();
+    });
   });
 }

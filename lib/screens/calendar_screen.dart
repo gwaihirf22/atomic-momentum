@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -29,6 +30,7 @@ import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/tab_swipe.dart';
 import '../presentation/widgets/two_minute_button.dart';
 import 'package:clock/clock.dart';
+import 'categories_screen.dart';
 import 'habit_detail_screen.dart';
 import '../presentation/tour/tour_events.dart';
 
@@ -270,6 +272,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 selectedId: filterId,
                 onTap: _toggleCategory,
+                onLongPress: () => CategoriesScreen.open(context),
               ),
             ),
             SliverToBoxAdapter(child: _buildCalendar(context, habits)),
@@ -432,6 +435,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               icon: habitIcon(habit, categories.resolve(habit.categoryId)),
               onStart: () => _startFrom(habit, day),
               onOpen: () => open(habit),
+              onArrange: () => CategoriesScreen.open(context, habitId: habit.id),
             );
           }
           final habit = habits[index];
@@ -448,6 +452,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               builder: (_) => HabitDetailScreen(habitId: habit.id, day: day),
             )),
             holdUndo: _holdUndos[_undoKey(habit, day)],
+            onArrange: () => CategoriesScreen.open(context, habitId: habit.id),
           );
         },
       ),
@@ -529,7 +534,16 @@ class _NotStartedRow extends StatelessWidget {
   final VoidCallback onStart;
   final VoidCallback onOpen;
 
-  const _NotStartedRow({required this.habit, required this.icon, required this.onStart, required this.onOpen});
+  /// Holding the row: Arrange, at this habit.
+  final VoidCallback onArrange;
+
+  const _NotStartedRow({
+    required this.habit,
+    required this.icon,
+    required this.onStart,
+    required this.onOpen,
+    required this.onArrange,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -543,7 +557,9 @@ class _NotStartedRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
-      child: Material(
+      child: Semantics(
+        customSemanticsActions: {const CustomSemanticsAction(label: 'Arrange habits'): onArrange},
+        child: Material(
         key: Key('notStarted_${habit.id}'),
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(AppStyle.cardRadius),
@@ -551,6 +567,7 @@ class _NotStartedRow extends StatelessWidget {
         child: TabSwipeBlocker(
           child: InkWell(
             onTap: onOpen,
+            onLongPress: onArrange,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: LayoutBuilder(builder: (context, constraints) {
@@ -594,6 +611,7 @@ class _NotStartedRow extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -622,6 +640,9 @@ class _DayHabitRow extends StatelessWidget {
   /// A held change that can still be undone: covers the row with Undo.
   final HoldUndo? holdUndo;
 
+  /// Holding the row (not its ring, which finishes or clears): Arrange.
+  final VoidCallback onArrange;
+
   const _DayHabitRow({
     required this.habit,
     required this.day,
@@ -632,6 +653,7 @@ class _DayHabitRow extends StatelessWidget {
     required this.onHold,
     required this.holdUndo,
     required this.onOpen,
+    required this.onArrange,
   });
 
   String _subtitle(int loggedThatDay, int periodTotal) {
@@ -673,7 +695,9 @@ class _DayHabitRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: AppStyle.cardGap),
       // A swipe on a habit never moves to another tab
       child: TabSwipeBlocker(
-        child: Material(
+        child: Semantics(
+          customSemanticsActions: {const CustomSemanticsAction(label: 'Arrange habits'): onArrange},
+          child: Material(
           key: Key('dayHabit_${habit.id}'),
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(AppStyle.cardRadius),
@@ -681,6 +705,8 @@ class _DayHabitRow extends StatelessWidget {
           child: Stack(children: [
             InkWell(
               onTap: onOpen,
+              // The ring's own hold comes first
+              onLongPress: onArrange,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 // Same rule as the habit cards: two rows on narrow phones or large text
@@ -773,6 +799,7 @@ class _DayHabitRow extends StatelessWidget {
             HoldUndoOverlay(
                 undo: holdUndo, color: color, habitName: habit.name, undoKey: Key('undoDayHold_${habit.id}')),
           ]),
+        ),
         ),
       ),
     );

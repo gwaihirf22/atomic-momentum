@@ -32,7 +32,6 @@ import '../presentation/widgets/momentum_ring.dart';
 import 'package:clock/clock.dart';
 import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_anchor.dart';
-import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/tour_events.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -484,15 +483,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// The habit's page, in this tab (so the tab bar steps aside).
-  /// Holding the rings, or a card (that habit shown on Arrange). Not from a
-  /// card during a tour, whose steps hold rings, not cards.
-  void _arrange({Habit? habit}) {
-    if (habit != null && (TourController.maybeOf(context)?.isRunning ?? false)) return;
-    HapticFeedback.mediumImpact();
-    Navigator.of(context).push(
-      CupertinoPageRoute(builder: (_) => CategoriesScreen(showHabitId: habit?.id)),
-    );
-  }
+  /// Holding a category, or a card (that habit shown on Arrange).
+  void _arrange({Habit? habit}) => CategoriesScreen.open(context, habitId: habit?.id);
 
   void _openHabit(Habit habit) {
     Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));

@@ -48,7 +48,7 @@ class Category extends Equatable {
 - **Picker:** the same 44pt grid as the habit icon picker on Add Habit, so both feel the same.
 
 ## UI
-- **Arrange page** (`CategoriesScreen`; it was "Categories" until 2026-10-20), opened from **Settings → Arrange**, by holding the category rings, or by holding a habit's card on the Habits screen (scrolled to that habit, briefly tinted):
+- **Arrange page** (`CategoriesScreen`; it was "Categories" until 2026-10-20), opened from **Settings → Arrange**, by holding a category (on Habits or Calendar), or by holding a habit's card on Habits or its row on Calendar (scrolled to that habit, briefly tinted; `CategoriesScreen.open`, never during a tour):
   - The list shows each category's icon, name and number of habits.
   - **Add** opens a sheet with name, color (the existing 20-color palette) and icon.
   - **Edit** uses the same sheet. All categories are fully editable, built-in ones included: rename, recolor, change icon, delete.
