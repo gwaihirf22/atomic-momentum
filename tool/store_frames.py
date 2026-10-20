@@ -35,7 +35,15 @@ SCREENS = [
     ('06_calendar', 'Every day,', 'at a glance', 'Fill in a day you missed logging, or look back at a good month'),
     ('07_inspire', 'Words to', 'keep you going', 'A quote a day from the Stoics, classic writers and Scripture'),
     ('08_achievements', 'Celebrate', 'the milestones', 'Real achievements, and a few silly ones'),
+    # Captured from SpringBoard by tool/widget_screens.sh, the same in every look
+    ('lock_screen', 'Right on your', 'lock screen',
+     'Momentum, a streak and today\'s progress. Log without opening the app'),
+    ('home_widgets', 'Log it from', 'home screen', 'Tap + on a widget. Streaks and momentum keep up'),
 ]
+
+# Screenshots of the phone's own screens rather than the app: one picture,
+# framed in whichever look the set asks for.
+SYSTEM = {'lock_screen', 'home_widgets'}
 
 THEMES = {
     # The app's palettes (lib/core/theme/app_palette.dart)
@@ -48,9 +56,21 @@ THEMES = {
 }
 
 
-# The set that goes on the App Store, in order: Sepia leads (Paul's choice,
-# 2026-10-20), then all three looks take turns.
-FINAL = ['sepia', 'sepia', 'charged', 'light', 'sepia', 'charged', 'light', 'sepia']
+# The set that goes on the App Store, in order, with the look each is framed
+# in: Sepia leads, the lock screen and home screen come 4th and 5th, then all
+# three looks take turns (Paul's choices, 2026-10-20).
+FINAL = [
+    ('01_habits', 'sepia'),
+    ('02_habit_page', 'sepia'),
+    ('03_never_miss_twice', 'charged'),
+    ('lock_screen', 'sepia'),
+    ('home_widgets', 'light'),
+    ('04_two_minute', 'charged'),
+    ('05_insights', 'sepia'),
+    ('06_calendar', 'light'),
+    ('07_inspire', 'charged'),
+    ('08_achievements', 'sepia'),
+]
 
 
 def rounded_mask(size, radius):
@@ -96,7 +116,7 @@ def wrap(draw, text, font, max_width):
 
 def frame(theme, name, first, second, sub):
     colors = THEMES[theme]
-    shot_path = os.path.join(SHOTS, f'{theme}_{name}.png')
+    shot_path = os.path.join(SHOTS, f'{name}.png' if name in SYSTEM else f'{theme}_{name}.png')
     if not os.path.exists(shot_path):
         return None
     shot = Image.open(shot_path).convert('RGB')
@@ -137,15 +157,21 @@ def main():
     themes = sys.argv[1:] or list(THEMES)
     final = os.path.join(OUT, 'final')
     os.makedirs(final, exist_ok=True)
-    for i, ((name, first, second, sub), theme) in enumerate(zip(SCREENS, FINAL)):
-        picture = frame(theme, name, first, second, sub)
+    words = {name: (first, second, sub) for name, first, second, sub in SCREENS}
+    for old in os.listdir(final):
+        os.remove(os.path.join(final, old))
+    for i, (name, theme) in enumerate(FINAL):
+        picture = frame(theme, name, *words[name])
         if picture is not None:
-            path = os.path.join(final, f'{i + 1}_{name[3:]}_{theme}.png')
+            label = name[3:] if name[:2].isdigit() else name
+            path = os.path.join(final, f'{i + 1:02d}_{label}_{theme}.png')
             picture.save(path)
             print(path)
     for theme in themes:
         os.makedirs(os.path.join(OUT, theme), exist_ok=True)
         for name, first, second, sub in SCREENS:
+            if name in SYSTEM:
+                continue
             picture = frame(theme, name, first, second, sub)
             if picture is None:
                 continue

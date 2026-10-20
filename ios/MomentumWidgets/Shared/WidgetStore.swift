@@ -22,7 +22,13 @@ enum WidgetStore {
   /// Stores the app's snapshot and redraws every widget.
   static func saveSnapshot(_ json: String) {
     defaults?.set(json, forKey: snapshotKey)
+    reloadAll()
+  }
+
+  /// Redraws every widget, and on iOS 18 the "Log a habit" controls.
+  static func reloadAll() {
     WidgetCenter.shared.reloadAllTimelines()
+    if #available(iOS 18.0, *) { ControlCenter.shared.reloadAllControls() }
   }
 
   /// Queues a + tapped on [habitId]'s widget.

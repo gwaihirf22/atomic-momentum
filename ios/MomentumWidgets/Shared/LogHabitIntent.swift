@@ -28,7 +28,7 @@ struct LogHabitIntent: AppIntent {
     let now = Date()
     WidgetStore.queueLog(habitId: habitId, at: now)
     WidgetStore.showStep(habitId: habitId, at: now)
-    WidgetCenter.shared.reloadAllTimelines()
+    WidgetStore.reloadAll()
     // The app logs it and writes the real snapshot (or, if it can't run now,
     // the tap waits in the queue until it next opens)
     await AppHook.logsWaiting?()

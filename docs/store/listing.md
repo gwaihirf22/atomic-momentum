@@ -82,11 +82,14 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
 
 ## Screenshots
 
-**Made:** 8 at 6.9" (1320 × 2868), framed with a headline. Upload `build/store_frames/final/` in order. Apple scales them for the smaller iPhones.
+**Made:** 10 at 6.9" (1320 × 2868), framed with a headline. Upload `build/store_frames/final/` in order. Apple scales them for the smaller iPhones.
 
 **To remake them** after a screen changes:
-1. `tool/store_screens.sh` captures the example habits on the "Store iPhone 17 Pro Max" simulator, in Sepia, Charged and Light.
-2. `python3 tool/store_frames.py` adds the headline and the phone frame.
+1. `tool/store_screens.sh` captures the example habits on the "Store iPhone 17 Pro Max" simulator (iOS 27), in Sepia, Charged and Light. It leaves the app installed, with the example habits in its widgets.
+2. `tool/widget_screens.sh` uses a UI test (`tool/springboard_shots/`) to drive SpringBoard. It adds Momentum's widgets to the home screen and the lock screen and takes both.
+   - It needs a simulator whose home screen and lock screen haven't been edited before: delete and recreate it.
+   - Don't erase it instead: the app's first launch after an erase hangs.
+3. `python3 tool/store_frames.py` adds the headline and the phone frame.
 
 The words and the order of looks are in `SCREENS` and `FINAL` in that script.
 
@@ -95,12 +98,12 @@ The words and the order of looks are in `SCREENS` and `FINAL` in that script.
 | 1 | Sepia | Momentum, not perfection | Habits |
 | 2 | Sepia | Small steps add up | Drink water's page |
 | 3 | Charged | Miss once. Never twice. | Meditate, "Freeze yesterday" |
-| 4 | Light | Hard day? 2 minutes counts | The Story editor's hard-day line |
-| 5 | Sepia | See your momentum grow | Insights |
-| 6 | Charged | Every day, at a glance | Calendar |
-| 7 | Light | Words to keep you going | Inspire |
-| 8 | Sepia | Celebrate the milestones | Achievements |
+| 4 | Sepia | Right on your lock screen | The lock screen: Habit rectangle with +, Momentum, Streak |
+| 5 | Light | Log it from home screen | Habit, Momentum, Habits (Today), Quote |
+| 6 | Charged | Hard day? 2 minutes counts | The Story editor's hard-day line |
+| 7 | Sepia | See your momentum grow | Insights |
+| 8 | Light | Every day, at a glance | Calendar |
+| 9 | Charged | Words to keep you going | Inspire |
+| 10 | Sepia | Celebrate the milestones | Achievements |
 
 The first three show in search results.
-
-**Still to add:** a home screen widgets shot, which needs widgets placed on the 6.9" simulator's home screen.

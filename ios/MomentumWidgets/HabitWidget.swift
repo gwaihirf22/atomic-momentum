@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 // One habit: its ring and today's progress, with a + that logs from the home
-// screen. Small and medium.
+// screen (small and medium) or the lock screen (HabitLockWidgets.swift).
 
 /// A habit, as the widget's settings list it.
 struct HabitEntity: AppEntity {
@@ -44,6 +44,10 @@ struct HabitEntry: TimelineEntry {
 }
 
 struct HabitTimeline: AppIntentTimelineProvider {
+  /// Before a habit is picked: the one with the longest streak (the Streak
+  /// widget), rather than the first.
+  var longestStreakFirst = false
+
   func placeholder(in context: Context) -> HabitEntry {
     HabitEntry(date: Date(), habit: nil, looks: nil, hasHabits: true)
   }
@@ -66,7 +70,8 @@ struct HabitTimeline: AppIntentTimelineProvider {
     guard let snapshot = Snapshot.load() else {
       return HabitEntry(date: date, habit: nil, looks: nil, hasHabits: false)
     }
-    let habit = snapshot.habit(configuration.habit?.id) ?? snapshot.firstHabit
+    let unpicked = longestStreakFirst ? snapshot.habits.max { $0.streak < $1.streak } : snapshot.firstHabit
+    let habit = snapshot.habit(configuration.habit?.id) ?? unpicked
     return HabitEntry(date: date, habit: habit?.at(date), looks: snapshot.looks, hasHabits: !snapshot.habits.isEmpty)
   }
 }
@@ -78,7 +83,7 @@ struct HabitWidget: Widget {
     }
     .configurationDisplayName("Habit")
     .description("A habit's ring and today's progress. Tap + to log it.")
-    .supportedFamilies([.systemSmall, .systemMedium])
+    .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
   }
 }
 
@@ -90,10 +95,16 @@ struct HabitWidgetView: View {
   private var look: Look { entry.looks?.look(for: scheme) ?? .fallback(for: scheme) }
 
   var body: some View {
-    content
-      .foregroundStyle(Color(hex: look.text))
-      .containerBackground(for: .widget) { Color(hex: look.surface) }
-      .widgetURL(entry.habit.flatMap { URL(string: "momentum://habit/\($0.id)") })
+    if family.isAccessory {
+      HabitLockView(habit: entry.habit)
+        .containerBackground(for: .widget) { Color.clear }
+        .widgetURL(entry.habit.flatMap { URL(string: "momentum://habit/\($0.id)") })
+    } else {
+      content
+        .foregroundStyle(Color(hex: look.text))
+        .containerBackground(for: .widget) { Color(hex: look.surface) }
+        .widgetURL(entry.habit.flatMap { URL(string: "momentum://habit/\($0.id)") })
+    }
   }
 
   @ViewBuilder

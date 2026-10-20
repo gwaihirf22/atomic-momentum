@@ -84,9 +84,6 @@ struct MomentumWidgetView: View {
   }
 }
 
-private extension WidgetFamily {
-  var isAccessory: Bool { self == .accessoryCircular || self == .accessoryRectangular || self == .accessoryInline }
-}
 
 private struct ScoreLabel: View {
   let momentum: MomentumInfo
