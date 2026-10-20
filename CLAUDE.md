@@ -89,6 +89,11 @@ FULL_ENTITLEMENTS=1 DEV_TOOLS=1 tool/install_on_iphone.sh
 # `flutter build appbundle` (no DEV_TOOLS). Xcode's "Check no dev tools" phase
 # (tool/check_no_dev_tools.sh) fails any archive that carries DEV_TOOLS=true
 
+# App Store screenshots: the example habits on the 6.9" "Store iPhone 17 Pro Max" simulator in
+# Sepia, Charged and Light (build/store_screens), then framed with headlines; the set to upload,
+# in order, is build/store_frames/final/ (words and order in tool/store_frames.py)
+tool/store_screens.sh && python3 tool/store_frames.py
+
 # Generate test coverage
 ./flutter/bin/flutter test --coverage   # writes coverage/lcov.info
 

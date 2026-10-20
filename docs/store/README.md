@@ -27,7 +27,7 @@ The checklist for the first release. The texts are in this folder:
 
 **Claude:**
 1. **Publish** the privacy policy and support page on paul-blake.com (`/momentum/privacy`, `/momentum/support`), and link the policy from Settings in the app (App Review guideline 5.1.1(i) asks for it in the app as well).
-2. **Screenshots** at 6.9" from the example habits, after the Habits changes now in progress land.
+2. ~~**Screenshots**~~ (done 2026-10-20; see the checklist below).
 3. **Fill in the URLs**, and `AppLinks.store` once the App Store link exists.
 
 **Then:**
@@ -42,7 +42,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] Vacation notifications: a return date with a welcome back, otherwise a check-in every 3 days (weekly after two weeks) with "I'm back", a Settings switch (2026-10-20)
 - [ ] Weekly review (the last open part of v1 roadmap item 4)
 - [x] Privacy policy and support links in Settings → About (2026-10-20)
-- [ ] Screenshots at 6.9"
+- [x] Screenshots at 6.9": `tool/store_screens.sh` (the example habits on the "Store iPhone 17 Pro Max" simulator) then `python3 tool/store_frames.py` (headline + phone frame). The set to upload is `build/store_frames/final/`: Sepia, Sepia, Charged, Light, Sepia, Charged, Light, Sepia (2026-10-20). A home screen widget shot is still to add
 - [x] Publish the policy pages on paul-blake.com: https://paul-blake.com/momentum/privacy and /momentum/support (website commit 5ae688c)
 - [x] Widgets on Paul's real phone: real data through the App Group, logging and taps work (TestFlight build 1, 2026-10-20; not every kind added yet)
 - [ ] Health on Paul's real phone (Watch data, other apps' runs, turning access off; `tool/device_health_check.sh` on iOS)

@@ -82,15 +82,25 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
 
 ## Screenshots
 
-- **Required:** iPhone 6.9" (1320 × 2868; from an iPhone 17 Pro Max or 16 Pro Max simulator). Apple scales these for the smaller iPhones. Up to 10.
-- **iPad:** v1 is iPhone-only (`TARGETED_DEVICE_FAMILY = 1`, Paul's choice 2026-10-20), so no iPad screenshots. An iPad version is wanted soon after launch. The iPhone Duo is an iPhone, so it gets v1.
-- **Suggested order:**
-  1. Habits with momentum (the hero shot);
-  2. a habit page;
-  3. never miss twice;
-  4. the two-minute version;
-  5. Insights' heatmap;
-  6. widgets on the home screen;
-  7. freezes;
-  8. Inspire.
-- Make them from the example habits (the tours' `DemoPersona`), once the Habits screen changes in progress have landed.
+**Made:** 8 at 6.9" (1320 × 2868), framed with a headline. Upload `build/store_frames/final/` in order. Apple scales them for the smaller iPhones.
+
+**To remake them** after a screen changes:
+1. `tool/store_screens.sh` captures the example habits on the "Store iPhone 17 Pro Max" simulator, in Sepia, Charged and Light.
+2. `python3 tool/store_frames.py` adds the headline and the phone frame.
+
+The words and the order of looks are in `SCREENS` and `FINAL` in that script.
+
+| # | Look | Headline | Screen |
+|---|---|---|---|
+| 1 | Sepia | Momentum, not perfection | Habits |
+| 2 | Sepia | Small steps add up | Drink water's page |
+| 3 | Charged | Miss once. Never twice. | Meditate, "Freeze yesterday" |
+| 4 | Light | Hard day? 2 minutes counts | The Story editor's hard-day line |
+| 5 | Sepia | See your momentum grow | Insights |
+| 6 | Charged | Every day, at a glance | Calendar |
+| 7 | Light | Words to keep you going | Inspire |
+| 8 | Sepia | Celebrate the milestones | Achievements |
+
+The first three show in search results.
+
+**Still to add:** a home screen widgets shot, which needs widgets placed on the 6.9" simulator's home screen.

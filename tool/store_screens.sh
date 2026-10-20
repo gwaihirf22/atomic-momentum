@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# App Store screenshots (integration_test/store_screens_test.dart) on the
+# 6.9" simulator "Store iPhone 17 Pro Max" (1320 x 2868, what App Store
+# Connect asks for; smaller iPhones are scaled from it): the example habits
+# on each screen the listing shows, in Sepia, Charged and Light, with the status
+# bar at 9:41, full signal and battery. Storage is in memory.
+#
+#   tool/store_screens.sh ["<simulator name>"]
+#
+# Pictures land in build/store_screens/.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+flutter="${FLUTTER:-./flutter/bin/flutter}"
+device="${1:-Store iPhone 17 Pro Max}"
+
+udid=$(xcrun simctl list devices | grep -F "$device (" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+[[ -n "$udid" ]] || { echo "No simulator named \"$device\"" >&2; exit 1; }
+xcrun simctl boot "$udid" 2>/dev/null || true
+xcrun simctl bootstatus "$udid" -b >/dev/null
+xcrun simctl status_bar "$udid" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 \
+  --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
+
+rm -rf build/store_screens
+mkdir -p build/store_screens
+# The test prints STORE_SHOT <name> and holds still for a few seconds while
+# the whole screen (status bar too) is taken here
+status=0
+log=$(mktemp)
+"$flutter" drive --driver=test_driver/integration_test.dart --target=integration_test/store_screens_test.dart -d "$udid" 2>&1 |
+  while IFS= read -r line; do
+    echo "$line" >>"$log"
+    if [[ "$line" =~ STORE_SHOT\ ([A-Za-z0-9_]+) ]]; then
+      name="${BASH_REMATCH[1]}"
+      xcrun simctl io "$udid" screenshot "build/store_screens/$name.png" >/dev/null 2>&1 && echo "  took $name"
+    fi
+  done
+if grep -qE "Some tests failed|\[E\]|Test failed" "$log"; then status=1; tail -40 "$log"; fi
+rm -f "$log"
+echo "Screenshots in build/store_screens"
+exit $status
