@@ -14,7 +14,11 @@
 **Vacation mode** (Settings → Freezes) pauses every habit at once and costs no freezes.
 - **While it's on:** nothing is due, there are no reminders or warnings, streaks and momentum hold, and the Habits screen shows a banner with "Turn off".
 - **Turning it off:** the pause closes on today, so today stays paused too.
+- **A return date** (optional, Settings → Freezes → "Back on"): the vacation covers the days before it and ends by itself that morning. Habits and their reminders pick up that day without the app being opened. The date can be moved or taken off while away.
 - **What it covers:** a period the vacation touches is paused unless it was kept anyway. Logging still works.
+- **Its notifications** (added October 20, 2026; Settings → Freezes → "Vacation check-ins", on by default), at Settings' default reminder time, moved out of quiet hours:
+  - **With a return date:** nothing while away, then "Welcome back!" that morning.
+  - **Without one:** a check-in on days 3, 6, 9 and 12, then weekly, each with an **"I'm back"** button that opens the app and ends vacation mode.
 
 **Fun achievements** are in the app's voice ("I…"), or the atoms' where that reads better. They're celebrated after the real milestones and don't earn freezes:
 
@@ -50,9 +54,15 @@ The wording lives in `Achievements._funFor` / `_funAcross` (`lib/domain/services
   - It holds the count, the milestone ids already credited, and dates that never change once set: `firstSpentOn`, and `fundReachedOn` for "Rainy-day fund". Achievements read those through `Achievements.freezeSource`.
   - Crediting happens in `IOSMainNavigation._checkAchievements`. The first look files what's already earned quietly, so existing people start with 3.
   - "Load a year of use" keeps the bank aside with the person's data.
+- **A return date** is `HabitPause.back`: the pause's last day is the day before, and `isOnAt` stops that morning. With one, `ReminderPlanner` and `StreakWarningPlanner` plan from it (paused days are skipped); only an open vacation with no date (`Habit.isOnOpenVacation`) plans nothing.
+- **Vacation notices:**
+  - `VacationNoticePlanner` (`lib/domain/services/vacation_notice_planner.dart`) plans them.
+  - `VacationNoticeService` schedules them through `NotificationService.scheduleVacationNotice` (payload `vacation`). It's synced with the reminders: on load, after saves and at midnight, from `HabitProvider.vacationForNotices`, which still includes the return day so an early open keeps that morning's welcome back.
+  - iOS's 64 leaves room for them (`reservedFor` in the injection container).
+  - "I'm back" is the Darwin category `vacation` / Android action `vacation_back`. `NotificationService.handleResponse` counts it in `vacationBackRequests`, and `IOSMainNavigation` ends vacation mode and shows Habits.
 - **`HabitProvider`:**
   - `freeze` / `unfreeze` spend and refund through the bank.
-  - `startVacation` / `endVacation` write every habit.
+  - `startVacation({back})` / `endVacation` / `setVacationReturn` write every habit.
   - After each save, load and new day it hands back freezes that weren't needed (`Habit.unneededFreezes`), leaving a notice for Habits (`takeFreezeNotice`).
 - **Home screen widgets:** the snapshot carries `frozen` per habit. A frozen habit shows "Frozen" with no +.
 
@@ -63,7 +73,10 @@ The wording lives in `Achievements._funFor` / `_funAcross` (`lib/domain/services
   - `test/unit/domain/services/fun_achievements_test.dart`: each fun achievement.
 - **Integration:** `test/integration/freezes_flow_test.dart` covers the bank, spending, refunds, the cap and vacation, with real storage.
 - **Widget:** `test/widget/freezes_test.dart` covers the habit page, the swipe, Settings and the banner. `test/widget/small_screens_test.dart` covers the frozen habit page, Habits on vacation, the explainer and the fun celebration.
-- **Notification simulator, scenario 14:** a freeze ahead, one on the day that's then kept (it comes back), one after a miss, an empty bank, and four days of vacation. No reminder or warning arrives for any of them.
+- **Notification simulator:**
+  - **Scenario 14:** a freeze ahead, one on the day that's then kept (it comes back), one after a miss, an empty bank, and four days of vacation (one check-in on day 3). No reminder or warning arrives for any of them.
+  - **Scenario 15:** vacation notices. A return date with the app never opened (a welcome back and reminders that morning), a return date moved sooner, and an open vacation with check-ins, the switch off and on, and "I'm back".
+- **Vacation notice tests:** `test/unit/domain/services/vacation_notice_planner_test.dart` and `test/unit/core/services/vacation_notice_service_test.dart`.
 - **Year simulator:**
   - The persona freezes three times, where the app allows it, and spends its fortnight holiday in vacation mode.
   - `Reference` models paused periods (`RefMark.frozen`, `skipped`), the fun achievements and the first freeze, independently.

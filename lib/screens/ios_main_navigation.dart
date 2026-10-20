@@ -151,6 +151,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     _habits.addListener(_checkAchievementsSoon);
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
+    NotificationService.vacationBackRequests.addListener(_endVacation);
     IOSMainNavigation.tabRequests.addListener(_showRequestedTab);
     // A notification or widget tap that launched the app arrives before this screen
     if (NotificationService.focusRequests.value != null) {
@@ -159,6 +160,23 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     if (IOSMainNavigation.tabRequests.value != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _showRequestedTab());
     }
+    // "I'm back" on a vacation check-in that launched the app
+    if (NotificationService.vacationBackRequests.value != _vacationBackHandled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _endVacation());
+    }
+  }
+
+  /// How many "I'm back" taps have been acted on (they're counted by
+  /// [NotificationService.vacationBackRequests]).
+  static int _vacationBackHandled = 0;
+
+  /// "I'm back" on a vacation check-in: vacation mode ends, and Habits shows.
+  void _endVacation() {
+    final requests = NotificationService.vacationBackRequests.value;
+    if (requests == _vacationBackHandled) return;
+    _vacationBackHandled = requests;
+    _habits.endVacation();
+    IOSMainNavigation.tabRequests.value = AppTab.habits;
   }
 
   @override
@@ -166,6 +184,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     widget.controller?._detach(this);
     _habits.removeListener(_checkAchievementsSoon);
     NotificationService.focusRequests.removeListener(_showHabits);
+    NotificationService.vacationBackRequests.removeListener(_endVacation);
     IOSMainNavigation.tabRequests.removeListener(_showRequestedTab);
     _fadeTimer?.cancel();
     _slide.dispose();

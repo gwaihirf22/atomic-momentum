@@ -9,6 +9,7 @@ import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/domain/services/reminder_planner.dart';
 import 'package:atomic_momentum/domain/services/streak_warning_planner.dart';
+import 'package:atomic_momentum/domain/services/vacation_notice_planner.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/update_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -187,8 +188,24 @@ class SimulatedPhone {
   Future<void> freeze(String name, DateTime day, {bool on = true}) =>
       on ? habits.freeze(id(name), day) : habits.unfreeze(id(name), day);
 
-  /// Turns vacation mode on or off.
-  Future<void> vacation(bool on) => on ? habits.startVacation() : habits.endVacation();
+  /// Turns vacation mode on (until the morning of [back], if given) or off.
+  Future<void> vacation(bool on, {DateTime? back}) => on ? habits.startVacation(back: back) : habits.endVacation();
+
+  /// Moves the return day while on vacation (null: none).
+  Future<void> vacationReturn(DateTime? back) => habits.setVacationReturn(back);
+
+  /// "I'm back" on a vacation check-in: the response arrives, and the app
+  /// ends vacation mode as the main screen does.
+  Future<void> imBack() async {
+    NotificationService.handleResponse(NotificationService.vacationBackAction, NotificationService.vacationPayload);
+    await habits.endVacation();
+  }
+
+  /// Turns vacation check-ins on or off, then resyncs as Settings does.
+  Future<void> vacationNotices(bool on) async {
+    await settings.setVacationNotices(on);
+    await habits.resyncVacationNotices();
+  }
 
   Future<void> delete(String name) => habits.deleteHabit(id(name));
 
@@ -225,8 +242,15 @@ class SimulatedPhone {
   }
 
   /// What the app should have pending right now, worked out from its state:
-  /// the soonest reminders within the budget, and every streak warning.
+  /// the soonest reminders within the budget, every streak warning, and
+  /// vacation mode's notices.
   List<_Expected> _plan() {
+    final vacation = habits.vacationForNotices;
+    final time = settings.defaultReminderTime;
+    final notices = vacation == null || !settings.vacationNotices
+        ? const <PlannedVacationNotice>[]
+        : VacationNoticePlanner.plan(vacation,
+            now: now, hour: time.hour, minute: time.minute, quiet: settings.quietHours);
     final reminders = [
       for (final h in habits.habits) ...ReminderPlanner.plan(h, now: now, quiet: settings.quietHours),
     ]..sort((a, b) => a.at.compareTo(b.at));
@@ -237,6 +261,7 @@ class SimulatedPhone {
       for (final h in habits.habits)
         for (final w in StreakWarningPlanner.plan(h.refresh(now), warningSettings, now, quiet: settings.quietHours))
           _Expected(h.id, w.kind.name, w.at, w.title, w.body),
+      for (final n in notices) _Expected(NotificationService.vacationPayload, n.kind.name, n.at, n.title, n.body),
     ];
   }
 
@@ -263,12 +288,17 @@ class SimulatedPhone {
 
   static String _kindOf(SimRequest r) {
     if (r.isReminder) return 'reminder';
+    if (r.payload == NotificationService.vacationPayload) {
+      return r.title == VacationNoticePlanner.welcomeTitle ? VacationNoticeKind.welcomeBack.name : VacationNoticeKind.checkIn.name;
+    }
     return (r.title ?? '').startsWith("Don't miss twice") ? 'secondMiss' : 'firstMiss';
   }
 
   static String _label(String kind) => switch (kind) {
         'reminder' => 'REMINDER   ',
         'secondMiss' => 'WARNING    ',
+        'checkIn' => 'VACATION   ',
+        'welcomeBack' => 'WELCOME    ',
         _ => 'NUDGE      ',
       };
 
@@ -277,6 +307,10 @@ class SimulatedPhone {
   void _check(SimRequest r, String kind) {
     final key = '${r.habitId}|$kind|${r.at.toIso8601String()}';
     if (!_deliveredKeys.add(key)) _fail(r.at, 'DUPLICATE "${r.title}"');
+    if (r.payload == NotificationService.vacationPayload) {
+      _checkVacationNotice(r, kind);
+      return;
+    }
 
     final habit = habits.getHabitById(r.habitId ?? '');
     if (habit == null) {
@@ -347,6 +381,30 @@ class SimulatedPhone {
     if (!fresh.any((w) => w.at == r.at && w.title == r.title && w.body == r.body)) {
       _fail(r.at, 'stale streak warning for "${habit.name}": the app would no longer send "${r.body}"');
     }
+  }
+
+  /// A vacation notice: a check-in only while vacation mode is on with no
+  /// return date, a welcome back only on the return day, once it has ended
+  /// by itself; at the default reminder time (out of quiet hours), and only
+  /// with the switch on.
+  void _checkVacationNotice(SimRequest r, String kind) {
+    if (settings.quietHours.contains(r.at)) _fail(r.at, '"${r.title}" arrived during quiet hours');
+    if (!settings.vacationNotices) _fail(r.at, '"${r.title}" with vacation check-ins turned off');
+    final time = settings.defaultReminderTime;
+    final expected = settings.quietHours.shift(DateTime(r.at.year, r.at.month, r.at.day, time.hour, time.minute));
+    if (r.at.hour != expected.hour || r.at.minute != expected.minute) {
+      _fail(r.at, '"${r.title}" at ${_hm(r.at)}, not the default reminder time ${_hm(expected)}');
+    }
+    final today = DateTime(r.at.year, r.at.month, r.at.day);
+    if (kind == VacationNoticeKind.checkIn.name) {
+      final vacation = habits.vacation;
+      if (vacation == null) _fail(r.at, 'vacation check-in "${r.title}" with vacation mode off');
+      if (vacation?.back != null) _fail(r.at, 'vacation check-in with a return date set');
+      return;
+    }
+    if (habits.onVacation) _fail(r.at, 'welcome back while still on vacation');
+    final returning = habits.habits.any((h) => h.pauses.isNotEmpty && h.pauses.last.back == today);
+    if (!returning) _fail(r.at, 'welcome back on a day that isn\'t a return day');
   }
 
   // ------------------------------------------------------------ output

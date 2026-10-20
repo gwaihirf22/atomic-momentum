@@ -175,6 +175,55 @@ void main() {
       h = at(now, () => h.startPause(day(10)));
       expect(ReminderPlanner.plan(h, now: now), isEmpty);
     });
+
+    test('with a return date: on until that morning, then it ends by itself', () {
+      var h = daily(done: [1, 2, 3, 4, 5]);
+      h = at(oct(6, 9), () => h.startPause(day(6), back: day(10)));
+      expect(h.pauses.single, HabitPause(from: day(6), back: day(10)));
+      expect(at(oct(9, 23), () => h.isOnVacation), isTrue);
+      expect(at(oct(9, 23), () => h.vacationBack), day(10));
+      expect(at(oct(9, 23), () => h.isOnOpenVacation), isFalse);
+      expect(at(oct(10, 0), () => h.isOnVacation), isFalse, reason: 'back on the 10th, without the app');
+      expect(at(oct(10, 9), () => h.isOnVacationOn(day(9))), isTrue);
+      expect(at(oct(10, 9), () => h.isOnVacationOn(day(10))), isFalse);
+      // Kept from the day back: the streak runs through the days away
+      final streak = at(oct(10, 21), () => h.setProgressForDate(day(10), 1).refresh(oct(10, 21)).streak);
+      expect(streak.current, 6);
+      expect(streak.atRisk, isFalse);
+    });
+
+    test('with a return date, reminders are planned from that day', () {
+      var h = daily(done: [1, 2]).copyWith(reminder: ReminderSettings.smart(time: const TimeOfDay(hour: 18, minute: 0)));
+      final now = oct(6, 9);
+      h = at(now, () => h.startPause(day(6), back: day(9)));
+      final days = at(now, () => ReminderPlanner.plan(h, now: now)).map((r) => r.at.day);
+      expect(days.first, 9, reason: 'nothing on the 6th, 7th or 8th');
+      h = at(now, () => h.planReturn(null));
+      expect(h.isOnOpenVacation, isTrue);
+      expect(at(now, () => ReminderPlanner.plan(h, now: now)), isEmpty, reason: 'no return date: nothing planned');
+    });
+
+    test('the return date moves, and ending early wins over it', () {
+      var h = daily();
+      h = at(oct(6, 9), () => h.startPause(day(6), back: day(20)));
+      h = at(oct(7, 9), () => h.planReturn(day(12)));
+      expect(h.pauses.single, HabitPause(from: day(6), back: day(12)));
+      h = at(oct(8, 9), () => h.endPause(day(8)));
+      expect(h.pauses.single, HabitPause(from: day(6), to: day(8)), reason: 'today stays paused; the date is gone');
+      expect(at(oct(8, 10), () => h.isOnVacation), isFalse);
+      expect(at(oct(8, 10), () => h.planReturn(day(15))), same(h), reason: 'not on vacation: nothing to move');
+    });
+
+    test("a pause's last day: to, the day before back, or none while open", () {
+      expect(HabitPause(from: day(6), to: day(8)).lastDay, day(8));
+      expect(HabitPause(from: day(6), back: day(10)).lastDay, day(9));
+      expect(HabitPause(from: day(6)).lastDay, isNull);
+      expect(HabitPause(from: day(6), back: day(10)).covers(day(10)), isFalse);
+      expect(HabitPause(from: day(6), back: day(10)).isOpen, isFalse, reason: 'its end is decided');
+      expect(HabitPause(from: day(6), back: day(10)).closedOn(day(15)), HabitPause(from: day(6), to: day(9)),
+          reason: 'never past the return');
+      expect(HabitPause(from: day(6), to: day(8), back: day(12)).back, isNull, reason: 'ended: no return to plan');
+    });
   });
 
   test('frozen days show as frozen, and leave the heatmap\'s due count', () {
@@ -190,12 +239,15 @@ void main() {
   test('frozen days and pauses survive storage; older saves have none', () {
     var h = daily(done: [1]);
     h = at(oct(2, 9), () => h.freeze(day(2)));
-    h = at(oct(3, 9), () => h.startPause(day(3)));
+    h = at(oct(3, 9), () => h.startPause(day(3), back: day(9)));
     final json = jsonDecode(jsonEncode(HabitModel.fromDomain(h).toJson())) as Map<String, dynamic>;
     expect(json['frozen'], ['2026-10-02']);
+    expect(json['pauses'], [
+      {'from': '2026-10-03', 'back': '2026-10-09'}
+    ]);
     final back = HabitModel.fromJson(json).toDomain();
     expect(back.frozenDays, {day(2)});
-    expect(back.pauses, [HabitPause(from: day(3))]);
+    expect(back.pauses, [HabitPause(from: day(3), back: day(9))]);
 
     json.remove('frozen');
     json.remove('pauses');

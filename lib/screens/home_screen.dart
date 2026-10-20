@@ -15,6 +15,7 @@ import '../presentation/providers/theme_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/settings_provider.dart';
+import '../presentation/widgets/freezes_settings_section.dart';
 import '../presentation/widgets/category_filter_header.dart';
 import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/category_rings_bar.dart';
@@ -193,7 +194,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     SliverFillRemaining(hasScrollBody: false, child: _buildErrorState(habitProvider.error!, palette))
                   else ...[
                     if (habitProvider.onVacation)
-                      SliverToBoxAdapter(child: _VacationBanner(onEnd: habitProvider.endVacation)),
+                      SliverToBoxAdapter(
+                          child: _VacationBanner(back: habitProvider.vacationBack, onEnd: habitProvider.endVacation)),
                     SliverToBoxAdapter(
                       child: CategoryFilterHeader(
                         selected: categoryProvider.selectedCategory,
@@ -517,9 +519,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 }
 /// While vacation mode is on: nothing is due, with a way to end it.
 class _VacationBanner extends StatelessWidget {
+  /// The planned return day, if there is one.
+  final DateTime? back;
   final VoidCallback onEnd;
 
-  const _VacationBanner({required this.onEnd});
+  const _VacationBanner({required this.back, required this.onEnd});
 
   @override
   Widget build(BuildContext context) {
@@ -535,7 +539,9 @@ class _VacationBanner extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'On vacation · nothing is due. Streaks and momentum hold.',
+              back == null
+                  ? 'On vacation · nothing is due. Streaks and momentum hold.'
+                  : 'On vacation until ${FreezesSettingsSection.dayLabel(back!)} · nothing is due till then.',
               style: TextStyle(fontSize: 14, color: palette.text),
             ),
           ),

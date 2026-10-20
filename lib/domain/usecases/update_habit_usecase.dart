@@ -186,16 +186,30 @@ class UpdateHabitUseCase {
     }
   }
 
-  /// Starts or ends vacation mode on a habit, on [day].
-  Future<Habit> setOnVacation(String habitId, DateTime day, bool on) async {
+  /// Starts or ends vacation mode on a habit, on [day]; started with a
+  /// return day [back], it ends by itself that morning.
+  Future<Habit> setOnVacation(String habitId, DateTime day, bool on, {DateTime? back}) async {
     try {
       final habit = await _getHabitById(habitId);
-      final updatedHabit = on ? habit.startPause(day) : habit.endPause(day);
+      final updatedHabit = on ? habit.startPause(day, back: back) : habit.endPause(day);
       await _repository.saveHabit(updatedHabit);
       return updatedHabit;
     } catch (e) {
       if (e is ValidationException || e is StorageException) rethrow;
       throw StorageException('Failed to save vacation mode: $e');
+    }
+  }
+
+  /// Moves the return day of a habit's vacation (null: no return date).
+  Future<Habit> setVacationReturn(String habitId, DateTime? back) async {
+    try {
+      final habit = await _getHabitById(habitId);
+      final updatedHabit = habit.planReturn(back);
+      await _repository.saveHabit(updatedHabit);
+      return updatedHabit;
+    } catch (e) {
+      if (e is ValidationException || e is StorageException) rethrow;
+      throw StorageException('Failed to save the return date: $e');
     }
   }
 

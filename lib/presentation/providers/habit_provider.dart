@@ -15,6 +15,8 @@ import '../../domain/repositories/category_repository.dart';
 import '../../core/logging/log.dart';
 import '../../domain/entities/momentum.dart';
 import '../../core/services/reminder_service.dart';
+import '../../core/services/vacation_notice_service.dart';
+import '../../domain/services/vacation_notice_planner.dart';
 import '../../domain/entities/reminder_settings.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:clock/clock.dart';
@@ -46,6 +48,9 @@ class HabitProvider extends ChangeNotifier {
   // Null disables habit reminders (e.g. in tests that don't exercise them)
   final ReminderService? _reminders;
 
+  // Null: vacation mode sends no check-ins or welcome back
+  final VacationNoticeService? _vacationNotices;
+
   // Used to skip sample habits whose category the user has deleted
   final CategoryRepository? _categoryRepository;
 
@@ -63,6 +68,7 @@ class HabitProvider extends ChangeNotifier {
     this.seedDefaultHabit = false,
     StreakWarningService? streakWarningService,
     ReminderService? reminderService,
+    VacationNoticeService? vacationNotices,
     CategoryRepository? categoryRepository,
     HealthSyncService? healthSync,
     FreezeBank? freezeBank,
@@ -74,6 +80,7 @@ class HabitProvider extends ChangeNotifier {
         _freezes = freezeBank,
         _health = healthSync,
         _reminders = reminderService,
+        _vacationNotices = vacationNotices,
         _categoryRepository = categoryRepository,
         _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
@@ -202,6 +209,7 @@ class HabitProvider extends ChangeNotifier {
       // A full reload schedules everything afresh
       await _streakWarnings?.syncAll(_habits, replace: true);
       await _reminders?.syncAll(_habits, replace: true);
+      await _vacationNotices?.sync(vacationForNotices, replace: true);
       // Habits being broken that ended a frozen day clean, while closed
       await _returnUnneededFreezes();
       // Not awaited: Health can be slow, and the list is already showing
@@ -580,28 +588,77 @@ class HabitProvider extends ChangeNotifier {
     }
   }
 
-  /// Vacation mode is on (any habit has an open pause).
+  /// Vacation mode is on (a habit has a pause not ended and not yet back).
   bool get onVacation => _habits.any((h) => h.isOnVacation);
 
+  /// Vacation mode as notifications see it (when it started, and the return
+  /// day), or null while it's off.
+  VacationPlan? get vacation {
+    for (final habit in _habits) {
+      if (habit.isOnVacation) return VacationPlan(since: habit.pauses.last.from, back: habit.vacationBack);
+    }
+    return null;
+  }
+
+  /// The day vacation mode ends by itself, if it's on with one.
+  DateTime? get vacationBack => vacation?.back;
+
+  /// What vacation notices are planned from: vacation mode while it's on,
+  /// and on the return day itself (it has ended by then), so that
+  /// morning's welcome back still comes after the app is opened early.
+  VacationPlan? get vacationForNotices {
+    final on = vacation;
+    if (on != null) return on;
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    for (final habit in _habits) {
+      final last = habit.pauses.isEmpty ? null : habit.pauses.last;
+      if (last != null && last.back == today) return VacationPlan(since: last.from, back: today);
+    }
+    return null;
+  }
+
   /// Pauses every habit from today: nothing is due, no reminders or
-  /// warnings, streaks and momentum hold. Costs no freezes.
-  Future<bool> startVacation() => _setVacation(true);
+  /// warnings, streaks and momentum hold. Costs no freezes. With [back], it
+  /// ends by itself that morning: habits and their reminders pick up then.
+  Future<bool> startVacation({DateTime? back}) => _setVacation(true, back: back);
 
   /// Ends vacation mode; today stays paused.
   Future<bool> endVacation() => _setVacation(false);
 
-  Future<bool> _setVacation(bool on) async {
+  /// Moves the return day while vacation mode is on (null: until it's
+  /// turned off).
+  Future<bool> setVacationReturn(DateTime? back) async {
+    final day = back == null ? null : DateTime(back.year, back.month, back.day);
+    var allSaved = true;
+    for (final habit in List.of(_habits)) {
+      if (!habit.isOnVacation) continue;
+      final saved = await _applyNow(
+        habit.id,
+        (h) => h.planReturn(day),
+        (pending) => pending
+          ..returnChanged = true
+          ..returnDay = day,
+      );
+      allSaved &= saved;
+    }
+    return allSaved;
+  }
+
+  Future<bool> _setVacation(bool on, {DateTime? back}) async {
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
+    final returnDay = back == null ? null : DateTime(back.year, back.month, back.day);
     var allSaved = true;
     for (final habit in List.of(_habits)) {
       if (!habit.schedule.isPeriodic || habit.isOnVacation == on) continue;
       final saved = await _applyNow(
         habit.id,
-        (h) => on ? h.startPause(today) : h.endPause(today),
+        (h) => on ? h.startPause(today, back: returnDay) : h.endPause(today),
         (pending) => pending
           ..vacation = on
-          ..vacationDay = today,
+          ..vacationDay = today
+          ..vacationBack = returnDay,
       );
       allSaved &= saved;
     }
@@ -664,8 +721,10 @@ class HabitProvider extends ChangeNotifier {
             saved = await _updateHabitUseCase.setFrozenForDate(habitId, entry.key, entry.value);
           }
           if (pending.vacation != null) {
-            saved = await _updateHabitUseCase.setOnVacation(habitId, pending.vacationDay!, pending.vacation!);
+            saved = await _updateHabitUseCase.setOnVacation(habitId, pending.vacationDay!, pending.vacation!,
+                back: pending.vacationBack);
           }
+          if (pending.returnChanged) saved = await _updateHabitUseCase.setVacationReturn(habitId, pending.returnDay);
           if (pending.why != null) saved = await _updateHabitUseCase.setWhy(habitId, pending.why!);
           if (pending.quoteIds != null) saved = await _updateHabitUseCase.setQuotes(habitId, pending.quoteIds!);
           for (final entry in pending.notes.entries) {
@@ -694,6 +753,7 @@ class HabitProvider extends ChangeNotifier {
     // Finishing a habit drops its remaining reminders; not awaited, so taps
     // never wait on notifications
     _reminders?.syncAll(_habits);
+    _vacationNotices?.sync(vacationForNotices);
     // A frozen period kept anyway gives its freeze back
     await _returnUnneededFreezes();
     return allSaved;
@@ -761,6 +821,7 @@ class HabitProvider extends ChangeNotifier {
       }
       // A new day: the reminder window moves on even if nothing changed
       await _reminders?.syncAll(_habits);
+      await _vacationNotices?.sync(vacationForNotices);
       await _returnUnneededFreezes();
     } catch (e) {
       _error = e.toString();
@@ -781,7 +842,13 @@ class HabitProvider extends ChangeNotifier {
     await _streakWarnings?.syncAll(_habits);
     // Warnings may now need more (or less) of iOS's 64, which reminders share
     await _reminders?.syncAll(_habits);
+    // Quiet hours move vacation notices too
+    await _vacationNotices?.sync(vacationForNotices);
   }
+
+  /// Re-plan vacation mode's notifications, e.g. after their switch or the
+  /// default reminder time changes.
+  Future<void> resyncVacationNotices() async => _vacationNotices?.sync(vacationForNotices);
 
   // Utility methods
   void clearError() {
@@ -898,7 +965,13 @@ class _PendingChange {
   /// Day -> frozen (a freeze spent) or not (taken back).
   final Map<DateTime, bool> frozen = {};
 
-  /// Vacation mode started (true) or ended (false) on [vacationDay].
+  /// Vacation mode started (true, until [vacationBack] if set) or ended
+  /// (false) on [vacationDay].
   bool? vacation;
   DateTime? vacationDay;
+  DateTime? vacationBack;
+
+  /// The return day moved to [returnDay] (null: none).
+  bool returnChanged = false;
+  DateTime? returnDay;
 }

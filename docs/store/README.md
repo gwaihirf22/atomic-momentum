@@ -39,7 +39,7 @@ The checklist for the first release. The texts are in this folder:
 Every earlier plan, design doc and note, checked against the code. One at a time; tick them off here.
 
 **Claude can build:**
-- [ ] Vacation notifications (waiting on Paul's yes): a return date with a welcome back, otherwise a check-in every 3 days with "I'm back", a Settings switch
+- [x] Vacation notifications: a return date with a welcome back, otherwise a check-in every 3 days (weekly after two weeks) with "I'm back", a Settings switch (2026-10-20)
 - [ ] Weekly review (the last open part of v1 roadmap item 4)
 - [ ] Privacy policy and support links in Settings (after the other session's Settings changes land)
 - [ ] Screenshots at 6.9"

@@ -38,6 +38,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _playIntroKey = 'playIntro';
   static const _quoteFamiliesOffKey = 'quoteFamiliesOff';
   static const _healthCardDismissedKey = 'healthCardDismissed';
+  static const _vacationNoticesKey = 'vacationNotices';
 
   /// New habits remind at this time unless changed.
   static const fallbackReminderTime = TimeOfDay(hour: 9, minute: 0);
@@ -64,6 +65,7 @@ class SettingsProvider extends ChangeNotifier {
     _playIntroKey,
     _quoteFamiliesOffKey,
     _healthCardDismissedKey,
+    _vacationNoticesKey,
   ];
 
   final SharedPreferences _prefs;
@@ -143,6 +145,15 @@ class SettingsProvider extends ChangeNotifier {
 
   Future<void> setAllowTimeSensitive(bool allow) async {
     await _prefs.setBool(_allowTimeSensitiveKey, allow);
+    notifyListeners();
+  }
+
+  /// Whether vacation mode sends its check-ins and welcome back (on until
+  /// turned off).
+  bool get vacationNotices => _prefs.getBool(_vacationNoticesKey) ?? true;
+
+  Future<void> setVacationNotices(bool on) async {
+    await _prefs.setBool(_vacationNoticesKey, on);
     notifyListeners();
   }
 

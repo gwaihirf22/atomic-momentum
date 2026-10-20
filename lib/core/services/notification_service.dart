@@ -70,16 +70,24 @@ class NotificationService {
   /// Plugin setup. Doesn't ask for permission: on iOS and macOS the prompt
   /// would block startup until answered, over a blank screen.
   @visibleForTesting
-  static const InitializationSettings initializationSettings = InitializationSettings(
-    android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+  static final InitializationSettings initializationSettings = InitializationSettings(
+    android: const AndroidInitializationSettings('@mipmap/ic_launcher'),
     iOS: _darwinSettings,
     macOS: _darwinSettings,
   );
 
-  static const DarwinInitializationSettings _darwinSettings = DarwinInitializationSettings(
+  static final DarwinInitializationSettings _darwinSettings = DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,
     requestSoundPermission: false,
+    // Vacation check-ins carry an "I'm back" button; it opens the app, which
+    // ends vacation mode
+    notificationCategories: [
+      DarwinNotificationCategory(vacationCategory, actions: [
+        DarwinNotificationAction.plain(vacationBackAction, "I'm back",
+            options: {DarwinNotificationActionOption.foreground}),
+      ]),
+    ],
   );
 
   static bool _timeZonesLoaded = false;
@@ -104,7 +112,9 @@ class NotificationService {
 
       // Opened by tapping a notification while the app wasn't running
       final launch = await _notificationsPlugin.getNotificationAppLaunchDetails();
-      if (launch?.didNotificationLaunchApp ?? false) handleTap(launch!.notificationResponse?.payload);
+      if (launch?.didNotificationLaunchApp ?? false) {
+        handleResponse(launch!.notificationResponse?.actionId, launch.notificationResponse?.payload);
+      }
       debugPrint('NotificationService: Initialized successfully');
     } catch (e) {
       debugPrint('NotificationService: Failed to initialize: $e');
@@ -183,7 +193,22 @@ class NotificationService {
     }
   }
 
-  static void _onNotificationTapped(NotificationResponse response) => handleTap(response.payload);
+  static void _onNotificationTapped(NotificationResponse response) =>
+      handleResponse(response.actionId, response.payload);
+
+  /// A tapped notification, or one of its buttons ([actionId]).
+  @visibleForTesting
+  static void handleResponse(String? actionId, String? payload) {
+    if (actionId == vacationBackAction) {
+      vacationBackRequests.value++;
+      return;
+    }
+    handleTap(payload);
+  }
+
+  /// Counts taps on a vacation check-in's "I'm back": the app ends vacation
+  /// mode when it changes.
+  static final vacationBackRequests = ValueNotifier<int>(0);
 
   /// A habit to show because its notification was tapped. The tab bar
   /// switches to Habits and the Habits screen scrolls to the card and
@@ -201,7 +226,7 @@ class NotificationService {
   /// `reminder|<habitId>`, streak warnings the bare id; test notifications
   /// none.
   static String? habitIdFromPayload(String? payload) {
-    if (payload == null || payload.isEmpty || payload == testPayload) return null;
+    if (payload == null || payload.isEmpty || payload == testPayload || payload == vacationPayload) return null;
     if (payload.startsWith(reminderPayloadPrefix)) {
       final id = payload.substring(reminderPayloadPrefix.length);
       return id.isEmpty ? null : id;
@@ -211,6 +236,13 @@ class NotificationService {
 
   /// Payload of the developer tester's notifications.
   static const testPayload = 'test';
+
+  /// Payload of vacation mode's check-ins and welcome back.
+  static const vacationPayload = 'vacation';
+
+  /// The vacation check-ins' category (iOS) and their "I'm back" button.
+  static const vacationCategory = 'vacation';
+  static const vacationBackAction = 'vacation_back';
 
   /// Payloads of habit reminders start with this, so they can be found and
   /// replaced as a set (see ReminderService).
@@ -269,6 +301,69 @@ class NotificationService {
     }
   }
 
+  /// Schedules one of vacation mode's notifications (planned by
+  /// VacationNoticePlanner); a check-in ([canEnd]) has an "I'm back" button.
+  static Future<void> scheduleVacationNotice({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+    required bool canEnd,
+  }) async {
+    if (!_initialized) return;
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(at, tz.UTC),
+        vacationDetails(canEnd: canEnd),
+        payload: vacationPayload,
+        androidScheduleMode: _androidScheduleMode,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      debugPrint('NotificationService: Failed to schedule a vacation notice: $e');
+    }
+  }
+
+  /// Cancels every pending vacation notice.
+  static Future<void> cancelVacationNotices() async {
+    if (!_initialized) return;
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.payload == vacationPayload) await _notificationsPlugin.cancel(request.id);
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel vacation notices: $e');
+    }
+  }
+
+  /// How vacation notices arrive: quietly important, on their own Android
+  /// channel, with "I'm back" on check-ins.
+  @visibleForTesting
+  static NotificationDetails vacationDetails({required bool canEnd}) {
+    final android = AndroidNotificationDetails(
+      'vacation',
+      'Vacation mode',
+      channelDescription: 'Check-ins while vacation mode is on, and a welcome back',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+      actions: [
+        if (canEnd)
+          const AndroidNotificationAction(vacationBackAction, "I'm back",
+              showsUserInterface: true, cancelNotification: true),
+      ],
+    );
+    final darwin = DarwinNotificationDetails(
+      categoryIdentifier: canEnd ? vacationCategory : null,
+      threadIdentifier: 'vacation',
+    );
+    return NotificationDetails(android: android, iOS: darwin, macOS: darwin);
+  }
+
   // Schedule a one-off warning that a habit's streak is at stake
   static Future<void> scheduleStreakWarning(String habitId, StreakWarning warning, {NotificationDetails? details}) async {
     if (!_initialized) return;
@@ -316,7 +411,7 @@ class NotificationService {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
       for (final request in pending) {
         final payload = request.payload;
-        if (payload == null || payload.isEmpty || payload == testPayload) continue;
+        if (payload == null || payload.isEmpty || payload == testPayload || payload == vacationPayload) continue;
         if (payload.startsWith(reminderPayloadPrefix)) continue;
         if (request.id == habitTapTestNotificationId || request.id == testNotificationId) continue;
         if (!habitIds.contains(payload)) await _notificationsPlugin.cancel(request.id);

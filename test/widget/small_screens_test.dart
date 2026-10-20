@@ -427,6 +427,18 @@ void main() {
         expectNothingCutOff(tester, 'Habits on vacation at $setting');
       });
 
+      testWidgets('On vacation with a return date: the banner and Settings at $setting', (tester) async {
+        final now = DateTime.now();
+        await habits.startVacation(back: DateTime(now.year, now.month, now.day + 9));
+        await pump(tester, const HomeScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('vacationBanner')), findsOneWidget);
+        expectNothingCutOff(tester, 'Habits on vacation until a date at $setting');
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('vacationNotices')), 300,
+            scrollable: find.byType(Scrollable).first);
+        expectNothingCutOff(tester, 'Settings, vacation with a return date, at $setting');
+      });
+
       testWidgets('Settings with quiet hours on at $setting', (tester) async {
         await get<SettingsProvider>().setQuietHours(const QuietHours(enabled: true));
         await pump(tester, const SettingsScreen(), width: width, scale: scale);

@@ -72,8 +72,9 @@ class ReminderPlanner {
     QuietHours quiet = QuietHours.off,
   }) {
     final reminder = habit.reminder;
-    // Vacation mode: nothing is due until it's turned off
-    if (reminder == null || !reminder.enabled || habit.isOnVacation) return const [];
+    // Vacation mode: nothing is due until it's turned off. With a return
+    // date, the days away are paused and reminders pick up that day
+    if (reminder == null || !reminder.enabled || habit.isOnOpenVacation) return const [];
 
     final today = _dateOnly(now);
     final days = reminder.isSmart

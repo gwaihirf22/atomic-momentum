@@ -53,6 +53,7 @@ Sat Oct 10 09:00  REMINDER   Run: 0 of 1 today
 Sat Oct 10 09:00  REMINDER   Water: 0 of 8 glasses today
 Sat Oct 10 12:00  done       Run, Read, Water
 Sun Oct 11 07:45  vacation   on
+Wed Oct 14 09:00  VACATION   Still away?: Your streaks are safe with me. Nothing is due until you're back.
 Wed Oct 14 20:00  vacation   off
 Thu Oct 15 09:00  REMINDER   Read: 0 of 1 today
 Thu Oct 15 09:00  REMINDER   Run: 0 of 1 today

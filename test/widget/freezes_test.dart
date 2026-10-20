@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/freeze_bank.dart';
+import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/repositories/habit_repository.dart';
@@ -15,6 +16,7 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/presentation/widgets/freezes_settings_section.dart';
 
 /// Freezes and vacation mode on screen: the habit page, the card's swipe,
 /// Settings and the Habits banner.
@@ -142,6 +144,56 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('vacationBanner')), findsOneWidget);
     await tester.tap(find.byKey(const Key('vacationEnd')));
+    await tester.pumpAndSettle();
+    expect(shown.onVacation, isFalse);
+    expect(find.byKey(const Key('vacationBanner')), findsNothing);
+  });
+
+  testWidgets('on vacation, Settings offers a return date, and its check-ins can be turned off', (tester) async {
+    await habits.startVacation();
+    await pump(tester, const SettingsScreen());
+    await tester.scrollUntilVisible(find.byKey(const Key('vacationNotices')), 300,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('Add a date'), findsOneWidget);
+    expect(find.textContaining('A check-in every few days'), findsOneWidget);
+
+    final back = DateTime(today.year, today.month, today.day + 5);
+    await habits.setVacationReturn(back);
+    await tester.pumpAndSettle();
+    expect(find.text(FreezesSettingsSection.dayLabel(back)), findsOneWidget);
+    expect(find.text('A welcome back on ${FreezesSettingsSection.dayLabel(back)}'), findsOneWidget);
+
+    await tester.tap(find.descendant(of: find.byKey(const Key('vacationNotices')), matching: find.byType(Switch)));
+    await tester.pumpAndSettle();
+    expect(get<SettingsProvider>().vacationNotices, isFalse);
+  });
+
+  testWidgets('a set return date can be taken off from Settings', (tester) async {
+    await habits.startVacation(back: DateTime(today.year, today.month, today.day + 3));
+    await pump(tester, const SettingsScreen());
+    await tester.scrollUntilVisible(find.byKey(const Key('vacationBack')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('vacationBack')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('vacationBackClear')));
+    await tester.pumpAndSettle();
+    expect(habits.vacationBack, isNull);
+    expect(habits.onVacation, isTrue);
+    expect(find.text('Add a date'), findsOneWidget);
+  });
+
+  testWidgets('the banner says when vacation ends; "I\'m back" on a check-in ends it', (tester) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    final back = DateTime(today.year, today.month, today.day + 4);
+    await habits.startVacation(back: back);
+    await tester.pumpWidget(const MomentumApp());
+    await tester.pumpAndSettle();
+    final shown = tester.element(find.byKey(const Key('vacationBanner'))).read<HabitProvider>();
+    expect(find.textContaining('On vacation until ${FreezesSettingsSection.dayLabel(back)}'), findsOneWidget);
+
+    NotificationService.handleResponse(NotificationService.vacationBackAction, NotificationService.vacationPayload);
     await tester.pumpAndSettle();
     expect(shown.onVacation, isFalse);
     expect(find.byKey(const Key('vacationBanner')), findsNothing);

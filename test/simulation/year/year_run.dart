@@ -2,6 +2,7 @@ import 'package:atomic_momentum/core/dev/year_persona.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/achievement_celebrations.dart';
 import 'package:atomic_momentum/core/services/achievement_store.dart';
+import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/domain/entities/momentum.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
@@ -454,7 +455,11 @@ class YearRun {
     final list = phone.delivered;
     for (; _deliveredCounted < list.length; _deliveredCounted++) {
       final n = list[_deliveredCounted];
-      final kind = n.isReminder ? 'reminders' : ((n.title ?? '').startsWith("Don't miss twice") ? 'warnings' : 'nudges');
+      final kind = n.isReminder
+          ? 'reminders'
+          : n.payload == NotificationService.vacationPayload
+              ? 'vacation'
+              : ((n.title ?? '').startsWith("Don't miss twice") ? 'warnings' : 'nudges');
       _deliveredThisMonth[kind] = (_deliveredThisMonth[kind] ?? 0) + 1;
     }
   }
@@ -485,7 +490,8 @@ class YearRun {
     }
     final overall = ref.overall(at);
     digest.add('  overall momentum ${overall == null ? '-' : overall.round()}');
-    digest.add('  notifications: ${['reminders', 'warnings', 'nudges'].map((k) => '${_deliveredThisMonth[k] ?? 0} $k').join(', ')}');
+    final kinds = ['reminders', 'warnings', 'nudges', if (_deliveredThisMonth.containsKey('vacation')) 'vacation'];
+    digest.add('  notifications: ${kinds.map((k) => '${_deliveredThisMonth[k] ?? 0} $k').join(', ')}');
     // (Not which quotes: one's own quote's id comes from the clock, so the
     // turns differ by time zone; each day's quote is checked as it shows)
     digest.add('  quote of the day on ${_quoteDaysThisMonth.length} days, another quote: ${driver.shuffles}');

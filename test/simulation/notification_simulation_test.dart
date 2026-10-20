@@ -267,6 +267,52 @@ void main() {
     expectClean(phone, 'freezes_and_vacation');
   });
 
+  test('15. vacation notices: a welcome back on the return date, check-ins without one, "I\'m back"', () async {
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await createAll(phone, [
+        habit('Read'),
+        habit('Gym', weekdays: [1, 3, 5]),
+        habit('Review', frequency: ResetFrequency.weekly),
+      ]);
+      DateTime oct(int d) => DateTime(2026, 10, d);
+      String back() {
+        final b = phone.habits.vacationBack;
+        return b == null ? 'no return date' : 'back ${b.month}/${b.day}';
+      }
+
+      for (final day in days()) {
+        final d = day.day + (day.month == 10 ? 0 : 100);
+        // Away with a return date, the app never opened: nothing from the
+        // 5th to the 9th, then a welcome back and reminders on the 10th
+        final closed = d >= 5 && d <= 9;
+        // Away again from the 12th (back the 18th, then moved to the 16th),
+        // and from the 19th with no return date until "I'm back" on Nov 7
+        final away = closed || (d >= 12 && d <= 15) || (d >= 19 && d <= 107);
+        if (!closed) await phone.checkIn(on(day, 7, 30));
+        if (d == 5) await phone.at(on(day, 8), 'vacation   on, back the 10th', () => phone.vacation(true, back: oct(10)));
+        if (d == 12) await phone.at(on(day, 8), 'vacation   on, back the 18th', () => phone.vacation(true, back: oct(18)));
+        if (d == 14) {
+          await phone.at(on(day, 8), 'vacation   back sooner: the 16th', () => phone.vacationReturn(oct(16)));
+          await phone.at(on(day, 8, 1), 'vacation   ${back()}', () async {});
+        }
+        if (d == 19) await phone.at(on(day, 8), 'vacation   on, no return date', () => phone.vacation(true));
+        if (d == 27) await phone.at(on(day, 8), 'settings   vacation check-ins off', () => phone.vacationNotices(false));
+        if (d == 29) await phone.at(on(day, 8), 'settings   vacation check-ins on', () => phone.vacationNotices(true));
+        if (d == 107) await phone.at(on(day, 12), "tapped     I'm back", phone.imBack);
+        if (!away) await doHabits(phone, on(day, 12), names: ['Read', 'Gym', 'Review'], when: lastDay);
+        if (!closed) await phone.checkIn(on(day, 21));
+      }
+      await phone.advanceTo(end);
+      expect(phone.habits.onVacation, isFalse);
+      final read = phone.habit('Read');
+      expect(read.isOnVacationOn(oct(9)), isTrue, reason: 'the days away are paused');
+      expect(read.isOnVacationOn(oct(10)), isFalse, reason: 'back on the 10th');
+      expect(read.isOnVacationOn(oct(16)), isFalse, reason: 'the return moved to the 16th');
+      expect(read.streak.current, greaterThan(0), reason: 'streaks held through every vacation');
+    });
+    expectClean(phone, 'vacation_notices');
+  });
+
   test('6. custom days, messages and edits: changes take effect at once', () async {
     final phone = await SimulatedPhone.run(start, (phone) async {
       await createAll(phone, [

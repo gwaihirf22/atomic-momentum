@@ -41,7 +41,9 @@ import '../services/health_sync_service.dart';
 import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
+import '../services/vacation_notice_service.dart';
 import '../../domain/services/streak_warning_planner.dart';
+import '../../domain/services/vacation_notice_planner.dart';
 import '../migration/smart_reminders_migration.dart';
 import '../services/habit_order.dart';
 
@@ -107,8 +109,17 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   ));
   sl.registerLazySingleton(() => ReminderService(
         scheduler: LocalNotificationReminderScheduler(defaults: () => sl<SettingsProvider>().notifyDefaults),
-        // Streak warnings come first; reminders get the rest of iOS's 64
-        reservedFor: (habits) => StreakWarningPlanner.maxPending(habits, sl<SettingsProvider>().streakWarnings),
+        // Streak warnings and vacation notices come first; reminders get the
+        // rest of iOS's 64
+        reservedFor: (habits) =>
+            StreakWarningPlanner.maxPending(habits, sl<SettingsProvider>().streakWarnings) +
+            (habits.any((h) => h.isOnVacation) ? VacationNoticePlanner.maxPending : 0),
+        quietHours: () => sl<SettingsProvider>().quietHours,
+      ));
+  sl.registerLazySingleton(() => VacationNoticeService(
+        scheduler: LocalNotificationVacationNoticeScheduler(),
+        enabled: () => sl<SettingsProvider>().vacationNotices,
+        time: () => sl<SettingsProvider>().defaultReminderTime,
         quietHours: () => sl<SettingsProvider>().quietHours,
       ));
   // Habits that never had a reminder get smart ones, once
@@ -127,6 +138,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
     seedDefaultHabit: seedDefaultHabit,
     streakWarningService: sl(),
     reminderService: sl(),
+    vacationNotices: sl(),
     categoryRepository: sl(),
     healthSync: sl(),
     freezeBank: sl(),

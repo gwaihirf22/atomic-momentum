@@ -244,7 +244,7 @@
   Meditate         streak 28 (best 78), momentum 90 atomic; this month 12 kept, 1 small, 3 missed
   Journal          streak 10 (best 47), momentum 78 strong; this month 12 kept, 0 small, 5 missed
   overall momentum 91
-  notifications: 91 reminders, 1 warnings, 0 nudges
+  notifications: 91 reminders, 1 warnings, 0 nudges, 4 vacation
   quote of the day on 19 days, another quote: 6
 == Sep 2027
   Drink water      streak 173 (best 173), momentum 97 atomic; this month 26 kept, 3 small, 1 missed

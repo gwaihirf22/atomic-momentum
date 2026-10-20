@@ -163,4 +163,43 @@ void main() {
       expect(habits.getHabitById(a)!.pauses.single.to, today);
     });
   });
+
+  test('vacation mode with a return date: stored, moved, and over by itself that morning', () async {
+    final back = DateTime(2026, 10, 25);
+    late String a;
+    await at(() async {
+      await habits.loadHabits();
+      a = await add('Read');
+      await habits.startVacation(back: DateTime(2026, 10, 28));
+      expect(habits.vacationBack, DateTime(2026, 10, 28));
+      await habits.setVacationReturn(back);
+      expect(habits.vacationBack, back);
+      expect(habits.vacation!.since, today);
+    });
+
+    await withClock(Clock.fixed(DateTime(2026, 10, 25, 7)), () async {
+      final fresh = get<HabitProvider>();
+      await fresh.loadHabits();
+      expect(fresh.onVacation, isFalse, reason: 'back today, without turning it off');
+      expect(fresh.getHabitById(a)!.isOnVacationOn(DateTime(2026, 10, 24)), isTrue);
+      expect(fresh.vacationForNotices?.back, back, reason: "this morning's welcome back still comes");
+    });
+    await withClock(Clock.fixed(DateTime(2026, 10, 26, 7)), () async {
+      expect(get<HabitProvider>().vacationForNotices, isNull);
+    });
+  });
+
+  test('without a return date, one can be added and taken off again', () async {
+    await at(() async {
+      await habits.loadHabits();
+      await add('Read');
+      await habits.startVacation();
+      expect(habits.vacationBack, isNull);
+      await habits.setVacationReturn(tomorrow);
+      expect(habits.vacationBack, tomorrow);
+      await habits.setVacationReturn(null);
+      expect(habits.vacationBack, isNull);
+      expect(habits.onVacation, isTrue);
+    });
+  });
 }

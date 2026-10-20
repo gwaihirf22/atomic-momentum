@@ -697,8 +697,21 @@ class Habit extends Equatable {
     return pauses.any((p) => p.overlaps(start, end));
   }
 
-  /// Vacation mode is on for this habit.
-  bool get isOnVacation => pauses.isNotEmpty && pauses.last.isOpen;
+  /// Vacation mode is on for this habit: a pause not ended, and not yet at
+  /// its return day.
+  bool get isOnVacation {
+    if (pauses.isEmpty) return false;
+    final now = clock.now();
+    return pauses.last.isOnAt(DateTime(now.year, now.month, now.day));
+  }
+
+  /// The day vacation mode ends by itself, if it's on with a return date.
+  DateTime? get vacationBack => isOnVacation ? pauses.last.back : null;
+
+  /// Vacation mode is on with no return date: nothing is due, and nothing
+  /// can be planned until it's turned off. (With a return date, reminders
+  /// and warnings are planned from that day.)
+  bool get isOnOpenVacation => isOnVacation && pauses.last.back == null;
 
   /// How far back a freeze can reach (to cover the miss that would end a
   /// streak), and how far ahead.
@@ -756,11 +769,20 @@ class Habit extends Equatable {
             day,
       ];
 
-  /// Starts vacation mode on [day] (nothing happens if it's already on).
-  Habit startPause(DateTime day) {
+  /// Starts vacation mode on [day] (nothing happens if it's already on),
+  /// until the morning of [back] if given.
+  Habit startPause(DateTime day, {DateTime? back}) {
     if (isOnVacation || !schedule.isPeriodic) return this;
     final now = clock.now();
-    return copyWith(pauses: [...pauses, HabitPause(from: day)])._recalculated(now);
+    return copyWith(pauses: [...pauses, HabitPause(from: day, back: back)])._recalculated(now);
+  }
+
+  /// Moves the return day of vacation mode, if it's on (null: no return
+  /// date, so it lasts until turned off).
+  Habit planReturn(DateTime? back) {
+    if (!isOnVacation) return this;
+    final now = clock.now();
+    return copyWith(pauses: [...pauses.take(pauses.length - 1), pauses.last.returningOn(back)])._recalculated(now);
   }
 
   /// Ends vacation mode on [day] (that day stays paused).
