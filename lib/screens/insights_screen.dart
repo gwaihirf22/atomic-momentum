@@ -29,6 +29,7 @@ import 'achievements_screen.dart';
 import 'habit_detail_screen.dart';
 import 'heatmap_screen.dart';
 import '../presentation/tour/tour_events.dart';
+import '../presentation/tour/tour_gate.dart';
 
 /// How far back the Insights cards look, in weeks (about six months).
 const insightsWeeks = 26;
@@ -425,13 +426,14 @@ class _DaysCard extends StatelessWidget {
                 key: const Key('insightsHabitPicker'),
                 label: chosen?.name ?? 'All habits',
                 icon: CupertinoIcons.chevron_down,
-                onPressed: () => _pickHabit(context),
+                // Not while a tour waits for a day to be picked
+                onPressed: () => TourGate.isFree ? _pickHabit(context) : null,
               ),
             ),
             ShareIconButton(
               key: const Key('share_Every day'),
               label: 'Share the last 6 months',
-              onPressed: () => showShareSheet(
+              onPressed: () => !TourGate.isFree ? null : showShareSheet(
                 context,
                 card: (look, hideName) => HeatmapShareCard(
                   days: data.days,

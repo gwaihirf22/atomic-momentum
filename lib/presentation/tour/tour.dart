@@ -112,11 +112,10 @@ class TourStep {
   /// The last step's Next reads like this.
   final String? nextLabel;
 
-  /// Whether touches inside the spotlight reach the app (they do, so every
-  /// step can be done for real; off for a step that only explains what's in
-  /// it, like a card's Edit and Delete, where a tap would open a dialog over
-  /// the tour).
-  final bool touchable;
+  /// Whether touches inside the spotlight reach the app. By default only a
+  /// try-it step's do (and then only its own gesture, through [TourGate]):
+  /// a tap anywhere else could open a page and leave the tour behind.
+  final bool? touchable;
 
   const TourStep({
     this.anchor,
@@ -127,9 +126,11 @@ class TourStep {
     this.wait,
     this.before = const [],
     this.nextLabel,
-    this.touchable = true,
+    this.touchable,
     this.align = 0.3,
   });
+
+  bool get passesTouches => touchable ?? wait != null;
 }
 
 class Tour {

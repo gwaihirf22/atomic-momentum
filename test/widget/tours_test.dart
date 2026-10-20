@@ -124,6 +124,16 @@ void main() {
     await settle(tester);
     final demo = worlds.world.demo!;
     String id(String name) => demo.idOf(name);
+    // Only + works here: the card won't swipe open, − and the ring do nothing
+    final plus = find.byKey(Key('incrementHabit_${id(DemoPersona.water)}'));
+    await tester.dragFrom(tester.getCenter(plus), const Offset(-200, 0));
+    await settle(tester);
+    expect(find.byKey(Key('editHabit_${id(DemoPersona.water)}')), findsNothing, reason: 'no swipe actions');
+    final logged = demo.habits.getHabitById(id(DemoPersona.water))!.progress;
+    await tester.tap(find.byKey(Key('decrementHabit_${id(DemoPersona.water)}')), warnIfMissed: false);
+    await settle(tester);
+    expect(demo.habits.getHabitById(id(DemoPersona.water))!.progress, logged, reason: '− does nothing');
+    expect(tours.stepIndex, 3);
     await tester.tap(find.byKey(Key('incrementHabit_${id(DemoPersona.water)}')));
     await settle(tester);
     expect(tours.stepIndex, 4, reason: '+ moved it on');
@@ -261,6 +271,78 @@ void main() {
           expect(worlds.world.isDemo, isFalse);
         });
       }
+    }
+  });
+
+  // Every step's spotlight, poked at like a curious first-timer: taps all
+  // over it, a hold, sideways drags. Only the step's own gesture may do
+  // anything (and then the tour moves on); nothing else may open a page or
+  // sheet, or lose the step's target.
+  group('nothing in a spotlight takes a tour off course', () {
+    int routes() =>
+        find.byWidgetPredicate((w) => w.runtimeType.toString().startsWith('_ModalScope')).evaluate().length;
+
+    for (final id in Tours.all.keys) {
+      testWidgets(id.name, (tester) async {
+        await setUpWith({TourStore.key: ['habits']});
+        if (id == TourId.arrange) await addHabits(['Drink water', 'Read 20 pages']);
+        tester.view.physicalSize = const Size(390, 844) * 3;
+        tester.view.devicePixelRatio = 3;
+        tester.view.padding = const FakeViewPadding(top: 20 * 3);
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(MomentumApp(worlds: worlds));
+        await settle(tester);
+        final tours = toursIn(tester);
+        if (id == TourId.editor) {
+          // It comes with the first new habit
+          await tester.tap(find.byKey(const Key('addHabitButton')));
+        } else {
+          unawaited(tours.start(id));
+        }
+        await settle(tester);
+        expect(tours.tour?.id, id);
+
+        Future<void> after() async {
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 700));
+          await tester.pump(const Duration(milliseconds: 700));
+        }
+
+        while (tours.tour?.id == id) {
+          await settle(tester);
+          final index = tours.stepIndex;
+          final where = '${id.name} step ${index + 1}';
+          final target = tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target;
+          final before = routes();
+          final probes = <Future<void> Function()>[
+            if (target != null) ...[
+              for (final fx in const [0.15, 0.5, 0.85])
+                for (final fy in const [0.2, 0.5, 0.8])
+                  () => tester.tapAt(Offset(target.left + target.width * fx, target.top + target.height * fy)),
+              () => tester.longPressAt(target.center),
+              () => tester.dragFrom(target.center, const Offset(160, 0)),
+              () => tester.dragFrom(target.center, const Offset(-160, 0)),
+            ],
+          ];
+          var moved = false;
+          for (final probe in probes) {
+            await probe();
+            await after();
+            if (tours.tour?.id != id || tours.stepIndex != index) {
+              moved = true;
+              // On to its next step (or done, and perhaps the next screen's tour)
+              expect(tours.tour?.id != id || tours.stepIndex == index + 1, isTrue, reason: '$where: one step at a time');
+              expect(Tours.all[id]!.steps[index].wait, isNotNull, reason: '$where moved on by itself');
+              break;
+            }
+            expect(routes(), before, reason: '$where: nothing opens');
+            expect(tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target, isNotNull,
+                reason: '$where keeps its target');
+          }
+          if (moved || tours.tour?.id != id) continue;
+          await tester.tap(find.byType(TourNextButton));
+        }
+      });
     }
   });
 

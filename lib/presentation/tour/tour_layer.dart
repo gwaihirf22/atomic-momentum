@@ -100,8 +100,8 @@ class _TourLayerState extends State<TourLayer> with SingleTickerProviderStateMix
       target: _rect,
       side: step.side,
       tryIt: step.wait != null,
-      // Every step can be done for real, or moved on with Next
-      passThrough: step.touchable,
+      // A try-it step can be done for real; any step moved on with Next
+      passThrough: step.passesTouches,
       bottomCovered: FloatingTabBar.coveredHeight(media.padding.bottom),
       bubble: TourBubble(
         // A new step: VoiceOver moves to it

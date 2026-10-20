@@ -12,6 +12,7 @@ import '../widgets/habit_card.dart';
 import 'tour.dart';
 import 'tour_anchor.dart';
 import 'tour_events.dart';
+import 'tour_gate.dart';
 import 'world_scope.dart';
 import 'package:provider/provider.dart';
 import 'package:clock/clock.dart';
@@ -128,6 +129,14 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
 
   /// The current step is ready to show (its moves done, its target placed).
   bool get isReady => _ready;
+
+  /// Every change also tells [TourGate] what the step showing lets through.
+  @override
+  void notifyListeners() {
+    final step = this.step;
+    TourGate.step.value = _ready && step != null && step.passesTouches ? step.wait : null;
+    super.notifyListeners();
+  }
 
   /// The habit id the step is about, in the world showing.
   String? get stepHabitId {
@@ -367,6 +376,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     _disposed = true;
+    TourGate.step.value = null;
     WidgetsBinding.instance.removeObserver(this);
     NotificationService.focusRequests.removeListener(_interrupted);
     IOSMainNavigation.tabRequests.removeListener(_interrupted);

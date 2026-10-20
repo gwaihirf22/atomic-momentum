@@ -9,6 +9,7 @@ import '../domain/services/insights.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/adaptive.dart';
+import '../presentation/tour/tour_gate.dart';
 import '../presentation/widgets/heatmap.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/stat_card.dart';
@@ -193,8 +194,11 @@ class HeatmapExpandButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    void open() =>
-        Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HeatmapScreen(habitId: habitId)));
+    void open() {
+      // Not while a tour's step is waiting for a day to be picked
+      if (!TourGate.isFree) return;
+      Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HeatmapScreen(habitId: habitId)));
+    }
     return Semantics(
       button: true,
       label: 'Show every day, full screen',

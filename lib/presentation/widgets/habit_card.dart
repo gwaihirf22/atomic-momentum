@@ -4,7 +4,9 @@ import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../tour/tour_anchor.dart';
+import '../tour/tour.dart';
 import '../tour/tour_events.dart';
+import '../tour/tour_gate.dart';
 import '../../core/theme/app_palette.dart';
 import '../../core/theme/app_style.dart';
 import '../../domain/entities/category.dart';
@@ -205,6 +207,7 @@ class HabitCard extends StatelessWidget {
               done: habit.isTwoMinuteOn(now),
               // Reaching the two-minute amount counts by itself
               onChanged: onSetTwoMinute == null ||
+                      !TourGate.allows(TourWait.twoMinute) ||
                       (habit.twoMinuteReachedByAmountOn(now) && !habit.usedTwoMinuteButtonOn(now))
                   ? null
                   : (done) {
@@ -217,8 +220,13 @@ class HabitCard extends StatelessWidget {
     );
   }
 
+  // Rebuilt as a tour's steps change: during a try-it step only that
+  // step's gesture works (TourGate), so a stray tap can't open a page
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<TourWait?>(valueListenable: TourGate.step, builder: (context, _, __) => _card(context));
+
+  Widget _card(BuildContext context) {
     final palette = AppPalette.of(context);
     final color = palette.habitColor(habit.color.color);
     final now = clock.now();
@@ -233,7 +241,9 @@ class HabitCard extends StatelessWidget {
     final hasStatsRow = showStats || showTwoMinute || habit.isFrozenOn(now) || habit.isOnVacationOn(now);
     Widget stats() => _stats(palette, showStats: showStats, showTwoMinute: showTwoMinute, now: now);
     // Today can be frozen (or already is)
-    final canFreeze = onFreeze != null && (habit.isFrozenOn(now) || habit.whyNoFreeze(now, now) == null);
+    final canFreeze = onFreeze != null &&
+        (habit.isFrozenOn(now) || habit.whyNoFreeze(now, now) == null) &&
+        TourGate.allows(TourWait.swipeToFreeze);
     // Frozen (or on vacation) and not kept: the card looks frozen
     final paused = habit.skipsPeriod(habit.schedule.periodStart(now));
 
@@ -267,14 +277,16 @@ class HabitCard extends StatelessWidget {
                   ],
                 )
               : null,
-          endActionPane: ActionPane(
+          endActionPane: !TourGate.allows(TourWait.swipeToEdit) ? null : ActionPane(
             motion: const BehindMotion(),
             extentRatio: 0.44,
             children: [
 
               SlidableAction(
                 key: Key('editHabit_${habit.id}'),
-                onPressed: (_) => onEdit(),
+                onPressed: (_) {
+                  if (TourGate.isFree) onEdit();
+                },
                 backgroundColor: palette.textSecondary,
                 foregroundColor: palette.surface,
                 icon: CupertinoIcons.pencil,
@@ -282,7 +294,9 @@ class HabitCard extends StatelessWidget {
               ),
               SlidableAction(
                 key: Key('deleteHabit_${habit.id}'),
-                onPressed: (_) => onDelete(),
+                onPressed: (_) {
+                  if (TourGate.isFree) onDelete();
+                },
                 backgroundColor: palette.danger,
                 foregroundColor: palette.onColor(palette.danger),
                 icon: CupertinoIcons.trash,
@@ -322,9 +336,9 @@ class HabitCard extends StatelessWidget {
               animationDuration: const Duration(milliseconds: 600),
               child: Stack(children: [
                 InkWell(
-                onTap: onOpen ?? onEdit,
+                onTap: TourGate.allows(TourWait.openHabit) ? onOpen ?? onEdit : null,
                 // The ring's own hold comes first
-                onLongPress: onArrange,
+                onLongPress: TourGate.isFree ? onArrange : null,
                 child: Padding(
                   // Right and vertical padding live inside the rows, so the
                   // stepper's tap guard reaches the card's edges
@@ -341,8 +355,10 @@ class HabitCard extends StatelessWidget {
                       dimmed: isRestDay,
                       semanticLabel: '${habit.name}, ${category.name}, $_progressText',
                       // A tap on the ring never logs a slip by accident
-                      onTap: _canAdd && !habit.isBreak ? () => onSetProgress(StepSize.up(habit.progress, habit.target)) : null,
-                      onLongPress: _canHold
+                      onTap: _canAdd && !habit.isBreak && TourGate.isFree
+                          ? () => onSetProgress(StepSize.up(habit.progress, habit.target))
+                          : null,
+                      onLongPress: _canHold && TourGate.allows(TourWait.hold)
                           ? () {
                               TourEvents.emit(HoldFinished(habit.id));
                               onHold!();
@@ -393,8 +409,8 @@ class HabitCard extends StatelessWidget {
                       addKey: Key('incrementHabit_${habit.id}'),
                       removeTooltip: habit.isBreak ? 'Remove a slip' : stepTooltip(habit, adding: false, one: 'Remove one'),
                       addTooltip: habit.isBreak ? 'Log a slip' : stepTooltip(habit, adding: true, one: 'Add one'),
-                      onRemove: _canRemove ? () => onSetProgress(StepSize.down(habit.progress, habit.target)) : null,
-                      onAdd: _canAdd
+                      onRemove: _canRemove && TourGate.isFree ? () => onSetProgress(StepSize.down(habit.progress, habit.target)) : null,
+                      onAdd: _canAdd && TourGate.allows(TourWait.plus)
                           ? () {
                               TourEvents.emit(PlusTapped(habit.id));
                               onSetProgress(StepSize.up(habit.progress, habit.target));
