@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_palette.dart';
+import '../intro/momentum_mark.dart';
+import '../widgets/large_title_scaffold.dart';
 
 /// What a tour says at one step: a small eyebrow (the tour's name, or
 /// "Try it"), one or two short sentences, the steps as dots, and Skip / Next.
@@ -13,6 +15,9 @@ class TourBubble extends StatelessWidget {
   final int step;
   final int steps;
   final bool tryIt;
+
+  /// A welcome: the app's mark, then this in large type, above [text].
+  final String? headline;
 
   /// The last step's Next reads "Done".
   final String nextLabel;
@@ -29,6 +34,7 @@ class TourBubble extends StatelessWidget {
     this.step = 0,
     this.steps = 0,
     this.tryIt = false,
+    this.headline,
     this.nextLabel = 'Next',
     this.onNext,
     this.onSkip,
@@ -60,8 +66,25 @@ class TourBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (headline != null) ...[
+                  const Center(child: MomentumMark(size: 52)),
+                  const SizedBox(height: 10),
+                ],
                 _Eyebrow(text: eyebrow, tryIt: tryIt),
                 const SizedBox(height: 8),
+                if (headline case final headline?) ...[
+                  Text(
+                    headline,
+                    style: TextStyle(
+                      fontFamily: LargeTitleHeader.fontFamily,
+                      fontSize: 22,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700,
+                      color: palette.text,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 // Scrolls rather than overflowing when the bubble is squeezed
                 Flexible(
                   child: SingleChildScrollView(

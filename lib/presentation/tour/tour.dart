@@ -109,8 +109,11 @@ class TourStep {
   final double align;
   final List<TourMove> before;
 
-  /// The last step's Next reads like this.
+  /// What Next reads on this step (the last one's reads "Done" otherwise).
   final String? nextLabel;
+
+  /// A welcome: the app's mark and this, large, above [text].
+  final String? headline;
 
   /// Whether touches inside the spotlight reach the app. By default only a
   /// try-it step's do (and then only its own gesture, through [TourGate]):
@@ -126,6 +129,7 @@ class TourStep {
     this.wait,
     this.before = const [],
     this.nextLabel,
+    this.headline,
     this.touchable,
     this.align = 0.3,
   });

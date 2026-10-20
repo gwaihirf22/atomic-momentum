@@ -4,12 +4,14 @@ import 'spotlight.dart';
 import 'tour.dart';
 import 'tour_anchor.dart';
 
-/// The tours' words and steps (docs/design/onboarding-tours.md). Short,
-/// warm, second person, like the explainers. Every step can be done in the
-/// spotlight or moved on with Next.
+/// The tours' words and steps (docs/design/onboarding-tours.md), spoken by
+/// the app itself: first person, warm, with a quip now and then (like the
+/// fun achievements). Only a try-it step tells you to do something now, and
+/// only its own gesture works; every other step describes, so nothing invites
+/// a tap the tour can't follow.
 abstract final class Tours {
   /// The first launch's tour, on the example habits, ending in the person's
-  /// own app at Add habit.
+  /// own app at Add habit. It opens with the app saying hello.
   static const habits = Tour(
     id: TourId.habits,
     title: 'Habits',
@@ -19,77 +21,85 @@ abstract final class Tours {
     steps: [
       TourStep(
         eyebrow: 'Welcome',
-        text: 'These are example habits, after half a year of use. Look around and try anything: '
-            'your own habits come next.',
+        headline: "Hi! I'm Momentum.",
+        text: 'Thanks for downloading me! I help you build good habits and break bad ones, a day at a time. '
+            "Miss a day? No drama, just don't miss two. I'll do the talking here, and I'm told I'm a bit "
+            'cheeky.',
+        nextLabel: 'Show me around',
+      ),
+      TourStep(
+        eyebrow: 'Example habits',
+        text: 'First, some example habits: half a year of a very committed imaginary person. Nothing here '
+            'touches yours.',
       ),
       TourStep(
         anchor: TourAnchorId.overallMomentum,
-        text: "This is your momentum: how steadily you've been showing up. "
-            'Steady practice reaches 80 in about 66 days.',
+        text: 'This is momentum: how steadily you show up, out of 100. Keep at it for about 66 days and '
+            "you'll pass 80. That's a habit formed.",
         side: BubbleSide.below,
       ),
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.water,
-        text: 'Each habit is a card: its ring fills as you log, the bolt is momentum, the flame its streak, '
-            'the bars its last seven days. Tap a card for its page.',
+        text: 'Each habit gets a card: the ring fills as you log, the bolt is momentum, the flame its streak, '
+            'the bars its last seven days.',
         align: 0.08,
       ),
       TourStep(
         anchor: TourAnchorId.habitPlus,
         habit: DemoPersona.water,
-        text: 'Tap + to log one more glass, or tap Next.',
+        text: 'Tap + to log another glass. Hydration never hurt anyone.',
         wait: TourWait.plus,
       ),
       TourStep(
         anchor: TourAnchorId.habitRing,
         habit: DemoPersona.read,
-        text: 'Hold a ring to finish the day in one go. Try it, or tap Next.',
+        text: "Hold Read's ring and I'll finish the whole day in one go.",
         wait: TourWait.hold,
       ),
       TourStep(
         anchor: TourAnchorId.habitTwoMinute,
         habit: DemoPersona.meditate,
-        text: "Missed yesterday? Don't miss twice: on a hard day, tap 2 min. A tiny version keeps the streak.",
+        text: 'Rough day? Tap 2 min to do the tiny version. It still counts, and the streak lives on.',
         wait: TourWait.twoMinute,
       ),
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.gym,
-        text: "Can't make it today? Swipe right on Gym, then tap Freeze: your streak holds. Or tap Next.",
+        text: "Can't make it at all? Swipe right on Gym, then tap Freeze: I'll hold the streak. You start "
+            'with 3 freezes and earn one at milestones, up to 5.',
         wait: TourWait.freeze,
       ),
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.read,
-        text: 'Swipe left on Read to edit or delete it. Try it, or tap Next.',
+        text: "Swipe left on Read to edit or delete it. I won't take it personally.",
         before: [CloseSwipes()],
         wait: TourWait.swipeToEdit,
       ),
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.read,
-        text: 'Edit changes its name, schedule and reminders. Delete removes it, after asking.',
+        text: "Edit changes its name, schedule and reminders. Delete removes it, but I'll ask first.",
         before: [OpenCardActions(DemoPersona.read)],
-        touchable: false,
       ),
       TourStep(
         anchor: TourAnchorId.categoryRings,
-        text: "Your categories. Tap one to see only its habits. Hold one, or a habit's name, to arrange "
-            'categories and habits.',
+        text: "Your categories. A tap shows just one's habits. Holding one, or a habit's name, opens Arrange "
+            'to reorder everything.',
         before: [CloseSwipes()],
       ),
       TourStep(
         anchor: TourAnchorId.tabBar,
-        text: 'Calendar, Insights (your statistics), Inspire and Settings each have a short tour '
-            'the first time you open them.',
+        text: "Calendar, Insights, Inspire and Settings each get a little tour the first time you visit. I'll "
+            'be there.',
         before: [CloseSwipes()],
         side: BubbleSide.above,
       ),
       TourStep(
         anchor: TourAnchorId.addHabit,
         eyebrow: 'Your turn',
-        text: 'These are your own habits now. Tap here to add your first one.',
+        text: "That's the tour! These are your own habits now. Tap Add habit to start one.",
         before: [CloseSwipes(), ToOwnHabits()],
         wait: TourWait.addHabit,
         nextLabel: 'Got it',
@@ -107,17 +117,16 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.calendarGrid,
-        text: "Every day of the month, with how it went. Tap a day to see it, or tap Next.",
+        text: 'Every day of the month, and how it went. Tap a day to look back.',
         wait: TourWait.calendarDay,
       ),
       TourStep(
         anchor: TourAnchorId.calendarDayHabit,
         habit: DemoPersona.water,
-        text: 'Forgot to log something? Fix any past day here, with + and −.',
+        text: "Forgot to log something? Any past day can be fixed here with + and −. I won't tell.",
       ),
       TourStep(
-        text: 'A habit added later shows grayed on the days before. "Start from this day" moves '
-            'when it began.',
+        text: "A habit added later is grayed before its first day. 'Start from this day' moves its start.",
       ),
     ],
   );
@@ -132,16 +141,16 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.insightsMomentum,
-        text: 'Your momentum, month by month. The line marks 80: habit formed.',
+        text: 'Your momentum, month by month. The line is 80: habit formed.',
       ),
       TourStep(
         anchor: TourAnchorId.insightsHeatmap,
-        text: 'Every day at a glance: the deeper the colour, the more you did. Tap a day, or tap Next.',
+        text: 'Every day at a glance: the deeper the colour, the more you did. Tap a day.',
         wait: TourWait.heatmapDay,
       ),
       TourStep(
         anchor: TourAnchorId.insightsAchievements,
-        text: "What you've earned, and what's next. Milestones can earn freezes too.",
+        text: "Everything you've earned, and what's next. Some milestones even pay out in freezes.",
       ),
     ],
   );
@@ -156,20 +165,20 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.detailRing,
-        text: 'Tap the number to type an amount, or hold the ring to finish the day.',
+        text: "A habit's own page. The number can be typed over, and holding the ring finishes the day.",
         before: [OpenHabitPage(DemoPersona.read)],
       ),
       TourStep(
         anchor: TourAnchorId.detailMomentum,
-        text: "This habit's own momentum. Tap it to see how momentum works.",
+        text: 'Its own momentum. Tapping it, later, explains how I work it out.',
       ),
       TourStep(
         anchor: TourAnchorId.detailHeatmap,
-        text: 'Its last six months. Expand it for the whole history.',
+        text: 'Its last six months. The expand button shows the whole history.',
       ),
       TourStep(
         anchor: TourAnchorId.detailEdit,
-        text: 'Name, schedule, reminders and the tiny version: all in Edit.',
+        text: 'Name, schedule, reminders and the tiny version all live in Edit.',
       ),
     ],
   );
@@ -184,11 +193,11 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.inspireQuote,
-        text: 'A quote for today, new every morning. Save it, or add it to a habit.',
+        text: 'A quote a day, fresh every morning. Save one, or give it to a habit.',
       ),
       TourStep(
         anchor: TourAnchorId.inspireSearch,
-        text: 'Search every quote by word, author or theme, and keep your own.',
+        text: 'Search every quote by word, author or theme, and add your own favourites.',
       ),
     ],
   );
@@ -203,15 +212,15 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.settingsHelp,
-        text: 'Every tour lives here, to take again any time.',
+        text: "Every tour lives here, for when you'd like me to show you around again.",
       ),
       TourStep(
         anchor: TourAnchorId.settingsNotifications,
-        text: 'Reminders: the time new habits remind you, the sound, and quiet hours.',
+        text: "When I remind you, how I sound, and quiet hours when I'll keep it down.",
       ),
       TourStep(
         anchor: TourAnchorId.settingsFreezes,
-        text: "Freezes you've earned, and vacation mode for longer breaks.",
+        text: "Your freezes, and vacation mode for when you're truly away.",
       ),
     ],
   );
@@ -226,15 +235,15 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.storySentence,
-        text: 'Your habit, as one sentence. Tap any underlined part to change it.',
+        text: "Your habit, written as one sentence. Once we're done, tap any underlined part to change it.",
       ),
       TourStep(
         anchor: TourAnchorId.storyHardDay,
-        text: 'Plan a tiny version for hard days: it still keeps your streak.',
+        text: "Plan a tiny version for hard days. It keeps your streak, and I won't judge.",
       ),
       TourStep(
         anchor: TourAnchorId.editorStyleSwitch,
-        text: 'Prefer a form? Switch to Builder any time.',
+        text: 'Prefer a form? Builder does the same thing, step by step.',
       ),
     ],
   );
@@ -249,29 +258,25 @@ abstract final class Tours {
     steps: [
       TourStep(
         anchor: TourAnchorId.arrangeSwitch,
-        text: "Grouped by category, habits sit with their category, in the categories' order. Off, any order goes.",
+        text: 'Grouped by category, habits sit with their category, in its order. Off, any order goes.',
         before: [OpenArrange()],
-        touchable: false,
       ),
       TourStep(
         anchor: TourAnchorId.arrangeCategory,
-        text: 'Drag a category by its handle: its habits fold into it and move with it. Tap one to rename '
-            'it or change its colour.',
-        touchable: false,
+        text: 'A category drags by its handle, and its habits fold up and come along. A tap renames or '
+            'recolours it.',
       ),
       TourStep(
         anchor: TourAnchorId.arrangeAddCategory,
-        text: 'Add a category of your own: a name, a colour and an icon.',
-        touchable: false,
+        text: 'The + adds a category of your own: a name, a colour and an icon.',
       ),
       TourStep(
         anchor: TourAnchorId.arrangeHabit,
-        text: "Drag a habit by its handle to move it. Grouped, it stays in its category; edit it to change that.",
-        touchable: false,
+        text: 'Habits drag by their handles too. Grouped, they stay in their category; edit one to move it.',
       ),
       TourStep(
-        text: 'Habits, Calendar and your widgets follow this order. Come back any time: hold a category on '
-            "Habits, or a habit's name.",
+        text: "Habits, Calendar and your widgets follow this order. Hold a category or a habit's name, on "
+            'Habits or Calendar, to come back.',
       ),
     ],
   );

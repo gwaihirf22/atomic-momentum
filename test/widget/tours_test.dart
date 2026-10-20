@@ -16,6 +16,7 @@ import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
+import 'package:atomic_momentum/presentation/intro/momentum_mark.dart';
 import 'package:atomic_momentum/presentation/tour/spotlight.dart';
 import 'package:atomic_momentum/presentation/tour/tour.dart';
 import 'package:atomic_momentum/presentation/tour/tour_bubble.dart';
@@ -84,6 +85,11 @@ void main() {
     final tours = toursIn(tester);
     expect(tours.tour?.id, TourId.habits);
     expect(worlds.world.isDemo, isTrue);
+    await settle(tester);
+    // It opens with the app saying hello
+    expect(find.text("Hi! I'm Momentum."), findsOneWidget);
+    expect(find.byType(MomentumMark), findsOneWidget);
+    expect(find.text('Show me around'), findsOneWidget);
 
     for (var i = 0; i < Tours.habits.steps.length; i++) {
       await settle(tester);
@@ -102,7 +108,7 @@ void main() {
         final delete = tester.getRect(find.byKey(Key('deleteHabit_$read')));
         expect(delete.width, greaterThan(20), reason: 'Delete shows while it is explained');
       }
-      await tester.tap(find.text(i == Tours.habits.steps.length - 1 ? 'Got it' : 'Next'));
+      await tester.tap(find.byType(TourNextButton));
     }
     await settle(tester);
     expect(tours.isRunning, isFalse);
@@ -116,7 +122,9 @@ void main() {
     await tester.pumpWidget(MomentumApp(worlds: worlds, tourStart: TourStart.firstRun));
     await settle(tester);
     final tours = toursIn(tester);
-    await tester.tap(find.text('Next')); // welcome
+    await tester.tap(find.text('Show me around')); // the welcome
+    await settle(tester);
+    await tester.tap(find.text('Next')); // example habits
     await settle(tester);
     await tester.tap(find.text('Next')); // momentum
     await settle(tester);
@@ -133,37 +141,37 @@ void main() {
     await tester.tap(find.byKey(Key('decrementHabit_${id(DemoPersona.water)}')), warnIfMissed: false);
     await settle(tester);
     expect(demo.habits.getHabitById(id(DemoPersona.water))!.progress, logged, reason: '− does nothing');
-    expect(tours.stepIndex, 3);
+    expect(tours.stepIndex, 4);
     await tester.tap(find.byKey(Key('incrementHabit_${id(DemoPersona.water)}')));
     await settle(tester);
-    expect(tours.stepIndex, 4, reason: '+ moved it on');
+    expect(tours.stepIndex, 5, reason: '+ moved it on');
     await tester.longPress(find.byKey(Key('habitIcon_${id(DemoPersona.read)}')));
     await settle(tester);
-    expect(tours.stepIndex, 5, reason: 'holding the ring moved it on');
+    expect(tours.stepIndex, 6, reason: 'holding the ring moved it on');
     expect(demo.habits.getHabitById(id(DemoPersona.read))!.isCompleted, isTrue);
     await tester.tap(find.byKey(Key('twoMinute_${id(DemoPersona.meditate)}')));
     await settle(tester);
-    expect(tours.stepIndex, 6, reason: '2 min moved it on');
+    expect(tours.stepIndex, 7, reason: '2 min moved it on');
 
     // Freeze: swiping only opens the button; tapping it moves on
     await tester.drag(find.byKey(Key('habitCard_${id(DemoPersona.gym)}')), const Offset(200, 0));
     await settle(tester);
-    expect(tours.stepIndex, 6, reason: 'a swipe alone stays, so Freeze can be tapped');
+    expect(tours.stepIndex, 7, reason: 'a swipe alone stays, so Freeze can be tapped');
     await tester.tap(find.byKey(Key('freezeHabit_${id(DemoPersona.gym)}')));
     await settle(tester);
-    expect(tours.stepIndex, 7, reason: 'tapping Freeze moved it on');
+    expect(tours.stepIndex, 8, reason: 'tapping Freeze moved it on');
     final today = DateTime.now();
     expect(demo.habits.getHabitById(id(DemoPersona.gym))!.isFrozenOn(today), isTrue);
 
     // Swipe left: Edit and Delete show, and stay while they're explained
     await tester.drag(find.byKey(Key('habitCard_${id(DemoPersona.read)}')), const Offset(-200, 0));
     await settle(tester);
-    expect(tours.stepIndex, 8, reason: 'the left swipe moved it on');
+    expect(tours.stepIndex, 9, reason: 'the left swipe moved it on');
     expect(find.byKey(Key('deleteHabit_${id(DemoPersona.read)}')).hitTestable(), findsNothing,
         reason: 'nothing in the spotlight takes a tap while Edit and Delete are explained');
     await tester.tap(find.text('Next'));
     await settle(tester);
-    expect(tours.stepIndex, 9, reason: 'categories');
+    expect(tours.stepIndex, 10, reason: 'categories');
     expect(demo.habits.habits.map((h) => h.name), contains(DemoPersona.read));
     await tester.tap(find.text('Next')); // categories
     await settle(tester);
@@ -264,7 +272,7 @@ void main() {
                 find.descendant(of: find.byType(TourBubble), matching: find.byType(Scrollable)));
             expect(text.position.maxScrollExtent, 0, reason: 'step ${i + 1}: all its words show');
             expect(bubble.bottom, lessThanOrEqualTo(size.height), reason: 'step ${i + 1}');
-            await tester.tap(find.text(i == tour.steps.length - 1 ? 'Done' : 'Next'));
+            await tester.tap(find.byType(TourNextButton));
           }
           await settle(tester);
           expect(tours.isRunning, isFalse);
@@ -395,7 +403,7 @@ void main() {
       if (step.anchor != null) {
         expect(tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target, isNotNull, reason: 'step ${i + 1}');
       }
-      await tester.tap(find.text(i == Tours.arrange.steps.length - 1 ? 'Done' : 'Next'));
+      await tester.tap(find.byType(TourNextButton));
     }
     await settle(tester);
     expect(tours.isRunning, isFalse);
@@ -418,7 +426,7 @@ void main() {
     for (var i = 0; i < Tours.editor.steps.length; i++) {
       await settle(tester);
       expect(tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target, isNotNull, reason: 'step ${i + 1}');
-      await tester.tap(find.text(i == Tours.editor.steps.length - 1 ? 'Done' : 'Next'));
+      await tester.tap(find.byType(TourNextButton));
     }
     await settle(tester);
     expect(tours.isRunning, isFalse);
@@ -517,7 +525,7 @@ void main() {
               expect(bubble.bottom, lessThanOrEqualTo(size.height), reason: 'step ${i + 1} on screen');
               expect(bubble.left, greaterThanOrEqualTo(0));
               expect(bubble.right, lessThanOrEqualTo(size.width));
-              await tester.tap(find.text(i == Tours.habits.steps.length - 1 ? 'Got it' : 'Next'));
+              await tester.tap(find.byType(TourNextButton));
             }
             await settle(tester);
             expect(tours.isRunning, isFalse);
