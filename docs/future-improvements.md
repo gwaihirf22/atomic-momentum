@@ -36,7 +36,7 @@ It seems to work well; now check it properly on the real iPhone (`DEV_TOOLS=1 to
 **What "widgets" means here:** in the code, "widget" means any piece of the Flutter UI. These are home screen and lock screen widgets: a WidgetKit extension written in SwiftUI inside `ios/`, which is Swift Apple requires (see the strategy's platform section). Android's equivalent (app widgets) comes after.
 
 Paul's ideas:
-- **One habit:** its ring and today's progress, with a + to log from the home screen (interactive on iOS 17+; on iOS 16 a tap opens the app).
+- **One habit:** its ring and today's progress, with a + to log from the home screen (interactive: the app needs iOS 17, like the widgets).
 - **A group of habits:** a category, or habits you pick, as rows of rings.
 - **Momentum:** the overall momentum ring and its level, for encouragement. Small, plus the round lock screen widget.
 - **Insights:** a small view such as the week's heatmap or "X of Y done today".

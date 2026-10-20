@@ -56,7 +56,7 @@ Check each against its source and correct the wording here and in `lib/core/copy
 - Widgets (WidgetKit extension in `ios/`, fed through an App Group, via `home_widget`):
   - the quote of the day (medium)
   - the momentum gauge (small, plus the lock-screen circular gauge)
-  - one habit's ring with a + button (interactive needs iOS 17; on iOS 16 it opens the app)
+  - one habit's ring with a + button (interactive, iOS 17)
 
   A progress change made in a widget must merge into history and cancel that habit's pending reminders natively.
 - A habit's quote as its reminder text.

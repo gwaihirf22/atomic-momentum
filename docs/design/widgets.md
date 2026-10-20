@@ -40,7 +40,7 @@ Paul wants all six kinds from the mockups (artifact `6FUeW7KVC4sjHMMyDadGac`, on
 | `ios/MomentumWidgets/Shared/` | In both targets: `WidgetStore` (App Group keys, the queue, `showStep`), `LogHabitIntent`, `AppHook` |
 | `ios/MomentumWidgets/` | The extension: `MomentumWidgetsBundle`, `HabitWidget` (with `PickHabitIntent`/`HabitEntity` to pick the habit), `GroupWidget` (`PickGroupIntent`: `GroupEntity` Today or a category, or habits picked), `QuoteWidget` (`PickQuoteIntent`: a habit's words), `InsightsWidget` (`PickInsightIntent`: what the small size shows), `IWillWidget` (`PickPromiseIntent`: a habit, or your words), `MomentumWidget` and `TodayWidget`, `Pieces` (ring, gauge, orb, streak, last 7), Sora fonts |
 
-**Xcode:** target `MomentumWidgets`, bundle id `com.paulblake.momentum.widgets`, iOS 17+ (the app stays iOS 16; iOS 16 phones just don't offer the widgets). Its version comes from Flutter through `MomentumWidgets/Widgets.xcconfig`. The app embeds it in "Embed Foundation Extensions", placed before Flutter's "Thin Binary" phase (after it, the build has a cycle). **App Group** `group.com.paulblake.momentum` on both targets, which needs a team that can sign App Groups (the paid account).
+**Xcode:** target `MomentumWidgets`, bundle id `com.paulblake.momentum.widgets`, iOS 17+, the same as the app since 2026-10-20 (until then the app ran on iOS 16, which didn't offer the widgets). Its version comes from Flutter through `MomentumWidgets/Widgets.xcconfig`. The app embeds it in "Embed Foundation Extensions", placed before Flutter's "Thin Binary" phase (after it, the build has a cycle). **App Group** `group.com.paulblake.momentum` on both targets, which needs a team that can sign App Groups (the paid account).
 
 ## Testing
 

@@ -24,7 +24,7 @@ class FloatingTab {
 /// (which scrolls under it, blurred). The Habits tab doubles as the app's
 /// "+": selected, it becomes a small amber orb, and a tap adds a habit.
 /// Built by hand rather than with CupertinoTabBar, which can't float; it
-/// works the same on iOS 16 and later.
+/// works the same on iOS 17 and later.
 class FloatingTabBar extends StatelessWidget {
   /// The bar's height (labels are capped at [maxLabelScale], as iOS caps tab
   /// bar labels, so it never grows).
