@@ -32,6 +32,7 @@ import '../presentation/widgets/momentum_ring.dart';
 import 'package:clock/clock.dart';
 import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_anchor.dart';
+import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/tour_events.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -209,12 +210,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             habitProvider.habits.where((h) => h.isDueOn(clock.now())).toList()),
                         selectedId: categoryProvider.selectedCategory?.id,
                         onTap: categoryProvider.toggleCategory,
-                        onLongPress: () {
-                          HapticFeedback.mediumImpact();
-                          Navigator.of(context).push(
-                            CupertinoPageRoute(builder: (_) => const CategoriesScreen()),
-                          );
-                        },
+                        onLongPress: _arrange,
                       ),
                     ),
                     if (filteredHabits.isEmpty)
@@ -353,6 +349,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 onHold: () => _hold(habitProvider, habit),
                 holdUndo: _holdUndos[habit.id],
                 onFreeze: () => _toggleFreeze(habitProvider, habit),
+                onArrange: () => _arrange(habit: habit),
               ),
           ],
         ),
@@ -487,6 +484,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   /// The habit's page, in this tab (so the tab bar steps aside).
+  /// Holding the rings, or a card (that habit shown on Arrange). Not from a
+  /// card during a tour, whose steps hold rings, not cards.
+  void _arrange({Habit? habit}) {
+    if (habit != null && (TourController.maybeOf(context)?.isRunning ?? false)) return;
+    HapticFeedback.mediumImpact();
+    Navigator.of(context).push(
+      CupertinoPageRoute(builder: (_) => CategoriesScreen(showHabitId: habit?.id)),
+    );
+  }
+
   void _openHabit(Habit habit) {
     Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));
   }

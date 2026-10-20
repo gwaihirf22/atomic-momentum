@@ -23,7 +23,10 @@ import '../presentation/widgets/settings_list.dart';
 /// restore). With "Group by category" on, habits follow their category's
 /// place and move within it; off, they go in any order.
 class CategoriesScreen extends StatelessWidget {
-  const CategoriesScreen({Key? key}) : super(key: key);
+  /// A habit held on the Habits screen: scrolled to and briefly tinted.
+  final String? showHabitId;
+
+  const CategoriesScreen({Key? key, this.showHabitId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +55,8 @@ class CategoriesScreen extends StatelessWidget {
             )
           : AppBar(title: const Text('Arrange'), actions: [addButton]) as PreferredSizeWidget,
       body: CustomScrollView(
+        // Every row built, so the habit asked for can be scrolled to
+        cacheExtent: 4000,
         slivers: [
           SliverToBoxAdapter(
             child: SettingsSection(
@@ -71,12 +76,12 @@ class CategoriesScreen extends StatelessWidget {
             ),
           ),
           if (grouped)
-            _GroupedList(categories: categories, habits: habits)
+            _GroupedList(categories: categories, habits: habits, showHabitId: showHabitId)
           else ...[
             const SliverToBoxAdapter(child: SectionHeader('Categories')),
             _CategoryList(categories: categories, habits: habits),
             const SliverToBoxAdapter(child: SectionHeader('Habits')),
-            _HabitList(habits: habits),
+            _HabitList(habits: habits, showHabitId: showHabitId),
           ],
           SliverToBoxAdapter(child: _Footer(atLimit: atLimit, habits: habits)),
         ],
@@ -98,8 +103,9 @@ Future<void> _moveCategory(BuildContext context, int oldIndex, int newIndex) asy
 class _GroupedList extends StatefulWidget {
   final List<Category> categories;
   final List<Habit> habits;
+  final String? showHabitId;
 
-  const _GroupedList({required this.categories, required this.habits});
+  const _GroupedList({required this.categories, required this.habits, this.showHabitId});
 
   @override
   State<_GroupedList> createState() => _GroupedListState();
@@ -247,6 +253,7 @@ class _GroupedListState extends State<_GroupedList> {
               habit: habit,
               index: i,
               indented: true,
+              flash: habit.id == widget.showHabitId,
               canMoveUp: at > 0,
               canMoveDown: at < group.length - 1,
               onMove: (by) => _moveWithin(context, habit, group[at + by]),
@@ -343,8 +350,9 @@ class _CategoryList extends StatelessWidget {
 /// Not grouped: every habit, in any order.
 class _HabitList extends StatelessWidget {
   final List<Habit> habits;
+  final String? showHabitId;
 
-  const _HabitList({required this.habits});
+  const _HabitList({required this.habits, this.showHabitId});
 
   @override
   Widget build(BuildContext context) {
@@ -358,6 +366,7 @@ class _HabitList extends StatelessWidget {
         key: Key('arrangeHabit_${habits[i].id}'),
         habit: habits[i],
         index: i,
+        flash: habits[i].id == showHabitId,
         canMoveUp: i > 0,
         canMoveDown: i < habits.length - 1,
         onMove: (by) => provider.moveHabit(habits[i].id, i + by),
@@ -451,6 +460,39 @@ class _WithinCategory extends DragBoundaryDelegate<Rect> {
     _atEdge = atEdge;
     return Rect.fromLTWH(dragged.left, y, dragged.width, dragged.height);
   }
+}
+
+/// The habit held on the Habits screen: scrolled into view, tinted in its
+/// colour, fading to the list's.
+class _Flash extends StatefulWidget {
+  final Color from;
+  final Color to;
+  final Widget Function(Color color) builder;
+
+  const _Flash({required this.from, required this.to, required this.builder});
+
+  @override
+  State<_Flash> createState() => _FlashState();
+}
+
+class _FlashState extends State<_Flash> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Scrollable.ensureVisible(context, alignment: 0.4, duration: _foldDuration(context) * 2, curve: _foldCurve);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1, end: 0),
+        duration: const Duration(milliseconds: 1800),
+        curve: Curves.easeIn,
+        builder: (context, t, _) => widget.builder(Color.lerp(widget.to, widget.from, t)!),
+      );
 }
 
 /// Rows outside a dragged habit's category, faded back.
@@ -562,6 +604,9 @@ class _HabitRow extends StatelessWidget {
   final Habit habit;
   final int index;
   final bool indented;
+
+  /// The habit held on the Habits screen.
+  final bool flash;
   final bool canMoveUp;
   final bool canMoveDown;
   final void Function(int by) onMove;
@@ -572,6 +617,7 @@ class _HabitRow extends StatelessWidget {
     required this.habit,
     required this.index,
     this.indented = false,
+    this.flash = false,
     required this.canMoveUp,
     required this.canMoveDown,
     required this.onMove,
@@ -582,10 +628,20 @@ class _HabitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final category = context.read<CategoryProvider>().resolve(habit.categoryId);
+    if (!flash) return _row(context, category, palette.background);
+    return _Flash(
+      from: palette.tint(palette.habitColor(habit.color.color), alpha: 0.22),
+      to: palette.background,
+      builder: (color) => _row(context, category, color),
+    );
+  }
+
+  Widget _row(BuildContext context, Category category, Color color) {
+    final palette = AppPalette.of(context);
     return Semantics(
       customSemanticsActions: _moveActions(up: canMoveUp, down: canMoveDown, onMove: onMove),
       child: Material(
-        color: palette.background,
+        color: color,
         child: ListTile(
           contentPadding: EdgeInsets.only(left: indented ? 40 : 16, right: 8),
           leading: Icon(habitIcon(habit, category), color: palette.habitColor(habit.color.color), size: 22),

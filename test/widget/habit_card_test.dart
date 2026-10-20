@@ -21,6 +21,7 @@ import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
+import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/presentation/widgets/hold_undo_strip.dart';
@@ -484,6 +485,42 @@ void main() {
         .toSet();
     expect(labels, containsAll(['Edit', 'Delete']));
     handle.dispose();
+  });
+
+  group('holding the card', () {
+    testWidgets('opens Arrange, with that habit in view and tinted', (tester) async {
+      await pumpHome(tester);
+      await tester.longPress(find.descendant(of: card(), matching: find.text('Drink Water')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoriesScreen), findsOneWidget);
+      expect(find.text('Arrange'), findsOneWidget);
+      expect(find.byKey(Key('arrangeHabit_$waterId')).hitTestable(), findsOneWidget);
+    });
+
+    testWidgets('the ring keeps its own hold, and + and − never open Arrange', (tester) async {
+      await pumpHome(tester);
+      await tester.longPress(find.byKey(Key('habitIcon_$waterId')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoriesScreen), findsNothing);
+      expect(habitProvider.habits.single.progress, 3, reason: 'the hold finished it');
+
+      final plus = find.byKey(Key('incrementHabit_$waterId'));
+      await tester.longPress(plus);
+      await tester.pumpAndSettle();
+      // Just right of +, at the card's edge
+      await tester.longPressAt(Offset(tester.getRect(card()).right - 3, tester.getCenter(plus).dy));
+      await tester.pumpAndSettle();
+      expect(find.byType(CategoriesScreen), findsNothing);
+    });
+
+    testWidgets('VoiceOver gets "Arrange habits"', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpHome(tester);
+      final data = tester.getSemantics(card()).getSemanticsData();
+      final labels = data.customSemanticsActionIds!.map((id) => CustomSemanticsAction.getAction(id)!.label);
+      expect(labels, contains('Arrange habits'));
+      handle.dispose();
+    });
   });
 
   testWidgets('the Edit Habit screen has a Delete Habit button at the bottom', (tester) async {

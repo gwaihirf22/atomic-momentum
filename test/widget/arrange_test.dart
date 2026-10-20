@@ -37,8 +37,8 @@ void main() {
 
   tearDown(resetDependencies);
 
-  Future<void> pump(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(400, 2400);
+  Future<void> pump(WidgetTester tester, {String? showHabitId, double height = 2400}) async {
+    tester.view.physicalSize = Size(400, height);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MultiProvider(
@@ -48,7 +48,7 @@ void main() {
         ChangeNotifierProvider<CategoryProvider>.value(value: categories),
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
       ],
-      child: MaterialApp(theme: ThemeData(platform: TargetPlatform.iOS), home: const CategoriesScreen()),
+      child: MaterialApp(theme: ThemeData(platform: TargetPlatform.iOS), home: CategoriesScreen(showHabitId: showHabitId)),
     ));
     await tester.pumpAndSettle();
   }
@@ -83,6 +83,15 @@ void main() {
     };
     expect(top['Water']! < top['Gym']! && top['Gym']! < top['Pray']! && top['Pray']! < top['Read']!, isTrue);
     expect(tester.getTopLeft(find.byKey(const Key('categoryRow_spirit'))).dy, lessThan(top['Pray']!));
+  });
+
+  testWidgets('opened from a held habit, it scrolls to that habit', (tester) async {
+    for (var i = 1; i <= 16; i++) {
+      await habits.createHabit(
+          CreateHabitParams(name: 'Stretch $i', target: 1, color: HabitColor.green, categoryId: BuiltInCategoryIds.social));
+    }
+    await pump(tester, showHabitId: id('Stretch 16'), height: 700);
+    expect(find.byKey(Key('arrangeHabit_${id('Stretch 16')}')).hitTestable(), findsOneWidget);
   });
 
   testWidgets('dragging a category moves its habits with it', (tester) async {

@@ -75,8 +75,8 @@ abstract final class Tours {
       ),
       TourStep(
         anchor: TourAnchorId.categoryRings,
-        text: 'Rings group your habits by category. Tap one to see only those; hold one to arrange '
-            'categories and habits.',
+        text: 'Rings group your habits by category. Tap one to see only those. Hold a ring, or a card, '
+            'to arrange categories and habits.',
         before: [CloseSwipes()],
       ),
       TourStep(

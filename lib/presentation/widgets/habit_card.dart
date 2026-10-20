@@ -36,12 +36,13 @@ class HabitCard extends StatelessWidget {
   static bool useTwoRows(BuildContext context, double cardWidth) =>
       cardWidth < twoRowCardWidth || MediaQuery.textScalerOf(context).scale(1) > 1.15;
 
-  /// The area around the stepper catches every tap, so a near miss or a
-  /// tap on a greyed-out button never opens Edit.
+  /// The area around the stepper catches every tap and hold, so a near miss
+  /// or a tap on a greyed-out button never opens the habit or Arrange.
   static Widget guardStepper(Widget child) => GestureDetector(
         behavior: HitTestBehavior.opaque,
         excludeFromSemantics: true,
         onTap: () {},
+        onLongPress: () {},
         child: child,
       );
 
@@ -70,6 +71,9 @@ class HabitCard extends StatelessWidget {
   /// Freezes (or unfreezes) today, from the swipe actions; null: no Freeze.
   final VoidCallback? onFreeze;
 
+  /// Holding the card (anywhere but its ring and buttons): Arrange.
+  final VoidCallback? onArrange;
+
   const HabitCard({
     Key? key,
     required this.habit,
@@ -83,6 +87,7 @@ class HabitCard extends StatelessWidget {
     this.onHold,
     this.holdUndo,
     this.onFreeze,
+    this.onArrange,
   }) : super(key: key);
 
   // Never locked while saving: taps show at once and save in the background
@@ -298,6 +303,7 @@ class HabitCard extends StatelessWidget {
                 CustomSemanticsAction(label: habit.isFrozenOn(now) ? 'Unfreeze today' : 'Freeze today'): onFreeze!,
               if (showTwoMinute && onSetTwoMinute != null && !habit.isTwoMinuteOn(now))
                 const CustomSemanticsAction(label: 'Did the two-minute version'): () => onSetTwoMinute!(true),
+              if (onArrange != null) const CustomSemanticsAction(label: 'Arrange habits'): onArrange!,
             },
             child: Material(
               key: Key('habitCard_${habit.id}'),
@@ -317,6 +323,8 @@ class HabitCard extends StatelessWidget {
               child: Stack(children: [
                 InkWell(
                 onTap: onOpen ?? onEdit,
+                // The ring's own hold comes first
+                onLongPress: onArrange,
                 child: Padding(
                   // Right and vertical padding live inside the rows, so the
                   // stepper's tap guard reaches the card's edges
