@@ -425,6 +425,14 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () => context.read<WorldController>().enterDemo(),
               ),
               SettingsTile(
+                tileKey: const Key('devPlayTour'),
+                icon: CupertinoIcons.play_fill,
+                iconColor: HabitColor.blueGrey.color,
+                title: 'Play a tour',
+                subtitle: 'Every tour, from the start (also in Help → Tours)',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ToursScreen())),
+              ),
+              SettingsTile(
                 tileKey: const Key('tourStylePreview'),
                 icon: CupertinoIcons.scope,
                 iconColor: HabitColor.blueGrey.color,

@@ -199,9 +199,10 @@ abstract final class Guides {
             tab: AppTab.habits,
             highlight: TourAnchorId.categoryRings,
             height: 300,
-            alt: 'The category rings on Habits',
+            alt: 'The categories on Habits',
           ),
-          "Hold a category ring, or a habit's card, to open Arrange. Settings → Arrange gets there too.",
+          "Hold a category at the top of Habits, or a habit's name, to open Arrange. Settings → Arrange gets "
+          'there too.',
         ),
         GuideCard(
           HowToScene(
@@ -224,6 +225,16 @@ abstract final class Guides {
           ),
           'Turn off Group by category to put habits in any order. Habits, Calendar and your widgets all '
           'follow it.',
+        ),
+        GuideCard(
+          HowToScene(
+            tab: AppTab.habits,
+            arrange: true,
+            highlight: TourAnchorId.arrangeAddCategory,
+            height: 260,
+            alt: 'The add category button',
+          ),
+          'Tap + to add a category of your own, with a name, a colour and an icon. Tap a category to change it.',
         ),
       ],
     ),

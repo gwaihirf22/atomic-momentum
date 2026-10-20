@@ -22,7 +22,7 @@ import '../presentation/tour/tour_anchor.dart';
 import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/world_scope.dart';
 
-/// Arrange (holding the category rings, or Settings → Habits): the order of
+/// Arrange (holding a category or a habit's card on Habits, or Settings): the order of
 /// categories and habits, and managing categories (add, edit, delete,
 /// restore). With "Group by category" on, habits follow their category's
 /// place and move within it; off, they go in any order.

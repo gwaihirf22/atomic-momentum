@@ -228,7 +228,7 @@ class _CategoryRing extends StatelessWidget {
           ? '${category.name}, no habits'
           : '${category.name}, $percent percent, $completed of $total habits complete',
       excludeSemantics: true,
-      onLongPressHint: onLongPress != null ? 'Manage categories' : null,
+      onLongPressHint: onLongPress != null ? 'Arrange' : null,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {

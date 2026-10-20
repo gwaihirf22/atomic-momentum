@@ -75,8 +75,8 @@ abstract final class Tours {
       ),
       TourStep(
         anchor: TourAnchorId.categoryRings,
-        text: 'Rings group your habits by category. Tap one to see only those. Hold a ring, or a card, '
-            'to arrange categories and habits.',
+        text: "Your categories. Tap one to see only its habits. Hold one, or a habit's name, to arrange "
+            'categories and habits.',
         before: [CloseSwipes()],
       ),
       TourStep(
@@ -255,7 +255,13 @@ abstract final class Tours {
       ),
       TourStep(
         anchor: TourAnchorId.arrangeCategory,
-        text: 'Drag a category by its handle: its habits fold into it and move with it.',
+        text: 'Drag a category by its handle: its habits fold into it and move with it. Tap one to rename '
+            'it or change its colour.',
+        touchable: false,
+      ),
+      TourStep(
+        anchor: TourAnchorId.arrangeAddCategory,
+        text: 'Add a category of your own: a name, a colour and an icon.',
         touchable: false,
       ),
       TourStep(
@@ -264,8 +270,8 @@ abstract final class Tours {
         touchable: false,
       ),
       TourStep(
-        text: 'Habits, Calendar and your widgets follow this order. Come back any time: hold a category ring, '
-            "or a habit's card.",
+        text: 'Habits, Calendar and your widgets follow this order. Come back any time: hold a category on '
+            "Habits, or a habit's name.",
       ),
     ],
   );
