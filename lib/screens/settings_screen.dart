@@ -9,6 +9,7 @@ import '../core/services/app_icon_service.dart';
 import '../core/services/support_link.dart';
 import '../core/services/notification_service.dart';
 import '../domain/entities/habit_color.dart';
+import '../presentation/tour/tour_controller.dart';
 import '../domain/entities/habit_notify.dart';
 import '../domain/entities/quiet_hours.dart';
 import '../domain/entities/quote.dart';
@@ -79,6 +80,7 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: 'Short guided looks at each part of the app',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ToursScreen())),
               ),
+              const _ReplayToursTile(),
             ],
           ),
         SettingsSection(
@@ -585,6 +587,36 @@ class _SupportSectionState extends State<_SupportSection> {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Help → "Replay tours": the next launch starts over, from the welcome, as
+/// on a new phone (every tour comes back). Turns itself off once it has.
+class _ReplayToursTile extends StatefulWidget {
+  const _ReplayToursTile();
+
+  @override
+  State<_ReplayToursTile> createState() => _ReplayToursTileState();
+}
+
+class _ReplayToursTileState extends State<_ReplayToursTile> {
+  @override
+  Widget build(BuildContext context) {
+    // The person's own, through the tours (none without them)
+    final store = TourController.maybeOf(context)?.store;
+    if (store == null) return const SizedBox.shrink();
+    return SettingsSwitchTile(
+      tileKey: const Key('replayTours'),
+      icon: CupertinoIcons.arrow_counterclockwise_circle_fill,
+      iconColor: HabitColor.orange.color,
+      title: 'Replay tours',
+      subtitle: 'From the welcome, the next time you open Momentum',
+      value: store.replayNextLaunch,
+      onChanged: (on) async {
+        await store.setReplayNextLaunch(on);
+        if (mounted) setState(() {});
+      },
     );
   }
 }

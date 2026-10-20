@@ -28,6 +28,15 @@ enum TourStart {
 
   /// Decided from what's stored: tours never started, with or without
   /// habits. A launch from a notification tap goes straight to the habit.
+  /// A launch's start: as [of] decides, unless Settings → Help → "Replay
+  /// tours" asked for this launch to start over, from the welcome (every
+  /// tour seen is forgotten). Not on a launch from a notification tap,
+  /// which keeps the ask for the next.
+  static Future<TourStart> forLaunch(SharedPreferences prefs, {bool fromNotification = false}) async {
+    if (!fromNotification && await TourStore(prefs).consumeReplay()) return firstRun;
+    return of(prefs, fromNotification: fromNotification);
+  }
+
   static TourStart of(SharedPreferences prefs, {bool fromNotification = false}) {
     if (fromNotification || prefs.containsKey(TourStore.key)) return none;
     final habits = prefs.getString(SharedPreferencesDataSource.habitsKey);
@@ -62,6 +71,22 @@ class TourStore {
 
   /// "Show tours again".
   Future<void> reset() => _prefs.setStringList(key, const []);
+
+  /// Settings → Help → "Replay tours": the next launch starts over.
+  static const replayKey = 'tours_replay_v1';
+
+  bool get replayNextLaunch => _prefs.getBool(replayKey) ?? false;
+
+  Future<void> setReplayNextLaunch(bool on) => on ? _prefs.setBool(replayKey, true) : _prefs.remove(replayKey);
+
+  /// Whether this launch was asked to start over; if so, forgets every tour
+  /// seen and the ask.
+  Future<bool> consumeReplay() async {
+    if (!replayNextLaunch) return false;
+    await _prefs.remove(replayKey);
+    await reset();
+    return true;
+  }
 }
 
 /// Runs one tour at a time: switches to its world and tab, makes each step

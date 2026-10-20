@@ -75,6 +75,42 @@ void main() {
       SharedPreferences.setMockInitialValues({TourStore.key: <String>[]});
       expect(TourStart.of(await SharedPreferences.getInstance()), TourStart.none);
     });
+
+    test('"Replay tours" starts the next launch over, from the welcome, once', () async {
+      SharedPreferences.setMockInitialValues({
+        SharedPreferencesDataSource.habitsKey: '[{"id":"x"}]',
+        TourStore.key: ['calendar', 'habits', 'insights'],
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final store = TourStore(prefs);
+      expect(await TourStart.forLaunch(prefs), TourStart.none);
+      await store.setReplayNextLaunch(true);
+      // A launch from a notification goes to the habit, and keeps the ask
+      expect(await TourStart.forLaunch(prefs, fromNotification: true), TourStart.none);
+      expect(store.replayNextLaunch, isTrue);
+      // The next: the welcome and the Habits tour, though there are habits, and every tour comes back
+      expect(await TourStart.forLaunch(prefs), TourStart.firstRun);
+      expect(store.seen, isEmpty);
+      expect(store.replayNextLaunch, isFalse, reason: 'the switch is off again');
+      expect(await TourStart.forLaunch(prefs), TourStart.none, reason: 'once');
+    });
+
+    testWidgets('the switch is in Settings → Help', (tester) async {
+      // Settings' own tour seen, so it doesn't cover the switch
+      await setUpWith({TourStore.key: ['habits', 'settings']});
+      await tester.pumpWidget(MomentumApp(worlds: worlds));
+      await settle(tester);
+      await tester.tap(find.byKey(const Key('tab_settings')));
+      await settle(tester);
+      final tile = find.byKey(const Key('replayTours'));
+      expect(tile, findsOneWidget);
+      await tester.tap(tile);
+      await settle(tester);
+      expect(TourStore(get<SharedPreferences>()).replayNextLaunch, isTrue);
+      await tester.tap(tile);
+      await settle(tester);
+      expect(TourStore(get<SharedPreferences>()).replayNextLaunch, isFalse);
+    });
   });
 
   testWidgets('the first launch: the Habits tour, every step finding its target, then permission', (tester) async {
