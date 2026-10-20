@@ -84,7 +84,9 @@ void main() {
 
     test('has the example habits and the person\'s settings, not their habits', () async {
       final world = await withClock(Clock.fixed(now), () => DemoWorld.create(seed, settingsFrom: get<SharedPreferences>()));
-      expect(world.habits.habits.map((h) => h.name), DemoPersona.names);
+      expect(world.habits.habits.map((h) => h.name), unorderedEquals(DemoPersona.names));
+      // Grouped by category, in the categories' order (Body first)
+      expect(world.habits.habits.first.categoryId, 'body');
       expect(world.settings.weekStartOverride, DateTime.sunday);
       expect(world.categories.categories, isNotEmpty);
       for (final h in world.habits.habits) {

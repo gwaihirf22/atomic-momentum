@@ -21,6 +21,7 @@ import '../services/achievement_store.dart';
 import '../services/freeze_bank.dart';
 import 'demo_persona.dart';
 import 'memory_prefs.dart';
+import '../services/habit_order.dart';
 
 /// The example habits' history up to a moment, as stored: built once a day
 /// (off the main thread in the app) and kept, so each tour and each visit
@@ -99,6 +100,8 @@ class DemoWorld {
     final categoryRepository = CategoryRepositoryImpl(prefs);
     final quoteRepository = QuoteRepositoryImpl(prefs);
     final freezes = FreezeBank(prefs);
+    final categories = CategoryProvider(categoryRepository, ManageCategoriesUseCase(categoryRepository, repository));
+    await categories.load();
     final habits = HabitProvider(
       getHabitsUseCase: GetHabitsUseCase(repository),
       createHabitUseCase: CreateHabitUseCase(repository),
@@ -106,12 +109,12 @@ class DemoWorld {
       deleteHabitUseCase: DeleteHabitUseCase(repository),
       categoryRepository: categoryRepository,
       freezeBank: freezes,
+      habitOrder: HabitOrder(prefs),
+      categories: categories,
     );
-    final categories = CategoryProvider(categoryRepository, ManageCategoriesUseCase(categoryRepository, repository));
     final quotes = QuoteProvider(quoteRepository, ManageQuotesUseCase(quoteRepository));
     final settings = SettingsProvider(prefs);
     await habits.loadHabits();
-    await categories.load();
     categories.updateAvailableCategories(habits.habits);
     await quotes.load();
     // Example habits never offer to link Health

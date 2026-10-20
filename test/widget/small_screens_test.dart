@@ -406,7 +406,8 @@ void main() {
           color: HabitColor.green,
           categoryId: BuiltInCategoryIds.body,
         ));
-        await pump(tester, HabitDetailScreen(habitId: habits.habits.last.id), width: width, scale: scale);
+        final walk = habits.habits.firstWhere((h) => h.name.startsWith('Walk around'));
+        await pump(tester, HabitDetailScreen(habitId: walk.id), width: width, scale: scale);
         await tester.scrollUntilVisible(find.byKey(const Key('detailHealthOffer')), 300,
             scrollable: find.byType(Scrollable).first);
         expectNothingCutOff(tester, 'Health offer at $setting');

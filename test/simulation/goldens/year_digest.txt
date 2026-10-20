@@ -16,8 +16,8 @@
   earned: 1 day within your limit (Social media)
   earned: Clean sweep *
   earned: 7 days (Drink water) *
-  earned: 7 days (Spanish)
   earned: 7 days (Read)
+  earned: 7 days (Spanish)
   earned: Weekend warrior
   earned: 7 days without smoking (Smoking) *
   earned: 7 days within your limit (Social media)

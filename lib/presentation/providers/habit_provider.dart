@@ -19,6 +19,10 @@ import '../../domain/entities/reminder_settings.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:clock/clock.dart';
 import 'package:intl/intl.dart' show DateFormat, NumberFormat;
+import 'package:flutter/foundation.dart' show mapEquals;
+import '../../core/services/habit_order.dart';
+import '../../domain/services/habit_arrangement.dart';
+import 'category_provider.dart';
 
 enum HabitProviderState {
   initial,
@@ -62,7 +66,11 @@ class HabitProvider extends ChangeNotifier {
     CategoryRepository? categoryRepository,
     HealthSyncService? healthSync,
     FreezeBank? freezeBank,
-  })  : _streakWarnings = streakWarningService,
+    HabitOrder? habitOrder,
+    CategoryProvider? categories,
+  })  : _order = habitOrder,
+        _categories = categories,
+        _streakWarnings = streakWarningService,
         _freezes = freezeBank,
         _health = healthSync,
         _reminders = reminderService,
@@ -70,7 +78,69 @@ class HabitProvider extends ChangeNotifier {
         _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
         _updateHabitUseCase = updateHabitUseCase,
-        _deleteHabitUseCase = deleteHabitUseCase;
+        _deleteHabitUseCase = deleteHabitUseCase {
+    _categories?.addListener(_categoriesChanged);
+    _ranks = _ranksOf(_categories);
+  }
+
+  /// The person's order for their habits (Arrange); none in some tests.
+  final HabitOrder? _order;
+
+  /// The categories, whose order habits follow when grouped.
+  final CategoryProvider? _categories;
+  Map<String, int> _ranks = const {};
+
+  static Map<String, int> _ranksOf(CategoryProvider? categories) =>
+      {for (final c in categories?.categories ?? const <Category>[]) c.id: c.sortOrder};
+
+  /// Categories reordered, added or deleted: habits follow, when grouped.
+  void _categoriesChanged() {
+    final ranks = _ranksOf(_categories);
+    if (mapEquals(ranks, _ranks)) return;
+    _ranks = ranks;
+    _arrange();
+    notifyListeners();
+  }
+
+  /// Puts [_habits] in the person's order (see [HabitArrangement]).
+  void _arrange() {
+    _habits = HabitArrangement.arrange(
+      _habits,
+      order: _order?.ids ?? const [],
+      categoryRanks: _ranks,
+      grouped: groupByCategory,
+    );
+  }
+
+  /// Habits follow their category's order (Arrange's switch).
+  bool get groupByCategory => _order?.groupByCategory ?? true;
+
+  /// Arrange's switch. Turning it off keeps the order as shown, so nothing
+  /// moves until the person moves it.
+  Future<void> setGroupByCategory(bool grouped) async {
+    final order = _order;
+    if (order == null || grouped == groupByCategory) return;
+    if (!grouped) await order.setIds([for (final h in _habits) h.id]);
+    await order.setGroupByCategory(grouped);
+    _arrange();
+    notifyListeners();
+  }
+
+  /// Moves a habit to [index] of the list as shown (Arrange). Only the order
+  /// is saved; the habits themselves don't change.
+  Future<void> moveHabit(String habitId, int index) async {
+    final order = _order;
+    if (order == null) return;
+    await order.setIds(HabitArrangement.move(_habits, habitId, index));
+    _arrange();
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _categories?.removeListener(_categoriesChanged);
+    super.dispose();
+  }
 
   // State
   HabitProviderState _state = HabitProviderState.initial;
@@ -121,6 +191,7 @@ class HabitProvider extends ChangeNotifier {
 
       final habits = refreshed ?? await _getHabitsUseCase();
       _habits = habits;
+      _arrange();
       
       // Seed example habits into empty storage (development convenience)
       if (seedDefaultHabit && _habits.isEmpty) {
@@ -154,7 +225,7 @@ class HabitProvider extends ChangeNotifier {
       await _streakWarnings?.sync(habit);
       await _reminders?.syncAll(_habits);
 
-      _sortHabits();
+      _arrange();
       notifyListeners();
       
       return true;
@@ -633,8 +704,15 @@ class HabitProvider extends ChangeNotifier {
     try {
       _setOperationInProgress(true);
       
+      final before = getHabitById(habitId);
       final updatedHabit = await _updateHabitUseCase.updateDetails(habitId, params);
       _updateHabitInList(updatedHabit);
+      // A new category: to the end of that category's habits
+      if (before != null && before.categoryId != updatedHabit.categoryId && _order != null) {
+        await _order.setIds([for (final h in _habits) if (h.id != habitId) h.id, habitId]);
+        _arrange();
+        notifyListeners();
+      }
       await _reminders?.syncAll(_habits);
 
       return true;
@@ -656,6 +734,8 @@ class HabitProvider extends ChangeNotifier {
       
       await _deleteHabitUseCase(habitId);
       _habits.removeWhere((habit) => habit.id == habitId);
+      final order = _order;
+      if (order != null && order.ids.contains(habitId)) await order.setIds([...order.ids]..remove(habitId));
       await _reminders?.syncAll(_habits);
 
       notifyListeners();
@@ -736,16 +816,6 @@ class HabitProvider extends ChangeNotifier {
     _streakWarnings?.sync(updatedHabit);
     // Finishing a habit drops its remaining reminders for the period
     _reminders?.syncAll(_habits);
-  }
-
-  void _sortHabits() {
-    _habits.sort((a, b) {
-      // Sort by category first, then by name
-      final categoryComparison = a.categoryId.compareTo(b.categoryId);
-      if (categoryComparison != 0) return categoryComparison;
-      
-      return a.name.compareTo(b.name);
-    });
   }
 
   // One example per category, mixing frequencies, for development and testing

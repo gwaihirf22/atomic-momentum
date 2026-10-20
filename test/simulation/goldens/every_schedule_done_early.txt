@@ -1,62 +1,62 @@
 Mon Sep 28 07:00  created    Daily, Mon Wed Fri, Every 2 days, Every 3 days, Weekly, Every 2 weeks, Every 3 weeks, Monthly 15th, Monthly 31st, Lifetime
-Mon Sep 28 08:00  done       Daily, Every 2 days, Every 2 weeks, Every 3 days, Every 3 weeks, Lifetime, Mon Wed Fri, Monthly 15th, Monthly 31st, Weekly
+Mon Sep 28 08:00  done       Daily, Mon Wed Fri, Every 2 days, Every 3 days, Weekly, Every 2 weeks, Every 3 weeks, Monthly 15th, Monthly 31st, Lifetime
 Mon Sep 28 09:00  REMINDER   Lifetime: 1 of 20 pages so far
 Tue Sep 29 08:00  done       Daily, Lifetime
 Tue Sep 29 09:00  REMINDER   Lifetime: 2 of 20 pages so far
-Wed Sep 30 08:00  done       Daily, Every 2 days, Lifetime, Mon Wed Fri, Monthly 31st
+Wed Sep 30 08:00  done       Daily, Mon Wed Fri, Every 2 days, Monthly 31st, Lifetime
 Wed Sep 30 09:00  REMINDER   Lifetime: 3 of 20 pages so far
 Thu Oct 01 08:00  done       Daily, Every 3 days, Lifetime
 Thu Oct 01 09:00  REMINDER   Lifetime: 4 of 20 pages so far
-Fri Oct 02 08:00  done       Daily, Every 2 days, Lifetime, Mon Wed Fri
+Fri Oct 02 08:00  done       Daily, Mon Wed Fri, Every 2 days, Lifetime
 Fri Oct 02 09:00  REMINDER   Lifetime: 5 of 20 pages so far
 Sat Oct 03 08:00  done       Daily, Lifetime
 Sat Oct 03 09:00  REMINDER   Lifetime: 6 of 20 pages so far
 Sun Oct 04 08:00  done       Daily, Every 2 days, Every 3 days, Lifetime
 Sun Oct 04 09:00  REMINDER   Lifetime: 7 of 20 pages so far
-Mon Oct 05 08:00  done       Daily, Lifetime, Mon Wed Fri, Weekly
+Mon Oct 05 08:00  done       Daily, Mon Wed Fri, Weekly, Lifetime
 Mon Oct 05 09:00  REMINDER   Lifetime: 8 of 20 pages so far
 Tue Oct 06 08:00  done       Daily, Every 2 days, Lifetime
 Tue Oct 06 09:00  REMINDER   Lifetime: 9 of 20 pages so far
-Wed Oct 07 08:00  done       Daily, Every 3 days, Lifetime, Mon Wed Fri
+Wed Oct 07 08:00  done       Daily, Mon Wed Fri, Every 3 days, Lifetime
 Wed Oct 07 09:00  REMINDER   Lifetime: 10 of 20 pages so far
 Thu Oct 08 08:00  done       Daily, Every 2 days, Lifetime
 Thu Oct 08 09:00  REMINDER   Lifetime: 11 of 20 pages so far
-Fri Oct 09 08:00  done       Daily, Lifetime, Mon Wed Fri
+Fri Oct 09 08:00  done       Daily, Mon Wed Fri, Lifetime
 Fri Oct 09 09:00  REMINDER   Lifetime: 12 of 20 pages so far
 Sat Oct 10 08:00  done       Daily, Every 2 days, Every 3 days, Lifetime
 Sat Oct 10 09:00  REMINDER   Lifetime: 13 of 20 pages so far
 Sun Oct 11 08:00  done       Daily, Lifetime
 Sun Oct 11 09:00  REMINDER   Lifetime: 14 of 20 pages so far
-Mon Oct 12 08:00  done       Daily, Every 2 days, Every 2 weeks, Lifetime, Mon Wed Fri, Weekly
+Mon Oct 12 08:00  done       Daily, Mon Wed Fri, Every 2 days, Weekly, Every 2 weeks, Lifetime
 Mon Oct 12 09:00  REMINDER   Lifetime: 15 of 20 pages so far
 Tue Oct 13 08:00  done       Daily, Every 3 days, Lifetime
 Tue Oct 13 09:00  REMINDER   Lifetime: 16 of 20 pages so far
-Wed Oct 14 08:00  done       Daily, Every 2 days, Lifetime, Mon Wed Fri
+Wed Oct 14 08:00  done       Daily, Mon Wed Fri, Every 2 days, Lifetime
 Wed Oct 14 09:00  REMINDER   Lifetime: 17 of 20 pages so far
-Thu Oct 15 08:00  done       Daily, Lifetime, Monthly 15th
+Thu Oct 15 08:00  done       Daily, Monthly 15th, Lifetime
 Thu Oct 15 09:00  REMINDER   Lifetime: 18 of 20 pages so far
-Fri Oct 16 08:00  done       Daily, Every 2 days, Every 3 days, Lifetime, Mon Wed Fri
+Fri Oct 16 08:00  done       Daily, Mon Wed Fri, Every 2 days, Every 3 days, Lifetime
 Fri Oct 16 09:00  REMINDER   Lifetime: 19 of 20 pages so far
 Sat Oct 17 08:00  done       Daily, Lifetime
 Sun Oct 18 08:00  done       Daily, Every 2 days
-Mon Oct 19 08:00  done       Daily, Every 3 days, Every 3 weeks, Mon Wed Fri, Weekly
+Mon Oct 19 08:00  done       Daily, Mon Wed Fri, Every 3 days, Weekly, Every 3 weeks
 Tue Oct 20 08:00  done       Daily, Every 2 days
 Wed Oct 21 08:00  done       Daily, Mon Wed Fri
 Thu Oct 22 08:00  done       Daily, Every 2 days, Every 3 days
 Fri Oct 23 08:00  done       Daily, Mon Wed Fri
 Sat Oct 24 08:00  done       Daily, Every 2 days
 Sun Oct 25 08:00  done       Daily, Every 3 days
-Mon Oct 26 08:00  done       Daily, Every 2 days, Every 2 weeks, Mon Wed Fri, Weekly
+Mon Oct 26 08:00  done       Daily, Mon Wed Fri, Every 2 days, Weekly, Every 2 weeks
 Tue Oct 27 08:00  done       Daily
-Wed Oct 28 08:00  done       Daily, Every 2 days, Every 3 days, Mon Wed Fri
+Wed Oct 28 08:00  done       Daily, Mon Wed Fri, Every 2 days, Every 3 days
 Thu Oct 29 08:00  done       Daily
-Fri Oct 30 08:00  done       Daily, Every 2 days, Mon Wed Fri
+Fri Oct 30 08:00  done       Daily, Mon Wed Fri, Every 2 days
 Sat Oct 31 08:00  done       Daily, Every 3 days, Monthly 31st
 Sun Nov 01 08:00  done       Daily, Every 2 days
 Mon Nov 02 08:00  done       Daily, Mon Wed Fri, Weekly
 Tue Nov 03 08:00  done       Daily, Every 2 days, Every 3 days
 Wed Nov 04 08:00  done       Daily, Mon Wed Fri
 Thu Nov 05 08:00  done       Daily, Every 2 days
-Fri Nov 06 08:00  done       Daily, Every 3 days, Mon Wed Fri
+Fri Nov 06 08:00  done       Daily, Mon Wed Fri, Every 3 days
 Sat Nov 07 08:00  done       Daily, Every 2 days
 Sun Nov 08 08:00  done       Daily

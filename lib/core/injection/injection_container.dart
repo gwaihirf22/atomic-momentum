@@ -43,6 +43,7 @@ import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
 import '../../domain/services/streak_warning_planner.dart';
 import '../migration/smart_reminders_migration.dart';
+import '../services/habit_order.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -89,6 +90,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<SupportLink>(() => PlatformSupportLink());
   sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
   sl.registerLazySingleton(() => FreezeBank(sl()));
+  sl.registerLazySingleton(() => HabitOrder(sl()));
   // The freeze achievements read what the bank remembers
   Achievements.freezeSource = () {
     if (!sl.isRegistered<FreezeBank>()) return (firstSpentOn: null, fundReachedOn: null);
@@ -128,6 +130,8 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
     categoryRepository: sl(),
     healthSync: sl(),
     freezeBank: sl(),
+    habitOrder: sl(),
+    categories: sl(),
   ));
   // Shared: the Categories page and the Habits screen must see the same list
   sl.registerLazySingleton(() => CategoryProvider(sl(), sl()));

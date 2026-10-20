@@ -2,28 +2,28 @@ Mon Sep 28 07:00  created    Read
 Mon Sep 28 07:05  loaded     a year of use (Loaded)
 Mon Sep 28 09:00  REMINDER   Loaded: 0 of 1 today
 Mon Sep 28 09:00  REMINDER   Read: 0 of 1 today
-Mon Sep 28 12:00  done       Loaded, Read
+Mon Sep 28 12:00  done       Read, Loaded
 Tue Sep 29 09:00  REMINDER   Loaded: 0 of 1 today
 Tue Sep 29 09:00  REMINDER   Read: 0 of 1 today
-Tue Sep 29 12:00  done       Loaded, Read
+Tue Sep 29 12:00  done       Read, Loaded
 Wed Sep 30 09:00  REMINDER   Loaded: 0 of 1 today
 Wed Sep 30 09:00  REMINDER   Read: 0 of 1 today
-Wed Sep 30 12:00  done       Loaded, Read
+Wed Sep 30 12:00  done       Read, Loaded
 Thu Oct 01 09:00  REMINDER   Loaded: 0 of 1 today
 Thu Oct 01 09:00  REMINDER   Read: 0 of 1 today
-Thu Oct 01 12:00  done       Loaded, Read
+Thu Oct 01 12:00  done       Read, Loaded
 Fri Oct 02 09:00  REMINDER   Loaded: 0 of 1 today
 Fri Oct 02 09:00  REMINDER   Read: 0 of 1 today
-Fri Oct 02 12:00  done       Loaded, Read
+Fri Oct 02 12:00  done       Read, Loaded
 Sat Oct 03 09:00  REMINDER   Loaded: 0 of 1 today
 Sat Oct 03 09:00  REMINDER   Read: 0 of 1 today
-Sat Oct 03 12:00  done       Loaded, Read
+Sat Oct 03 12:00  done       Read, Loaded
 Sun Oct 04 09:00  REMINDER   Loaded: 0 of 1 today
 Sun Oct 04 09:00  REMINDER   Read: 0 of 1 today
-Sun Oct 04 12:00  done       Loaded, Read
+Sun Oct 04 12:00  done       Read, Loaded
 Mon Oct 05 09:00  REMINDER   Loaded: 0 of 1 today
 Mon Oct 05 09:00  REMINDER   Read: 0 of 1 today
-Mon Oct 05 12:00  done       Loaded, Read
+Mon Oct 05 12:00  done       Read, Loaded
 Tue Oct 06 09:00  REMINDER   Loaded: 0 of 1 today
 Tue Oct 06 09:00  REMINDER   Read: 0 of 1 today
 Tue Oct 06 22:00  put back   my habits (Loaded is gone)
