@@ -82,7 +82,17 @@ class SettingsProvider extends ChangeNotifier {
 
   /// [deviceLocale] defaults to the device's locale; tests can pin a region.
   SettingsProvider(this._prefs, {Locale Function()? deviceLocale})
-      : _deviceLocale = deviceLocale ?? (() => WidgetsBinding.instance.platformDispatcher.locale);
+      : _deviceLocale = deviceLocale ?? _platformLocale;
+
+  /// The device's locale; straight from the platform before the app's
+  /// binding exists (a service planning notifications in a plain test).
+  static Locale _platformLocale() {
+    try {
+      return WidgetsBinding.instance.platformDispatcher.locale;
+    } on FlutterError {
+      return PlatformDispatcher.instance.locale;
+    }
+  }
 
   /// The user's choice of first weekday (DateTime.monday..sunday), or null
   /// for Automatic (follow the device's region, like iOS Calendar).

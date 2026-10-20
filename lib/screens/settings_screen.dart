@@ -214,7 +214,10 @@ class SettingsScreen extends StatelessWidget {
                       AdaptiveOption(day, _dayNames[day - 1], key: Key('weekStart_$day')),
                   ],
                 );
-                if (day != null) await settings.setWeekStart(day == 0 ? null : day);
+                if (day == null || !context.mounted) return;
+                await settings.setWeekStart(day == 0 ? null : day);
+                // The week in review comes on the week's last day
+                if (context.mounted) await context.read<HabitProvider>().resyncWeeklyReview();
               },
             ),
           ],
@@ -232,7 +235,10 @@ class SettingsScreen extends StatelessWidget {
               value: settings.defaultReminderTime.format(context),
               onTap: () async {
                 final time = await pickTimeAdaptive(context, initial: settings.defaultReminderTime);
-                if (time != null) await settings.setDefaultReminderTime(time);
+                if (time == null || !context.mounted) return;
+                await settings.setDefaultReminderTime(time);
+                // Vacation notices come at this time too
+                if (context.mounted) await context.read<HabitProvider>().resyncVacationNotices();
               },
             ),
             SettingsTile(
@@ -303,6 +309,33 @@ class SettingsScreen extends StatelessWidget {
                 await resync();
               },
             ),
+            SettingsSwitchTile(
+              tileKey: const Key('weeklyReviewSwitch'),
+              icon: CupertinoIcons.chart_bar_square_fill,
+              iconColor: HabitColor.teal.color,
+              title: 'Weekly review',
+              subtitle: "Your week's wins, on its last evening",
+              value: settings.weeklyReview,
+              onChanged: (value) async {
+                await settings.setWeeklyReview(value);
+                if (context.mounted) await context.read<HabitProvider>().resyncWeeklyReview();
+              },
+            ),
+            if (settings.weeklyReview)
+              SettingsTile(
+                tileKey: const Key('weeklyReviewTime'),
+                icon: CupertinoIcons.clock_fill,
+                iconColor: HabitColor.teal.color,
+                title: 'Review time',
+                value: settings.weeklyReviewTime.format(context),
+                onTap: () async {
+                  final time = await pickTimeAdaptive(context, initial: settings.weeklyReviewTime);
+                  if (time == null || !context.mounted) return;
+                  await settings.setWeeklyReview(true);
+                  await settings.setWeeklyReviewTime(time);
+                  if (context.mounted) await context.read<HabitProvider>().resyncWeeklyReview();
+                },
+              ),
           ],
         ),
         SettingsSection(

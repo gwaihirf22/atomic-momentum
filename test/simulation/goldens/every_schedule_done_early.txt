@@ -11,6 +11,7 @@ Fri Oct 02 08:00  done       Daily, Mon Wed Fri, Every 2 days, Lifetime
 Fri Oct 02 09:00  REMINDER   Lifetime: 5 of 20 pages so far
 Sat Oct 03 08:00  done       Daily, Lifetime
 Sat Oct 03 09:00  REMINDER   Lifetime: 6 of 20 pages so far
+Sat Oct 03 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Oct 04 08:00  done       Daily, Every 2 days, Every 3 days, Lifetime
 Sun Oct 04 09:00  REMINDER   Lifetime: 7 of 20 pages so far
 Mon Oct 05 08:00  done       Daily, Mon Wed Fri, Weekly, Lifetime
@@ -25,6 +26,7 @@ Fri Oct 09 08:00  done       Daily, Mon Wed Fri, Lifetime
 Fri Oct 09 09:00  REMINDER   Lifetime: 12 of 20 pages so far
 Sat Oct 10 08:00  done       Daily, Every 2 days, Every 3 days, Lifetime
 Sat Oct 10 09:00  REMINDER   Lifetime: 13 of 20 pages so far
+Sat Oct 10 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Oct 11 08:00  done       Daily, Lifetime
 Sun Oct 11 09:00  REMINDER   Lifetime: 14 of 20 pages so far
 Mon Oct 12 08:00  done       Daily, Mon Wed Fri, Every 2 days, Weekly, Every 2 weeks, Lifetime
@@ -38,6 +40,7 @@ Thu Oct 15 09:00  REMINDER   Lifetime: 18 of 20 pages so far
 Fri Oct 16 08:00  done       Daily, Mon Wed Fri, Every 2 days, Every 3 days, Lifetime
 Fri Oct 16 09:00  REMINDER   Lifetime: 19 of 20 pages so far
 Sat Oct 17 08:00  done       Daily, Lifetime
+Sat Oct 17 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Oct 18 08:00  done       Daily, Every 2 days
 Mon Oct 19 08:00  done       Daily, Mon Wed Fri, Every 3 days, Weekly, Every 3 weeks
 Tue Oct 20 08:00  done       Daily, Every 2 days
@@ -45,6 +48,7 @@ Wed Oct 21 08:00  done       Daily, Mon Wed Fri
 Thu Oct 22 08:00  done       Daily, Every 2 days, Every 3 days
 Fri Oct 23 08:00  done       Daily, Mon Wed Fri
 Sat Oct 24 08:00  done       Daily, Every 2 days
+Sat Oct 24 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Oct 25 08:00  done       Daily, Every 3 days
 Mon Oct 26 08:00  done       Daily, Mon Wed Fri, Every 2 days, Weekly, Every 2 weeks
 Tue Oct 27 08:00  done       Daily
@@ -52,6 +56,7 @@ Wed Oct 28 08:00  done       Daily, Mon Wed Fri, Every 2 days, Every 3 days
 Thu Oct 29 08:00  done       Daily
 Fri Oct 30 08:00  done       Daily, Mon Wed Fri, Every 2 days
 Sat Oct 31 08:00  done       Daily, Every 3 days, Monthly 31st
+Sat Oct 31 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Nov 01 08:00  done       Daily, Every 2 days
 Mon Nov 02 08:00  done       Daily, Mon Wed Fri, Weekly
 Tue Nov 03 08:00  done       Daily, Every 2 days, Every 3 days
@@ -59,4 +64,5 @@ Wed Nov 04 08:00  done       Daily, Mon Wed Fri
 Thu Nov 05 08:00  done       Daily, Every 2 days
 Fri Nov 06 08:00  done       Daily, Mon Wed Fri, Every 3 days
 Sat Nov 07 08:00  done       Daily, Every 2 days
+Sat Nov 07 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sun Nov 08 08:00  done       Daily

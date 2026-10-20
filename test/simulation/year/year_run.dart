@@ -459,7 +459,9 @@ class YearRun {
           ? 'reminders'
           : n.payload == NotificationService.vacationPayload
               ? 'vacation'
-              : ((n.title ?? '').startsWith("Don't miss twice") ? 'warnings' : 'nudges');
+              : n.payload == NotificationService.weeklyReviewPayload
+                  ? 'weekly'
+                  : ((n.title ?? '').startsWith("Don't miss twice") ? 'warnings' : 'nudges');
       _deliveredThisMonth[kind] = (_deliveredThisMonth[kind] ?? 0) + 1;
     }
   }
@@ -490,7 +492,13 @@ class YearRun {
     }
     final overall = ref.overall(at);
     digest.add('  overall momentum ${overall == null ? '-' : overall.round()}');
-    final kinds = ['reminders', 'warnings', 'nudges', if (_deliveredThisMonth.containsKey('vacation')) 'vacation'];
+    final kinds = [
+      'reminders',
+      'warnings',
+      'nudges',
+      if (_deliveredThisMonth.containsKey('vacation')) 'vacation',
+      if (_deliveredThisMonth.containsKey('weekly')) 'weekly',
+    ];
     digest.add('  notifications: ${kinds.map((k) => '${_deliveredThisMonth[k] ?? 0} $k').join(', ')}');
     // (Not which quotes: one's own quote's id comes from the clock, so the
     // turns differ by time zone; each day's quote is checked as it shows)

@@ -44,7 +44,7 @@ void main() {
   tearDown(resetDependencies);
 
   Future<void> pump(WidgetTester tester, Widget home) async {
-    tester.view.physicalSize = const Size(390, 3000);
+    tester.view.physicalSize = const Size(390, 3600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MultiProvider(

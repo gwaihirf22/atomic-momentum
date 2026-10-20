@@ -42,9 +42,11 @@ import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
 import '../services/vacation_notice_service.dart';
+import '../services/weekly_review_service.dart';
 import '../services/web_pages.dart';
 import '../../domain/services/streak_warning_planner.dart';
 import '../../domain/services/vacation_notice_planner.dart';
+import '../../domain/services/weekly_review_planner.dart';
 import '../migration/smart_reminders_migration.dart';
 import '../services/habit_order.dart';
 
@@ -115,13 +117,21 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
         // rest of iOS's 64
         reservedFor: (habits) =>
             StreakWarningPlanner.maxPending(habits, sl<SettingsProvider>().streakWarnings) +
-            (habits.any((h) => h.isOnVacation) ? VacationNoticePlanner.maxPending : 0),
+            (habits.any((h) => h.isOnVacation) ? VacationNoticePlanner.maxPending : 0) +
+            (sl<SettingsProvider>().weeklyReview ? WeeklyReviewPlanner.maxPending : 0),
         quietHours: () => sl<SettingsProvider>().quietHours,
       ));
   sl.registerLazySingleton(() => VacationNoticeService(
         scheduler: LocalNotificationVacationNoticeScheduler(),
         enabled: () => sl<SettingsProvider>().vacationNotices,
         time: () => sl<SettingsProvider>().defaultReminderTime,
+        quietHours: () => sl<SettingsProvider>().quietHours,
+      ));
+  sl.registerLazySingleton(() => WeeklyReviewService(
+        scheduler: LocalNotificationWeeklyReviewScheduler(),
+        enabled: () => sl<SettingsProvider>().weeklyReview,
+        time: () => sl<SettingsProvider>().weeklyReviewTime,
+        weekStart: () => sl<SettingsProvider>().firstDayOfWeek,
         quietHours: () => sl<SettingsProvider>().quietHours,
       ));
   // Habits that never had a reminder get smart ones, once
@@ -141,6 +151,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
     streakWarningService: sl(),
     reminderService: sl(),
     vacationNotices: sl(),
+    weeklyReview: sl(),
     categoryRepository: sl(),
     healthSync: sl(),
     freezeBank: sl(),

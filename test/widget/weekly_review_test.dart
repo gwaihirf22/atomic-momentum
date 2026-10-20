@@ -17,6 +17,7 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
+import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 
 import '../helpers/fake_sharer.dart';
@@ -144,5 +145,20 @@ void main() {
   testWidgets('with nothing tracked, no card on Insights', (tester) async {
     await pump(tester, const InsightsScreen());
     expect(find.byKey(const Key('insightsWeeklyReview')), findsNothing);
+  });
+
+  testWidgets('Settings → Notifications: the switch and the review time', (tester) async {
+    await pump(tester, const SettingsScreen());
+    final settings = get<SettingsProvider>();
+    final time = find.byKey(const Key('weeklyReviewTime'));
+    await tester.scrollUntilVisible(time, 300, scrollable: find.byType(Scrollable).first);
+    expect(find.descendant(of: time, matching: find.textContaining('6:00')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('weeklyReviewSwitch')));
+    await tester.pumpAndSettle();
+    expect(settings.weeklyReview, isFalse);
+    expect(time, findsNothing, reason: 'no time without the notification');
+    await tester.tap(find.byKey(const Key('weeklyReviewSwitch')));
+    await tester.pumpAndSettle();
+    expect(settings.weeklyReview, isTrue);
   });
 }

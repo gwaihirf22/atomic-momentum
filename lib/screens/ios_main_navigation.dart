@@ -23,6 +23,7 @@ import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
 import 'insights_screen.dart';
+import 'weekly_review_screen.dart';
 import 'inspire_screen.dart';
 import 'settings_screen.dart';
 import '../presentation/tour/tour_controller.dart';
@@ -152,6 +153,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkAchievements());
     NotificationService.focusRequests.addListener(_showHabits);
     NotificationService.vacationBackRequests.addListener(_endVacation);
+    NotificationService.weeklyReviewRequests.addListener(_showWeeklyReview);
     IOSMainNavigation.tabRequests.addListener(_showRequestedTab);
     // A notification or widget tap that launched the app arrives before this screen
     if (NotificationService.focusRequests.value != null) {
@@ -164,6 +166,38 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     if (NotificationService.vacationBackRequests.value != _vacationBackHandled) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _endVacation());
     }
+    // The week in review, tapped while the app was closed
+    if (NotificationService.weeklyReviewRequests.value != _weeklyReviewHandled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showWeeklyReview());
+    }
+  }
+
+  /// How many week-in-review taps have been acted on (counted by
+  /// [NotificationService.weeklyReviewRequests]).
+  static int _weeklyReviewHandled = 0;
+
+  /// The week in review was tapped: Insights, with the review open on it.
+  void _showWeeklyReview() {
+    final requests = NotificationService.weeklyReviewRequests.value;
+    if (requests == _weeklyReviewHandled || !mounted) return;
+    _weeklyReviewHandled = requests;
+    if (!_visible.contains(AppTab.insights)) return;
+    _endSlide();
+    Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+    _navigators[AppTab.insights]!.currentState?.popUntil((route) => route.isFirst);
+    _switchTo(AppTab.insights);
+    // A tab builds its navigator the first time it shows: open the review
+    // once it's there
+    void open([int tries = 3]) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final navigator = _navigators[AppTab.insights]!.currentState;
+          if (navigator == null) {
+            if (tries > 0) open(tries - 1);
+            return;
+          }
+          navigator.push(CupertinoPageRoute<void>(builder: (_) => const WeeklyReviewScreen()));
+        });
+    open();
   }
 
   /// How many "I'm back" taps have been acted on (they're counted by
@@ -185,6 +219,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     _habits.removeListener(_checkAchievementsSoon);
     NotificationService.focusRequests.removeListener(_showHabits);
     NotificationService.vacationBackRequests.removeListener(_endVacation);
+    NotificationService.weeklyReviewRequests.removeListener(_showWeeklyReview);
     IOSMainNavigation.tabRequests.removeListener(_showRequestedTab);
     _fadeTimer?.cancel();
     _slide.dispose();

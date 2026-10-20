@@ -28,6 +28,7 @@ Fri Oct 02 21:30  REMINDER   Journal: 0 of 1 today
 Fri Oct 02 22:00  done       Journal
 Sat Oct 03 09:00  REMINDER   Meditate: 0 of 1 today
 Sat Oct 03 09:00  REMINDER   Walk: 0 of 1 today
+Sat Oct 03 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Oct 03 19:00  done       Walk
 Sat Oct 03 21:30  REMINDER   Journal: 0 of 1 today
 Sun Oct 04 09:00  REMINDER   Meditate: 0 of 1 today
@@ -66,6 +67,7 @@ Fri Oct 09 21:30  REMINDER   Journal: 0 of 1 today
 Fri Oct 09 22:00  done       Journal
 Sat Oct 10 08:00  edit       Journal: reminder off
 Sat Oct 10 09:00  REMINDER   Meditate: 0 of 1 today
+Sat Oct 10 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Oct 10 18:30  REMINDER   Walk: 0 of 1 today
 Sat Oct 10 19:00  done       Walk
 Sat Oct 10 22:00  done       Journal
@@ -95,6 +97,7 @@ Fri Oct 16 09:00  REMINDER   Meditate: 0 of 1 today
 Fri Oct 16 22:00  done       Journal
 Sat Oct 17 08:00  settings   streak warnings off
 Sat Oct 17 09:00  REMINDER   Meditate: 0 of 1 today
+Sat Oct 17 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Oct 17 22:00  done       Journal
 Sun Oct 18 09:00  REMINDER   Meditate: 0 of 1 today
 Mon Oct 19 07:00  REMINDER   Stretch: Roll out the mat
@@ -110,6 +113,7 @@ Thu Oct 22 22:00  done       Journal
 Fri Oct 23 07:00  REMINDER   Stretch: Roll out the mat
 Fri Oct 23 22:00  done       Journal
 Sat Oct 24 08:00  settings   streak warnings on
+Sat Oct 24 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Oct 24 22:00  done       Journal
 Mon Oct 26 07:00  REMINDER   Stretch: Roll out the mat
 Mon Oct 26 19:00  done       Walk
@@ -120,6 +124,7 @@ Wed Oct 28 22:00  done       Journal
 Thu Oct 29 22:00  done       Journal
 Fri Oct 30 07:00  REMINDER   Stretch: Roll out the mat
 Fri Oct 30 22:00  done       Journal
+Sat Oct 31 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Oct 31 22:00  done       Journal
 Sun Nov 01 22:00  done       Journal
 Mon Nov 02 07:00  REMINDER   Stretch: Roll out the mat
@@ -131,5 +136,6 @@ Wed Nov 04 22:00  done       Journal
 Thu Nov 05 22:00  done       Journal
 Fri Nov 06 07:00  REMINDER   Stretch: Roll out the mat
 Fri Nov 06 22:00  done       Journal
+Sat Nov 07 18:00  WEEKLY     Your week in review: Wins, comebacks and how it went. Come take a look.
 Sat Nov 07 22:00  done       Journal
 Sun Nov 08 22:00  done       Journal

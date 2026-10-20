@@ -16,6 +16,7 @@ import '../../core/logging/log.dart';
 import '../../domain/entities/momentum.dart';
 import '../../core/services/reminder_service.dart';
 import '../../core/services/vacation_notice_service.dart';
+import '../../core/services/weekly_review_service.dart';
 import '../../domain/services/vacation_notice_planner.dart';
 import '../../domain/entities/reminder_settings.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
@@ -51,6 +52,9 @@ class HabitProvider extends ChangeNotifier {
   // Null: vacation mode sends no check-ins or welcome back
   final VacationNoticeService? _vacationNotices;
 
+  // Null: the week in review isn't announced (it still shows on Insights)
+  final WeeklyReviewService? _weeklyReview;
+
   // Used to skip sample habits whose category the user has deleted
   final CategoryRepository? _categoryRepository;
 
@@ -69,6 +73,7 @@ class HabitProvider extends ChangeNotifier {
     StreakWarningService? streakWarningService,
     ReminderService? reminderService,
     VacationNoticeService? vacationNotices,
+    WeeklyReviewService? weeklyReview,
     CategoryRepository? categoryRepository,
     HealthSyncService? healthSync,
     FreezeBank? freezeBank,
@@ -81,6 +86,7 @@ class HabitProvider extends ChangeNotifier {
         _health = healthSync,
         _reminders = reminderService,
         _vacationNotices = vacationNotices,
+        _weeklyReview = weeklyReview,
         _categoryRepository = categoryRepository,
         _getHabitsUseCase = getHabitsUseCase,
         _createHabitUseCase = createHabitUseCase,
@@ -210,6 +216,7 @@ class HabitProvider extends ChangeNotifier {
       await _streakWarnings?.syncAll(_habits, replace: true);
       await _reminders?.syncAll(_habits, replace: true);
       await _vacationNotices?.sync(vacationForNotices, replace: true);
+      await _weeklyReview?.sync(weeklyReviewInput, replace: true);
       // Habits being broken that ended a frozen day clean, while closed
       await _returnUnneededFreezes();
       // Not awaited: Health can be slow, and the list is already showing
@@ -232,6 +239,7 @@ class HabitProvider extends ChangeNotifier {
       _habits.add(habit);
       await _streakWarnings?.sync(habit);
       await _reminders?.syncAll(_habits);
+      await _weeklyReview?.sync(weeklyReviewInput);
 
       _arrange();
       notifyListeners();
@@ -754,6 +762,7 @@ class HabitProvider extends ChangeNotifier {
     // never wait on notifications
     _reminders?.syncAll(_habits);
     _vacationNotices?.sync(vacationForNotices);
+    _weeklyReview?.sync(weeklyReviewInput);
     // A frozen period kept anyway gives its freeze back
     await _returnUnneededFreezes();
     return allSaved;
@@ -797,6 +806,7 @@ class HabitProvider extends ChangeNotifier {
       final order = _order;
       if (order != null && order.ids.contains(habitId)) await order.setIds([...order.ids]..remove(habitId));
       await _reminders?.syncAll(_habits);
+      await _weeklyReview?.sync(weeklyReviewInput);
 
       notifyListeners();
       return true;
@@ -822,6 +832,7 @@ class HabitProvider extends ChangeNotifier {
       // A new day: the reminder window moves on even if nothing changed
       await _reminders?.syncAll(_habits);
       await _vacationNotices?.sync(vacationForNotices);
+      await _weeklyReview?.sync(weeklyReviewInput);
       await _returnUnneededFreezes();
     } catch (e) {
       _error = e.toString();
@@ -842,8 +853,25 @@ class HabitProvider extends ChangeNotifier {
     await _streakWarnings?.syncAll(_habits);
     // Warnings may now need more (or less) of iOS's 64, which reminders share
     await _reminders?.syncAll(_habits);
-    // Quiet hours move vacation notices too
+    // Quiet hours move vacation notices and the week in review too
     await _vacationNotices?.sync(vacationForNotices);
+    await _weeklyReview?.sync(weeklyReviewInput);
+  }
+
+  /// Re-plan the week-in-review notification, e.g. after its switch, its
+  /// time or the week start changes.
+  Future<void> resyncWeeklyReview() async => _weeklyReview?.sync(weeklyReviewInput);
+
+  /// What the week in review is planned from: when the first habit began
+  /// being tracked, and vacation mode.
+  WeeklyReviewInput get weeklyReviewInput {
+    DateTime? since;
+    for (final habit in _habits) {
+      if (!habit.schedule.isPeriodic) continue;
+      final from = habit.trackedFrom;
+      if (since == null || from.isBefore(since)) since = from;
+    }
+    return (trackedSince: since, vacation: vacationForNotices);
   }
 
   /// Re-plan vacation mode's notifications, e.g. after their switch or the

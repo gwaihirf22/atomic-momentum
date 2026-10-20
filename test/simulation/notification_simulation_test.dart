@@ -157,7 +157,8 @@ void main() {
     expectClean(phone, 'every_schedule_done_early');
     final reminders = phone.delivered.where((r) => r.isReminder && !r.title!.startsWith('Lifetime'));
     expect(reminders, isEmpty, reason: 'everything was done before 9:00');
-    expect(phone.delivered.where((r) => !r.isReminder), isEmpty, reason: 'no streak was ever at stake');
+    expect(phone.delivered.where((r) => !r.isReminder && r.payload != NotificationService.weeklyReviewPayload), isEmpty,
+        reason: 'no streak was ever at stake');
   });
 
   test('3. every schedule, done at noon on the due day: countdowns, then silence', () async {
@@ -311,6 +312,43 @@ void main() {
       expect(read.streak.current, greaterThan(0), reason: 'streaks held through every vacation');
     });
     expectClean(phone, 'vacation_notices');
+  });
+
+  test('16. the week in review: the week\'s last evening, its time, week starts, quiet hours, off and on', () async {
+    final phone = await SimulatedPhone.run(start, (phone) async {
+      await createAll(phone, [
+        habit('Read'),
+        habit('Gym', weekdays: [1, 3, 5]),
+      ]);
+      for (final day in days()) {
+        final d = day.day + (day.month == 10 ? 0 : 100);
+        await phone.checkIn(on(day, 7, 30));
+        if (d == 12) {
+          await phone.at(on(day, 8), 'settings   review at 8:30 PM', () => phone.weeklyReview(time: const TimeOfDay(hour: 20, minute: 30)));
+        }
+        if (d == 14) await phone.at(on(day, 8), 'settings   week starts Monday', () => phone.weekStart(DateTime.monday));
+        if (d == 20) {
+          await phone.at(on(day, 8), 'settings   quiet hours 8 PM to 7 AM', () => phone.quietHours(
+                const QuietHours(enabled: true, start: TimeOfDay(hour: 20, minute: 0), end: TimeOfDay(hour: 7, minute: 0)),
+              ));
+        }
+        if (d == 26) await phone.at(on(day, 8), 'settings   weekly review off', () => phone.weeklyReview(on: false));
+        if (d == 103) await phone.at(on(day, 8), 'settings   weekly review on', () => phone.weeklyReview(on: true));
+        await doHabits(phone, on(day, 12), names: ['Read', 'Gym']);
+        await phone.checkIn(on(day, 21));
+      }
+      await phone.advanceTo(end);
+    });
+    expectClean(phone, 'weekly_review');
+    // Saturdays at 6 PM (Sunday weeks), then Sundays once weeks start Monday
+    final weekly = [
+      for (final r in phone.delivered)
+        if (r.payload == NotificationService.weeklyReviewPayload) r.at,
+    ];
+    expect(weekly.first, DateTime(2026, 10, 3, 18));
+    expect(weekly, contains(DateTime(2026, 10, 18, 20, 30)));
+    expect(weekly, contains(DateTime(2026, 10, 25, 19, 45)), reason: 'out of quiet hours, the same evening');
+    expect(weekly, isNot(contains(DateTime(2026, 11, 1, 19, 45))), reason: 'turned off then');
   });
 
   test('6. custom days, messages and edits: changes take effect at once', () async {

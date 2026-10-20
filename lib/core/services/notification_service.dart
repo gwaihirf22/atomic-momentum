@@ -215,9 +215,18 @@ class NotificationService {
   /// highlights it, then clears this.
   static final focusRequests = ValueNotifier<HabitFocusRequest?>(null);
 
-  /// Turns a tapped notification's payload into a focus request.
+  /// Counts taps on a week-in-review notification: the app opens the review
+  /// on Insights when it changes.
+  static final weeklyReviewRequests = ValueNotifier<int>(0);
+
+  /// Turns a tapped notification's payload into a focus request (or the
+  /// week in review).
   @visibleForTesting
   static void handleTap(String? payload) {
+    if (payload == weeklyReviewPayload) {
+      weeklyReviewRequests.value++;
+      return;
+    }
     final habitId = habitIdFromPayload(payload);
     if (habitId != null) focusRequests.value = HabitFocusRequest(habitId);
   }
@@ -226,7 +235,11 @@ class NotificationService {
   /// `reminder|<habitId>`, streak warnings the bare id; test notifications
   /// none.
   static String? habitIdFromPayload(String? payload) {
-    if (payload == null || payload.isEmpty || payload == testPayload || payload == vacationPayload) return null;
+    if (payload == null ||
+        payload.isEmpty ||
+        payload == testPayload ||
+        payload == vacationPayload ||
+        payload == weeklyReviewPayload) return null;
     if (payload.startsWith(reminderPayloadPrefix)) {
       final id = payload.substring(reminderPayloadPrefix.length);
       return id.isEmpty ? null : id;
@@ -236,6 +249,9 @@ class NotificationService {
 
   /// Payload of the developer tester's notifications.
   static const testPayload = 'test';
+
+  /// Payload of the week-in-review notification.
+  static const weeklyReviewPayload = 'weekly_review';
 
   /// Payload of vacation mode's check-ins and welcome back.
   static const vacationPayload = 'vacation';
@@ -327,6 +343,60 @@ class NotificationService {
     }
   }
 
+  /// Schedules the week-in-review notification (planned by
+  /// WeeklyReviewPlanner).
+  static Future<void> scheduleWeeklyReview({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+  }) async {
+    if (!_initialized) return;
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(at, tz.UTC),
+        weeklyReviewDetails(),
+        payload: weeklyReviewPayload,
+        androidScheduleMode: _androidScheduleMode,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      debugPrint('NotificationService: Failed to schedule the week in review: $e');
+    }
+  }
+
+  /// Cancels every pending week-in-review notification.
+  static Future<void> cancelWeeklyReviews() async {
+    if (!_initialized) return;
+    try {
+      final pending = await _notificationsPlugin.pendingNotificationRequests();
+      for (final request in pending) {
+        if (request.payload == weeklyReviewPayload) await _notificationsPlugin.cancel(request.id);
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to cancel the week in review: $e');
+    }
+  }
+
+  /// How the week in review arrives: on its own Android channel, so it can
+  /// be turned off there without touching reminders.
+  @visibleForTesting
+  static NotificationDetails weeklyReviewDetails() {
+    const android = AndroidNotificationDetails(
+      'weekly_review',
+      'Week in review',
+      channelDescription: "Your week's wins and comebacks, on its last evening",
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+    );
+    const darwin = DarwinNotificationDetails(threadIdentifier: 'weekly_review');
+    return const NotificationDetails(android: android, iOS: darwin, macOS: darwin);
+  }
+
   /// Cancels every pending vacation notice.
   static Future<void> cancelVacationNotices() async {
     if (!_initialized) return;
@@ -411,7 +481,11 @@ class NotificationService {
       final pending = await _notificationsPlugin.pendingNotificationRequests();
       for (final request in pending) {
         final payload = request.payload;
-        if (payload == null || payload.isEmpty || payload == testPayload || payload == vacationPayload) continue;
+        if (payload == null ||
+        payload.isEmpty ||
+        payload == testPayload ||
+        payload == vacationPayload ||
+        payload == weeklyReviewPayload) continue;
         if (payload.startsWith(reminderPayloadPrefix)) continue;
         if (request.id == habitTapTestNotificationId || request.id == testNotificationId) continue;
         if (!habitIds.contains(payload)) await _notificationsPlugin.cancel(request.id);

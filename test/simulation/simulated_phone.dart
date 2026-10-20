@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
@@ -10,6 +11,7 @@ import 'package:atomic_momentum/domain/entities/quiet_hours.dart';
 import 'package:atomic_momentum/domain/services/reminder_planner.dart';
 import 'package:atomic_momentum/domain/services/streak_warning_planner.dart';
 import 'package:atomic_momentum/domain/services/vacation_notice_planner.dart';
+import 'package:atomic_momentum/domain/services/weekly_review_planner.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/update_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -207,6 +209,21 @@ class SimulatedPhone {
     await habits.resyncVacationNotices();
   }
 
+  /// Turns the week in review on or off, or moves its time, then resyncs as
+  /// Settings does.
+  Future<void> weeklyReview({bool? on, TimeOfDay? time}) async {
+    if (on != null) await settings.setWeeklyReview(on);
+    if (time != null) await settings.setWeeklyReviewTime(time);
+    await habits.resyncWeeklyReview();
+  }
+
+  /// Changes the first day of the week (null: the region's), then resyncs as
+  /// Settings does.
+  Future<void> weekStart(int? day) async {
+    await settings.setWeekStart(day);
+    await habits.resyncWeeklyReview();
+  }
+
   Future<void> delete(String name) => habits.deleteHabit(id(name));
 
   /// The habits as stored, as Settings → Developer keeps them aside.
@@ -255,6 +272,18 @@ class SimulatedPhone {
       for (final h in habits.habits) ...ReminderPlanner.plan(h, now: now, quiet: settings.quietHours),
     ]..sort((a, b) => a.at.compareTo(b.at));
     final warningSettings = settings.streakWarnings;
+    final reviewTime = settings.weeklyReviewTime;
+    final reviews = !settings.weeklyReview
+        ? const <PlannedWeeklyReview>[]
+        : WeeklyReviewPlanner.plan(
+            now: now,
+            weekStart: settings.firstDayOfWeek,
+            hour: reviewTime.hour,
+            minute: reviewTime.minute,
+            trackedSince: habits.weeklyReviewInput.trackedSince,
+            vacation: habits.weeklyReviewInput.vacation,
+            quiet: settings.quietHours,
+          );
     return [
       for (final r in reminders.take(get<ReminderService>().roomFor(habits.habits)))
         _Expected(r.habitId, 'reminder', r.at, r.title, r.body),
@@ -262,6 +291,9 @@ class SimulatedPhone {
         for (final w in StreakWarningPlanner.plan(h.refresh(now), warningSettings, now, quiet: settings.quietHours))
           _Expected(h.id, w.kind.name, w.at, w.title, w.body),
       for (final n in notices) _Expected(NotificationService.vacationPayload, n.kind.name, n.at, n.title, n.body),
+      for (final r in reviews)
+        _Expected(NotificationService.weeklyReviewPayload, 'weeklyReview', r.at, WeeklyReviewPlanner.title,
+            WeeklyReviewPlanner.body),
     ];
   }
 
@@ -288,6 +320,7 @@ class SimulatedPhone {
 
   static String _kindOf(SimRequest r) {
     if (r.isReminder) return 'reminder';
+    if (r.payload == NotificationService.weeklyReviewPayload) return 'weeklyReview';
     if (r.payload == NotificationService.vacationPayload) {
       return r.title == VacationNoticePlanner.welcomeTitle ? VacationNoticeKind.welcomeBack.name : VacationNoticeKind.checkIn.name;
     }
@@ -299,6 +332,7 @@ class SimulatedPhone {
         'secondMiss' => 'WARNING    ',
         'checkIn' => 'VACATION   ',
         'welcomeBack' => 'WELCOME    ',
+        'weeklyReview' => 'WEEKLY     ',
         _ => 'NUDGE      ',
       };
 
@@ -309,6 +343,10 @@ class SimulatedPhone {
     if (!_deliveredKeys.add(key)) _fail(r.at, 'DUPLICATE "${r.title}"');
     if (r.payload == NotificationService.vacationPayload) {
       _checkVacationNotice(r, kind);
+      return;
+    }
+    if (r.payload == NotificationService.weeklyReviewPayload) {
+      _checkWeeklyReview(r);
       return;
     }
 
@@ -406,6 +444,29 @@ class SimulatedPhone {
     final returning = habits.habits.any((h) => h.pauses.isNotEmpty && h.pauses.last.back == today);
     if (!returning) _fail(r.at, 'welcome back on a day that isn\'t a return day');
   }
+
+  /// The week in review: on the last day of the person's week, at the
+  /// review time (out of quiet hours), with the switch on, a week with
+  /// something tracked to look back on, and not on vacation.
+  void _checkWeeklyReview(SimRequest r) {
+    if (settings.quietHours.contains(r.at)) _fail(r.at, 'the week in review arrived during quiet hours');
+    if (!settings.weeklyReview) _fail(r.at, 'the week in review with it turned off');
+    final day = DateTime(r.at.year, r.at.month, r.at.day);
+    final lastDay = (settings.firstDayOfWeek + 5) % 7 + 1;
+    if (day.weekday != lastDay) _fail(r.at, 'the week in review on a ${_weekday(day)}, not the week\'s last day');
+    final time = settings.weeklyReviewTime;
+    final expected = settings.quietHours.shift(DateTime(day.year, day.month, day.day, time.hour, time.minute));
+    if (r.at.hour != expected.hour || r.at.minute != expected.minute) {
+      _fail(r.at, 'the week in review at ${_hm(r.at)}, not the review time ${_hm(expected)}');
+    }
+    if (habits.onVacation) _fail(r.at, 'the week in review while on vacation');
+    final since = habits.weeklyReviewInput.trackedSince;
+    if (since == null || since.isAfter(DateTime(day.year, day.month, day.day - 2))) {
+      _fail(r.at, 'the week in review with too little of the week tracked');
+    }
+  }
+
+  static String _weekday(DateTime d) => const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d.weekday - 1];
 
   // ------------------------------------------------------------ output
 

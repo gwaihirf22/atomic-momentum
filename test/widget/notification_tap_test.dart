@@ -13,6 +13,7 @@ import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/habit_card.dart';
 import 'package:atomic_momentum/screens/calendar_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
+import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import '../helpers/habit_card_actions.dart';
 
 /// Tapping a reminder or streak warning opens Habits at that habit's card.
@@ -61,6 +62,16 @@ void main() {
     expect(NotificationService.habitIdFromPayload(NotificationService.testPayload), isNull);
     expect(NotificationService.habitIdFromPayload(null), isNull);
     expect(NotificationService.habitIdFromPayload(''), isNull);
+  });
+
+  testWidgets('the week in review opens on Insights, from any tab', (tester) async {
+    await launch(tester);
+    await tester.tap(find.text('Calendar'));
+    await tester.pumpAndSettle();
+    NotificationService.handleTap(NotificationService.weeklyReviewPayload);
+    await tester.pumpAndSettle();
+    expect(find.byType(WeeklyReviewScreen).hitTestable(), findsOneWidget);
+    expect(NotificationService.focusRequests.value, isNull, reason: 'no habit to show');
   });
 
   testWidgets('from another tab, with a filter hiding it: Habits opens at the card, highlighted', (tester) async {
