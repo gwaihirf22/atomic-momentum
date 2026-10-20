@@ -5,6 +5,7 @@ import '../../core/theme/app_palette.dart';
 import '../../domain/entities/category.dart';
 import '../providers/category_provider.dart';
 import 'category_icons.dart';
+import '../tour/tour_anchor.dart';
 
 /// Progress rings, one per category, that double as the filter.
 ///
@@ -97,7 +98,9 @@ class _CategoryRingsBarState extends State<CategoryRingsBar> {
       );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => TourAnchor(id: TourAnchorId.categoryRings, child: _bar(context));
+
+  Widget _bar(BuildContext context) {
     if (!_paged) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),

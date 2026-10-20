@@ -12,6 +12,7 @@ enum TourAnchorId {
   tabSettings,
   // Habits
   overallMomentum,
+  categoryRings,
   habitCard,
   habitPlus,
   habitRing,

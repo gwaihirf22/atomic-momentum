@@ -242,7 +242,10 @@ class HabitCard extends StatelessWidget {
                   children: [
                     SlidableAction(
                       key: Key('freezeHabit_${habit.id}'),
-                      onPressed: (_) => onFreeze!(),
+                      onPressed: (_) {
+                        TourEvents.emit(FreezeTapped(habit.id));
+                        onFreeze!();
+                      },
                       backgroundColor: palette.ice,
                       foregroundColor: palette.onColor(palette.ice),
                       icon: CupertinoIcons.snow,

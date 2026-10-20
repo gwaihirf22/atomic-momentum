@@ -19,14 +19,20 @@ abstract final class Tours {
     steps: [
       TourStep(
         eyebrow: 'Welcome',
-        text: 'Here are some example habits, after half a year of use. A quick look around, '
-            'then your own.',
+        text: 'These are example habits, after half a year of use. Look around and try anything: '
+            'your own habits come next.',
       ),
       TourStep(
         anchor: TourAnchorId.overallMomentum,
         text: "This is your momentum: how steadily you've been showing up. "
             'Steady practice reaches 80 in about 66 days.',
         side: BubbleSide.below,
+      ),
+      TourStep(
+        anchor: TourAnchorId.habitCard,
+        habit: DemoPersona.water,
+        text: 'Each habit is a card. Its ring fills as you log; the bolt is its momentum, the flame its '
+            'streak, and the bars its last seven days. Tap a card for its page.',
       ),
       TourStep(
         anchor: TourAnchorId.habitPlus,
@@ -49,8 +55,27 @@ abstract final class Tours {
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.gym,
-        text: "Can't make it today? Swipe right to freeze the day, and your streak holds. Or tap Next.",
-        wait: TourWait.swipeToFreeze,
+        text: "Can't make it today? Swipe right on Gym, then tap Freeze: your streak holds. Or tap Next.",
+        wait: TourWait.freeze,
+      ),
+      TourStep(
+        anchor: TourAnchorId.habitCard,
+        habit: DemoPersona.read,
+        text: 'Swipe left on Read to edit or delete it. Try it, or tap Next.',
+        before: [CloseSwipes()],
+        wait: TourWait.swipeToEdit,
+      ),
+      TourStep(
+        anchor: TourAnchorId.habitCard,
+        habit: DemoPersona.read,
+        text: 'Edit changes its name, schedule and reminders. Delete removes it, after asking.',
+        touchable: false,
+      ),
+      TourStep(
+        anchor: TourAnchorId.categoryRings,
+        text: 'Rings group your habits by category. Tap one to see only those; hold one to arrange '
+            'categories and habits.',
+        before: [CloseSwipes()],
       ),
       TourStep(
         anchor: TourAnchorId.tabBar,

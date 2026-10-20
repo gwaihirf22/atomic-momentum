@@ -39,6 +39,12 @@ final class CardSwiped extends TourEvent {
   const CardSwiped(this.habitId, {required this.freeze});
 }
 
+/// Freeze (or Unfreeze) tapped on a card swiped open.
+final class FreezeTapped extends TourEvent {
+  final String habitId;
+  const FreezeTapped(this.habitId);
+}
+
 /// A habit's page opened.
 final class HabitPageOpened extends TourEvent {
   final String habitId;

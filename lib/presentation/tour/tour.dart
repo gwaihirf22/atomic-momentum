@@ -17,6 +17,8 @@ enum TourWait {
   undo,
   twoMinute,
   swipeToFreeze,
+  freeze,
+  swipeToEdit,
   openHabit,
   heatmapDay,
   calendarDay,
@@ -31,6 +33,8 @@ enum TourWait {
       undo => event is HoldUndone && on(event.habitId),
       twoMinute => event is TwoMinuteTapped && on(event.habitId),
       swipeToFreeze => event is CardSwiped && event.freeze && on(event.habitId),
+      freeze => event is FreezeTapped && on(event.habitId),
+      swipeToEdit => event is CardSwiped && !event.freeze && on(event.habitId),
       openHabit => event is HabitPageOpened && on(event.habitId),
       heatmapDay => event is HeatmapDaySelected,
       calendarDay => event is CalendarDaySelected,
@@ -92,6 +96,12 @@ class TourStep {
   /// The last step's Next reads like this.
   final String? nextLabel;
 
+  /// Whether touches inside the spotlight reach the app (they do, so every
+  /// step can be done for real; off for a step that only explains what's in
+  /// it, like a card's Edit and Delete, where a tap would open a dialog over
+  /// the tour).
+  final bool touchable;
+
   const TourStep({
     this.anchor,
     this.habit,
@@ -101,6 +111,7 @@ class TourStep {
     this.wait,
     this.before = const [],
     this.nextLabel,
+    this.touchable = true,
   });
 }
 

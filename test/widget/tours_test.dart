@@ -100,21 +100,44 @@ void main() {
     await settle(tester);
     await tester.tap(find.text('Next')); // momentum
     await settle(tester);
+    await tester.tap(find.text('Next')); // a card's parts
+    await settle(tester);
     final demo = worlds.world.demo!;
-    await tester.tap(find.byKey(Key('incrementHabit_${demo.idOf(DemoPersona.water)}')));
+    String id(String name) => demo.idOf(name);
+    await tester.tap(find.byKey(Key('incrementHabit_${id(DemoPersona.water)}')));
     await settle(tester);
-    expect(tours.stepIndex, 3, reason: '+ moved it on');
-    await tester.longPress(find.byKey(Key('habitIcon_${demo.idOf(DemoPersona.read)}')));
+    expect(tours.stepIndex, 4, reason: '+ moved it on');
+    await tester.longPress(find.byKey(Key('habitIcon_${id(DemoPersona.read)}')));
     await settle(tester);
-    expect(tours.stepIndex, 4, reason: 'holding the ring moved it on');
-    expect(demo.habits.getHabitById(demo.idOf(DemoPersona.read))!.isCompleted, isTrue);
-    await tester.tap(find.byKey(Key('twoMinute_${demo.idOf(DemoPersona.meditate)}')));
+    expect(tours.stepIndex, 5, reason: 'holding the ring moved it on');
+    expect(demo.habits.getHabitById(id(DemoPersona.read))!.isCompleted, isTrue);
+    await tester.tap(find.byKey(Key('twoMinute_${id(DemoPersona.meditate)}')));
     await settle(tester);
-    expect(tours.stepIndex, 5, reason: '2 min moved it on');
-    await tester.drag(find.byKey(Key('habitCard_${demo.idOf(DemoPersona.gym)}')), const Offset(200, 0));
+    expect(tours.stepIndex, 6, reason: '2 min moved it on');
+
+    // Freeze: swiping only opens the button; tapping it moves on
+    await tester.drag(find.byKey(Key('habitCard_${id(DemoPersona.gym)}')), const Offset(200, 0));
     await settle(tester);
-    expect(tours.stepIndex, 6, reason: 'the swipe moved it on');
-    await tester.tap(find.text('Next')); // the tab bar; the swipe is closed
+    expect(tours.stepIndex, 6, reason: 'a swipe alone stays, so Freeze can be tapped');
+    await tester.tap(find.byKey(Key('freezeHabit_${id(DemoPersona.gym)}')));
+    await settle(tester);
+    expect(tours.stepIndex, 7, reason: 'tapping Freeze moved it on');
+    final today = DateTime.now();
+    expect(demo.habits.getHabitById(id(DemoPersona.gym))!.isFrozenOn(today), isTrue);
+
+    // Swipe left: Edit and Delete show, and stay while they're explained
+    await tester.drag(find.byKey(Key('habitCard_${id(DemoPersona.read)}')), const Offset(-200, 0));
+    await settle(tester);
+    expect(tours.stepIndex, 8, reason: 'the left swipe moved it on');
+    expect(find.byKey(Key('deleteHabit_${id(DemoPersona.read)}')).hitTestable(), findsNothing,
+        reason: 'nothing in the spotlight takes a tap while Edit and Delete are explained');
+    await tester.tap(find.text('Next'));
+    await settle(tester);
+    expect(tours.stepIndex, 9, reason: 'categories');
+    expect(demo.habits.habits.map((h) => h.name), contains(DemoPersona.read));
+    await tester.tap(find.text('Next')); // categories
+    await settle(tester);
+    await tester.tap(find.text('Next')); // the tab bar
     await settle(tester);
     // The person's own app: tapping Add habit ends it and opens the editor,
     // whose own tour follows
