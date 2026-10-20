@@ -65,6 +65,12 @@ final class BackToTabs extends TourMove {
   const BackToTabs();
 }
 
+/// Opens an example habit's card on its Edit and Delete side (by name).
+final class OpenCardActions extends TourMove {
+  final String habit;
+  const OpenCardActions(this.habit);
+}
+
 /// Closes habit cards left swiped open.
 final class CloseSwipes extends TourMove {
   const CloseSwipes();
@@ -91,6 +97,10 @@ class TourStep {
 
   /// Done for real, it moves on like Next.
   final TourWait? wait;
+
+  /// Where the target is scrolled to, from the top (0) to the bottom (1)
+  /// of the page: a tall bubble needs the target near the top.
+  final double align;
   final List<TourMove> before;
 
   /// The last step's Next reads like this.
@@ -112,6 +122,7 @@ class TourStep {
     this.before = const [],
     this.nextLabel,
     this.touchable = true,
+    this.align = 0.3,
   });
 }
 

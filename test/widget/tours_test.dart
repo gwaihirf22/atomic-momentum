@@ -82,6 +82,12 @@ void main() {
       }
       expect(tester.takeException(), isNull);
       expect(asked, 0, reason: 'permission waits for the tour');
+      if (step.before.any((m) => m is OpenCardActions)) {
+        // Tapped Next rather than swiping: the card opens itself to show them
+        final read = worlds.world.demo!.idOf(DemoPersona.read);
+        final delete = tester.getRect(find.byKey(Key('deleteHabit_$read')));
+        expect(delete.width, greaterThan(20), reason: 'Delete shows while it is explained');
+      }
       await tester.tap(find.text(i == Tours.habits.steps.length - 1 ? 'Got it' : 'Next'));
     }
     await settle(tester);

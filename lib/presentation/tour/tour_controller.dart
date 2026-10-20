@@ -269,6 +269,9 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
           }
         case CloseSwipes():
           HabitCard.closeSwipes();
+        case OpenCardActions(:final habit):
+          final id = worlds.world.demo?.habits.habits.where((h) => h.name == habit).firstOrNull?.id;
+          if (id != null) HabitCard.openActions(id);
         case ToOwnHabits():
           worlds.exitDemo(tab: AppTab.habits);
       }
@@ -293,7 +296,7 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
         final reduce = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
         await Scrollable.ensureVisible(
           context,
-          alignment: 0.3,
+          alignment: step.align,
           duration: reduce ? Duration.zero : const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,

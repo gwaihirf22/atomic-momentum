@@ -106,6 +106,14 @@ class HabitCard extends StatelessWidget {
 
   /// The "2 min" button shows while today is due and not yet complete, for a
   /// habit whose two-minute version is set to show on its card.
+  /// Swipes [habitId]'s card open on its Edit and Delete side (a tour
+  /// showing them to someone who tapped Next rather than swiping).
+  static void openActions(String habitId) {
+    for (final card in _SwipeReporterState._all) {
+      if (card.mounted && card.widget.habitId == habitId) Slidable.of(card.context)?.openEndActionPane();
+    }
+  }
+
   /// Closes every card left swiped open (a tour moving on).
   static void closeSwipes() {
     for (final card in _SwipeReporterState._all) {

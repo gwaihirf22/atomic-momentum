@@ -31,8 +31,9 @@ abstract final class Tours {
       TourStep(
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.water,
-        text: 'Each habit is a card. Its ring fills as you log; the bolt is its momentum, the flame its '
-            'streak, and the bars its last seven days. Tap a card for its page.',
+        text: 'Each habit is a card: its ring fills as you log, the bolt is momentum, the flame its streak, '
+            'the bars its last seven days. Tap a card for its page.',
+        align: 0.08,
       ),
       TourStep(
         anchor: TourAnchorId.habitPlus,
@@ -69,6 +70,7 @@ abstract final class Tours {
         anchor: TourAnchorId.habitCard,
         habit: DemoPersona.read,
         text: 'Edit changes its name, schedule and reminders. Delete removes it, after asking.',
+        before: [OpenCardActions(DemoPersona.read)],
         touchable: false,
       ),
       TourStep(
