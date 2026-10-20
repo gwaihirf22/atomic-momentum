@@ -152,6 +152,11 @@ class Achievements {
     return true;
   }
 
+  /// Each time [habit] didn't miss twice, up to [now]: a period kept right
+  /// after a single miss, while a streak was going, so it carried on.
+  static List<Comeback> comebacks(Habit habit, DateTime now) =>
+      habit.schedule.isPeriodic ? List.unmodifiable(_walk(habit, now).comebackEvents) : const [];
+
   /// Everything earned up to [now], oldest first.
   static List<Achievement> earned(List<Habit> habits, DateTime now, {int weekStart = DateTime.monday, FreezeRecord? freezes}) {
     final record = freezes ?? freezeSource?.call();
@@ -484,6 +489,7 @@ class Achievements {
     var best = 0;
     var tinyInARow = 0;
     var iceInRun = false;
+    DateTime? missedStart; // the last missed period's start
     // A habit being broken is clean "so far" all day: the day counts once it's over
     final current = habit.schedule.periodStart(now);
 
@@ -497,7 +503,10 @@ class Achievements {
       if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
         // Reached the day it was kept (a week kept on Saturday, on Saturday)
         final day = Insights.keptOn(habit, period);
-        if (missedBefore && streakBeforeMiss > 0) walk.comebacks.add(day);
+        if (missedBefore && streakBeforeMiss > 0) {
+          walk.comebacks.add(day);
+          walk.comebackEvents.add(Comeback(missed: missedStart!, back: day, twoMinute: mark == PeriodMark.twoMinute));
+        }
         final continues = !missedBefore || streakBeforeMiss > 0;
         final before = missedBefore ? streakBeforeMiss : walk.streak;
         if (walk.streak == 0 && !(missedBefore && streakBeforeMiss > 0)) {
@@ -527,6 +536,7 @@ class Achievements {
       } else {
         // One miss puts the streak at risk; two in a row end it
         if (missedBefore && streakBeforeMiss > 0) runEnded = true;
+        missedStart = period.start;
         streakBeforeMiss = missedBefore ? 0 : walk.streak;
         walk.streak = 0;
         tinyInARow = 0;
@@ -692,6 +702,7 @@ class _Walk {
 
   /// Kept right after a single miss, carrying the streak on.
   final comebacks = <DateTime>[];
+  final comebackEvents = <Comeback>[];
 
   DateTime? comebackOn;
 
@@ -706,4 +717,18 @@ class _Walk {
   DateTime? speedrunOn;
   DateTime? respawnOn;
   DateTime? noIceOn;
+}
+
+/// A habit that didn't miss twice: [missed] is the start of the period it
+/// missed, [back] the day the next one was kept ([twoMinute]: with the tiny
+/// version).
+class Comeback {
+  final DateTime missed;
+  final DateTime back;
+  final bool twoMinute;
+
+  const Comeback({required this.missed, required this.back, required this.twoMinute});
+
+  @override
+  String toString() => 'Comeback($missed -> $back${twoMinute ? ', 2 min' : ''})';
 }

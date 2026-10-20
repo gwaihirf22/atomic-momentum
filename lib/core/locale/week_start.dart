@@ -29,3 +29,8 @@ int _lookUp(Locale locale) {
 /// with [firstDay].
 List<int> weekdaysStartingOn(int firstDay) =>
     [for (var i = 0; i < 7; i++) (firstDay - 1 + i) % 7 + 1];
+
+/// The first day of the week holding [day] (date-only), for weeks starting
+/// on [firstDay] (DateTime.monday..sunday).
+DateTime weekStartOf(DateTime day, int firstDay) =>
+    DateTime(day.year, day.month, day.day - (day.weekday - firstDay + 7) % 7);

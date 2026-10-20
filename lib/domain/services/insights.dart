@@ -195,6 +195,23 @@ class Insights {
     ];
   }
 
+  /// Overall momentum at each of [times] (ascending), weighed as on the
+  /// Habits ring; null where no habit was being tracked yet.
+  static List<double?> overallMomentumAt(List<Habit> habits, List<DateTime> times) {
+    final sums = List<double>.filled(times.length, 0);
+    final weights = List<double>.filled(times.length, 0);
+    for (final habit in habits) {
+      if (!habit.schedule.isPeriodic) continue;
+      final points = habit.momentumPoints(times);
+      for (var i = 0; i < times.length; i++) {
+        if (!habit.countsTowardMomentumAt(times[i])) continue;
+        sums[i] += points[i].score * points[i].formed;
+        weights[i] += points[i].formed;
+      }
+    }
+    return [for (var i = 0; i < times.length; i++) weights[i] == 0 ? null : sums[i] / weights[i]];
+  }
+
   /// A habit's momentum at each of [times] (null where it doesn't count
   /// yet), kept per habit for the day of the last one and how many months
   /// were asked for (the Insights tab asks for 6, the widgets for 2).
@@ -211,8 +228,10 @@ class Insights {
 
   /// How the periods that ended between [from] and [now] went (habits being
   /// broken have no two-minute version, so they count as full or missed).
-  static KeptSummary kept(List<Habit> habits, {required DateTime from, required DateTime now}) {
+  /// With [to], only periods that began before it (date-only, exclusive).
+  static KeptSummary kept(List<Habit> habits, {required DateTime from, DateTime? to, required DateTime now}) {
     final first = _date(from);
+    final until = to == null ? null : _date(to);
     var full = 0, twoMinute = 0, missed = 0, saved = 0;
     for (final habit in habits) {
       // From the start, to know whether a streak was going before [from]
@@ -224,6 +243,7 @@ class Insights {
       var streakBeforeMiss = 0;
       final rangeStart = habit.schedule.periodStart(first);
       for (final period in habitPeriods) {
+        if (until != null && !period.start.isBefore(until)) break;
         final inRange = !period.start.isBefore(rangeStart);
         final mark = period.mark;
         if (mark == PeriodMark.done || mark == PeriodMark.twoMinute) {
