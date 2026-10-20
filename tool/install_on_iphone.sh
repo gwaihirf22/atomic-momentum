@@ -47,11 +47,20 @@ if [ "${DEV_TOOLS:-0}" = "1" ]; then
 fi
 ./flutter/bin/flutter build ios --release --config-only "${defines[@]+"${defines[@]}"}"
 derived="build/ios/device-derived"
+app="$derived/Build/Products/Release-iphoneos/Runner.app"
+# Never install an app left from an earlier build
+rm -rf "$app"
+log="$derived/last-build.log"
+mkdir -p "$derived"
+status=0
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
   -destination "id=$device" -derivedDataPath "$derived" -allowProvisioningUpdates \
-  RUNNER_ENTITLEMENTS="$entitlements" WIDGETS_ENTITLEMENTS="$widgets_entitlements" build | grep -E "error:|warning: .*(sign|profile)|BUILD (SUCCEEDED|FAILED)" || true
-
-app="$derived/Build/Products/Release-iphoneos/Runner.app"
-[ -d "$app" ] || { echo "Build failed (no Runner.app)" >&2; exit 1; }
+  RUNNER_ENTITLEMENTS="$entitlements" WIDGETS_ENTITLEMENTS="$widgets_entitlements" build >"$log" 2>&1 || status=$?
+grep -E "error:|warning: .*(sign|profile)|BUILD (SUCCEEDED|FAILED)" "$log" || true
+if [ "$status" -ne 0 ] || [ ! -d "$app" ]; then
+  echo "Build failed: nothing installed (full log: $log)." >&2
+  echo "A 'has been modified since the module file was built' error means a stale module cache: rm -rf $derived/ModuleCache.noindex" >&2
+  exit 1
+fi
 xcrun devicectl device install app --device "$device" "$app"
 echo "Installed. The first time, trust the developer on the phone: Settings → General → VPN & Device Management."
