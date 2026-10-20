@@ -44,7 +44,8 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [ ] Privacy policy and support links in Settings (after the other session's Settings changes land)
 - [ ] Screenshots at 6.9"
 - [x] Publish the policy pages on paul-blake.com: https://paul-blake.com/momentum/privacy and /momentum/support (website commit 5ae688c)
-- [ ] Widgets and Health on Paul's real phone (the widget tab links, `tool/device_health_check.sh`)
+- [x] Widgets on Paul's real phone: real data through the App Group, logging and taps work (TestFlight build 1, 2026-10-20; not every kind added yet)
+- [ ] Health on Paul's real phone (Watch data, other apps' runs, turning access off; `tool/device_health_check.sh` on iOS)
 - [ ] The tours work under way in the other session: a welcome page, steps that can't be knocked off course, "Replay tours"
 - [ ] Three moments Paul picked on 2026-10-17 that were never built (still wanted for v1?):
   - All done today: a celebratory greeting, a glowing ring, a haptic, a gold Calendar dot
