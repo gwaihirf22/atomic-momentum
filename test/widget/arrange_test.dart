@@ -158,11 +158,45 @@ void main() {
     expect(names(), ['Gym', 'Water', 'Pray', 'Read']);
   });
 
-  testWidgets('dropped in another category, a habit goes back where it was', (tester) async {
+  testWidgets("a habit can't be dragged out of its category", (tester) async {
     await pump(tester);
-    await drag(tester, habitHandle('Read'), -400);
+    final readTop = tester.getTopLeft(find.text('Read')).dy;
+    final gesture = await tester.startGesture(tester.getCenter(habitHandle('Read')));
+    await tester.pump(const Duration(milliseconds: 100));
+    for (var i = 0; i < 20; i++) {
+      await gesture.moveBy(const Offset(0, -20));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    // Read is Mind's only habit: it stays put however far the finger goes
+    expect(tester.getTopLeft(find.text('Read')).dy, closeTo(readTop, 1));
+    // and everything outside Mind fades back
+    // The innermost: a habit row's fold has its own
+    double opacity(Key key) =>
+        tester.widget<AnimatedOpacity>(find.descendant(of: find.byKey(key), matching: find.byType(AnimatedOpacity)).last).opacity;
+    expect(opacity(const Key('categoryRow_spirit')), lessThan(1));
+    expect(opacity(Key('arrangeHabit_${id('Water')}')), lessThan(1));
+    expect(opacity(const Key('categoryRow_mind')), 1);
+    await gesture.up();
+    await tester.pumpAndSettle();
     expect(names(), ['Water', 'Gym', 'Pray', 'Read']);
-    expect(find.textContaining('Habits move within their category'), findsOneWidget);
+    expect(find.textContaining('Habits move within their category'), findsNothing, reason: 'nothing to explain');
+    expect(opacity(const Key('categoryRow_spirit')), 1);
+  });
+
+  testWidgets('dragged far past its category, a habit stops at its edge and lands last in it', (tester) async {
+    await pump(tester);
+    final gymBottom = tester.getBottomLeft(find.byKey(Key('arrangeHabit_${id('Gym')}'))).dy;
+    final gesture = await tester.startGesture(tester.getCenter(habitHandle('Water')));
+    await tester.pump(const Duration(milliseconds: 100));
+    for (var i = 0; i < 20; i++) {
+      await gesture.moveBy(const Offset(0, 25));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final water = find.ancestor(of: find.text('Water'), matching: find.byType(ListTile));
+    expect(tester.getBottomLeft(water).dy, lessThanOrEqualTo(gymBottom + 1), reason: 'it stops at the end of Body');
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(names(), ['Gym', 'Water', 'Pray', 'Read']);
   });
 
   testWidgets('VoiceOver can move rows up and down', (tester) async {

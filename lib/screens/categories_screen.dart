@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import '../core/theme/app_palette.dart';
@@ -54,7 +56,7 @@ class CategoriesScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: SettingsSection(
               footer: grouped
-                  ? "Habits follow their category's place. Drag a category to move its habits with it."
+                  ? "Habits follow their category's place. Drag a category to move its habits with it; habits move within their category."
                   : 'Habits go in any order, whatever their category.',
               children: [
                 SettingsSwitchTile(
@@ -113,7 +115,12 @@ class _GroupedListState extends State<_GroupedList> {
   /// category, so it stays under the finger while the others gather round.
   double _gather = 0;
 
-  /// Each habit row's, to measure what folds.
+  /// The category of the habit being dragged: the habit can't leave it,
+  /// and everything else dims.
+  String? _within;
+  _WithinCategory? _boundary;
+
+  /// Each habit row's, to measure what folds and where a category's habits are.
   final _rowKeys = <String, GlobalKey>{};
 
   List<Category> get categories => widget.categories;
@@ -127,6 +134,33 @@ class _GroupedListState extends State<_GroupedList> {
     setState(() {
       _moving = rows[index].groupId;
       _gather = above;
+    });
+  }
+
+  /// A habit picked up: it may go anywhere among its category's habits.
+  void _hold(List<_Row> rows, int index) {
+    double? top, bottom;
+    for (final row in rows) {
+      if (row.habit == null || row.groupId != rows[index].groupId) continue;
+      final box = _rowKeys[row.habit!.id]?.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final at = box.localToGlobal(Offset.zero).dy;
+      top ??= at;
+      bottom = at + box.size.height;
+    }
+    setState(() {
+      _within = rows[index].groupId;
+      _boundary = top == null
+          ? null
+          : _WithinCategory(top: top, bottom: bottom!, scroll: Scrollable.maybeOf(context)?.position);
+    });
+  }
+
+  void _letGo() {
+    if (!mounted || _within == null) return;
+    setState(() {
+      _within = null;
+      _boundary = null;
     });
   }
 
@@ -162,12 +196,15 @@ class _GroupedListState extends State<_GroupedList> {
         stacked: rows[i].category == null ? 0 : _countHabits(habits, rows[i].groupId!).clamp(0, 2),
         child: child,
       ),
+      // Asked for right after onReorderStart
+      dragBoundaryProvider: (_) => _boundary,
       onReorderStart: (i) {
         Haptics.selection();
-        if (rows[i].category != null) _lift(rows, i);
+        rows[i].category != null ? _lift(rows, i) : _hold(rows, i);
       },
       // Put back where it was: unfold now (a move unfolds once it's made)
       onReorderEnd: (at) {
+        _letGo();
         final from = rows.indexWhere((r) => r.category != null && r.groupId == _moving);
         if (at == from || at == from + 1) _fold(null);
       },
@@ -180,18 +217,21 @@ class _GroupedListState extends State<_GroupedList> {
         final category = row.category;
         if (category != null) {
           final index = categories.indexOf(category);
-          return _CategoryRow(
+          return _Dim(
             key: Key('categoryRow_${category.id}'),
-            category: category,
-            index: i,
-            habitCount: _countHabits(habits, category.id),
-            draggable: !row.fixed,
-            onMove: row.fixed
-                ? null
-                : (by) => _moveCategory(context, index, by < 0 ? index + by : index + by + 1),
-            canMoveUp: !row.fixed && index > 0,
-            canMoveDown: !row.fixed && index < categories.length - 1,
-            onDragCancel: () => _fold(null),
+            dimmed: _within != null && category.id != _within,
+            child: _CategoryRow(
+              category: category,
+              index: i,
+              habitCount: _countHabits(habits, category.id),
+              draggable: !row.fixed,
+              onMove: row.fixed
+                  ? null
+                  : (by) => _moveCategory(context, index, by < 0 ? index + by : index + by + 1),
+              canMoveUp: !row.fixed && index > 0,
+              canMoveDown: !row.fixed && index < categories.length - 1,
+              onDragCancel: () => _fold(null),
+            ),
           );
         }
         final habit = row.habit!;
@@ -200,14 +240,18 @@ class _GroupedListState extends State<_GroupedList> {
         return _Fold(
           key: Key('arrangeHabit_${habit.id}'),
           folded: _moving != null,
-          child: _HabitRow(
-            key: _rowKeys.putIfAbsent(habit.id, GlobalKey.new),
-            habit: habit,
-            index: i,
-            indented: true,
-            canMoveUp: at > 0,
-            canMoveDown: at < group.length - 1,
-            onMove: (by) => _moveWithin(context, habit, group[at + by]),
+          child: _Dim(
+            dimmed: _within != null && row.groupId != _within,
+            child: _HabitRow(
+              key: _rowKeys.putIfAbsent(habit.id, GlobalKey.new),
+              habit: habit,
+              index: i,
+              indented: true,
+              canMoveUp: at > 0,
+              canMoveDown: at < group.length - 1,
+              onMove: (by) => _moveWithin(context, habit, group[at + by]),
+              onDragCancel: _letGo,
+            ),
           ),
         );
       },
@@ -380,6 +424,47 @@ class _Handle extends StatelessWidget {
   }
 }
 
+/// Keeps a dragged habit among its category's habits: it stops at the
+/// category's first and last, with a tick as it meets the edge. Where they
+/// were at pick-up, moved along as the list scrolls.
+class _WithinCategory extends DragBoundaryDelegate<Rect> {
+  final double top;
+  final double bottom;
+  final ScrollPosition? scroll;
+  final double _startPixels;
+  bool _atEdge = false;
+
+  _WithinCategory({required this.top, required this.bottom, this.scroll}) : _startPixels = scroll?.pixels ?? 0;
+
+  double get _shift => _startPixels - (scroll?.pixels ?? _startPixels);
+
+  @override
+  bool isWithinBoundary(Rect dragged) => dragged.top >= top + _shift && dragged.bottom <= bottom + _shift;
+
+  @override
+  Rect nearestPositionWithinBoundary(Rect dragged) {
+    final min = top + _shift;
+    final max = math.max(min, bottom + _shift - dragged.height);
+    final y = dragged.top.clamp(min, max);
+    final atEdge = y != dragged.top;
+    if (atEdge && !_atEdge) Haptics.selection();
+    _atEdge = atEdge;
+    return Rect.fromLTWH(dragged.left, y, dragged.width, dragged.height);
+  }
+}
+
+/// Rows outside a dragged habit's category, faded back.
+class _Dim extends StatelessWidget {
+  final bool dimmed;
+  final Widget child;
+
+  const _Dim({Key? key, required this.dimmed, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) =>
+      AnimatedOpacity(opacity: dimmed ? 0.35 : 1, duration: _foldDuration(context), child: child);
+}
+
 const _foldCurve = Curves.easeOutCubic;
 
 Duration _foldDuration(BuildContext context) =>
@@ -480,6 +565,7 @@ class _HabitRow extends StatelessWidget {
   final bool canMoveUp;
   final bool canMoveDown;
   final void Function(int by) onMove;
+  final VoidCallback? onDragCancel;
 
   const _HabitRow({
     Key? key,
@@ -489,6 +575,7 @@ class _HabitRow extends StatelessWidget {
     required this.canMoveUp,
     required this.canMoveDown,
     required this.onMove,
+    this.onDragCancel,
   }) : super(key: key);
 
   @override
@@ -503,7 +590,12 @@ class _HabitRow extends StatelessWidget {
           contentPadding: EdgeInsets.only(left: indented ? 40 : 16, right: 8),
           leading: Icon(habitIcon(habit, category), color: palette.habitColor(habit.color.color), size: 22),
           title: Text(habit.name, maxLines: 2, overflow: TextOverflow.ellipsis),
-          trailing: _Handle(index: index, label: 'Reorder ${habit.name}', handleKey: Key('habitDragHandle_${habit.id}')),
+          trailing: _Handle(
+            index: index,
+            label: 'Reorder ${habit.name}',
+            handleKey: Key('habitDragHandle_${habit.id}'),
+            onCancel: onDragCancel,
+          ),
         ),
       ),
     );
