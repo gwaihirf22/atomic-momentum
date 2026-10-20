@@ -22,12 +22,16 @@ struct HabitRing: View {
   var body: some View {
     ZStack {
       if done {
-        Circle().fill(color)
-        Image(systemName: "checkmark")
-          .font(.system(size: 100, weight: .heavy))
-          .minimumScaleFactor(0.01)
-          .padding(lineWidth * 2.2)
-          .foregroundStyle(checkColor)
+        // Out to the ring's outer edge, so finishing doesn't shrink it
+        Circle().fill(color).padding(-lineWidth / 2)
+        // Sized from the ring's own space: a symbol at a fixed font size
+        // ignores minimumScaleFactor and pushes the circle past its frame
+        GeometryReader { space in
+          Image(systemName: "checkmark")
+            .font(.system(size: min(space.size.width, space.size.height) * 0.4, weight: .heavy))
+            .foregroundStyle(checkColor)
+            .frame(width: space.size.width, height: space.size.height)
+        }
       } else {
         Circle().stroke(track, lineWidth: lineWidth)
         Circle()
