@@ -135,10 +135,14 @@ abstract final class Tours {
   static const insights = Tour(
     id: TourId.insights,
     title: 'Insights',
-    summary: 'Momentum by month, every day at a glance, achievements',
+    summary: 'Your week in review, momentum, every day at a glance',
     world: TourWorld.example,
     tab: AppTab.insights,
     steps: [
+      TourStep(
+        anchor: TourAnchorId.insightsWeeklyReview,
+        text: 'Every week, on its last evening, I sum it up here: the wins, the comebacks, all of it.',
+      ),
       TourStep(
         anchor: TourAnchorId.insightsMomentum,
         text: 'Your momentum, month by month. The line is 80: habit formed.',

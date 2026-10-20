@@ -29,6 +29,7 @@ enum TourAnchorId {
   calendarGrid,
   calendarDayHabit,
   // Insights
+  insightsWeeklyReview,
   insightsMomentum,
   insightsHeatmap,
   insightsAchievements,
@@ -56,6 +57,7 @@ enum TourAnchorId {
   String? keyFor(String? tag) => switch (this) {
         calendarGrid => 'calendarGrid',
         calendarDayHabit => 'dayHabit_$tag',
+        insightsWeeklyReview => 'insightsWeeklyReview',
         insightsMomentum => 'insightsMomentum',
         insightsHeatmap => 'insightsDays',
         insightsAchievements => 'insightsAchievements',

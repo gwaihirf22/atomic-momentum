@@ -92,6 +92,7 @@ void main() {
 
     final all = [...phone.failures, ...year.problems];
     expect(all, isEmpty, reason: '\n${all.length} problems:\n${all.take(60).join('\n')}');
+    expect(year.reviewsChecked, greaterThan(40), reason: 'the week in review is checked most weeks');
     _expectGolden(year.digest, 'year_digest');
   }, timeout: const Timeout(Duration(minutes: 10)));
 }

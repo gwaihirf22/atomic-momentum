@@ -11,6 +11,7 @@ import 'package:atomic_momentum/domain/services/habit_stats.dart';
 import 'package:atomic_momentum/domain/services/insights.dart';
 import 'package:atomic_momentum/domain/services/quote_of_the_day.dart';
 import 'package:atomic_momentum/domain/services/recent_periods.dart';
+import 'package:atomic_momentum/domain/services/weekly_review.dart';
 import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 
 import '../simulated_phone.dart';
@@ -301,6 +302,44 @@ class YearRun {
   /// The day each achievement was reached, by the reference (updated daily).
   Map<String, DateTime> _reachedOn = {};
 
+  /// Weeks whose review was checked (most of the year's, on their last day).
+  int reviewsChecked = 0;
+
+  /// The week in review against the reference: its days, how its periods
+  /// went, each comeback and what was earned.
+  void _checkReview(DateTime now, WeeklyReview review) {
+    reviewsChecked++;
+    final week = '${_d(review.start)} to ${_d(review.end)}';
+    final refDays = ref.days(review.start, review.end, now);
+    for (final record in review.days) {
+      final r = refDays[record.day]!;
+      if (record.due != r.due || record.done != r.done || record.twoMinute != r.twoMinute) {
+        problem(now, 'week in review, ${_d(record.day)}: ${record.done}+${record.twoMinute} of ${record.due}, expected $r');
+      }
+    }
+    final kept = review.kept, refKept = ref.kept(review.start, now);
+    if (kept.full != refKept.full || kept.twoMinute != refKept.twoMinute || kept.missed != refKept.missed) {
+      problem(now, 'week in review $week: ${kept.full} + ${kept.twoMinute} small, ${kept.missed} missed; '
+          'expected ${refKept.full} + ${refKept.twoMinute}, ${refKept.missed}');
+    }
+    bool inWeek(DateTime d) => !d.isBefore(review.start) && !d.isAfter(review.end);
+    final comebacks = {for (final c in review.comebacks) '${c.habit.name} ${_d(c.comeback.back)}'};
+    final refComebacks = {
+      for (final r in ref.live)
+        if (r.periodic)
+          for (final back in r.walk(now, Reference.streakGoals(r)).comebacks)
+            if (inWeek(back)) '${r.name} ${_d(back)}',
+    };
+    if (!_sameSet(comebacks, refComebacks)) {
+      problem(now, 'week in review $week: comebacks $comebacks, expected $refComebacks');
+    }
+    final earned = {for (final a in review.earned) a.id};
+    final refEarned = {for (final e in _reachedOn.entries) if (inWeek(e.value)) e.key};
+    if (!_sameSet(earned, refEarned)) problem(now, 'week in review $week: earned $earned, expected $refEarned');
+  }
+
+  static bool _sameSet(Set<String> a, Set<String> b) => a.length == b.length && a.containsAll(b);
+
   Future<void> _checkDay(DateTime now, {required bool monthEnd}) async {
     final today = day(now);
     final habits = phone.habits.habits;
@@ -357,6 +396,16 @@ class YearRun {
     if ((last == null) != (refOverall == null) || (last != null && !_close(last, refOverall!))) {
       problem(now, 'this month\'s momentum $last, expected $refOverall');
     }
+
+    // The week in review, on the week's last day once it's out
+    final time = phone.settings.weeklyReviewTime;
+    final review = WeeklyReview.of(
+      habits.where((h) => h.schedule.isPeriodic).toList(),
+      now: now,
+      weekStart: weekStart,
+      reviewTime: (hour: time.hour, minute: time.minute),
+    );
+    if (review != null && review.end == today) _checkReview(now, review);
 
     // The habit page
     for (final r in ref.live) {

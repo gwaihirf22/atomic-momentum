@@ -40,13 +40,13 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 
 **Claude can build:**
 - [x] Vacation notifications: a return date with a welcome back, otherwise a check-in every 3 days (weekly after two weeks) with "I'm back", a Settings switch (2026-10-20)
-- [ ] Weekly review (the last open part of v1 roadmap item 4)
+- [x] Weekly review (the last open part of v1 roadmap item 4; 2026-10-20)
 - [x] Privacy policy and support links in Settings → About (2026-10-20)
 - [x] Screenshots at 6.9": `tool/store_screens.sh` (the example habits on the "Store iPhone 17 Pro Max" simulator) then `python3 tool/store_frames.py` (headline + phone frame). The set to upload is `build/store_frames/final/`: Sepia, Sepia, Charged, Light, Sepia, Charged, Light, Sepia (2026-10-20). A home screen widget shot is still to add
 - [x] Publish the policy pages on paul-blake.com: https://paul-blake.com/momentum/privacy and /momentum/support (website commit 5ae688c)
 - [x] Widgets on Paul's real phone: real data through the App Group, logging and taps work (TestFlight build 1, 2026-10-20; not every kind added yet)
 - [ ] Health on Paul's real phone (Watch data, other apps' runs, turning access off; `tool/device_health_check.sh` on iOS)
-- [ ] The tours work under way in the other session: a welcome page, steps that can't be knocked off course, "Replay tours"
+- [x] The tours work in the other session: a welcome page, steps that can't be knocked off course, "Replay tours" (2026-10-20)
 - [ ] Three moments Paul picked on 2026-10-17 that were never built (still wanted for v1?):
   - All done today: a celebratory greeting, a glowing ring, a haptic, a gold Calendar dot
   - "Streak saved" shown on the card
