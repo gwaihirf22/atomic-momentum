@@ -180,8 +180,8 @@ class SettingsScreen extends StatelessWidget {
               tileKey: const Key('openCategories'),
               icon: CupertinoIcons.square_grid_2x2_fill,
               iconColor: HabitColor.orange.color,
-              title: 'Categories',
-              subtitle: 'Add, edit, reorder or restore categories',
+              title: 'Arrange',
+              subtitle: 'Categories, and the order of your habits',
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CategoriesScreen()),
               ),

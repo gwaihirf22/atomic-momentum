@@ -259,7 +259,7 @@ void main() {
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name == 'Stretch')),
     'Edit habit (two-minute version)': () =>
         AddHabitScreen(editHabit: habits.habits.firstWhere((h) => h.name.startsWith('Drink water every'))),
-    'Categories': () => const CategoriesScreen(),
+    'Arrange (grouped by category)': () => const CategoriesScreen(),
     'Builder, step 1': () => const BuilderAddScreen(),
     'Story, new': () => const StoryHabitScreen(),
     'Habit editor (with its style switch)': () => const HabitEditorScreen(),
@@ -442,6 +442,12 @@ void main() {
         expectNothingCutOff(tester, 'Undo strip at $setting');
         await tester.pump(const Duration(seconds: 5));
         await tester.pumpAndSettle();
+      });
+
+      testWidgets('Arrange, in any order, at $setting', (tester) async {
+        await habits.setGroupByCategory(false);
+        await pump(tester, const CategoriesScreen(), width: width, scale: scale);
+        expectNothingCutOff(tester, 'Arrange, in any order, at $setting');
       });
 
       testWidgets('Category editor at $setting', (tester) async {

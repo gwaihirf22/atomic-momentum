@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 import '../core/theme/app_palette.dart';
 import 'package:provider/provider.dart';
 import '../domain/entities/category.dart';
@@ -10,18 +11,27 @@ import '../presentation/widgets/category_icons.dart';
 import '../presentation/widgets/adaptive.dart';
 import 'package:flutter/cupertino.dart';
 import '../core/theme/app_style.dart';
+import '../core/feedback/haptics.dart';
+import '../domain/entities/habit_color.dart';
+import '../presentation/widgets/habit_icons.dart';
+import '../presentation/widgets/settings_list.dart';
 
-/// Manage categories: add, edit, reorder, delete, and restore or
-/// permanently remove deleted ones.
+/// Arrange (holding the category rings, or Settings → Habits): the order of
+/// categories and habits, and managing categories (add, edit, delete,
+/// restore). With "Group by category" on, habits follow their category's
+/// place and move within it; off, they go in any order.
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final categoryProvider = context.watch<CategoryProvider>();
-    final habits = context.watch<HabitProvider>().habits;
+    final habitProvider = context.watch<HabitProvider>();
+    final habits = habitProvider.habits;
     final categories = categoryProvider.categories;
+    final grouped = habitProvider.groupByCategory;
     final atLimit = categories.length >= Category.maxCount;
+    final palette = AppPalette.of(context);
 
     final addButton = IconButton(
       key: const Key('addCategory'),
@@ -29,36 +39,314 @@ class CategoriesScreen extends StatelessWidget {
       tooltip: atLimit ? 'You can have up to ${Category.maxCount} categories' : 'Add category',
       onPressed: atLimit ? null : () => showCategoryEditorSheet(context),
     );
+
     return Scaffold(
+      backgroundColor: palette.background,
       appBar: isCupertino(context)
           ? CupertinoNavigationBar(
-              backgroundColor: AppPalette.of(context).background,
-              middle: const Text('Categories'),
+              backgroundColor: palette.background,
+              middle: const Text('Arrange'),
               trailing: addButton,
             )
-          : AppBar(title: const Text('Categories'), actions: [addButton]) as PreferredSizeWidget,
-      body: ReorderableListView(
-        buildDefaultDragHandles: false,
-        onReorder: (oldIndex, newIndex) => _reorder(context, oldIndex, newIndex),
-        footer: _Footer(atLimit: atLimit, habits: habits),
-        children: [
-          for (var i = 0; i < categories.length; i++)
-            _CategoryRow(
-              key: Key('categoryRow_${categories[i].id}'),
-              category: categories[i],
-              index: i,
-              habitCount: _countHabits(habits, categories[i].id),
+          : AppBar(title: const Text('Arrange'), actions: [addButton]) as PreferredSizeWidget,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SettingsSection(
+              footer: grouped
+                  ? "Habits follow their category's place. Drag a category to move its habits with it."
+                  : 'Habits go in any order, whatever their category.',
+              children: [
+                SettingsSwitchTile(
+                  tileKey: const Key('groupByCategorySwitch'),
+                  icon: CupertinoIcons.square_stack_3d_up_fill,
+                  iconColor: HabitColor.indigo.color,
+                  title: 'Group by category',
+                  value: grouped,
+                  onChanged: (on) => habitProvider.setGroupByCategory(on),
+                ),
+              ],
             ),
+          ),
+          if (grouped)
+            _GroupedList(categories: categories, habits: habits)
+          else ...[
+            const SliverToBoxAdapter(child: SectionHeader('Categories')),
+            _CategoryList(categories: categories, habits: habits),
+            const SliverToBoxAdapter(child: SectionHeader('Habits')),
+            _HabitList(habits: habits),
+          ],
+          SliverToBoxAdapter(child: _Footer(atLimit: atLimit, habits: habits)),
         ],
       ),
     );
   }
+}
 
-  Future<void> _reorder(BuildContext context, int oldIndex, int newIndex) async {
-    final provider = context.read<CategoryProvider>();
-    if (!await provider.reorder(oldIndex, newIndex) && context.mounted) {
-      _showMessage(context, provider.error ?? 'Could not reorder categories');
+Future<void> _moveCategory(BuildContext context, int oldIndex, int newIndex) async {
+  final provider = context.read<CategoryProvider>();
+  if (!await provider.reorder(oldIndex, newIndex) && context.mounted) {
+    _showMessage(context, provider.error ?? 'Could not reorder categories');
+  }
+}
+
+/// Grouped: each category followed by its habits (those in a deleted or
+/// unknown category last, under Uncategorized). Categories drag with their
+/// habits; habits drag within their category.
+class _GroupedList extends StatelessWidget {
+  final List<Category> categories;
+  final List<Habit> habits;
+
+  const _GroupedList({required this.categories, required this.habits});
+
+  @override
+  Widget build(BuildContext context) {
+    final active = {for (final c in categories) c.id};
+    final rows = <_Row>[
+      for (final category in categories) ...[
+        _Row.category(category),
+        for (final habit in habits)
+          if (habit.categoryId == category.id) _Row.habit(habit, category.id),
+      ],
+    ];
+    final lost = [for (final h in habits) if (!active.contains(h.categoryId)) h];
+    if (lost.isNotEmpty) {
+      rows.add(_Row.category(Category.uncategorized, fixed: true));
+      rows.addAll([for (final h in lost) _Row.habit(h, Category.uncategorizedId)]);
     }
+
+    return SliverReorderableList(
+      itemCount: rows.length,
+      onReorderStart: (_) => Haptics.selection(),
+      onReorderItem: (from, to) => _drop(context, rows, from, to),
+      itemBuilder: (context, i) {
+        final row = rows[i];
+        final category = row.category;
+        if (category != null) {
+          final index = categories.indexOf(category);
+          return _CategoryRow(
+            key: Key('categoryRow_${category.id}'),
+            category: category,
+            index: i,
+            habitCount: _countHabits(habits, category.id),
+            draggable: !row.fixed,
+            onMove: row.fixed
+                ? null
+                : (by) => _moveCategory(context, index, by < 0 ? index + by : index + by + 1),
+            canMoveUp: !row.fixed && index > 0,
+            canMoveDown: !row.fixed && index < categories.length - 1,
+          );
+        }
+        final habit = row.habit!;
+        final group = [for (final r in rows) if (r.habit != null && r.groupId == row.groupId) r.habit!];
+        final at = group.indexOf(habit);
+        return _HabitRow(
+          key: Key('arrangeHabit_${habit.id}'),
+          habit: habit,
+          index: i,
+          indented: true,
+          canMoveUp: at > 0,
+          canMoveDown: at < group.length - 1,
+          onMove: (by) => _moveWithin(context, habit, group[at + by]),
+        );
+      },
+    );
+  }
+
+  /// A drop at [at] (counted without the row moved): a category moves
+  /// (its habits follow on the Habits screen); a habit moves within its
+  /// category, or back where it was.
+  void _drop(BuildContext context, List<_Row> rows, int from, int at) {
+    final moved = rows[from];
+    final rest = [...rows]..removeAt(from);
+    at = at.clamp(0, rest.length);
+    final category = moved.category;
+    if (category != null) {
+      if (moved.fixed) return;
+      final oldIndex = categories.indexOf(category);
+      final newIndex = rest.take(at).where((r) => r.category != null && !r.fixed).length;
+      if (newIndex != oldIndex) _moveCategory(context, oldIndex, newIndex > oldIndex ? newIndex + 1 : newIndex);
+      return;
+    }
+    final habit = moved.habit!;
+    // The category it landed in: the nearest header above the drop
+    final header = rest.take(at).lastWhere((r) => r.category != null, orElse: () => const _Row.none());
+    if (header.groupId != moved.groupId) {
+      Haptics.selection();
+      _showMessage(context, 'Habits move within their category. To change one\'s category, edit it.');
+      return;
+    }
+    final provider = context.read<HabitProvider>();
+    final others = [for (final h in provider.habits) if (h.id != habit.id) h.id];
+    final following = at < rest.length ? rest[at] : null;
+    if (following?.habit case final next? when following!.groupId == moved.groupId) {
+      provider.moveHabit(habit.id, others.indexOf(next.id));
+      return;
+    }
+    // The last of its category
+    final group = [
+      for (final r in rest)
+        if (r.habit != null && r.groupId == moved.groupId) r.habit!.id,
+    ];
+    if (group.isEmpty) return;
+    provider.moveHabit(habit.id, others.indexOf(group.last) + 1);
+  }
+
+  void _moveWithin(BuildContext context, Habit habit, Habit neighbour) {
+    final provider = context.read<HabitProvider>();
+    final ids = [for (final h in provider.habits) h.id];
+    provider.moveHabit(habit.id, ids.indexOf(neighbour.id));
+  }
+}
+
+/// Not grouped: the categories, in their own order.
+class _CategoryList extends StatelessWidget {
+  final List<Category> categories;
+  final List<Habit> habits;
+
+  const _CategoryList({required this.categories, required this.habits});
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverReorderableList(
+      itemCount: categories.length,
+      onReorderStart: (_) => Haptics.selection(),
+      onReorderItem: (from, to) => _moveCategory(context, from, to > from ? to + 1 : to),
+      itemBuilder: (context, i) => _CategoryRow(
+        key: Key('categoryRow_${categories[i].id}'),
+        category: categories[i],
+        index: i,
+        habitCount: _countHabits(habits, categories[i].id),
+        canMoveUp: i > 0,
+        canMoveDown: i < categories.length - 1,
+        onMove: (by) => _moveCategory(context, i, by < 0 ? i + by : i + by + 1),
+      ),
+    );
+  }
+}
+
+/// Not grouped: every habit, in any order.
+class _HabitList extends StatelessWidget {
+  final List<Habit> habits;
+
+  const _HabitList({required this.habits});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.read<HabitProvider>();
+    return SliverReorderableList(
+      itemCount: habits.length,
+      onReorderStart: (_) => Haptics.selection(),
+      onReorderItem: (from, to) => provider.moveHabit(habits[from].id, to),
+      itemBuilder: (context, i) => _HabitRow(
+        key: Key('arrangeHabit_${habits[i].id}'),
+        habit: habits[i],
+        index: i,
+        canMoveUp: i > 0,
+        canMoveDown: i < habits.length - 1,
+        onMove: (by) => provider.moveHabit(habits[i].id, i + by),
+      ),
+    );
+  }
+}
+
+/// A row of the grouped list: a category's header, or one of its habits.
+class _Row {
+  final Category? category;
+  final Habit? habit;
+
+  /// The category a habit row belongs to (Uncategorized for a lost one).
+  final String? groupId;
+
+  /// Uncategorized's header: shown, never dragged.
+  final bool fixed;
+
+  _Row.category(Category this.category, {this.fixed = false})
+      : habit = null,
+        groupId = category.id;
+  _Row.habit(Habit this.habit, String this.groupId)
+      : category = null,
+        fixed = false;
+  const _Row.none()
+      : category = null,
+        habit = null,
+        groupId = null,
+        fixed = false;
+}
+
+/// The handle a row drags by, with what VoiceOver says.
+class _Handle extends StatelessWidget {
+  final int index;
+  final String label;
+  final Key handleKey;
+
+  const _Handle({required this.index, required this.label, required this.handleKey});
+
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableDragStartListener(
+      index: index,
+      child: SizedBox(
+        key: handleKey,
+        width: 44,
+        height: 44,
+        child: Semantics(
+          label: label,
+          child: Icon(
+            isCupertino(context) ? CupertinoIcons.line_horizontal_3 : Icons.drag_handle,
+            color: AppPalette.of(context).textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// VoiceOver's way to reorder without dragging.
+Map<CustomSemanticsAction, VoidCallback> _moveActions({
+  required bool up,
+  required bool down,
+  required void Function(int by)? onMove,
+}) =>
+    {
+      if (up && onMove != null) const CustomSemanticsAction(label: 'Move up'): () => onMove(-1),
+      if (down && onMove != null) const CustomSemanticsAction(label: 'Move down'): () => onMove(1),
+    };
+
+class _HabitRow extends StatelessWidget {
+  final Habit habit;
+  final int index;
+  final bool indented;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final void Function(int by) onMove;
+
+  const _HabitRow({
+    Key? key,
+    required this.habit,
+    required this.index,
+    this.indented = false,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onMove,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final category = context.read<CategoryProvider>().resolve(habit.categoryId);
+    return Semantics(
+      customSemanticsActions: _moveActions(up: canMoveUp, down: canMoveDown, onMove: onMove),
+      child: Material(
+        color: palette.background,
+        child: ListTile(
+          contentPadding: EdgeInsets.only(left: indented ? 40 : 16, right: 8),
+          leading: Icon(habitIcon(habit, category), color: palette.habitColor(habit.color.color), size: 22),
+          title: Text(habit.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          trailing: _Handle(index: index, label: 'Reorder ${habit.name}', handleKey: Key('habitDragHandle_${habit.id}')),
+        ),
+      ),
+    );
   }
 }
 
@@ -96,28 +384,37 @@ class _CategoryRow extends StatelessWidget {
   final int index;
   final int habitCount;
 
-  const _CategoryRow({Key? key, required this.category, required this.index, required this.habitCount})
-      : super(key: key);
+  /// Uncategorized's header can't be dragged or edited.
+  final bool draggable;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final void Function(int by)? onMove;
+
+  const _CategoryRow({
+    Key? key,
+    required this.category,
+    required this.index,
+    required this.habitCount,
+    this.draggable = true,
+    this.canMoveUp = false,
+    this.canMoveDown = false,
+    this.onMove,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: ListTile(
-        leading: _CategoryIcon(category),
-        title: Text(category.name),
-        subtitle: Text(_habitCountText(habitCount)),
-        onTap: () => showCategoryEditorSheet(context, existing: category),
-        trailing: ReorderableDragStartListener(
-          index: index,
-          child: SizedBox(
-            key: Key('dragHandle_${category.id}'),
-            width: 44,
-            height: 44,
-            child: Semantics(
-              label: 'Reorder ${category.name}',
-              child: Icon(isCupertino(context) ? CupertinoIcons.line_horizontal_3 : Icons.drag_handle),
-            ),
-          ),
+    return Semantics(
+      customSemanticsActions: _moveActions(up: canMoveUp, down: canMoveDown, onMove: onMove),
+      child: Material(
+        color: AppPalette.of(context).background,
+        child: ListTile(
+          leading: _CategoryIcon(category),
+          title: Text(category.name, maxLines: 2, overflow: TextOverflow.ellipsis),
+          subtitle: Text(_habitCountText(habitCount)),
+          onTap: draggable ? () => showCategoryEditorSheet(context, existing: category) : null,
+          trailing: draggable
+              ? _Handle(index: index, label: 'Reorder ${category.name}', handleKey: Key('dragHandle_${category.id}'))
+              : null,
         ),
       ),
     );
