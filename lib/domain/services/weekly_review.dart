@@ -29,11 +29,13 @@ final class PerfectWeekWin extends WeekWin {
   const PerfectWeekWin();
 }
 
-/// A habit kept every time it was due that week (twice or more).
+/// A habit kept every time it was due that week (twice or more), with its
+/// streak when it's the longest going.
 final class KeptEveryTimeWin extends WeekWin {
   final Habit habit;
   final int times;
-  const KeptEveryTimeWin(this.habit, this.times);
+  final int? streak;
+  const KeptEveryTimeWin(this.habit, this.times, {this.streak});
 }
 
 /// Overall momentum reached a new level.
@@ -122,12 +124,16 @@ class WeeklyReview {
     final level = momentumAfter == null ? null : MomentumLevel.of(momentumAfter!);
     final levelUp = level != null && momentumBefore != null && level.index > MomentumLevel.of(momentumBefore!).index;
     final streak = bestStreak;
+    final longest = streak != null && streak.length >= 3 ? streak : null;
+    // The longest streak's habit, kept every time: one win says both
+    final keptToo = longest != null && keptEveryTime.any((k) => identical(k.habit, longest.habit));
     return [
       for (final a in earned) EarnedWin(a),
       if (perfectWeek) const PerfectWeekWin(),
       if (levelUp) LevelWin(level),
-      for (final k in keptEveryTime) KeptEveryTimeWin(k.habit, k.times),
-      if (streak != null && streak.length >= 3) StreakWin(streak.habit, streak.length),
+      for (final k in keptEveryTime)
+        KeptEveryTimeWin(k.habit, k.times, streak: identical(k.habit, longest?.habit) ? longest!.length : null),
+      if (longest != null && !keptToo) StreakWin(longest.habit, longest.length),
     ].take(max).toList();
   }
 

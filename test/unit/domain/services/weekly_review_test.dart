@@ -91,6 +91,10 @@ void main() {
     expect(r.comebacks.single.comeback.back, day(18));
     expect(r.keptEveryTime.map((k) => (k.habit.name, k.times)), [('Water', 7)]);
     expect(r.bestStreak!.habit.name, 'Water');
+    // Water is kept every time and has the longest streak: one win says both
+    final win = r.wins().whereType<KeptEveryTimeWin>().single;
+    expect(win.streak, r.bestStreak!.length);
+    expect(r.wins().whereType<StreakWin>(), isEmpty);
   });
 
   test("on the last evening, what isn't done yet tonight isn't a miss", () {

@@ -52,9 +52,11 @@ abstract final class WeeklyReviewWords {
         EarnedWin(:final achievement) => (title: achievement.title, line: achievement.message),
         PerfectWeekWin() => (title: 'A perfect week', line: "Every day, every habit. I'm genuinely impressed."),
         LevelWin(:final level) => (title: '${level.label} momentum', line: 'You moved up a level this week. It shows.'),
-        KeptEveryTimeWin(:final habit, :final times) => habit.isBreak
-            ? (title: habit.name, line: 'Clean every day. Not one slip.')
-            : (title: habit.name, line: 'Kept all $times times it was due.'),
+        KeptEveryTimeWin(:final habit, :final times, :final streak) => (
+            title: habit.name,
+            line: (habit.isBreak ? 'Clean every day. Not one slip.' : 'Kept all $times times it was due.') +
+                (streak == null ? '' : ' ${_capital(habit.schedule.streakLabel(streak))}, and counting.'),
+          ),
         StreakWin(:final habit, :final length) =>
           (title: habit.name, line: '${_capital(habit.schedule.streakLabel(length))}, and counting.'),
       };

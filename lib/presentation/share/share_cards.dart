@@ -406,10 +406,16 @@ class WeekShareCard extends StatelessWidget {
         for (final win in wins)
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Text('✦ ${_title(win)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: look.ink)),
+            child: Row(children: [
+              Icon(Icons.star_rounded, size: 16, color: look.accent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(_title(win),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: look.ink)),
+              ),
+            ]),
           ),
       ]),
     );
