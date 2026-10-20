@@ -54,7 +54,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 **Paul:**
 - [x] The support email: momentum@paul-blake.com through Cloudflare Email Routing (works, 2026-10-20)
 - [x] Create the app in App Store Connect ("Atomic Momentum", 2026-10-20)
-- [ ] The first upload from Xcode (the archive in ~/code/atomic-momentum-widgets/build/ios/archive)
+- [x] The first upload from Xcode: build 1.0.0 (1), on TestFlight and installed on Paul's phone (2026-10-20). Later builds take the next build number (`version:` in pubspec.yaml)
 - [ ] The seller name (individual or an LLC), and EU trader status
 - [ ] Review the tours
 - [ ] The NKJV licence (HarperCollins)
