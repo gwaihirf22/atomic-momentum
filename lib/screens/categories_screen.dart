@@ -93,11 +93,50 @@ Future<void> _moveCategory(BuildContext context, int oldIndex, int newIndex) asy
 /// Grouped: each category followed by its habits (those in a deleted or
 /// unknown category last, under Uncategorized). Categories drag with their
 /// habits; habits drag within their category.
-class _GroupedList extends StatelessWidget {
+class _GroupedList extends StatefulWidget {
   final List<Category> categories;
   final List<Habit> habits;
 
   const _GroupedList({required this.categories, required this.habits});
+
+  @override
+  State<_GroupedList> createState() => _GroupedListState();
+}
+
+class _GroupedListState extends State<_GroupedList> {
+  /// The category being dragged. While one moves, every category's habits
+  /// fold into its header: it's lifted with its habits, and lands between
+  /// categories, never among another's habits.
+  String? _moving;
+
+  /// Room left above the list for the habits folded above the dragged
+  /// category, so it stays under the finger while the others gather round.
+  double _gather = 0;
+
+  /// Each habit row's, to measure what folds.
+  final _rowKeys = <String, GlobalKey>{};
+
+  List<Category> get categories => widget.categories;
+  List<Habit> get habits => widget.habits;
+
+  void _lift(List<_Row> rows, int index) {
+    var above = 0.0;
+    for (final row in rows.take(index)) {
+      if (row.habit case final habit?) above += _rowKeys[habit.id]?.currentContext?.size?.height ?? 0;
+    }
+    setState(() {
+      _moving = rows[index].groupId;
+      _gather = above;
+    });
+  }
+
+  void _fold(String? categoryId) {
+    if (!mounted || _moving == categoryId) return;
+    setState(() {
+      _moving = categoryId;
+      if (categoryId == null) _gather = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +154,27 @@ class _GroupedList extends StatelessWidget {
       rows.addAll([for (final h in lost) _Row.habit(h, Category.uncategorizedId)]);
     }
 
-    return SliverReorderableList(
+    final list = SliverReorderableList(
       itemCount: rows.length,
-      onReorderStart: (_) => Haptics.selection(),
-      onReorderItem: (from, to) => _drop(context, rows, from, to),
+      proxyDecorator: (child, i, animation) => _Lifted(
+        animation: animation,
+        // A category with habits is lifted as a little stack of them
+        stacked: rows[i].category == null ? 0 : _countHabits(habits, rows[i].groupId!).clamp(0, 2),
+        child: child,
+      ),
+      onReorderStart: (i) {
+        Haptics.selection();
+        if (rows[i].category != null) _lift(rows, i);
+      },
+      // Put back where it was: unfold now (a move unfolds once it's made)
+      onReorderEnd: (at) {
+        final from = rows.indexWhere((r) => r.category != null && r.groupId == _moving);
+        if (at == from || at == from + 1) _fold(null);
+      },
+      onReorderItem: (from, to) {
+        _drop(context, rows, from, to);
+        _fold(null);
+      },
       itemBuilder: (context, i) {
         final row = rows[i];
         final category = row.category;
@@ -135,21 +191,35 @@ class _GroupedList extends StatelessWidget {
                 : (by) => _moveCategory(context, index, by < 0 ? index + by : index + by + 1),
             canMoveUp: !row.fixed && index > 0,
             canMoveDown: !row.fixed && index < categories.length - 1,
+            onDragCancel: () => _fold(null),
           );
         }
         final habit = row.habit!;
         final group = [for (final r in rows) if (r.habit != null && r.groupId == row.groupId) r.habit!];
         final at = group.indexOf(habit);
-        return _HabitRow(
+        return _Fold(
           key: Key('arrangeHabit_${habit.id}'),
-          habit: habit,
-          index: i,
-          indented: true,
-          canMoveUp: at > 0,
-          canMoveDown: at < group.length - 1,
-          onMove: (by) => _moveWithin(context, habit, group[at + by]),
+          folded: _moving != null,
+          child: _HabitRow(
+            key: _rowKeys.putIfAbsent(habit.id, GlobalKey.new),
+            habit: habit,
+            index: i,
+            indented: true,
+            canMoveUp: at > 0,
+            canMoveDown: at < group.length - 1,
+            onMove: (by) => _moveWithin(context, habit, group[at + by]),
+          ),
         );
       },
+    );
+    return SliverMainAxisGroup(
+      slivers: [
+        // Grows as the habits above fold, by just as much
+        SliverToBoxAdapter(
+          child: AnimatedContainer(duration: _foldDuration(context), curve: _foldCurve, height: _gather),
+        ),
+        list,
+      ],
     );
   }
 
@@ -210,6 +280,7 @@ class _CategoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliverReorderableList(
       itemCount: categories.length,
+      proxyDecorator: (child, _, animation) => _Lifted(animation: animation, child: child),
       onReorderStart: (_) => Haptics.selection(),
       onReorderItem: (from, to) => _moveCategory(context, from, to > from ? to + 1 : to),
       itemBuilder: (context, i) => _CategoryRow(
@@ -236,6 +307,7 @@ class _HabitList extends StatelessWidget {
     final provider = context.read<HabitProvider>();
     return SliverReorderableList(
       itemCount: habits.length,
+      proxyDecorator: (child, _, animation) => _Lifted(animation: animation, child: child),
       onReorderStart: (_) => Haptics.selection(),
       onReorderItem: (from, to) => provider.moveHabit(habits[from].id, to),
       itemBuilder: (context, i) => _HabitRow(
@@ -280,24 +352,112 @@ class _Handle extends StatelessWidget {
   final String label;
   final Key handleKey;
 
-  const _Handle({required this.index, required this.label, required this.handleKey});
+  /// A drag the system took away (a call, Control Center): no drop comes.
+  final VoidCallback? onCancel;
+
+  const _Handle({required this.index, required this.label, required this.handleKey, this.onCancel});
 
   @override
   Widget build(BuildContext context) {
     return ReorderableDragStartListener(
       index: index,
-      child: SizedBox(
-        key: handleKey,
-        width: 44,
-        height: 44,
-        child: Semantics(
-          label: label,
-          child: Icon(
-            isCupertino(context) ? CupertinoIcons.line_horizontal_3 : Icons.drag_handle,
-            color: AppPalette.of(context).textSecondary,
+      child: Listener(
+        onPointerCancel: onCancel == null ? null : (_) => onCancel!(),
+        child: SizedBox(
+          key: handleKey,
+          width: 44,
+          height: 44,
+          child: Semantics(
+            label: label,
+            child: Icon(
+              isCupertino(context) ? CupertinoIcons.line_horizontal_3 : Icons.drag_handle,
+              color: AppPalette.of(context).textSecondary,
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+const _foldCurve = Curves.easeOutCubic;
+
+Duration _foldDuration(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220);
+
+/// A habit row folded away under its category's header while a category
+/// is dragged.
+class _Fold extends StatelessWidget {
+  final bool folded;
+  final Widget child;
+
+  const _Fold({Key? key, required this.folded, required this.child}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final duration = _foldDuration(context);
+    return ClipRect(
+      child: AnimatedAlign(
+        alignment: Alignment.topCenter,
+        heightFactor: folded ? 0 : 1,
+        duration: duration,
+        curve: _foldCurve,
+        child: AnimatedOpacity(
+          opacity: folded ? 0 : 1,
+          duration: duration,
+          child: IgnorePointer(ignoring: folded, child: ExcludeSemantics(excluding: folded, child: child)),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row being dragged: raised off the list on a shadow, and for a category
+/// with habits, the edges of [stacked] more rows under it: its habits, coming
+/// along.
+class _Lifted extends StatelessWidget {
+  final Animation<double> animation;
+  final int stacked;
+  final Widget child;
+
+  const _Lifted({required this.animation, this.stacked = 0, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final radius = BorderRadius.circular(AppStyle.cardRadius);
+    return AnimatedBuilder(
+      animation: animation,
+      child: ClipRRect(borderRadius: radius, child: child),
+      builder: (context, child) {
+        final t = Curves.easeOut.transform(animation.value);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            for (var i = stacked; i >= 1; i--)
+              Positioned.fill(
+                left: 10.0 * i,
+                right: 10.0 * i,
+                bottom: -6.0 * i * t,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: palette.surface,
+                    borderRadius: radius,
+                    border: Border.all(color: palette.separator),
+                  ),
+                ),
+              ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.background,
+                borderRadius: radius,
+                boxShadow: [BoxShadow(color: palette.barShadow, blurRadius: 24 * t, offset: Offset(0, 8 * t))],
+              ),
+              child: child,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -389,6 +549,7 @@ class _CategoryRow extends StatelessWidget {
   final bool canMoveUp;
   final bool canMoveDown;
   final void Function(int by)? onMove;
+  final VoidCallback? onDragCancel;
 
   const _CategoryRow({
     Key? key,
@@ -399,6 +560,7 @@ class _CategoryRow extends StatelessWidget {
     this.canMoveUp = false,
     this.canMoveDown = false,
     this.onMove,
+    this.onDragCancel,
   }) : super(key: key);
 
   @override
@@ -413,7 +575,12 @@ class _CategoryRow extends StatelessWidget {
           subtitle: Text(_habitCountText(habitCount)),
           onTap: draggable ? () => showCategoryEditorSheet(context, existing: category) : null,
           trailing: draggable
-              ? _Handle(index: index, label: 'Reorder ${category.name}', handleKey: Key('dragHandle_${category.id}'))
+              ? _Handle(
+                  index: index,
+                  label: 'Reorder ${category.name}',
+                  handleKey: Key('dragHandle_${category.id}'),
+                  onCancel: onDragCancel,
+                )
               : null,
         ),
       ),

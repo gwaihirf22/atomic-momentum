@@ -93,6 +93,65 @@ void main() {
     expect(names(), ['Pray', 'Water', 'Gym', 'Read']);
   });
 
+  testWidgets("while a category is dragged, every category's habits fold into it", (tester) async {
+    await pump(tester);
+    double height(String name) => tester.getSize(find.byKey(Key('arrangeHabit_${id(name)}'))).height;
+    expect(height('Water'), greaterThan(40));
+
+    final gesture = await tester.startGesture(tester.getCenter(categoryHandle(BuiltInCategoryIds.spirit)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pumpAndSettle();
+    for (final name in ['Water', 'Gym', 'Pray', 'Read']) {
+      expect(height(name), 0, reason: '$name folds away');
+    }
+    // Spirit lifts as a little stack: it has one habit
+    expect(find.byType(Positioned), findsWidgets);
+
+    // Above Body, now one row up
+    for (var i = 0; i < 10; i++) {
+      await gesture.moveBy(const Offset(0, -20));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(names(), ['Pray', 'Water', 'Gym', 'Read']);
+    for (final name in ['Water', 'Gym', 'Pray', 'Read']) {
+      expect(height(name), greaterThan(40), reason: '$name unfolds in its new place');
+    }
+    expect(tester.getTopLeft(find.byKey(Key('arrangeHabit_${id('Pray')}'))).dy,
+        lessThan(tester.getTopLeft(find.byKey(const Key('categoryRow_body'))).dy));
+  });
+
+  testWidgets('a category put back where it was unfolds its habits', (tester) async {
+    await pump(tester);
+    final spiritTop = tester.getTopLeft(find.byKey(const Key('categoryRow_spirit'))).dy;
+    final gesture = await tester.startGesture(tester.getCenter(categoryHandle(BuiltInCategoryIds.spirit)));
+    await tester.pump(const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pumpAndSettle();
+    // It stays under the finger: Body's habits folded, and Body closed up
+    // right above Spirit's place
+    expect(tester.getBottomLeft(find.byKey(const Key('categoryRow_body'))).dy, closeTo(spiritTop, 1));
+    await gesture.moveBy(const Offset(0, 30));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(names(), ['Water', 'Gym', 'Pray', 'Read']);
+    expect(tester.getSize(find.byKey(Key('arrangeHabit_${id('Pray')}'))).height, greaterThan(40));
+  });
+
+  testWidgets('dragging a habit folds nothing', (tester) async {
+    await pump(tester);
+    final gesture = await tester.startGesture(tester.getCenter(habitHandle('Gym')));
+    await tester.pump(const Duration(milliseconds: 100));
+    await gesture.moveBy(const Offset(0, -30));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(find.byKey(Key('arrangeHabit_${id('Water')}'))).height, greaterThan(40));
+    await gesture.up();
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('a habit drags within its category', (tester) async {
     await pump(tester);
     await drag(tester, habitHandle('Gym'), -70);
