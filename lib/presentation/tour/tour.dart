@@ -4,7 +4,7 @@ import 'tour_anchor.dart';
 import 'tour_events.dart';
 
 /// The tours, one per screen (docs/design/onboarding-tours.md).
-enum TourId { habits, habitPage, calendar, insights, inspire, settings, editor }
+enum TourId { habits, habitPage, calendar, insights, inspire, settings, editor, arrange }
 
 /// Where a tour runs: on the example habits, or the person's own screen.
 enum TourWorld { example, real }
@@ -71,6 +71,12 @@ final class OpenCardActions extends TourMove {
   const OpenCardActions(this.habit);
 }
 
+/// Opens Arrange in the tab showing, unless it's open already (a tour taken
+/// again from Settings → Tours).
+final class OpenArrange extends TourMove {
+  const OpenArrange();
+}
+
 /// Closes habit cards left swiped open.
 final class CloseSwipes extends TourMove {
   const CloseSwipes();
@@ -133,7 +139,10 @@ class Tour {
   /// What it shows, in a few words (Settings → Tours).
   final String summary;
   final TourWorld world;
-  final AppTab tab;
+
+  /// The tab it shows; null for a page that can open in any tab (Arrange,
+  /// from Habits or Settings), where it stays.
+  final AppTab? tab;
   final List<TourStep> steps;
 
   const Tour({

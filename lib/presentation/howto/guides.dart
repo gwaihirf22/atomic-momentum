@@ -190,6 +190,44 @@ abstract final class Guides {
       ],
     ),
     Guide(
+      id: 'arrange',
+      title: 'Arrange your habits',
+      summary: 'The order of categories and habits',
+      cards: [
+        GuideCard(
+          HowToScene(
+            tab: AppTab.habits,
+            highlight: TourAnchorId.categoryRings,
+            height: 300,
+            alt: 'The category rings on Habits',
+          ),
+          "Hold a category ring, or a habit's card, to open Arrange. Settings → Arrange gets there too.",
+        ),
+        GuideCard(
+          HowToScene(
+            tab: AppTab.habits,
+            arrange: true,
+            highlight: TourAnchorId.arrangeCategory,
+            height: 420,
+            alt: 'Arrange, with each category and its habits',
+          ),
+          'Drag a category by its handle: its habits fold into it and move with it. Drag a habit to move it '
+          'within its category; to change its category, edit it.',
+        ),
+        GuideCard(
+          HowToScene(
+            tab: AppTab.habits,
+            arrange: true,
+            highlight: TourAnchorId.arrangeSwitch,
+            height: 300,
+            alt: 'The Group by category switch',
+          ),
+          'Turn off Group by category to put habits in any order. Habits, Calendar and your widgets all '
+          'follow it.',
+        ),
+      ],
+    ),
+    Guide(
       id: 'calendar',
       title: 'Calendar',
       summary: 'Any day, and fixing one you forgot',

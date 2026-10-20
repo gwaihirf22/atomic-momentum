@@ -239,6 +239,37 @@ abstract final class Tours {
     ],
   );
 
+  /// The first visit to Arrange, on the person's own page.
+  static const arrange = Tour(
+    id: TourId.arrange,
+    title: 'Arrange',
+    summary: 'The order of categories and habits',
+    world: TourWorld.real,
+    tab: null,
+    steps: [
+      TourStep(
+        anchor: TourAnchorId.arrangeSwitch,
+        text: "Grouped by category, habits sit with their category, in the categories' order. Off, any order goes.",
+        before: [OpenArrange()],
+        touchable: false,
+      ),
+      TourStep(
+        anchor: TourAnchorId.arrangeCategory,
+        text: 'Drag a category by its handle: its habits fold into it and move with it.',
+        touchable: false,
+      ),
+      TourStep(
+        anchor: TourAnchorId.arrangeHabit,
+        text: "Drag a habit by its handle to move it. Grouped, it stays in its category; edit it to change that.",
+        touchable: false,
+      ),
+      TourStep(
+        text: 'Habits, Calendar and your widgets follow this order. Come back any time: hold a category ring, '
+            "or a habit's card.",
+      ),
+    ],
+  );
+
   static const all = {
     TourId.habits: habits,
     TourId.habitPage: habitPage,
@@ -247,6 +278,7 @@ abstract final class Tours {
     TourId.inspire: inspire,
     TourId.settings: settings,
     TourId.editor: editor,
+    TourId.arrange: arrange,
   };
 
   /// The tour a tab's first visit brings.

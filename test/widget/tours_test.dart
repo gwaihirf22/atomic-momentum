@@ -11,13 +11,18 @@ import 'package:atomic_momentum/core/demo/demo_world.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
 import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/data/datasources/shared_preferences_datasource.dart';
+import 'package:atomic_momentum/domain/entities/category.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/main.dart';
+import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/tour/spotlight.dart';
 import 'package:atomic_momentum/presentation/tour/tour.dart';
 import 'package:atomic_momentum/presentation/tour/tour_bubble.dart';
 import 'package:atomic_momentum/presentation/tour/tour_controller.dart';
 import 'package:atomic_momentum/presentation/tour/tours.dart';
 import 'package:atomic_momentum/presentation/tour/world_scope.dart';
+import 'package:atomic_momentum/screens/categories_screen.dart';
 import 'package:atomic_momentum/screens/habit_editor_screen.dart';
 import 'package:atomic_momentum/screens/ios_main_navigation.dart';
 
@@ -44,6 +49,15 @@ void main() {
   Future<void> settle(WidgetTester tester) async {
     for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 50));
+    }
+  }
+
+  Future<void> addHabits(List<String> names) async {
+    final habits = get<HabitProvider>();
+    await habits.loadHabits();
+    for (final name in names) {
+      await habits.createHabit(
+          CreateHabitParams(name: name, target: 1, color: HabitColor.blue, categoryId: BuiltInCategoryIds.mind));
     }
   }
 
@@ -211,6 +225,8 @@ void main() {
       for (final (size, scale) in const [(Size(375, 667), 1.35), (Size(390, 844), 1.0)]) {
         testWidgets('${id.name} at ${size.width.toInt()}pt, ${(scale * 100).round()}%', (tester) async {
           await setUpWith({TourStore.key: ['habits']});
+          // Arrange points at a habit
+          if (id == TourId.arrange) await addHabits(['Drink water', 'Read 20 pages']);
           tester.view.physicalSize = size * 3;
           tester.view.devicePixelRatio = 3;
           tester.view.padding = const FakeViewPadding(top: 20 * 3);
@@ -268,6 +284,43 @@ void main() {
     await tester.tap(find.byKey(const Key('tab_habits')));
     await settle(tester);
     await tester.tap(find.byKey(const Key('tab_calendar')));
+    await settle(tester);
+    expect(tours.isRunning, isFalse, reason: 'once only');
+  });
+
+  testWidgets('Arrange with no habits to arrange brings no tour', (tester) async {
+    await setUpWith({TourStore.key: ['habits']});
+    await tester.pumpWidget(MomentumApp(worlds: worlds));
+    await settle(tester);
+    await tester.longPress(find.byKey(const Key('categoryRing_mind')));
+    await settle(tester);
+    expect(find.byType(CategoriesScreen), findsOneWidget);
+    expect(toursIn(tester).isRunning, isFalse);
+  });
+
+  testWidgets("Arrange's first visit brings its tour, once", (tester) async {
+    await setUpWith({TourStore.key: ['habits']});
+    await addHabits(['Drink water', 'Read 20 pages']);
+    await tester.pumpWidget(MomentumApp(worlds: worlds));
+    await settle(tester);
+    final tours = toursIn(tester);
+    await tester.longPress(find.byKey(const Key('categoryRing_mind')));
+    await settle(tester);
+    expect(tours.tour?.id, TourId.arrange);
+    for (var i = 0; i < Tours.arrange.steps.length; i++) {
+      await settle(tester);
+      final step = Tours.arrange.steps[i];
+      if (step.anchor != null) {
+        expect(tester.widget<TourSpotlight>(find.byType(TourSpotlight)).target, isNotNull, reason: 'step ${i + 1}');
+      }
+      await tester.tap(find.text(i == Tours.arrange.steps.length - 1 ? 'Done' : 'Next'));
+    }
+    await settle(tester);
+    expect(tours.isRunning, isFalse);
+    expect(find.byType(CategoriesScreen), findsOneWidget, reason: 'still on Arrange, no second one opened');
+    await tester.pageBack();
+    await settle(tester);
+    await tester.longPress(find.byKey(const Key('categoryRing_mind')));
     await settle(tester);
     expect(tours.isRunning, isFalse, reason: 'once only');
   });

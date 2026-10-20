@@ -40,6 +40,10 @@ enum TourAnchorId {
   storySentence,
   storyHardDay,
   editorStyleSwitch,
+  // Arrange
+  arrangeSwitch,
+  arrangeCategory,
+  arrangeHabit,
   // Settings
   settingsHelp,
   settingsFreezes,
@@ -60,6 +64,7 @@ enum TourAnchorId {
         storySentence => 'storySentence',
         storyHardDay => 'storyHardDay',
         editorStyleSwitch => 'switchHabitStyle',
+        arrangeSwitch => 'groupByCategorySwitch',
         settingsHelp => 'openTours',
         settingsFreezes => 'freezeBankTile',
         settingsNotifications => 'defaultReminderTime',

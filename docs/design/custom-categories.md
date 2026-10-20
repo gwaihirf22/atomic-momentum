@@ -48,16 +48,25 @@ class Category extends Equatable {
 - **Picker:** the same 44pt grid as the habit icon picker on Add Habit, so both feel the same.
 
 ## UI
-- **Categories page** (its own screen), opened from **Settings → Categories** or by long-pressing the category rings on the Habits screen:
+- **Arrange page** (`CategoriesScreen`; it was "Categories" until 2026-10-20), opened from **Settings → Arrange**, by holding the category rings, or by holding a habit's card on the Habits screen (scrolled to that habit, briefly tinted):
   - The list shows each category's icon, name and number of habits.
   - **Add** opens a sheet with name, color (the existing 20-color palette) and icon.
   - **Edit** uses the same sheet. All categories are fully editable, built-in ones included: rename, recolor, change icon, delete.
-  - **Reorder** with drag handles.
+  - **Reorder** with drag handles. Categories and habits share the page (see **Habit order** below).
+  - **VoiceOver:** Move up and Move down on every row.
   - **Delete** moves the category to a **Recently Deleted** section at the bottom of the page, the same pattern as Photos and Notes.
     - Its habits are kept, with their history and streaks, and show as **Uncategorized** until the category is restored or the habits are moved.
     - **Restore** brings the category back and its habits rejoin it.
     - **Delete Permanently** is offered only once a deleted category has no habits left, so it can never remove habits or history.
   - Deleted categories aren't offered in pickers, rings or filters.
+
+## Habit order (2026-10-20)
+- **Saved apart from the habits:** a list of ids (`HabitOrder`, `habit_order_v1`) and the switch (`habit_group_by_category_v1`, on by default), so reordering never rewrites histories. `HabitArrangement.arrange` (pure) gives the order and `HabitProvider.habits` returns it, so the Habits list, Calendar's day list, widgets and pickers all follow (Insights' "habits by momentum" keeps its own sort).
+- **Group by category on:** habits sit under their category, in the categories' order; a new habit goes last in its category; one moved to another category goes last in it; a deleted or unknown category's habits come last, under an Uncategorized header that can't move.
+  - **Dragging a category** folds every category's habits into its header (`_Fold`), so it moves among categories only. It lifts with the edges of its habits stacked under it (`_Lifted`) and stays under the finger (a space as tall as the folded rows above opens at the top); dropped, everything unfolds.
+  - **Dragging a habit** keeps it within its category (the list's `dragBoundaryProvider`, `_WithinCategory`, with a tick at the edge), and everything outside the category fades back.
+- **Group by category off:** a Categories list and a Habits list; habits go in any order. Turning it off saves the order shown, so nothing jumps.
+- **Teaching it:** the Habits tour's categories step, the Arrange tour on its first visit (with habits to arrange), and How to → "Arrange your habits".
 - **Habits screen rings:**
   - Up to 6 categories: unchanged, a single row.
   - More than 6: a horizontally **paged** row of 6 per page, with page dots and a swipe. This avoids the old scrolling-chip problems (partly visible chips, a scrollbar drawn over them).

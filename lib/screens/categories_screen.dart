@@ -17,16 +17,38 @@ import '../core/feedback/haptics.dart';
 import '../domain/entities/habit_color.dart';
 import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/settings_list.dart';
+import '../presentation/tour/tour.dart';
+import '../presentation/tour/tour_anchor.dart';
+import '../presentation/tour/tour_controller.dart';
+import '../presentation/tour/world_scope.dart';
 
 /// Arrange (holding the category rings, or Settings → Habits): the order of
 /// categories and habits, and managing categories (add, edit, delete,
 /// restore). With "Group by category" on, habits follow their category's
 /// place and move within it; off, they go in any order.
-class CategoriesScreen extends StatelessWidget {
+class CategoriesScreen extends StatefulWidget {
   /// A habit held on the Habits screen: scrolled to and briefly tinted.
   final String? showHabitId;
 
   const CategoriesScreen({Key? key, this.showHabitId}) : super(key: key);
+
+  @override
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends State<CategoriesScreen> {
+  String? get showHabitId => widget.showHabitId;
+
+  @override
+  void initState() {
+    super.initState();
+    // The first visit with habits to arrange brings its tour
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !WorldScope.isDemo(context) && context.read<HabitProvider>().habits.isNotEmpty) {
+        TourController.maybeOf(context)?.firstVisit(TourId.arrange);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +248,7 @@ class _GroupedListState extends State<_GroupedList> {
           return _Dim(
             key: Key('categoryRow_${category.id}'),
             dimmed: _within != null && category.id != _within,
-            child: _CategoryRow(
+            child: _anchored(i == 0 ? TourAnchorId.arrangeCategory : null, _CategoryRow(
               category: category,
               index: i,
               habitCount: _countHabits(habits, category.id),
@@ -237,7 +259,7 @@ class _GroupedListState extends State<_GroupedList> {
               canMoveUp: !row.fixed && index > 0,
               canMoveDown: !row.fixed && index < categories.length - 1,
               onDragCancel: () => _fold(null),
-            ),
+            )),
           );
         }
         final habit = row.habit!;
@@ -248,7 +270,7 @@ class _GroupedListState extends State<_GroupedList> {
           folded: _moving != null,
           child: _Dim(
             dimmed: _within != null && row.groupId != _within,
-            child: _HabitRow(
+            child: _anchored(rows.indexWhere((r) => r.habit != null) == i ? TourAnchorId.arrangeHabit : null, _HabitRow(
               key: _rowKeys.putIfAbsent(habit.id, GlobalKey.new),
               habit: habit,
               index: i,
@@ -258,7 +280,7 @@ class _GroupedListState extends State<_GroupedList> {
               canMoveDown: at < group.length - 1,
               onMove: (by) => _moveWithin(context, habit, group[at + by]),
               onDragCancel: _letGo,
-            ),
+            )),
           ),
         );
       },
@@ -336,6 +358,7 @@ class _CategoryList extends StatelessWidget {
       onReorderItem: (from, to) => _moveCategory(context, from, to > from ? to + 1 : to),
       itemBuilder: (context, i) => _CategoryRow(
         key: Key('categoryRow_${categories[i].id}'),
+        anchor: i == 0 ? TourAnchorId.arrangeCategory : null,
         category: categories[i],
         index: i,
         habitCount: _countHabits(habits, categories[i].id),
@@ -364,6 +387,7 @@ class _HabitList extends StatelessWidget {
       onReorderItem: (from, to) => provider.moveHabit(habits[from].id, to),
       itemBuilder: (context, i) => _HabitRow(
         key: Key('arrangeHabit_${habits[i].id}'),
+        anchor: i == 0 ? TourAnchorId.arrangeHabit : null,
         habit: habits[i],
         index: i,
         flash: habits[i].id == showHabitId,
@@ -607,6 +631,9 @@ class _HabitRow extends StatelessWidget {
 
   /// The habit held on the Habits screen.
   final bool flash;
+
+  /// What a tour points at here, if anything.
+  final TourAnchorId? anchor;
   final bool canMoveUp;
   final bool canMoveDown;
   final void Function(int by) onMove;
@@ -618,6 +645,7 @@ class _HabitRow extends StatelessWidget {
     required this.index,
     this.indented = false,
     this.flash = false,
+    this.anchor,
     required this.canMoveUp,
     required this.canMoveDown,
     required this.onMove,
@@ -628,11 +656,14 @@ class _HabitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final category = context.read<CategoryProvider>().resolve(habit.categoryId);
-    if (!flash) return _row(context, category, palette.background);
-    return _Flash(
-      from: palette.tint(palette.habitColor(habit.color.color), alpha: 0.22),
-      to: palette.background,
-      builder: (color) => _row(context, category, color),
+    if (!flash) return _anchored(anchor, _row(context, category, palette.background));
+    return _anchored(
+      anchor,
+      _Flash(
+        from: palette.tint(palette.habitColor(habit.color.color), alpha: 0.22),
+        to: palette.background,
+        builder: (color) => _row(context, category, color),
+      ),
     );
   }
 
@@ -699,6 +730,9 @@ class _CategoryRow extends StatelessWidget {
   final void Function(int by)? onMove;
   final VoidCallback? onDragCancel;
 
+  /// What a tour points at here, if anything.
+  final TourAnchorId? anchor;
+
   const _CategoryRow({
     Key? key,
     required this.category,
@@ -709,11 +743,12 @@ class _CategoryRow extends StatelessWidget {
     this.canMoveDown = false,
     this.onMove,
     this.onDragCancel,
+    this.anchor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
+    return _anchored(anchor, Semantics(
       customSemanticsActions: _moveActions(up: canMoveUp, down: canMoveDown, onMove: onMove),
       child: Material(
         color: AppPalette.of(context).background,
@@ -732,9 +767,12 @@ class _CategoryRow extends StatelessWidget {
               : null,
         ),
       ),
-    );
+    ));
   }
 }
+
+/// [child], marked for a tour when [id] is given.
+Widget _anchored(TourAnchorId? id, Widget child) => id == null ? child : TourAnchor(id: id, child: child);
 
 /// Limit note and the Recently Deleted section, below the reorderable list.
 class _Footer extends StatelessWidget {

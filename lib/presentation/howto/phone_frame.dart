@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_palette.dart';
+import '../../screens/categories_screen.dart';
 import '../../screens/habit_detail_screen.dart';
 import '../../screens/ios_main_navigation.dart';
 import '../tour/tour_anchor.dart';
@@ -18,6 +19,9 @@ class HowToScene {
 
   /// An example habit whose page is open (by name).
   final String? habitPage;
+
+  /// Arrange open, over the tab.
+  final bool arrange;
   final TourAnchorId? highlight;
 
   /// Which one, by example habit name, for highlights there are several of.
@@ -33,6 +37,7 @@ class HowToScene {
   const HowToScene({
     required this.tab,
     this.habitPage,
+    this.arrange = false,
     this.highlight,
     this.habit,
     this.height = 420,
@@ -77,6 +82,12 @@ class _PhonePictureState extends State<PhonePicture> {
 
   Future<void> _prepare() async {
     await _frame();
+    if (widget.scene.arrange) {
+      unawaited(_world.nav.navigatorOf(widget.scene.tab)?.push(PageRouteBuilder<void>(
+        pageBuilder: (_, __, ___) => const CategoriesScreen(),
+        transitionDuration: Duration.zero,
+      )));
+    }
     final page = widget.scene.habitPage;
     if (page != null) {
       final id = _world.demo!.habits.habits.where((h) => h.name == page).firstOrNull?.id;

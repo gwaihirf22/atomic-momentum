@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/datasources/shared_preferences_datasource.dart';
 
+import '../../screens/categories_screen.dart';
 import '../../screens/habit_detail_screen.dart';
 import '../../screens/ios_main_navigation.dart';
 import '../widgets/habit_card.dart';
@@ -196,9 +197,9 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
     _ready = false;
     notifyListeners();
     if (tour.world == TourWorld.example) {
-      await worlds.enterDemo(tab: tour.tab);
-    } else {
-      worlds.world.nav.show(tour.tab);
+      await worlds.enterDemo(tab: tour.tab ?? AppTab.habits);
+    } else if (tour.tab case final tab?) {
+      worlds.world.nav.show(tab);
     }
     _events = TourEvents.stream.listen(_heard);
     await _prepare();
@@ -272,6 +273,11 @@ class TourController extends ChangeNotifier with WidgetsBindingObserver {
         case OpenCardActions(:final habit):
           final id = worlds.world.demo?.habits.habits.where((h) => h.name == habit).firstOrNull?.id;
           if (id != null) HabitCard.openActions(id);
+        case OpenArrange():
+          final navigator = nav.navigatorOf(nav.current.value);
+          if (anchors.find(TourAnchorId.arrangeSwitch) == null && navigator != null) {
+            unawaited(navigator.push(CupertinoPageRoute<void>(builder: (_) => const CategoriesScreen())));
+          }
         case ToOwnHabits():
           worlds.exitDemo(tab: AppTab.habits);
       }
