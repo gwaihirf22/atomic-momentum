@@ -32,7 +32,7 @@ The checklist for the first release. The texts are in this folder:
 
 **Then:**
 - TestFlight for a week or two on Paul's phone: internal testing needs no review.
-- Submit.
+- Submit. **Submitted for review 2026-10-21: version 1.0.0, build 2, rated 13+, released manually once approved.**
 
 ## Everything left before launch (audit of 2026-10-20)
 
