@@ -18,6 +18,8 @@ Notifications are local reminders and streak warnings, scheduled on the device. 
 
 Widgets: home screen and lock screen widgets show habits, momentum and quotes. A habit widget's + logs a step through an App Intent.
 
+Tips: on the US storefront only, Settings → Support → "Buy me a coffee" opens the developer's tip page in Safari. It unlocks nothing: every feature is free.
+
 ## App Privacy (the "nutrition label")
 
 App Store Connect → App Privacy → Get Started:
