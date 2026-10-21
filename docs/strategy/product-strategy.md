@@ -94,7 +94,7 @@ These are expected from top apps but aren't the reason someone switches:
   - **The page:** buymeacoffee.com/paulblake (live 2026-10-21), Paul's page for all his apps (Momentum, Lion Tails, Neighborly, Loom). An empty `AppLinks.coffee` would hide the row.
 - **Later, if wanted:**
   - in-app tips for other countries: consumable purchases, through RevenueCat's `purchases_flutter` or the official `in_app_purchase`;
-  - an optional paid extra for something that costs money to run, such as sync between devices, which needs a server.
+  - sync between devices needs no server after all (decided 2026-10-21: iCloud and Google Drive, see [../design/sync.md](../design/sync.md)), so it stays free like everything else.
 
 ## 3. Platform: stay on Flutter
 
@@ -128,7 +128,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 |---|---|
 | **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); rewards done as freezes and vacation mode; and the weekly review (done). 5. Onboarding tutorial that teaches the method (tours and How to, built). 6. Store readiness (done: submitted for App Review 2026-10-21, see [../store/README.md](../store/README.md)). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Tips outside the US, if wanted (in-app purchases). |
-| **v2** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)), sync between devices (accounts; possibly a paid extra, since it needs a server), Apple Watch. Logging from Apple Health was brought forward and is done. |
+| **v2** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)), sync between devices (no accounts or server: iCloud on iPhone and iPad, Google Drive on Android, off until turned on in Settings; with iPad, see [../design/sync.md](../design/sync.md)), Apple Watch. Logging from Apple Health was brought forward and is done. |
 
 Every feature ships with tests, as with everything so far.
 
