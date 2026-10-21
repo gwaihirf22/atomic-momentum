@@ -9,7 +9,7 @@ import 'sharer.dart';
 /// Shown only in the United States. As of October 2026 both stores allow a
 /// link to an outside payment page there (Apple guideline 3.1.1(a); Google
 /// Play while its US court order stands) and forbid it elsewhere, where tips
-/// would have to be in-app purchases. Hidden, too, until there's a page
+/// would have to be in-app purchases. Hidden, too, without a page
 /// ([AppLinks.coffee]). Tests use a fake.
 abstract class SupportLink {
   /// Whether to offer the link here: a page exists and this is a US user.

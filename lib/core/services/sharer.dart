@@ -16,8 +16,9 @@ class AppLinks {
   static String? get shareText => hasStore ? 'Made with Momentum: $store' : null;
 
   /// The developer's tip page ("Buy me a coffee" in Settings, US only; see
-  /// SupportLink). Empty until there is one, which hides the row.
-  static const coffee = '';
+  /// SupportLink), shared with the developer's other apps. Empty would hide
+  /// the row.
+  static const coffee = 'https://buymeacoffee.com/paulblake';
 
   /// The privacy policy (Settings → About, and the App Store listing). Its
   /// text is the website's pages/momentum/privacy.js; docs/store has a copy.

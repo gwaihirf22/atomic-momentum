@@ -29,8 +29,10 @@ void main() {
     });
   });
 
-  test('there is no page yet, so the row stays hidden until AppLinks.coffee is set', () async {
-    expect(AppLinks.coffee, isEmpty);
-    expect(await PlatformSupportLink(storeCountry: () async => 'USA').isAvailable(), isFalse);
+  test("the row opens the developer's Buy Me a Coffee page, for US users", () async {
+    expect(AppLinks.coffee, 'https://buymeacoffee.com/paulblake');
+    expect(Uri.parse(AppLinks.coffee).scheme, 'https', reason: 'it opens in the browser');
+    expect(await PlatformSupportLink(storeCountry: () async => 'USA').isAvailable(), isTrue);
+    expect(await PlatformSupportLink(storeCountry: () async => 'GBR').isAvailable(), isFalse);
   });
 }

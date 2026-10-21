@@ -62,7 +62,7 @@ First time through, so here's the path:
 4. **Screenshots** for the required iPhone sizes, plus the description, keywords and support page.
 5. **Before submitting:**
    - ~~Confirm the NKJV Scripture licence~~: gratis use with the notice, kept under 500 verses and 25% of the library (2026-10-20).
-   - Make the tip page if wanted (`AppLinks.coffee`).
+   - ~~Make the tip page~~: buymeacoffee.com/paulblake (2026-10-21).
    - Build with plain `flutter build ipa`; the archive refuses dev tools.
 6. **TestFlight first:** run the real build for a week or two, then submit. Review notes should explain Health (what's read and written, and why). Expect a question or two from Apple; most first rejections are about metadata or privacy wording, not the app.
 
@@ -98,7 +98,7 @@ First time through, so here's the path:
 
 ## Buy me a coffee
 
-- **Turn it on:** make a tip page (Buy Me a Coffee, Ko-fi or similar) and put its address in `AppLinks.coffee` (`lib/core/services/sharer.dart`). Until then the Settings row stays hidden.
+- **On** since 2026-10-21: `AppLinks.coffee` (`lib/core/services/sharer.dart`) is buymeacoffee.com/paulblake, Paul's page for all his apps.
 - **Tips outside the US** would have to be in-app purchases (Apple guideline 3.1.1; Google Play's payments policy). Add them only if wanted: three consumable products, through `in_app_purchase` or RevenueCat, plus each store's paid-apps agreement.
 - **Watch the rules:**
   - Google's US allowance follows a court order, reported to run until November 2027. Recheck it before then, and before each store submission (Apple guideline 3.1.1(a), Google Play's payments policy).

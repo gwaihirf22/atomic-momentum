@@ -91,7 +91,7 @@ These are expected from top apps but aren't the reason someone switches:
 - **"Buy me a coffee"** in Settings (Support) opens the developer's tip page in the browser (`SupportLink`, the page in `AppLinks.coffee`).
   - **US users only.** As of October 2026 both stores allow a link to an outside payment page in the United States: Apple through guideline 3.1.1(a), "These entitlements are not required for developers to include buttons, external links, or other calls to action in their United States storefront apps"; Google Play while its US court order stands, until November 2027 as reported.
   - **Elsewhere it's hidden.** Both stores forbid such links in other countries: Apple wants tips as in-app purchases, and Google Play allows outside donations only to registered charities (AnkiDroid was flagged over a donation link in September 2026). So the row hides itself outside the US.
-  - **Hidden until there's a page.** It stays hidden until `AppLinks.coffee` holds one.
+  - **The page:** buymeacoffee.com/paulblake (live 2026-10-21), Paul's page for all his apps (Momentum, Lion Tails, Neighborly, Loom). An empty `AppLinks.coffee` would hide the row.
 - **Later, if wanted:**
   - in-app tips for other countries: consumable purchases, through RevenueCat's `purchases_flutter` or the official `in_app_purchase`;
   - an optional paid extra for something that costs money to run, such as sync between devices, which needs a server.
