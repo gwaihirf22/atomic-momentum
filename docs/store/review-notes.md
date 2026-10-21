@@ -26,6 +26,11 @@ App Store Connect → App Privacy → Get Started:
   - Health data read and stored on the device isn't "collected" in Apple's sense.
 - Result: **Data Not Collected**.
 
+## Content rights
+- **"Does your app contain, show, or access third-party content?"** → **Yes, and I have the necessary rights** (answered 2026-10-21).
+  - The built-in quotes are third-party content: Scripture in the NKJV, quoted under HarperCollins' gratis use (at most 500 verses, under 25% of the library, with its notice), and public-domain writers and translations.
+  - Apple Health data is the person's own, read with their permission.
+
 The privacy manifests (`ios/Runner/PrivacyInfo.xcprivacy`, `ios/MomentumWidgets/PrivacyInfo.xcprivacy`) say the same: no tracking, nothing collected, and UserDefaults read for the app's own settings and the App Group shared with the widgets.
 
 ## Export compliance
