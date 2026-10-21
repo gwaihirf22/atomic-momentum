@@ -646,7 +646,8 @@ class _AboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SettingsSection(
       header: 'About',
-      footer: 'Momentum collects nothing: no accounts, no ads, no tracking. Your habits stay on this phone.',
+      footer: 'Momentum collects nothing: no accounts, no ads, no tracking. Your habits stay on this phone.\n\n'
+          'Made by ${AppLinks.maker}. ${AppLinks.copyright}',
       children: [
         SettingsTile(
           tileKey: const Key('privacyPolicy'),

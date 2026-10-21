@@ -29,6 +29,12 @@ class AppLinks {
   static const support = 'https://paul-blake.com/momentum/support';
 
   static const supportEmail = 'momentum@paul-blake.com';
+
+  /// Who makes Momentum (Settings → About, the listing's copyright). A brand,
+  /// not the App Store seller: an individual account shows Paul's legal name.
+  static const maker = 'Blake Built';
+
+  static const copyright = '© 2026 $maker';
 }
 
 /// Hands a picture to the phone's share sheet (Messages, WhatsApp, Telegram,

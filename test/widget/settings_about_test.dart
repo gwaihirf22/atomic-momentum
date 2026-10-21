@@ -64,6 +64,12 @@ void main() {
     expect(find.textContaining(AppLinks.privacy), findsOneWidget);
   });
 
+  testWidgets('says who makes it', (tester) async {
+    FakeWebPages.install();
+    await pump(tester);
+    expect(find.textContaining('Made by Blake Built. © 2026 Blake Built'), findsOneWidget);
+  });
+
   test('the links are the published pages', () {
     expect(AppLinks.privacy, 'https://paul-blake.com/momentum/privacy');
     expect(AppLinks.support, 'https://paul-blake.com/momentum/support');

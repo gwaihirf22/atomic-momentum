@@ -19,9 +19,9 @@ The checklist for the first release. The texts are in this folder:
    - Xcode creates the Apple Distribution certificate the first time.
    - Command-line exports fail with "No Accounts" until that certificate exists, or until there's an App Store Connect API key (Users and Access → Integrations) for `xcodebuild -authenticationKeyPath`.
 3. **Decide:**
-   - the seller name (individual vs an LLC);
    - EU trader status;
    - the support email (suggested: an address on paul-blake.com, forwarded to Gmail by Cloudflare Email Routing).
+   - Decided 2026-10-21: the seller stays the individual account (Apple takes no trade names or DBAs, only a legal entity with a D-U-N-S number, and an LLC isn't worth it for a free app); the brand "Blake Built" goes everywhere else (Settings → About, the listing's Copyright "2026 Blake Built", the website). Ask Apple Developer Support whether the seller can read "Paul Blake" rather than "PAUL ARTHUR BLAKE". An individual account can move to an organization later, keeping the app and its reviews.
    - Decided 2026-10-20: the store name "Atomic Momentum"; v1 iPhone-only (iPad soon after); the code stays public; policy pages on paul-blake.com.
 4. ~~**The NKJV licence**~~: gratis use with the notice (decided 2026-10-20; `docs/design/inspire.md`).
 
@@ -56,7 +56,9 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] The support email: momentum@paul-blake.com through Cloudflare Email Routing (works, 2026-10-20)
 - [x] Create the app in App Store Connect ("Atomic Momentum", 2026-10-20)
 - [x] The first upload from Xcode: build 1.0.0 (1), on TestFlight and installed on Paul's phone (2026-10-20). Later builds take the next build number (`version:` in pubspec.yaml)
-- [ ] The seller name (individual or an LLC), and EU trader status
+- [x] The seller name: individual, branded Blake Built (2026-10-21)
+- [ ] EU trader status
+- [ ] Ask Apple Developer Support to show the seller as "Paul Blake"
 - [ ] Review the tours
 - [x] The NKJV licence: gratis use with the notice, under 500 verses and 25% of the library (2026-10-20)
 - [ ] Check the built-in quotes against their sources (`docs/design/inspire.md`, "Review before release")

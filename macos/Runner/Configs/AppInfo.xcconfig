@@ -11,4 +11,4 @@ PRODUCT_NAME = Momentum
 PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 Paul Blake. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 Blake Built. All rights reserved.

@@ -78,7 +78,7 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
 | **Privacy policy URL** | https://paul-blake.com/momentum/privacy |
 | **Support URL** | https://paul-blake.com/momentum/support (email momentum@paul-blake.com) |
 | **Marketing URL** | optional, leave empty |
-| **Copyright** | 2026 Paul Blake (or the LLC's name) |
+| **Copyright** | 2026 Blake Built (a brand: the seller line shows Paul's legal name, as on any individual account) |
 
 ## Screenshots
 
