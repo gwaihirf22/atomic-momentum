@@ -61,7 +61,7 @@ First time through, so here's the path:
    - The Health usage text is already written (`Info.plist`).
 4. **Screenshots** for the required iPhone sizes, plus the description, keywords and support page.
 5. **Before submitting:**
-   - Confirm the NKJV Scripture licence for app use with HarperCollins (CLAUDE.md, Inspire).
+   - ~~Confirm the NKJV Scripture licence~~: gratis use with the notice, kept under 500 verses and 25% of the library (2026-10-20).
    - Make the tip page if wanted (`AppLinks.coffee`).
    - Build with plain `flutter build ipa`; the archive refuses dev tools.
 6. **TestFlight first:** run the real build for a week or two, then submit. Review notes should explain Health (what's read and written, and why). Expect a question or two from Apple; most first rejections are about metadata or privacy wording, not the app.

@@ -39,6 +39,20 @@ void main() {
     expect(Quotes.nkjvNotice, contains('Copyright © 1982 by Thomas Nelson'));
   });
 
+  test("Scripture stays within the NKJV's gratis use: under 500 verses and a quarter of the library", () {
+    final verses = library.where((q) => q.family == QuoteFamily.scripture);
+    // A passage cited "Romans 5:3–4" is two verses
+    var count = 0;
+    for (final q in verses) {
+      final range = RegExp(r':(\d+)(?:–(\d+))?').firstMatch(q.author)!;
+      count += int.parse(range.group(2) ?? range.group(1)!) - int.parse(range.group(1)!) + 1;
+    }
+    expect(count, lessThanOrEqualTo(500));
+    int chars(Iterable<Quote> quotes) => quotes.fold(0, (sum, q) => sum + q.text.length);
+    final share = chars(verses) / chars(library);
+    expect(share, lessThan(0.25), reason: 'Scripture is ${(share * 100).toStringAsFixed(1)}% of the library\'s text');
+  });
+
   test('ids from earlier versions are all still there (habits and saved lists keep them)', () {
     final ids = {for (final q in library) q.id};
     const earlier = [

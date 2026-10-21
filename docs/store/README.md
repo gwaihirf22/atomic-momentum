@@ -23,7 +23,7 @@ The checklist for the first release. The texts are in this folder:
    - EU trader status;
    - the support email (suggested: an address on paul-blake.com, forwarded to Gmail by Cloudflare Email Routing).
    - Decided 2026-10-20: the store name "Atomic Momentum"; v1 iPhone-only (iPad soon after); the code stays public; policy pages on paul-blake.com.
-4. **The NKJV licence** for app use (HarperCollins).
+4. ~~**The NKJV licence**~~: gratis use with the notice (decided 2026-10-20; `docs/design/inspire.md`).
 
 **Claude:**
 1. **Publish** the privacy policy and support page on paul-blake.com (`/momentum/privacy`, `/momentum/support`), and link the policy from Settings in the app (App Review guideline 5.1.1(i) asks for it in the app as well).
@@ -58,7 +58,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] The first upload from Xcode: build 1.0.0 (1), on TestFlight and installed on Paul's phone (2026-10-20). Later builds take the next build number (`version:` in pubspec.yaml)
 - [ ] The seller name (individual or an LLC), and EU trader status
 - [ ] Review the tours
-- [ ] The NKJV licence (HarperCollins)
+- [x] The NKJV licence: gratis use with the notice, under 500 verses and 25% of the library (2026-10-20)
 - [ ] Check the built-in quotes against their sources (`docs/design/inspire.md`, "Review before release")
 - [ ] Google Play, if v1 includes it: the closed test needs 12 testers for 14 days, so start early
 

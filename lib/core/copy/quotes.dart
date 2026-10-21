@@ -1045,5 +1045,145 @@ class Quotes {
       family: QuoteFamily.thinkers,
       themes: {QuoteTheme.momentum, QuoteTheme.purpose},
     ),
+    // Added 2026-10-20: more public-domain words, so Scripture stays under a
+    // quarter of the library (the NKJV's gratis-use terms)
+    Quote(
+      id: 'thoreau-advances-confidently',
+      text: 'I learned this, at least, by my experiment: that if one advances confidently in the direction of '
+          'his dreams, and endeavors to live the life which he has imagined, he will meet with a success '
+          'unexpected in common hours.',
+      author: 'Henry David Thoreau',
+      source: 'Walden (1854)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.starting, QuoteTheme.purpose},
+    ),
+    Quote(
+      id: 'emerson-best-day',
+      text: 'Write it on your heart that every day is the best day in the year.',
+      author: 'Ralph Waldo Emerson',
+      source: 'Society and Solitude (1870)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.starting, QuoteTheme.momentum},
+    ),
+    Quote(
+      id: 'emerson-peace',
+      text: 'Nothing can bring you peace but yourself.',
+      author: 'Ralph Waldo Emerson',
+      source: 'Self-Reliance (1841)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.purpose, QuoteTheme.hardDays},
+    ),
+    Quote(
+      id: 'washington-obstacles',
+      text: 'I have learned that success is to be measured not so much by the position that one has reached in '
+          'life as by the obstacles which he has overcome while trying to succeed.',
+      author: 'Booker T. Washington',
+      source: 'Up from Slavery (1901)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.perseverance, QuoteTheme.hardDays},
+    ),
+    Quote(
+      id: 'keller-overcoming',
+      text: 'Although the world is full of suffering, it is full also of the overcoming of it.',
+      author: 'Helen Keller',
+      source: 'Optimism (1903)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.hardDays, QuoteTheme.comeback},
+    ),
+    Quote(
+      id: 'roosevelt-worth-doing',
+      text: 'Nothing in this world is worth having or worth doing unless it means effort, pain, difficulty.',
+      author: 'Theodore Roosevelt',
+      source: 'Address at Syracuse (1903)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.perseverance, QuoteTheme.hardDays},
+    ),
+    Quote(
+      id: 'lincoln-resolution',
+      text: 'Always bear in mind that your own resolution to succeed, is more important than any other one thing.',
+      author: 'Abraham Lincoln',
+      source: 'Letter to Isham Reavis (1855)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.purpose, QuoteTheme.starting},
+    ),
+    Quote(
+      id: 'confucius-raising-a-mound',
+      text: 'The prosecution of learning may be compared to what may happen in raising a mound. If there want but '
+          'one basket of earth to complete the work, and I stop, the stopping is my own work. It may be compared '
+          'to throwing down the earth on the level ground. Though but one basketful is thrown at a time, the '
+          'advancing with it is my own going forward.',
+      author: 'Confucius',
+      source: 'Analects 9.18 · tr. James Legge',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.smallSteps, QuoteTheme.perseverance},
+    ),
+    Quote(
+      id: 'laozi-single-step',
+      text: 'The tree which fills the arms grew from the tiniest sprout; the tower of nine storeys rose from a '
+          '(small) heap of earth; the journey of a thousand li commenced with a single step.',
+      author: 'Laozi',
+      source: 'Tao Te Ching 64 · tr. James Legge',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.smallSteps, QuoteTheme.starting},
+    ),
+    Quote(
+      id: 'franklin-diligence',
+      text: 'Diligence is the mother of good luck.',
+      author: 'Benjamin Franklin',
+      source: "Poor Richard's Almanack (1736)",
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.perseverance, QuoteTheme.momentum},
+    ),
+    Quote(
+      id: 'franklin-do-it-today',
+      text: 'Have you somewhat to do to-morrow, do it to-day.',
+      author: 'Benjamin Franklin',
+      source: "Poor Richard's Almanack (1742)",
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.starting},
+    ),
+    Quote(
+      id: 'carlyle-found-his-work',
+      text: 'Blessed is he who has found his work; let him ask no other blessedness.',
+      author: 'Thomas Carlyle',
+      source: 'Past and Present (1843)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.purpose},
+    ),
+    Quote(
+      id: 'carlyle-duty-nearest',
+      text: 'Do the Duty which lies nearest thee, which thou knowest to be a Duty! Thy second Duty will already '
+          'have become clearer.',
+      author: 'Thomas Carlyle',
+      source: 'Sartor Resartus (1836)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.smallSteps, QuoteTheme.starting},
+    ),
+    Quote(
+      id: 'longfellow-up-and-doing',
+      text: 'Let us, then, be up and doing, with a heart for any fate; still achieving, still pursuing, learn to '
+          'labor and to wait.',
+      author: 'Henry Wadsworth Longfellow',
+      source: 'A Psalm of Life (1838)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.perseverance, QuoteTheme.momentum},
+    ),
+    Quote(
+      id: 'longfellow-toiling-upward',
+      text: 'The heights by great men reached and kept were not attained by sudden flight, but they, while their '
+          'companions slept, were toiling upward in the night.',
+      author: 'Henry Wadsworth Longfellow',
+      source: 'The Ladder of St. Augustine (1858)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.perseverance, QuoteTheme.smallSteps},
+    ),
+    Quote(
+      id: 'henley-master-of-my-fate',
+      text: 'I am the master of my fate, I am the captain of my soul.',
+      author: 'William Ernest Henley',
+      source: 'Invictus (1888)',
+      family: QuoteFamily.thinkers,
+      themes: {QuoteTheme.purpose, QuoteTheme.comeback},
+    ),
   ];
 }
