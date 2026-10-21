@@ -188,6 +188,7 @@ class _MomentumAppState extends State<MomentumApp> {
                 // A world of its own: switching remounts everything below,
                 // the editor and sheets on the root navigator included
                 navigatorKey: world.navigatorKey,
+                navigatorObservers: [_snackBarsAway[world] ??= _SnackBarsAway()],
                 home: const WorldHome(),
                 // Screens built from Material widgets read Theme.of(context), which
                 // CupertinoApp doesn't provide; it also carries the palette
@@ -246,5 +247,26 @@ class _MomentumAppState extends State<MomentumApp> {
         ),
       ),
     );
+  }
+}
+
+/// One per world: each has its own root navigator, and an observer belongs
+/// to one navigator at a time.
+final _snackBarsAway = Expando<_SnackBarsAway>('snack bars away');
+
+/// A page opening over the whole app (the editor) clears the SnackBars
+/// first. Flutter shows a SnackBar on every tab's page, and two
+/// alike in the app below stop a page's animation ("multiple heroes share
+/// the same tag"; found by the monkey test).
+class _SnackBarsAway extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    final context = navigator?.context;
+    // Only pages animate heroes: a sheet or alert keeps the message up
+    if (previousRoute == null || context == null || route is! PageRoute) return;
+    // At once: one sliding out would still be there as the page opens
+    ScaffoldMessenger.maybeOf(context)
+      ?..clearSnackBars()
+      ..removeCurrentSnackBar();
   }
 }
