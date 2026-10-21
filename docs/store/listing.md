@@ -41,7 +41,7 @@ APPLE HEALTH
 Link a habit to steps, exercise, workouts, sleep, mindful minutes or water, and it fills itself in.
 
 INSIGHTS AND ACHIEVEMENTS
-A heatmap of every day, your momentum month by month, your best weekdays, and achievements for real milestones, plus a few silly ones. Share any of them as a card.
+A heatmap of every day, your momentum month by month, your best weekdays, and achievements for real milestones, plus a few silly ones. On the last evening of each week, a week in review sums up your wins and comebacks. Share any of them as a card.
 
 WIDGETS
 Log a habit from your home screen with one tap, keep momentum on your lock screen, and start the day with a quote.
