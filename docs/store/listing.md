@@ -85,7 +85,7 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
 
 ## Screenshots
 
-**Made:** 10 at 6.9" (1320 × 2868), framed with a headline. Upload `build/store_frames/final/` in order. Apple scales them for the smaller iPhones.
+**Made:** 10 at 6.9" (1320 × 2868), framed with a headline, and uploaded with build 2. Apple scales them for the smaller iPhones. The uploaded set is kept in [screenshots/](screenshots/), in order, with the raw lock screen and home screen captures in `screenshots/system/` (the hard ones to retake: copy them into `build/store_screens/` to reframe without step 2). A fresh run writes `build/store_frames/final/`.
 
 **To remake them** after a screen changes:
 1. `tool/store_screens.sh` captures the example habits on the "Store iPhone 17 Pro Max" simulator (iOS 27), in Sepia, Charged and Light. It leaves the app installed, with the example habits in its widgets.

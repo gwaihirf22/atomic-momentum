@@ -27,7 +27,7 @@ The checklist for the first release. The texts are in this folder:
    - The export at the end of `flutter build ipa` fails with "No Accounts". That's expected: Xcode uploads with Paul's signed-in account.
    - Exporting from the command line would need an App Store Connect API key (Users and Access → Integrations) for `xcodebuild -authenticationKeyPath`.
    - Keep the archives in Xcode's Organizer: their symbols turn crash reports into readable code.
-4. **Screenshots**, only if the app's look changes: `tool/store_screens.sh && tool/widget_screens.sh && python3 tool/store_frames.py` (see CLAUDE.md). The uploaded set is in `build/store_frames/final/`.
+4. **Screenshots**, only if the app's look changes: `tool/store_screens.sh && tool/widget_screens.sh && python3 tool/store_frames.py` (see CLAUDE.md). The uploaded set is kept in `docs/store/screenshots/` (see listing.md).
 
 ## Decisions
 
