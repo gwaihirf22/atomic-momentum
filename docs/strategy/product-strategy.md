@@ -126,7 +126,7 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 
 | Phase | Contents, in order |
 |---|---|
-| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); rewards done as freezes and vacation mode; and the weekly review (done). 5. Onboarding tutorial that teaches the method. 6. Store readiness: privacy label and screenshots (name, icon and app id are done; notification permission is asked at first launch). |
+| **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); rewards done as freezes and vacation mode; and the weekly review (done). 5. Onboarding tutorial that teaches the method (tours and How to, built). 6. Store readiness (done: submitted for App Review 2026-10-21, see [../store/README.md](../store/README.md)). |
 | **v1.x** | 1. Habit stacking. 2. Routines with timers (Live Activity on iOS, ongoing notification on Android). 3. Tips outside the US, if wanted (in-app purchases). |
 | **v2** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)), sync between devices (accounts; possibly a paid extra, since it needs a server), Apple Watch. Logging from Apple Health was brought forward and is done. |
 

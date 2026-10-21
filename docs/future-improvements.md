@@ -2,11 +2,11 @@
 
 Things to do that aren't on the product roadmap, or that are smaller than a roadmap item: performance, polish, loose ends and decisions still to make. The roadmap itself (statistics, onboarding, store readiness, routines, widgets) is in [strategy/product-strategy.md](strategy/product-strategy.md#4-roadmap).
 
-*Last updated October 18, 2026.* Move an item to "Done" with its commit when it's built.
+*Last updated October 21, 2026.* Move an item to "Done" with its commit when it's built.
 
 ## Next up: Paul's to-dos (October 18, 2026)
 
-In this order. The rest of v1 (the weekly review, rewards and the onboarding tutorial) still stands alongside these; see the roadmap.
+In this order. The rest of v1 is built; version 1.0.0 went to App Review on October 21 (the store checklist, [store/README.md](store/README.md), is what's left before launch).
 
 ### 1. Verify Apple Health more thoroughly
 
@@ -31,7 +31,7 @@ It seems to work well; now check it properly on the real iPhone (`DEV_TOOLS=1 to
 
 ### 2. Home screen widgets (moved up from v2)
 
-**Built** (October 19): all six kinds from the mockups (one habit with a working +, a group of habits, momentum and the lock screen, Insights, Quote, "I will"), plus "today" on the lock screen. They reach Paul's iPhone once the paid account can sign the App Group. What's left (Android, background refresh, saving a quote) is in [design/widgets.md](design/widgets.md), "Later". Design and status: [design/widgets.md](design/widgets.md).
+**Built** (October 19): all six kinds from the mockups (one habit with a working +, a group of habits, momentum and the lock screen, Insights, Quote, "I will"), plus "today" on the lock screen; on October 20 a habit and a streak on the lock screen, and the iOS 18 "Log a habit" Control. On Paul's iPhone since TestFlight build 1 (the lock screen ones in build 2). What's left (Android, background refresh, saving a quote) is in [design/widgets.md](design/widgets.md), "Later". Design and status: [design/widgets.md](design/widgets.md).
 
 **What "widgets" means here:** in the code, "widget" means any piece of the Flutter UI. These are home screen and lock screen widgets: a WidgetKit extension written in SwiftUI inside `ios/`, which is Swift Apple requires (see the strategy's platform section). Android's equivalent (app widgets) comes after.
 
@@ -52,19 +52,7 @@ How it fits together:
 
 ### 3. Become an Apple developer and get through App Review
 
-First time through, so here's the path:
-1. **Enroll** in the Apple Developer Program ($99 a year). Identity checks can take a day or more. Then switch `tool/install_on_iphone.sh` to `FULL_ENTITLEMENTS=1` and turn on the time-sensitive and HealthKit capabilities for the app's ID.
-2. **App Store Connect:** create the app (name "Momentum", id `com.paulblake.momentum`), age rating, category, and export compliance (no special encryption).
-3. **Privacy:**
-   - A privacy policy at a public web address; Health apps must have one.
-   - The privacy "nutrition label": no data leaves the phone, no tracking.
-   - The Health usage text is already written (`Info.plist`).
-4. **Screenshots** for the required iPhone sizes, plus the description, keywords and support page.
-5. **Before submitting:**
-   - ~~Confirm the NKJV Scripture licence~~: gratis use with the notice, kept under 500 verses and 25% of the library (2026-10-20).
-   - ~~Make the tip page~~: buymeacoffee.com/paulblake (2026-10-21).
-   - Build with plain `flutter build ipa`; the archive refuses dev tools.
-6. **TestFlight first:** run the real build for a week or two, then submit. Review notes should explain Health (what's read and written, and why). Expect a question or two from Apple; most first rejections are about metadata or privacy wording, not the app.
+**Done:** enrolled 2026-10-19 (team `9EWP23T2HE`); the app created in App Store Connect, privacy policy and support pages on paul-blake.com, 10 screenshots, TestFlight build 1 on Paul's phone (2026-10-20); version 1.0.0 (build 2) submitted for App Review on 2026-10-21. What's left, how to make the next build and what to do once it's approved: [store/README.md](store/README.md).
 
 ### 4. Google Play, while Apple reviews
 
