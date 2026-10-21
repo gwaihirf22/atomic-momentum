@@ -35,7 +35,7 @@ BUILD OR BREAK
 Track habits you're building (read, run, drink water) or breaking (quit smoking, keep drinks to two a week), on any schedule: daily, on chosen days, every few days, weekly or monthly.
 
 REMINDERS THAT KNOW YOUR SCHEDULE
-Smart reminders follow each habit's due days and stop once it's done. Quiet hours, your own sounds, and time-sensitive alerts if you want them.
+Smart reminders follow each habit's due days and stop once it's done. Quiet hours, a choice of sounds, and time-sensitive alerts if you want them.
 
 APPLE HEALTH
 Link a habit to steps, exercise, workouts, sleep, mindful minutes or water, and it fills itself in.
