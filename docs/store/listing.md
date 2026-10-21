@@ -67,7 +67,7 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
 - **Primary category:** Health & Fitness
 - **Secondary category:** Productivity
 - **Age rating:** "None" or "No" to every question except:
-  - **Alcohol, tobacco or drug use or references: Infrequent.** The habits being broken have quick picks "Smoking" and "Alcohol" ("I will keep [alcohol] to [2 drinks]"): references made to quit, but references. This likely gives 13+ rather than 4+; "None" would keep 4+ at a small risk of App Review asking. (Checked 2026-10-21.)
+  - **Alcohol, tobacco or drug use or references: Infrequent.** The habits being broken have quick picks "Smoking" and "Alcohol" ("I will keep [alcohol] to [2 drinks]"): references made to quit, but references. It gives 13+ (confirmed in App Store Connect, 2026-10-21) rather than 4+; "None" would keep 4+ at a small risk of App Review asking. (Checked 2026-10-21.)
   - **Health or wellness topics: Yes** (habits, Apple Health). Medical or treatment information: None (no advice or diagnosis).
   - Unrestricted web access: No (the links open fixed pages in Safari). User-generated content: No (your own quotes stay on the phone).
   - There's no user-generated content shared with others, no web browsing and no chat.
