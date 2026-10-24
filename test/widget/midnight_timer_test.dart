@@ -58,7 +58,9 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    DateTime lastReminder() => center.pending.values.map((r) => r.at).reduce((a, b) => a.isAfter(b) ? a : b);
+    // Reminders only: the week in review's notice can come after the last one
+    DateTime lastReminder() =>
+        center.pending.values.where((r) => r.isReminder).map((r) => r.at).reduce((a, b) => a.isAfter(b) ? a : b);
     final before = lastReminder();
 
     final now = clock.now();
