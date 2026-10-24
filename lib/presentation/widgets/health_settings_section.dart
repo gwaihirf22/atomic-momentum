@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import '../../core/dev/dev_tools.dart';
 import '../../core/services/health_source.dart';
 import '../../domain/entities/habit_color.dart';
+import '../help/explainers.dart';
 import '../providers/habit_provider.dart';
+import 'info_button.dart';
 import 'settings_list.dart';
 import '../tour/world_scope.dart';
 
@@ -19,7 +21,8 @@ String healthSyncAgo(DateTime? at, {DateTime? now}) {
   return '${gap.inDays} d ago';
 }
 
-/// Settings → Apple Health (or Health Connect): sync now, install Health
+/// Settings → Apple Health (or Health Connect): what Momentum does with it
+/// (named plainly, as App Review asks: 2.5.1), sync now, install Health
 /// Connect where it's missing, and where permissions live. Hidden where
 /// there's no health store.
 class HealthSettingsSection extends StatefulWidget {
@@ -62,8 +65,19 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
         final where = _source.isAndroid ? 'Health Connect → App permissions' : 'Health → Sharing → Apps';
         return SettingsSection(
           header: _source.name,
-          footer: 'Link a habit in its editor. Numbers staying at 0? Allow Momentum in $where.',
+          footer: 'Momentum reads ${_source.name} only for the habits you link (in a habit\'s editor), and only if you '
+              'allow it. Your health data stays on this phone. Numbers staying at 0? Allow Momentum in $where.',
           children: [
+            SettingsTile(
+              tileKey: const Key('healthAbout'),
+              icon: CupertinoIcons.heart_circle_fill,
+              iconColor: HabitColor.red.color,
+              title: 'About ${_source.name}',
+              subtitle: _source.isAndroid
+                  ? 'Fills in steps, exercise, sleep or water'
+                  : 'Fills in steps, exercise, sleep, mindful minutes or water',
+              onTap: () => showInfoSheet(context, InfoTopic.health),
+            ),
             if (availability == HealthAvailability.needsHealthConnect)
               SettingsTile(
                 tileKey: const Key('healthInstall'),
@@ -78,8 +92,8 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
             else
               SettingsTile(
                 tileKey: const Key('healthSyncNow'),
-                icon: CupertinoIcons.heart_fill,
-                iconColor: HabitColor.red.color,
+                icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
+                iconColor: HabitColor.green.color,
                 title: _syncing ? 'Syncing…' : 'Sync now',
                 subtitle: linked == 0 ? 'No habits linked yet' : (linked == 1 ? '1 habit linked' : '$linked habits linked'),
                 value: healthSyncAgo(habits.lastHealthSync),

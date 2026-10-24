@@ -134,7 +134,7 @@ class _HealthSectionState extends State<HealthSection> {
           key: const Key('healthSwitch'),
           contentPadding: EdgeInsets.zero,
           title: Text('Fill in from $name'),
-          subtitle: const Text('The higher of Health and what you log counts'),
+          subtitle: Text('Reads this habit from $name; the higher of the two counts'),
           value: link != null,
           onChanged: (on) => on ? _turnOn(availability) : _draft.setHealth(null),
         ),

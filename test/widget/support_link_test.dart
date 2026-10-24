@@ -13,7 +13,7 @@ import 'package:atomic_momentum/screens/settings_screen.dart';
 
 import '../helpers/fake_support_link.dart';
 
-/// Settings → Support → "Buy me a coffee".
+/// Settings → Say thanks → "Buy Paul a coffee".
 void main() {
   setUp(() async {
     await resetDependencies();
@@ -47,7 +47,12 @@ void main() {
     final link = FakeSupportLink.install();
     await pump(tester);
     expect(coffee, findsOneWidget);
-    expect(find.textContaining('Momentum is free'), findsOneWidget);
+    // Personal, and plain about where it goes
+    expect(find.text('Buy Paul a coffee'), findsOneWidget);
+    expect(find.text('Opens buymeacoffee.com in your browser'), findsOneWidget);
+    expect(find.textContaining('say thanks'), findsOneWidget);
+    expect(find.textContaining('keep it going'), findsNothing);
+    expect(find.text('Say thanks'), findsOneWidget, reason: 'its own section, not mistaken for Contact & support');
     await tester.tap(coffee);
     await tester.pumpAndSettle();
     expect(link.opened, 1);
@@ -58,7 +63,7 @@ void main() {
     FakeSupportLink.install(available: false);
     await pump(tester);
     expect(coffee, findsNothing);
-    expect(find.text('SUPPORT'), findsNothing);
+    expect(find.text('Say thanks'), findsNothing);
   });
 
   testWidgets("says so when the page can't open", (tester) async {

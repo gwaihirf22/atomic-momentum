@@ -93,7 +93,7 @@ void main() {
     FakeHealthSource.install();
     // Settings shows App icon, as on an iPhone
     FakeAppIconService.install();
-    // And Buy me a coffee, as for a US user once there's a page
+    // And Buy Paul a coffee, as for a US user once there's a page
     FakeSupportLink.install();
     habits = get<HabitProvider>();
     await habits.loadHabits();

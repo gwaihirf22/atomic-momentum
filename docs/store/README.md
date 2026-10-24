@@ -5,11 +5,15 @@ The checklist for the first release. The texts are in this folder:
 - [privacy-policy.md](privacy-policy.md): published at https://paul-blake.com/momentum/privacy;
 - [review-notes.md](review-notes.md): reviewer notes, privacy-label answers, export compliance, EU trader status.
 
-## Where it stands (2026-10-21)
+## Where it stands (2026-10-24)
 
-**In App Review:** version 1.0.0, build 2, submitted 2026-10-21, rated 13+, released by hand once approved.
+**Build 2 was rejected** on 2026-10-23, for two things. Paul replied with a screen recording, got no answer in 1.5 days, and is sending build 3:
+- **3.1.1 (the tip link):** the reviewer took it for a payment that needs In-App Purchase, though Apple allows a link out on the US storefront. Build 3 keeps it in its own section, renamed: Settings → Say thanks → "Buy Paul a coffee" ("Opens buymeacoffee.com in your browser", "If you'd like to say thanks, you can tip me there"). On iPhone it now goes only by the App Store's country: when StoreKit doesn't say, it's hidden (before, the phone's region stood in).
+- **2.5.1 (HealthKit not clearly identified):** build 3 adds Settings → Apple Health → "About Apple Health" (what it reads and writes, that it stays on the phone), and the explainer and editor name Apple Health. The reviewer notes give the path, with the screen recording attached.
+
+**Version 1.0.0, build 3:** rated 13+, released by hand once approved.
 - Build 1 (2026-10-20) went to TestFlight and Paul's phone.
-- Build 2 adds the lock screen widgets and the "Log a habit" Control, vacation check-ins, the weekly review, "All done today" and the new greetings, "Buy me a coffee" (buymeacoffee.com/paulblake, US only) and "Blake Built" in Settings → About.
+- Build 2 adds the lock screen widgets and the "Log a habit" Control, vacation check-ins, the weekly review, "All done today" and the new greetings, "Buy me a coffee" (buymeacoffee.com/paulblake, US only; "Buy Paul a coffee" from build 3) and "Blake Built" in Settings → About.
 
 **While Apple reviews:**
 - Questions from App Review arrive by email and in App Store Connect's App Review messages. The answers to the usual ones (Health, the tip link, content rights) are in [review-notes.md](review-notes.md).

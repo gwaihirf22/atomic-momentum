@@ -37,11 +37,12 @@ class Explainer {
 
   const Explainer({required this.title, required this.intro, required this.points, this.source});
 
-  static Explainer of(InfoTopic topic) => switch (topic) {
+  /// [android] names Health Connect where the iPhone has Apple Health.
+  static Explainer of(InfoTopic topic, {bool android = false}) => switch (topic) {
         InfoTopic.twoMinute => twoMinute,
         InfoTopic.momentum => momentum,
         InfoTopic.inspire => inspire,
-        InfoTopic.health => health,
+        InfoTopic.health => health(android: android),
         InfoTopic.freezes => freezes,
       };
 
@@ -128,39 +129,51 @@ class Explainer {
     source: 'Habit formation time: Lally et al., 2009.',
   );
 
-  static const health = Explainer(
-    title: 'From Health',
-    intro: 'Link a habit to your phone\'s health data and it fills itself in: steps walked, exercise, sleep, '
-        'mindful minutes or water.',
-    points: [
-      ExplainerPoint(
-        "The higher of Health and what you log counts each day. You can't go below Health's number; "
-        'change it in Health.',
-        lead: 'Which wins',
-        icon: CupertinoIcons.arrow_up_circle,
-      ),
-      ExplainerPoint(
-        'It checks when you open or return to the app, at midnight and with Sync now, filling in the past week.',
-        lead: 'When',
-        icon: CupertinoIcons.arrow_2_circlepath,
-      ),
-      ExplainerPoint(
-        'Pick the unit you count in (glasses, ml, fl oz, hours or minutes). Sleep counts on the morning you wake.',
-        lead: 'Units',
-        icon: CupertinoIcons.moon,
-      ),
-      ExplainerPoint(
-        'Water and mindful minutes can go back into Health as you log them; − takes out only what Momentum put in.',
-        lead: 'Logging back',
-        icon: CupertinoIcons.heart,
-      ),
-      ExplainerPoint(
-        'Numbers staying at 0? Allow Momentum in Health (iPhone: Health → Sharing → Apps), or Health Connect.',
-        lead: 'Permissions',
-        icon: CupertinoIcons.lock,
-      ),
-    ],
-  );
+  /// Filling in from Apple Health (Health Connect on Android), named as
+  /// such: App Review wants HealthKit use clearly identified (2.5.1).
+  static Explainer health({bool android = false}) {
+    final name = android ? 'Health Connect' : 'Apple Health';
+    final allow = android ? 'Health Connect → App permissions' : 'the Health app → Sharing → Apps';
+    return Explainer(
+      title: 'From $name',
+      intro: 'Link a habit to $name and it fills itself in: steps walked, exercise, sleep, '
+          'mindful minutes or water. Only the habits you link, and only if you allow it.',
+      points: [
+        ExplainerPoint(
+          'Steps, exercise minutes, workouts, sleep, ${android ? '' : 'mindful minutes '}and water, '
+          'for the habits you link. Water${android ? '' : ' and mindful minutes'} you log can go back in.',
+          lead: 'What it reads',
+          icon: CupertinoIcons.heart,
+        ),
+        const ExplainerPoint(
+          'Your health data stays on this phone. Momentum never sends it anywhere or shares it.',
+          lead: 'Private',
+          icon: CupertinoIcons.lock_shield,
+        ),
+        ExplainerPoint(
+          "The higher of $name and what you log counts each day. You can't go below its number; "
+          'change it there.',
+          lead: 'Which wins',
+          icon: CupertinoIcons.arrow_up_circle,
+        ),
+        const ExplainerPoint(
+          'It checks when you open or return to the app, at midnight and with Sync now, filling in the past week.',
+          lead: 'When',
+          icon: CupertinoIcons.arrow_2_circlepath,
+        ),
+        const ExplainerPoint(
+          'Pick the unit you count in (glasses, ml, fl oz, hours or minutes). Sleep counts on the morning you wake.',
+          lead: 'Units',
+          icon: CupertinoIcons.moon,
+        ),
+        ExplainerPoint(
+          'Numbers staying at 0? Allow Momentum in $allow.',
+          lead: 'Permissions',
+          icon: CupertinoIcons.lock,
+        ),
+      ],
+    );
+  }
 
   static const inspire = Explainer(
     title: 'Inspire',

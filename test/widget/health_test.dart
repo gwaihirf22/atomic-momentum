@@ -20,6 +20,7 @@ import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
+import 'package:atomic_momentum/presentation/help/explainers.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
 
@@ -227,6 +228,29 @@ void main() {
     await tester.tap(find.byKey(const Key('healthSyncNow')));
     await tester.pumpAndSettle();
     expect(habits.habits.single.history[today], 1200);
+  });
+
+  testWidgets('Settings names Apple Health and explains what Momentum reads, with no habit linked yet', (tester) async {
+    await pump(tester, const SettingsScreen());
+    final about = find.byKey(const Key('healthAbout'));
+    await tester.scrollUntilVisible(about, 300, scrollable: find.byType(Scrollable).first);
+    expect(find.text('About Apple Health'), findsOneWidget);
+    expect(find.textContaining('reads Apple Health only for the habits you link'), findsOneWidget);
+    await tester.ensureVisible(about);
+    await tester.pumpAndSettle();
+    await tester.tap(about);
+    await tester.pumpAndSettle();
+    expect(find.text('From Apple Health'), findsOneWidget);
+    expect(find.textContaining('never sends it anywhere'), findsOneWidget);
+    expect(find.textContaining('Steps, exercise minutes, workouts, sleep, mindful minutes and water'), findsOneWidget);
+  });
+
+  test('on Android the explainer names Health Connect, without mindful minutes', () {
+    final android = Explainer.of(InfoTopic.health, android: true);
+    expect(android.title, 'From Health Connect');
+    expect([android.intro, for (final p in android.points) p.text].join(' '), isNot(contains('Apple')));
+    expect(android.points.first.text, isNot(contains('mindful')));
+    expect(Explainer.of(InfoTopic.health).title, 'From Apple Health');
   });
 
   testWidgets('in development, Settings can add sample Health data and fill habits in', (tester) async {

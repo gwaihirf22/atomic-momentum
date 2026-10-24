@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/entities/momentum.dart';
 import '../help/explainers.dart';
+import '../tour/world_scope.dart';
 import 'large_title_scaffold.dart';
 import 'orb_button.dart';
 
@@ -68,7 +69,7 @@ class InfoSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
-    final explainer = Explainer.of(topic);
+    final explainer = Explainer.of(topic, android: WorldScope.healthSourceOf(context).isAndroid);
 
     return SafeArea(
       child: SingleChildScrollView(

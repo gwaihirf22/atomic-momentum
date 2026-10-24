@@ -578,8 +578,9 @@ class _AppIconSettingState extends State<_AppIconSetting> {
   }
 }
 
-/// "Buy me a coffee": the only way to give something for the app, which is
-/// free. Shown only where it's allowed and once there's a page (SupportLink).
+/// "Buy Paul a coffee": a personal tip for the developer, the only way to give
+/// something, as the app is free. Shown only where it's allowed and once
+/// there's a page (SupportLink).
 class _SupportSection extends StatefulWidget {
   const _SupportSection();
 
@@ -603,14 +604,15 @@ class _SupportSectionState extends State<_SupportSection> {
   Widget build(BuildContext context) {
     if (!_available) return const SizedBox.shrink();
     return SettingsSection(
-      header: 'Support',
-      footer: 'Momentum is free, with no ads. If it helps you, a coffee helps keep it going.',
+      header: 'Say thanks',
+      footer: 'Momentum is free, with no ads. If you\'d like to say thanks, you can tip me there.',
       children: [
         SettingsTile(
           tileKey: const Key('buyMeACoffee'),
           icon: Icons.local_cafe_rounded,
           iconColor: HabitColor.brown.color,
-          title: 'Buy me a coffee',
+          title: 'Buy Paul a coffee',
+          subtitle: 'Opens buymeacoffee.com in your browser',
           onTap: () async {
             if (!await _link.open() && context.mounted) {
               await showAdaptiveAlert<void>(

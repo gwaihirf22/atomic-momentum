@@ -3,10 +3,10 @@ import 'package:atomic_momentum/core/services/sharer.dart';
 import 'package:atomic_momentum/core/services/support_link.dart';
 
 void main() {
-  PlatformSupportLink link({String url = 'https://example.com/coffee', String? store, String? region}) =>
-      PlatformSupportLink(url: url, storeCountry: () async => store, region: () => region);
+  PlatformSupportLink link({String url = 'https://example.com/coffee', String? store, String? region, bool iPhone = false}) =>
+      PlatformSupportLink(url: url, storeCountry: () async => store, region: () => region, trustRegion: !iPhone);
 
-  group('"Buy me a coffee" shows', () {
+  group('"Buy Paul a coffee" shows', () {
     test('for a US App Store account', () async {
       expect(await link(store: 'USA', region: 'GB').isAvailable(), isTrue,
           reason: "the store's country decides, not the phone's region");
@@ -21,6 +21,12 @@ void main() {
       expect(await link(region: 'US').isAvailable(), isTrue);
       expect(await link(region: 'DE').isAvailable(), isFalse);
       expect(await link().isAvailable(), isFalse, reason: 'no region: not offered');
+    });
+
+    test("never on an iPhone whose App Store doesn't say its country, whatever the region", () async {
+      expect(await link(region: 'US', iPhone: true).isAvailable(), isFalse);
+      expect(await link(store: 'USA', region: 'GB', iPhone: true).isAvailable(), isTrue);
+      expect(await link(store: 'GBR', region: 'US', iPhone: true).isAvailable(), isFalse);
     });
 
     test('never before there is a page', () async {

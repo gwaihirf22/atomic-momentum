@@ -9,16 +9,19 @@ How to try it:
 - Log a habit with + on its card, or hold its ring to finish it. Tap the card to open the habit's page.
 - A missed day shows "Don't miss twice". The habit's page offers a freeze (Settings → Freezes shows the bank and vacation mode).
 
-Apple Health (optional, only for habits the person links):
-- Reads steps, exercise minutes, workouts, sleep, mindful minutes and water, to fill in linked habits (Add habit → a habit like "Walk" → "Fill in from Apple Health").
-- Writes water and mindful minutes only when the person logs them in a linked habit, and takes back its own writes if they undo.
+Apple Health (HealthKit; optional, only for habits the person links). Where the app identifies it:
+- Settings → "Apple Health": "About Apple Health" explains what Momentum reads and writes and that the data stays on the phone; Sync now; how to change access.
+- Add habit → type "Walk" → the "Apple Health" row → "Fill in from Apple Health" → Steps. iOS's Health permission sheet follows, then a live preview ("Apple Health shows 5,210 steps today").
+- A linked habit's page shows "From Apple Health · Steps · synced just now".
+- Reads steps, exercise minutes, workouts, sleep, mindful minutes and water, to fill in linked habits. Writes water and mindful minutes only when the person logs them in a linked habit, and takes back its own writes if they undo.
 - Health data stays on the device. It's never sent anywhere, used for advertising, or shared.
+- The attached screen recording, made on an iPhone, shows each of these.
 
 Notifications are local reminders and streak warnings, scheduled on the device. Time-sensitive alerts are optional (Settings → Notifications).
 
 Widgets: home screen and lock screen widgets show habits, momentum and quotes. A habit widget's + logs a step through an App Intent.
 
-Tips: on the US storefront only, Settings → Support → "Buy me a coffee" opens the developer's tip page in Safari. It unlocks nothing: every feature is free.
+Tips (guideline 3.1.1, US storefront): Settings → Say thanks → "Buy Paul a coffee" opens my personal tip page (buymeacoffee.com) in Safari, the default browser. It appears only when StoreKit's Storefront.current.countryCode is "USA"; on every other storefront, or if the storefront is unknown, the row is hidden. It unlocks nothing: every feature is free, and there are no in-app purchases.
 
 ## App Privacy (the "nutrition label")
 
