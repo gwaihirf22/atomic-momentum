@@ -57,6 +57,8 @@ void main() {
       expect(checked(AppIcons.system), isTrue);
       expect(checked(AppIcons.light), isFalse);
       expect(find.textContaining('iOS 18'), findsOneWidget);
+      // iOS keeps the old icon in notifications until a restart: say so
+      expect(find.textContaining('until you restart your iPhone'), findsOneWidget);
     });
 
     testWidgets('picking an icon changes it and moves the check', (tester) async {
@@ -97,6 +99,7 @@ void main() {
       expect(tile(AppIcons.system), findsNothing);
       expect(checked(AppIcons.charged), isTrue);
       expect(find.text('Your new icon appears after you leave Momentum.'), findsOneWidget);
+      expect(find.textContaining('restart'), findsNothing, reason: 'an iPhone quirk');
 
       await tester.tap(tile(AppIcons.light));
       await tester.pumpAndSettle();

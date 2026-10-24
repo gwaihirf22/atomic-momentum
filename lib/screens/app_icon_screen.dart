@@ -57,7 +57,10 @@ class _AppIconScreenState extends State<AppIconScreen> {
     final icons = AppIcons.offeredOn(platform);
     final footer = platform == TargetPlatform.android
         ? 'Your new icon appears after you leave Momentum.'
-        : 'Match system switches between light and dark with your phone, on iOS 18 and later.';
+        // Since iOS 18.1, Notification Center keeps the old icon until a restart
+        // (an iOS bug, developer.apple.com/forums/thread/780074): nothing an app can refresh
+        : 'Match system switches between light and dark with your phone, on iOS 18 and later. '
+            'Notifications may show the old icon until you restart your iPhone.';
 
     return Scaffold(
       backgroundColor: palette.background,
