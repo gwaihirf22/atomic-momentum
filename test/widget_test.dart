@@ -26,6 +26,10 @@ void main() {
   });
 
   testWidgets('tab navigation works', (WidgetTester tester) async {
+    // The phone layout (the default 800×600 test window would show the iPad's sidebar)
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(const MomentumApp());
     await tester.pumpAndSettle();
 

@@ -270,6 +270,11 @@ class RenderCallout extends RenderShiftedBox {
   Offset? arrowAt;
   bool arrowUp = true;
 
+  /// The arrow points sideways at a hole beside the bubble (a tall target,
+  /// such as the iPad's sidebar): left when [arrowLeft], else right.
+  bool arrowSideways = false;
+  bool arrowLeft = true;
+
   /// Where the bubble ended up, in this box.
   Rect get bubbleRect => (child!.parentData! as BoxParentData).offset & child!.size;
 
@@ -284,6 +289,7 @@ class RenderCallout extends RenderShiftedBox {
     final regionBottom = size.height - _bottom;
     final hole = _hole;
     arrowAt = null;
+    arrowSideways = false;
 
     final region = math.max(0.0, regionBottom - regionTop);
     // Its full height first: every word shows, wherever it goes
@@ -297,8 +303,26 @@ class RenderCallout extends RenderShiftedBox {
     final below = regionBottom - (hole.bottom + TourSpotlight.gap + arrowSize.height);
     final fitsBelow = height <= below, fitsAbove = height <= above;
     if (!fitsBelow && !fitsAbove) {
-      // No room beside a big target: over its edge, on the roomier side,
-      // arrowless, rather than hiding words
+      // A tall target with room at its side (the iPad's sidebar): beside it,
+      // level with its middle, the arrow pointing across
+      final rightRoom = size.width - margin - (hole.right + TourSpotlight.gap + arrowSize.height);
+      final leftRoom = hole.left - TourSpotlight.gap - arrowSize.height - margin;
+      if (rightRoom >= width || leftRoom >= width) {
+        final toRight = rightRoom >= width;
+        final top = (hole.center.dy - height / 2).clamp(regionTop, math.max(regionTop, regionBottom - height)).toDouble();
+        final left = toRight
+            ? hole.right + TourSpotlight.gap + arrowSize.height
+            : hole.left - TourSpotlight.gap - arrowSize.height - width;
+        data.offset = Offset(left, top);
+        final arrowY = hole.center.dy.clamp(top + 18.0 + arrowSize.width / 2, top + height - 18.0 - arrowSize.width / 2).toDouble() -
+            arrowSize.width / 2;
+        arrowAt = Offset(toRight ? hole.right + TourSpotlight.gap : left + width, arrowY);
+        arrowSideways = true;
+        arrowLeft = toRight;
+        return;
+      }
+      // No room beside a big target either: over its edge, on the roomier
+      // side, arrowless, rather than hiding words
       final left = (hole.center.dx - width / 2).clamp(margin, size.width - margin - width);
       data.offset = Offset(left, below >= above ? regionBottom - height : regionTop);
       return;
@@ -334,7 +358,17 @@ class RenderCallout extends RenderShiftedBox {
       final o = offset + at;
       final w = arrowSize.width, h = arrowSize.height;
       // Overlaps the bubble by a pixel so no seam shows
-      final path = arrowUp
+      final path = arrowSideways
+          ? (arrowLeft
+              ? (Path()
+                ..moveTo(o.dx + h + 1, o.dy)
+                ..lineTo(o.dx, o.dy + w / 2)
+                ..lineTo(o.dx + h + 1, o.dy + w))
+              : (Path()
+                ..moveTo(o.dx - 1, o.dy)
+                ..lineTo(o.dx + h, o.dy + w / 2)
+                ..lineTo(o.dx - 1, o.dy + w)))
+          : arrowUp
           ? (Path()
             ..moveTo(o.dx, o.dy + h + 1)
             ..lineTo(o.dx + w / 2, o.dy)

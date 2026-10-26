@@ -26,15 +26,17 @@ void main() {
     bool reduceMotion = false,
     String text = 'This is your momentum: how steadily you have been showing up.',
     AppPalette palette = AppPalette.sepia,
+    Size screen = phone,
+    double covered = tabBar,
   }) async {
-    tester.view.physicalSize = phone;
+    tester.view.physicalSize = screen;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
       theme: IOSTheme.material(palette),
       home: MediaQuery(
         data: MediaQueryData(
-          size: phone,
+          size: screen,
           padding: safe,
           textScaler: TextScaler.linear(scale * sfWidthAllowance),
           disableAnimations: reduceMotion,
@@ -55,7 +57,7 @@ void main() {
               tryIt: tryIt,
               passThrough: passThrough,
               onTapHole: onTapHole,
-              bottomCovered: tabBar,
+              bottomCovered: covered,
               bubble: TourBubble(eyebrow: 'Habits', text: text, step: 1, steps: 4, tryIt: tryIt, onNext: () {}, onSkip: () {}),
             ),
           ),
@@ -107,6 +109,27 @@ void main() {
       final c = callout(tester);
       expect(c.arrowAt!.dx, lessThanOrEqualTo(c.bubbleRect.right - 18 - RenderCallout.arrowSize.width));
       expect(c.bubbleRect.right, lessThanOrEqualTo(phone.width - RenderCallout.margin));
+    });
+
+    testWidgets('beside a tall target with room at its side (the iPad\'s sidebar), arrow pointing across',
+        (tester) async {
+      const ipad = Size(1194, 834);
+      const sidebar = Rect.fromLTWH(12, 100, 240, 640);
+      await pump(tester, target: sidebar, side: BubbleSide.above, screen: ipad, covered: 0);
+      final c = callout(tester);
+      final hole = TourSpotlight.holeFor(sidebar).outerRect;
+      expect(c.arrowSideways, isTrue);
+      expect(c.arrowLeft, isTrue);
+      expect(c.bubbleRect.left, greaterThan(hole.right));
+      expect(c.arrowAt!.dx, closeTo(hole.right + TourSpotlight.gap, 0.01));
+      // Level with the target's middle
+      expect(c.bubbleRect.center.dy, closeTo(sidebar.center.dy, 1));
+
+      // A tall target on the right: the bubble to its left, arrow pointing right
+      const right = Rect.fromLTWH(900, 100, 280, 640);
+      await pump(tester, target: right, screen: ipad, covered: 0);
+      expect(callout(tester).arrowLeft, isFalse);
+      expect(callout(tester).bubbleRect.right, lessThan(TourSpotlight.holeFor(right).outerRect.left));
     });
 
     testWidgets('no target, or no room either side: in the middle, no arrow', (tester) async {

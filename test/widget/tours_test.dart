@@ -96,6 +96,10 @@ void main() {
     });
 
     testWidgets('the switch is in Settings → Help', (tester) async {
+      // The phone layout (the default 800×600 test window would show the iPad's sidebar)
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
       // Settings' own tour seen, so it doesn't cover the switch
       await setUpWith({TourStore.key: ['habits', 'settings']});
       await tester.pumpWidget(MomentumApp(worlds: worlds));
@@ -247,6 +251,10 @@ void main() {
   });
 
   testWidgets('Settings → Help → Tours plays a tour again, and Show tours again resets them', (tester) async {
+    // The phone layout (the default 800×600 test window would show the iPad's sidebar)
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await setUpWith({TourStore.key: ['habits', 'settings']});
     await tester.pumpWidget(MomentumApp(worlds: worlds));
     await settle(tester);

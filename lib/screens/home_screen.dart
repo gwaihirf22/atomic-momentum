@@ -36,6 +36,7 @@ import 'package:clock/clock.dart';
 import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_anchor.dart';
 import '../presentation/tour/tour_events.dart';
+import '../presentation/layout/app_layout.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -346,12 +347,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _buildEmptyState(AppPalette palette, Category? selectedCategory) {
     final isFiltered = selectedCategory != null;
+    // The iPad's sidebar has Add habit at its top; phones have + in the bar
+    final addWhere = AppLayout.of(context).hasSidebar ? 'Tap Add habit' : 'Tap + below';
     final title = isFiltered 
         ? 'No ${selectedCategory.name.toLowerCase()} habits yet'
         : 'No habits yet';
     final subtitle = isFiltered
-        ? 'Tap + below to add a ${selectedCategory.name.toLowerCase()} habit, or tap Show all to see all habits'
-        : 'Tap + below to add your first habit';
+        ? '$addWhere to add a ${selectedCategory.name.toLowerCase()} habit, or tap Show all to see all habits'
+        : '$addWhere to add your first habit';
     
     return Center(
       child: Column(

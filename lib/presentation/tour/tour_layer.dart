@@ -7,6 +7,7 @@ import '../widgets/floating_tab_bar.dart';
 import 'spotlight.dart';
 import 'tour_bubble.dart';
 import 'tour_controller.dart';
+import '../layout/app_layout.dart';
 
 /// The running tour over everything (the tab bar, pages and sheets): the
 /// spotlight on the step's target, following it as it moves, and the bubble
@@ -102,7 +103,8 @@ class _TourLayerState extends State<TourLayer> with SingleTickerProviderStateMix
       tryIt: step.wait != null,
       // A try-it step can be done for real; any step moved on with Next
       passThrough: step.passesTouches,
-      bottomCovered: FloatingTabBar.coveredHeight(media.padding.bottom),
+      // The floating bar covers the bottom; the iPad's sidebar covers nothing
+      bottomCovered: AppLayout.of(context).hasSidebar ? 0 : FloatingTabBar.coveredHeight(media.padding.bottom),
       bubble: TourBubble(
         // A new step: VoiceOver moves to it
         key: ValueKey((tour.id, index)),

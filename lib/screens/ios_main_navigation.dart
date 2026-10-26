@@ -17,11 +17,14 @@ import '../presentation/providers/category_provider.dart';
 import '../presentation/providers/habit_provider.dart';
 import '../presentation/providers/settings_provider.dart';
 import '../presentation/widgets/achievement_widgets.dart';
+import '../presentation/layout/app_layout.dart';
+import '../presentation/widgets/app_sidebar.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
 import '../presentation/widgets/tab_swipe.dart';
 import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
+import 'categories_screen.dart';
 import 'insights_screen.dart';
 import 'weekly_review_screen.dart';
 import 'inspire_screen.dart';
@@ -426,10 +429,26 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     _switchTo(tab);
   }
 
+  /// A category in the sidebar: Habits, filtered to it.
+  void _showCategory(String id) {
+    context.read<CategoryProvider>().setSelectedCategoryId(id);
+    _navigators[AppTab.habits]!.currentState?.popUntil((route) => route.isFirst);
+    _switchTo(AppTab.habits);
+  }
+
+  /// A category held in the sidebar: Arrange, on Habits.
+  void _arrangeCategory(String id) {
+    _switchTo(AppTab.habits);
+    final habits = _navigators[AppTab.habits]!.currentContext;
+    if (habits != null) CategoriesScreen.open(habits);
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final safeBottom = MediaQuery.paddingOf(context).bottom;
+    // iPads and wide windows: a sidebar instead of the floating bar
+    final sidebar = AppLayout.of(context).hasSidebar;
     final showInspire = context.watch<SettingsProvider>().showInspireTab;
     _visible = [
       for (final tab in AppTab.values)
@@ -440,7 +459,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     if (!_visible.contains(_current)) _current = AppTab.settings;
     if (_revealed != null && !_visible.contains(_revealed)) _endSlide();
     _accessible = MediaQuery.accessibleNavigationOf(context);
-    final showBar = !_deep.contains(_current);
+    final showBar = sidebar || !_deep.contains(_current);
     final faded = _barFaded && _fades;
     final position = _visible.indexOf(_current);
 
@@ -452,9 +471,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
           )
         : const SizedBox.shrink();
 
-    return ColoredBox(
-      color: palette.background,
-      child: Stack(
+    final content = Stack(
         children: [
           Positioned.fill(
             // Any touch brings a faded bar back
@@ -462,14 +479,14 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
               behavior: HitTestBehavior.translucent,
               onPointerDown: (_) => _wakeBar(),
               child: TabBarInset(
-              height: FloatingTabBar.coveredHeight(safeBottom),
+              height: sidebar ? 0 : FloatingTabBar.coveredHeight(safeBottom),
               child: TabBarFade(
               faded: faded,
               child: LayoutBuilder(builder: (context, constraints) {
                 _width = constraints.maxWidth;
                 return RawGestureDetector(
                   // Only on a tab's first page; pages pushed on it swipe back
-                  gestures: showBar
+                  gestures: showBar && !sidebar
                       ? {
                           TabSwipeRecognizer: GestureRecognizerFactoryWithHandlers<TabSwipeRecognizer>(
                             () => TabSwipeRecognizer(debugOwner: this),
@@ -518,6 +535,7 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
               ),
             ),
           ),
+          if (!sidebar)
           Positioned(
             left: FloatingTabBar.sideMargin,
             right: FloatingTabBar.sideMargin,
@@ -551,7 +569,27 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
             ),
           ),
         ],
-      ),
+      );
+
+    return ColoredBox(
+      color: palette.background,
+      child: sidebar
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppSidebar(
+                  tabs: [for (final tab in _visible) tab.bar],
+                  currentIndex: position,
+                  onTap: _select,
+                  // No double-tap guard: the sidebar's + is always + (never a tab)
+                  onAdd: () => IOSMainNavigation.addHabit(context),
+                  onCategory: _showCategory,
+                  onArrangeCategory: _arrangeCategory,
+                ),
+                Expanded(child: content),
+              ],
+            )
+          : content,
     );
   }
 }
