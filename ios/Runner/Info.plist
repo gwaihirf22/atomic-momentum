@@ -76,6 +76,15 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Whether this build was signed with iCloud (NO for free-team builds,
+	     tool/install_on_iphone.sh): CloudSync.swift never touches CloudKit without it -->
+	<key>MomentumICloud</key>
+	<string>$(MOMENTUM_ICLOUD)</string>
+	<!-- iCloud wakes the app when another device changes something (sync) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>

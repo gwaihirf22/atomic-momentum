@@ -22,6 +22,7 @@ import UIKit
     AppIconChannel.register(messenger: messenger)
     StorefrontChannel.register(messenger: messenger)
     WidgetChannel.register(messenger: messenger)
+    SyncChannel.register(messenger: messenger)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetLinks") {
       WidgetLinks.register(with: registrar)
     }
