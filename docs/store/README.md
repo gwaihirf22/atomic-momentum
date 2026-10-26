@@ -82,7 +82,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - habit stacking, and routines with timers (a Live Activity);
 - "I am someone who…" statements;
 - best times of day;
-- iPad;
+- iPad (built on `plus` for 1.1, with Momentum Plus: [../design/ipad.md](../design/ipad.md); needs the iPad screenshots, `docs/store/listing.md`);
 - more Health metrics;
 - more How-to guides;
 - Android widgets.

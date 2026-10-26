@@ -7,6 +7,9 @@
 #
 #   tool/store_screens.sh ["<simulator name>"]
 #
+# With an iPad simulator ("Store iPad Pro 13-inch", 2064 x 2752, upright)
+# the pictures are named ipad_… (tool/store_frames.py --ipad).
+#
 # Pictures land in build/store_screens/.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -25,16 +28,21 @@ at=$(python3 -c 'import datetime as d; t=d.datetime.now().astimezone().replace(h
 xcrun simctl status_bar "$udid" override --time "$at" --dataNetwork wifi --wifiMode active --wifiBars 3 \
   --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
 
-rm -rf build/store_screens
 mkdir -p build/store_screens
+# A new run replaces its own kind of pictures (iPhone or iPad), never the other's
+if [[ "$device" == *iPad* ]]; then rm -f build/store_screens/ipad_*.png; else find build/store_screens -name '*.png' ! -name 'ipad_*' -delete; fi
 # The test prints STORE_SHOT <name> and holds still for a few seconds while
 # the whole screen (status bar too) is taken here
 status=0
 log=$(mktemp)
 # --keep-app-running: the app (and the example habits it left in the widgets)
 # stays installed for tool/widget_screens.sh
+# An iPad's pictures are named ipad_… (App Store Connect wants 13" iPad
+# screenshots for an app that runs on iPad)
+defines=()
+if [[ "$device" == *iPad* ]]; then defines=(--dart-define=STORE_IPAD=true); fi
 "$flutter" drive --driver=test_driver/integration_test.dart --target=integration_test/store_screens_test.dart \
-  -d "$udid" --keep-app-running 2>&1 |
+  -d "$udid" --keep-app-running "${defines[@]+"${defines[@]}"}" 2>&1 |
   while IFS= read -r line; do
     echo "$line" >>"$log"
     if [[ "$line" =~ STORE_SHOT\ ([A-Za-z0-9_]+) ]]; then

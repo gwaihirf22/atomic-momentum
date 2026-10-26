@@ -94,6 +94,10 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
    - Don't erase it instead: the app's first launch after an erase hangs.
 3. `python3 tool/store_frames.py` adds the headline and the phone frame.
 
+**iPad (1.1, `plus` branch):** an app that runs on iPad needs 13" iPad screenshots too.
+1. `tool/store_screens.sh "Store iPad Pro 13-inch"` takes the same app screens upright (2064 × 2752), with the sidebar, as `ipad_<theme>_<name>.png`.
+2. `python3 tool/store_frames.py --ipad` frames them in an iPad under the same headlines. The set to upload, in the iPhone set's order without the lock and home screens, is `build/store_frames/final_ipad/`.
+
 The words and the order of looks are in `SCREENS` and `FINAL` in that script.
 
 | # | Look | Headline | Screen |

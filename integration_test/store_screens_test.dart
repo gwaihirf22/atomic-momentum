@@ -29,6 +29,11 @@ import 'package:clock/clock.dart';
 /// prints `STORE_SHOT <name>` and holds still while the script takes it
 /// (`simctl io`); the app's own screenshots leave the status bar out and
 /// only reach the driver once the test is over.
+/// On an iPad (tool/store_screens.sh passes STORE_IPAD for an iPad
+/// simulator) the pictures are named `ipad_…`. They're upright: iPadOS
+/// ignores an app's orientation lock when it supports multitasking.
+const _ipad = bool.fromEnvironment('STORE_IPAD');
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -51,7 +56,8 @@ void main() {
     return Provider.of<HabitProvider>(nav, listen: false);
   }
 
-  Future<void> shot(WidgetTester tester, String name) async {
+  Future<void> shot(WidgetTester tester, String plain) async {
+    final name = _ipad ? 'ipad_$plain' : plain;
     await _wait(tester, 900);
     // ignore: avoid_print
     print('STORE_SHOT $name');

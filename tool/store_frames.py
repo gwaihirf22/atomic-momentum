@@ -7,6 +7,7 @@ headline, at the same size App Store Connect asks for (6.9"), in Sepia, Charged 
 
     python3 tool/store_frames.py            # every theme
     python3 tool/store_frames.py charged    # one theme
+    python3 tool/store_frames.py --ipad     # the iPad set (13", upright)
 
 Pictures land in build/store_frames/<theme>/, and the set to upload, in
 order, in build/store_frames/final/ (FINAL below). The words are in SCREENS.
@@ -23,6 +24,10 @@ BOLD = os.path.join(ROOT, 'assets', 'fonts', 'Sora', 'Sora-Bold.ttf')
 SEMI = os.path.join(ROOT, 'assets', 'fonts', 'Sora', 'Sora-SemiBold.ttf')
 
 W, H = 1320, 2868
+
+# The iPad set: 13" (what App Store Connect asks for), upright, from
+# tool/store_screens.sh "Store iPad Pro 13-inch" (ipad_<theme>_<name>.png)
+IPAD_W, IPAD_H = 2064, 2752
 
 # Each screenshot's words: the headline's first line, its second (in the
 # accent colour), and a line under it.
@@ -73,6 +78,10 @@ FINAL = [
 ]
 
 
+# The iPad set, in order: the app's own screens (no lock or home screen)
+FINAL_IPAD = [entry for entry in FINAL if entry[0] not in SYSTEM]
+
+
 def rounded_mask(size, radius):
     mask = Image.new('L', size, 0)
     ImageDraw.Draw(mask).rounded_rectangle([0, 0, size[0] - 1, size[1] - 1], radius=radius, fill=255)
@@ -101,6 +110,26 @@ def phone(shot, width, edge):
     return body
 
 
+def ipad(shot, width, edge):
+    """The screenshot in a black iPad: an even bezel, rounded corners, the
+    front camera in the bezel."""
+    bezel = round(width * 0.022)
+    screen_w = width - 2 * bezel
+    screen_h = round(shot.height * screen_w / shot.width)
+    screen = shot.resize((screen_w, screen_h), Image.LANCZOS)
+    radius = round(screen_w * 0.025)
+    body = Image.new('RGBA', (width, screen_h + 2 * bezel), (0, 0, 0, 0))
+    d = ImageDraw.Draw(body)
+    d.rounded_rectangle([0, 0, body.width - 1, body.height - 1], radius=radius + bezel, fill=(12, 12, 14, 255))
+    d.rounded_rectangle([3, 3, body.width - 4, body.height - 4], radius=radius + bezel - 3,
+                        outline=edge + (255,), width=5)
+    body.paste(screen, (bezel, bezel), rounded_mask(screen.size, radius))
+    # Upright, the camera is in the top bezel
+    r = max(4, bezel // 5)
+    d.ellipse([width // 2 - r, bezel // 2 - r, width // 2 + r, bezel // 2 + r], fill=(30, 30, 34, 255))
+    return body
+
+
 def wrap(draw, text, font, max_width):
     words, lines, line = text.split(), [], ''
     for word in words:
@@ -114,12 +143,17 @@ def wrap(draw, text, font, max_width):
     return lines
 
 
-def frame(theme, name, first, second, sub):
+def frame(theme, name, first, second, sub, tablet=False):
     colors = THEMES[theme]
-    shot_path = os.path.join(SHOTS, f'{name}.png' if name in SYSTEM else f'{theme}_{name}.png')
+    if tablet:
+        shot_path = os.path.join(SHOTS, f'ipad_{theme}_{name}.png')
+    else:
+        shot_path = os.path.join(SHOTS, f'{name}.png' if name in SYSTEM else f'{theme}_{name}.png')
     if not os.path.exists(shot_path):
         return None
     shot = Image.open(shot_path).convert('RGB')
+    if tablet:
+        return frame_ipad(colors, shot, first, second, sub)
 
     canvas = Image.new('RGB', (W, H), colors['bg'])
     # A soft amber glow behind the phone
@@ -153,8 +187,71 @@ def frame(theme, name, first, second, sub):
     return canvas
 
 
+def frame_ipad(colors, shot, first, second, sub):
+    """The iPad set's layout, upright: the headline on one line (its second
+    part in the accent colour), the line under it, and the iPad below,
+    running off the bottom."""
+    canvas = Image.new('RGB', (IPAD_W, IPAD_H), colors['bg'])
+    glow = Image.new('RGBA', (IPAD_W, IPAD_H), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse([IPAD_W * 0.08, IPAD_H * 0.30, IPAD_W * 0.92, IPAD_H * 1.05], fill=colors['glow'] + (120,))
+    blurred = glow.filter(ImageFilter.GaussianBlur(200))
+    canvas.paste(blurred, (0, 0), blurred)
+
+    d = ImageDraw.Draw(canvas)
+    title = ImageFont.truetype(BOLD, 112)
+    small = ImageFont.truetype(SEMI, 52)
+    whole = f'{first} {second}'
+    x = (IPAD_W - d.textlength(whole, font=title)) / 2
+    y = 120
+    d.text((x, y), first + ' ', font=title, fill=colors['ink'])
+    d.text((x + d.textlength(first + ' ', font=title), y), second, font=title, fill=colors['accent'])
+    y += 168
+    for line in wrap(d, sub, small, IPAD_W - 400):
+        d.text((IPAD_W / 2, y), line, font=small, fill=colors['sub'], anchor='mt')
+        y += 70
+
+    body = ipad(shot, 1760, colors['edge'])
+    top = y + 70
+    shadow = Image.new('RGBA', (IPAD_W, IPAD_H), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle(
+        [(IPAD_W - body.width) / 2 + 10, top + 40, (IPAD_W + body.width) / 2 - 10, top + body.height + 30],
+        radius=90, fill=(0, 0, 0, 120))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(50))
+    canvas.paste(shadow, (0, 0), shadow)
+    canvas.paste(body, ((IPAD_W - body.width) // 2, top), body)
+    return canvas
+
+
+def main_ipad(themes):
+    final = os.path.join(OUT, 'final_ipad')
+    os.makedirs(final, exist_ok=True)
+    words = {name: (first, second, sub) for name, first, second, sub in SCREENS}
+    for old in os.listdir(final):
+        os.remove(os.path.join(final, old))
+    for i, (name, theme) in enumerate(FINAL_IPAD):
+        picture = frame(theme, name, *words[name], tablet=True)
+        if picture is not None:
+            path = os.path.join(final, f'{i + 1:02d}_{name[3:]}_{theme}.png')
+            picture.save(path)
+            print(path)
+    for theme in themes:
+        os.makedirs(os.path.join(OUT, f'ipad_{theme}'), exist_ok=True)
+        for name, first, second, sub in SCREENS:
+            if name in SYSTEM:
+                continue
+            picture = frame(theme, name, first, second, sub, tablet=True)
+            if picture is not None:
+                path = os.path.join(OUT, f'ipad_{theme}', f'{name}.png')
+                picture.save(path)
+                print(path)
+
+
 def main():
-    themes = sys.argv[1:] or list(THEMES)
+    args = sys.argv[1:]
+    if '--ipad' in args:
+        main_ipad([a for a in args if a != '--ipad'] or list(THEMES))
+        return
+    themes = args or list(THEMES)
     final = os.path.join(OUT, 'final')
     os.makedirs(final, exist_ok=True)
     words = {name: (first, second, sub) for name, first, second, sub in SCREENS}
