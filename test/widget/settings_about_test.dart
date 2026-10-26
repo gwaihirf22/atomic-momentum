@@ -26,7 +26,7 @@ void main() {
 
   Future<void> pump(WidgetTester tester) async {
     // Tall enough for all of Settings, so About (at the end) is built
-    tester.view.physicalSize = const Size(390, 4000);
+    tester.view.physicalSize = const Size(390, 6000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(MultiProvider(

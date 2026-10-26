@@ -548,6 +548,10 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     _setState(SyncState.stopped);
   }
 
+  /// Shows [state] as if sync were there (screens' tests).
+  @visibleForTesting
+  void debugShow(SyncState state) => _setState(state);
+
   void _setState(SyncState state) {
     if (_state == state) return;
     _state = state;

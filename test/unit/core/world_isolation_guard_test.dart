@@ -17,6 +17,8 @@ void main() {
     'lib/presentation/tour/world_scope.dart',
     // How-to's example world copies the person's settings (read only)
     'lib/screens/how_to_screen.dart',
+    // Sync works on the person's own data, above the world switch
+    'lib/presentation/sync/sync_host.dart',
   };
 
   test('screens never reach past their world to the person\'s data', () {

@@ -7,7 +7,8 @@ enum InfoTopic {
   momentum('About momentum'),
   inspire('About Inspire'),
   health('About filling in from Health'),
-  freezes('About freezes');
+  freezes('About freezes'),
+  sync('About sync');
 
   /// What the (i) button reads as to VoiceOver.
   final String buttonLabel;
@@ -44,7 +45,49 @@ class Explainer {
         InfoTopic.inspire => inspire,
         InfoTopic.health => health(android: android),
         InfoTopic.freezes => freezes,
+        InfoTopic.sync => sync(android: android),
       };
+
+  /// Sync between the person's own devices (Momentum Plus): where it goes,
+  /// that the developer never sees it, how two devices' days add up.
+  static Explainer sync({bool android = false}) {
+    final cloud = android ? 'Google Drive' : 'iCloud';
+    final health = android ? 'Health Connect' : 'Apple Health';
+    return Explainer(
+      title: 'Sync with $cloud',
+      intro: android
+          ? 'Your habits on every Android phone and tablet signed in to the same Google account. Log on one, '
+              'and it\'s on the other.'
+          : 'Your habits on every iPhone and iPad signed in to the same Apple ID. Log on one, and it\'s on the other.',
+      points: [
+        ExplainerPoint(
+          android
+              ? 'To a hidden folder in your own Google Drive that only Momentum can open. I never see it: there\'s '
+                  'no account and no server of mine.'
+              : 'To your own iCloud. I never see it: there\'s no account and no server of mine.',
+          lead: 'Where it goes',
+          badge: '1',
+        ),
+        const ExplainerPoint(
+          'Logged on two devices at once, even offline? Both count: the day adds up. Change a habit on both, and '
+              'the later change wins.',
+          lead: 'Both count',
+          badge: '2',
+        ),
+        ExplainerPoint(
+          'Habits, notes, freezes, categories, quotes and settings. $health numbers stay out of it: each device '
+              'fills them in from its own.',
+          lead: 'What syncs',
+          badge: '3',
+        ),
+        ExplainerPoint(
+          'Turning it off keeps everything on this device. You can also delete the copy in $cloud, for every device.',
+          lead: 'Turning it off',
+          badge: '4',
+        ),
+      ],
+    );
+  }
 
   static const freezes = Explainer(
     title: 'Freezes',

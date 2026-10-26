@@ -50,6 +50,7 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/core/sync/sync_service.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
 import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
 
@@ -445,6 +446,20 @@ void main() {
         await tester.scrollUntilVisible(find.byKey(const Key('contactSupport')), 300,
             scrollable: find.byType(Scrollable).first);
         expectNothingCutOff(tester, 'Settings, About, at $setting');
+      });
+
+      testWidgets('Settings, Sync in every state, at $setting', (tester) async {
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('syncSwitch')), 300,
+            scrollable: find.byType(Scrollable).first);
+        for (final state in SyncState.values) {
+          get<SyncService>().debugShow(state);
+          await tester.pumpAndSettle();
+          expectNothingCutOff(tester, 'Settings, Sync ${state.name}, at $setting');
+        }
+        await tester.tap(find.byKey(const Key('syncAbout')));
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'About sync at $setting');
       });
 
       testWidgets('Settings with quiet hours on at $setting', (tester) async {

@@ -6,6 +6,8 @@ import '../services/home_widget_bridge.dart';
 import '../services/freeze_bank.dart';
 import '../../domain/services/achievements.dart';
 import 'package:get_it/get_it.dart';
+import '../sync/cloudkit_transport.dart';
+import '../sync/sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Data sources
@@ -97,6 +99,11 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
   sl.registerLazySingleton(() => FreezeBank(sl()));
   sl.registerLazySingleton(() => HabitOrder(sl()));
+  // Sync (Momentum Plus): iCloud on iPhone; nowhere yet on Android
+  sl.registerLazySingleton(() => SyncService(
+        prefs: sl(),
+        transport: CloudKitTransport.isSupported ? CloudKitTransport() : const NoCloudTransport(),
+      ));
   // The freeze achievements read what the bank remembers
   Achievements.freezeSource = () {
     if (!sl.isRegistered<FreezeBank>()) return (firstSpentOn: null, fundReachedOn: null);

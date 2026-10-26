@@ -27,6 +27,7 @@ import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/freezes_settings_section.dart';
 import '../presentation/widgets/health_settings_section.dart';
+import '../presentation/widgets/sync_settings_section.dart';
 import '../presentation/widgets/settings_list.dart';
 import 'app_icon_screen.dart';
 import 'tours_screen.dart';
@@ -424,6 +425,8 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         const HealthSettingsSection(),
+        // Momentum Plus: only in builds with Developer tools until it's sold
+        if (!demo) const SyncSettingsSection(),
         if (!demo) const _SupportSection(),
         if (!demo) const _AboutSection(),
         // Debug builds, and test builds made with DEV_TOOLS; never in a store build

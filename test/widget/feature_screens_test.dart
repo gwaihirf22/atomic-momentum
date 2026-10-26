@@ -623,6 +623,8 @@ void main() {
     testWidgets('Settings adds one habit per category, once', (tester) async {
       await pumpScreen(tester, const SettingsScreen());
 
+      await tester.scrollUntilVisible(find.byKey(const Key('addSampleHabits')), 300,
+          scrollable: find.byType(Scrollable).first);
       await tester.tap(find.byKey(const Key('addSampleHabits')));
       await tester.pumpAndSettle();
       expect(find.text('Added 6 sample habits'), findsOneWidget);

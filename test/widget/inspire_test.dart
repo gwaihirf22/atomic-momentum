@@ -507,6 +507,8 @@ void main() {
     Navigator.of(tester.element(find.byKey(const Key('quoteFamily_stoic')))).pop();
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.byKey(const Key('inspireTabSwitch')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('inspireTabSwitch')));
     await tester.pumpAndSettle();
     expect(settings.showInspireTab, isFalse);

@@ -102,7 +102,7 @@ class InfoSheet extends StatelessWidget {
             switch (topic) {
               InfoTopic.twoMinute => _Example(example ?? (usual: 'Read 10 pages', tiny: 'Read one page')),
               InfoTopic.momentum => _Levels(score: momentum),
-              InfoTopic.inspire || InfoTopic.health || InfoTopic.freezes => const SizedBox.shrink(),
+              InfoTopic.inspire || InfoTopic.health || InfoTopic.freezes || InfoTopic.sync => const SizedBox.shrink(),
             },
             const SizedBox(height: 16),
             for (final point in explainer.points) ...[
@@ -164,6 +164,12 @@ class _Badge extends StatelessWidget {
           height: 36,
           decoration: BoxDecoration(color: palette.goldTint, borderRadius: BorderRadius.circular(11)),
           child: Icon(CupertinoIcons.quote_bubble_fill, size: 19, color: palette.accent),
+        ),
+      InfoTopic.sync => Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(color: palette.tint(palette.ice), borderRadius: BorderRadius.circular(11)),
+          child: Icon(CupertinoIcons.cloud_fill, size: 19, color: palette.ice),
         ),
     };
   }
