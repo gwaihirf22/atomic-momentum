@@ -53,7 +53,8 @@ struct InsightsWidget: Widget {
     }
     .configurationDisplayName("Insights")
     .description("Today, this week, the heatmap, and the month.")
-    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    // Extra large: iPad only, the month beside its heatmap
+    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
   }
 }
 
@@ -75,6 +76,7 @@ struct InsightsWidgetView: View {
   private var content: some View {
     if let snapshot = entry.snapshot, let insights = snapshot.insights {
       switch family {
+      case .systemExtraLarge: InsightsExtraLarge(insights: insights, look: look, now: entry.date)
       case .systemLarge: InsightsLarge(insights: insights, look: look, now: entry.date)
       case .systemMedium: InsightsMedium(insights: insights, look: look)
       default:
@@ -250,10 +252,40 @@ private struct Stat: View {
   }
 }
 
+/// The iPad's extra-large size: the month (as the large size, without its
+/// heatmap) beside the heatmap and its stats.
+private struct InsightsExtraLarge: View {
+  let insights: InsightsInfo
+  let look: Look
+  let now: Date
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 22) {
+      InsightsLarge(insights: insights, look: look, now: now, showsHeatmap: false)
+        .frame(maxWidth: .infinity)
+      VStack(alignment: .leading, spacing: 10) {
+        HStack(alignment: .firstTextBaseline) {
+          SmallLabel(text: "Every day", look: look)
+          Spacer(minLength: 0)
+          Text("last 25 weeks").font(.system(size: 12)).foregroundStyle(Color(hex: look.textSecondary))
+        }
+        HeatGrid(columns: insights.columns(weeks: 25), look: look, cell: 10, gap: 3)
+        HStack(spacing: 22) {
+          Stat(value: "\(insights.longestStreak)", label: "best streak", look: look)
+          Stat(value: "\(insights.streaksSaved)", label: "streaks saved", look: look)
+        }
+        Spacer(minLength: 0)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+}
+
 private struct InsightsLarge: View {
   let insights: InsightsInfo
   let look: Look
   let now: Date
+  var showsHeatmap = true
 
   private var monthName: String {
     let f = DateFormatter()
@@ -273,8 +305,10 @@ private struct InsightsLarge: View {
         tile(title: "Periods kept", value: insights.kept.map { "\($0)%" } ?? "–",
              note: insights.twoMinute > 0 ? "\(insights.twoMinute) two-min" : nil, good: false)
       }
-      HeatGrid(columns: insights.columns(weeks: 25), look: look, cell: 10, gap: 3)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      if showsHeatmap {
+        HeatGrid(columns: insights.columns(weeks: 25), look: look, cell: 10, gap: 3)
+          .frame(maxWidth: .infinity, alignment: .leading)
+      }
       Divider().overlay(Color(hex: look.track))
       VStack(spacing: 7) {
         if let longest = insights.longest { line("Longest streak", "\(longest.name) · \(longest.label)") }

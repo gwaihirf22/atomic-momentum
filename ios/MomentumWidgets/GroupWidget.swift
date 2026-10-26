@@ -105,7 +105,8 @@ struct GroupWidget: Widget {
     }
     .configurationDisplayName("Habits")
     .description("Today's habits, a category, or habits you pick. Tap + to log one.")
-    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    // Extra large: iPad only, a list in two columns
+    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
   }
 }
 
@@ -131,6 +132,7 @@ struct GroupWidgetView: View {
       EmptyMessage(title: entry.title, detail: "Nothing due here today.", look: look)
     } else {
       switch family {
+      case .systemExtraLarge: GroupListWide(entry: entry, look: look, scheme: scheme)
       case .systemLarge: GroupList(entry: entry, look: look, scheme: scheme)
       case .systemMedium: GroupRings(entry: entry, look: look, scheme: scheme)
       default: GroupGrid(habits: Array(entry.habits.prefix(4)), look: look, scheme: scheme)
@@ -237,6 +239,36 @@ private struct GroupList: View {
       }
       Spacer(minLength: 0)
     }
+  }
+}
+
+/// The iPad's extra-large size: the list in two columns, up to twelve habits.
+private struct GroupListWide: View {
+  let entry: GroupEntry
+  let look: Look
+  let scheme: ColorScheme
+
+  var body: some View {
+    let shown = Array(entry.habits.prefix(12))
+    let half = (shown.count + 1) / 2
+    VStack(alignment: .leading, spacing: 0) {
+      GroupHeading(entry: entry, look: look).padding(.bottom, 6)
+      HStack(alignment: .top, spacing: 24) {
+        column(Array(shown.prefix(half)))
+        column(Array(shown.dropFirst(half)))
+      }
+      Spacer(minLength: 0)
+    }
+  }
+
+  private func column(_ habits: [HabitInfo]) -> some View {
+    VStack(alignment: .leading, spacing: 0) {
+      ForEach(habits) { habit in
+        Divider().overlay(Color(hex: look.track))
+        GroupRow(habit: habit, look: look, scheme: scheme).frame(height: 50)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .top)
   }
 }
 
