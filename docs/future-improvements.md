@@ -78,7 +78,7 @@ How it fits together:
 
 ## App icon, launch and intro
 
-- **More app icons.** The catalogue is built to grow: a source picture, a line in `tool/make_app_icons.py`, an `AppIcons` entry, a manifest alias and the Xcode setting (CLAUDE.md, "App icon"). All of them are free; the app has no Pro.
+- **More app icons.** The catalogue is built to grow: a source picture, a line in `tool/make_app_icons.py`, an `AppIcons` entry, a manifest alias and the Xcode setting (CLAUDE.md, "App icon"). The current ones stay free; new ones may come with Momentum Plus (see the strategy, §2).
 - **iOS 18 tinted icons.** iOS makes a tinted version from the default icon. A tinted variant of our own (a grayscale logo in each icon set) would look cleaner.
 - **The launch screen follows the phone's light or dark mode, not the app's Appearance setting.** With Appearance set to Dark on a phone in light mode, a cream frame shows before the dark intro. Native launch screens can't read the app's setting, so the only fix would be a neutral launch colour.
 - **macOS and web icons** still come from the older `assets/branding/app_icon.png` crop. Regenerate them from the new full-bleed masters (`app_icon_charged.png`, `app_icon_light.png`).
