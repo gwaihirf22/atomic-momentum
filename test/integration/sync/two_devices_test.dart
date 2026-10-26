@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -270,6 +272,52 @@ void main() {
         await syncAll([phone, ipad, restored]);
         for (final device in [phone, ipad, restored]) {
           expect(device.named('Water').progress, 3);
+        }
+      }));
+
+  test('three devices tapping, offline and syncing at random lose no tap and end the same', () => run(() async {
+        final random = Random(11);
+        final devices = [for (var i = 0; i < 3; i++) await Device.create(cloud)];
+        await devices[0].add('Water', target: 50);
+        await devices[0].add('Read', target: 50, frequency: ResetFrequency.weekly);
+        for (final device in devices) {
+          expect(await device.sync.turnOn(), isTrue);
+        }
+        await syncAll(devices);
+        final ids = [for (final h in devices[0].habits.habits) h.id];
+        final taps = {for (final id in ids) id: 0};
+
+        for (var step = 0; step < 120; step++) {
+          later();
+          final device = devices[random.nextInt(3)];
+          final id = ids[random.nextInt(ids.length)];
+          switch (random.nextInt(6)) {
+            case 0 || 1 || 2:
+              final habit = device.habits.getHabitById(id)!;
+              await device.habits.updateHabitProgress(id, habit.progress + 1);
+              taps[id] = taps[id]! + 1;
+            case 3:
+              await device.habits.setDayNote(id, now, 'note $step');
+            case 4:
+              device.link.offline = random.nextBool();
+            case 5:
+              await device.sync.syncNow();
+          }
+          await pumpEventQueue();
+        }
+        for (final device in devices) {
+          device.link.offline = false;
+        }
+        await syncAll(devices);
+
+        final first = devices.first.habits.habits;
+        for (final id in ids) {
+          expect(devices.first.habits.getHabitById(id)!.progress, taps[id], reason: 'every tap counted');
+        }
+        for (final device in devices.skip(1)) {
+          for (final habit in first) {
+            expect(SyncService.sameHabit(device.habits.getHabitById(habit.id)!, habit), isTrue);
+          }
         }
       }));
 
