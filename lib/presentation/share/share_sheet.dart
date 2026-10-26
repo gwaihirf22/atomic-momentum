@@ -9,6 +9,7 @@ import '../../core/theme/app_palette.dart';
 import '../widgets/large_title_scaffold.dart';
 import '../widgets/orb_button.dart';
 import 'share_cards.dart';
+import '../layout/app_layout.dart';
 
 /// Builds the card for a style, with or without the habit's name.
 typedef ShareCardBuilder = Widget Function(ShareLook look, bool hideName);
@@ -195,9 +196,9 @@ class ShareSheetState extends State<ShareSheet> {
           const SizedBox(height: 8),
           Text(
             AppLinks.hasStore
-                ? "Opens your phone's share sheet: Messages, WhatsApp, Telegram, Instagram and more. "
+                ? "Opens your ${DeviceWords.device(context)}'s share sheet: Messages, WhatsApp, Telegram, Instagram and more. "
                     'A link to get Momentum goes with it.'
-                : "Opens your phone's share sheet: Messages, WhatsApp, Telegram, Instagram and more.",
+                : "Opens your ${DeviceWords.device(context)}'s share sheet: Messages, WhatsApp, Telegram, Instagram and more.",
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 12, color: palette.textSecondary),
           ),

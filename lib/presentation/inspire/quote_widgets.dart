@@ -16,6 +16,7 @@ import '../widgets/large_title_scaffold.dart';
 import '../widgets/orb_button.dart';
 import '../widgets/settings_list.dart';
 import '../widgets/unsaved_changes_guard.dart';
+import '../layout/app_layout.dart';
 
 /// "— Epictetus" with the source under it, as quotes are signed everywhere.
 class QuoteByline extends StatelessWidget {
@@ -783,6 +784,12 @@ class QuoteCreditsSheet extends StatelessWidget {
     ('Everything else', 'From works in the public domain. Quotes you add stay on this phone.'),
   ];
 
+  /// [credits] as said on this device ("stay on this iPad").
+  static List<(String, String)> creditsOn(BuildContext context) => [
+        for (final (title, text) in credits)
+          (title, text.replaceFirst('this phone', DeviceWords.thisDevice(context))),
+      ];
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -805,7 +812,7 @@ class QuoteCreditsSheet extends StatelessWidget {
                 ),
               ),
             ),
-            for (final (title, text) in credits) ...[
+            for (final (title, text) in creditsOn(context)) ...[
               const SizedBox(height: 16),
               Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: palette.textSecondary)),
               const SizedBox(height: 4),

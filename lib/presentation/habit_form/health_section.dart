@@ -12,6 +12,7 @@ import '../widgets/info_button.dart';
 import 'habit_draft.dart';
 import 'sections.dart' show FormSectionHeader;
 import '../tour/world_scope.dart';
+import '../layout/app_layout.dart';
 
 /// Filling a habit in from Apple Health (iPhone) or Health Connect
 /// (Android): a switch, which metric, and for water and mindful minutes
@@ -142,7 +143,7 @@ class _HealthSectionState extends State<HealthSection> {
           const SizedBox(height: 6),
           if (unavailable)
             Text(
-              '${link.metric.label} isn\'t in $name on this phone, so it stays logged by hand.',
+              '${link.metric.label} isn\'t in $name on ${DeviceWords.thisDevice(context)}, so it stays logged by hand.',
               style: TextStyle(fontSize: 13, color: palette.textSecondary),
             ),
           Wrap(

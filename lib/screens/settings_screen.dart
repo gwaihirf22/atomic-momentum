@@ -34,6 +34,7 @@ import 'tours_screen.dart';
 import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
 import 'how_to_screen.dart';
+import '../presentation/layout/app_layout.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -651,7 +652,7 @@ class _AboutSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return SettingsSection(
       header: 'About',
-      footer: 'Momentum collects nothing: no accounts, no ads, no tracking. Your habits stay on this phone.\n\n'
+      footer: 'Momentum collects nothing: no accounts, no ads, no tracking. Your habits stay on ${DeviceWords.thisDevice(context)}.\n\n'
           'Made by ${AppLinks.maker}. ${AppLinks.copyright}',
       children: [
         SettingsTile(

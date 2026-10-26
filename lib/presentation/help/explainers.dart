@@ -39,11 +39,13 @@ class Explainer {
   const Explainer({required this.title, required this.intro, required this.points, this.source});
 
   /// [android] names Health Connect where the iPhone has Apple Health.
-  static Explainer of(InfoTopic topic, {bool android = false}) => switch (topic) {
+  /// [device] is what the app calls the device it's on ("phone", "iPad",
+  /// [DeviceWords.device]).
+  static Explainer of(InfoTopic topic, {bool android = false, String device = 'phone'}) => switch (topic) {
         InfoTopic.twoMinute => twoMinute,
         InfoTopic.momentum => momentum,
-        InfoTopic.inspire => inspire,
-        InfoTopic.health => health(android: android),
+        InfoTopic.inspire => inspire(device: device),
+        InfoTopic.health => health(android: android, device: device),
         InfoTopic.freezes => freezes,
         InfoTopic.sync => sync(android: android),
       };
@@ -174,7 +176,7 @@ class Explainer {
 
   /// Filling in from Apple Health (Health Connect on Android), named as
   /// such: App Review wants HealthKit use clearly identified (2.5.1).
-  static Explainer health({bool android = false}) {
+  static Explainer health({bool android = false, String device = 'phone'}) {
     final name = android ? 'Health Connect' : 'Apple Health';
     final allow = android ? 'Health Connect → App permissions' : 'the Health app → Sharing → Apps';
     return Explainer(
@@ -188,8 +190,8 @@ class Explainer {
           lead: 'What it reads',
           icon: CupertinoIcons.heart,
         ),
-        const ExplainerPoint(
-          'Your health data stays on this phone. Momentum never sends it anywhere or shares it.',
+        ExplainerPoint(
+          'Your health data stays on this $device. Momentum never sends it anywhere or shares it.',
           lead: 'Private',
           icon: CupertinoIcons.lock_shield,
         ),
@@ -218,33 +220,33 @@ class Explainer {
     );
   }
 
-  static const inspire = Explainer(
+  static Explainer inspire({String device = 'phone'}) => Explainer(
     title: 'Inspire',
     intro: 'A few words to carry into your day, from thinkers and stories that have helped people keep going '
         'for centuries.',
     points: [
-      ExplainerPoint(
+      const ExplainerPoint(
         'The same quote all day, a new one at midnight. Every quote takes a turn before any comes back.',
         lead: 'Quote of the day',
         icon: CupertinoIcons.sun_max,
       ),
-      ExplainerPoint(
+      const ExplainerPoint(
         'Stoics, Christian writers, Puritans, Scripture, stories and thinkers. Turn any off in Settings or under ⋯.',
         lead: 'Sources',
         icon: CupertinoIcons.book,
       ),
-      ExplainerPoint(
+      const ExplainerPoint(
         'Search browses by source, theme or author, or finds the words you type. Filter to narrow it down.',
         lead: 'Find',
         icon: CupertinoIcons.search,
       ),
       ExplainerPoint(
-        'Add quotes you love, even ones still under copyright: they stay on this phone. File each under a '
+        'Add quotes you love, even ones still under copyright: they stay on this $device. File each under a '
         'source and themes so filters find it.',
         lead: 'Your own',
         icon: CupertinoIcons.person,
       ),
-      ExplainerPoint(
+      const ExplainerPoint(
         'Keep a quote with a habit, and it shows on the habit\'s page for the days it\'s hard.',
         lead: 'With a habit',
         icon: CupertinoIcons.plus_circle,

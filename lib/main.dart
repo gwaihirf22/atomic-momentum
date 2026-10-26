@@ -1,6 +1,7 @@
 import 'core/demo/demo_world.dart';
 import 'package:clock/clock.dart';
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -32,8 +33,9 @@ void main() async {
   // Initialize dependency injection
   await initializeDependencies();
 
-  // Portrait only on phones (matches Info.plist)
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // Portrait only on phones (matches Info.plist); iPads and tablets turn
+  // any way (Info.plist's ~ipad list), and the layout follows the window
+  if (!isTabletScreen()) SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // The intro plays on a cold launch, unless a notification tap opened the
   // app (then it goes straight to the habit) or it's turned off in Settings
@@ -69,6 +71,15 @@ void main() async {
   if (!showIntro && tourStart != TourStart.firstRun) {
     WidgetsBinding.instance.addPostFrameCallback((_) => askPermission());
   }
+}
+
+/// Whether the device is a tablet, from its screen (before any widget has a
+/// window to measure): phones are under 600 points on their short side.
+bool isTabletScreen() {
+  final views = PlatformDispatcher.instance.views;
+  if (views.isEmpty) return false;
+  final display = views.first.display;
+  return display.size.shortestSide / display.devicePixelRatio >= 600;
 }
 
 class MomentumApp extends StatefulWidget {

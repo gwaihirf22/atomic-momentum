@@ -10,6 +10,7 @@ import '../providers/habit_provider.dart';
 import 'info_button.dart';
 import 'settings_list.dart';
 import '../tour/world_scope.dart';
+import '../layout/app_layout.dart';
 
 /// "5 min ago", for when Health was last read.
 String healthSyncAgo(DateTime? at, {DateTime? now}) {
@@ -66,7 +67,7 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
         return SettingsSection(
           header: _source.name,
           footer: 'Momentum reads ${_source.name} only for the habits you link (in a habit\'s editor), and only if you '
-              'allow it. Your health data stays on this phone. Numbers staying at 0? Allow Momentum in $where.',
+              'allow it. Your health data stays on ${DeviceWords.thisDevice(context)}. Numbers staying at 0? Allow Momentum in $where.',
           children: [
             SettingsTile(
               tileKey: const Key('healthAbout'),

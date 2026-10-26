@@ -7,6 +7,7 @@ import '../core/services/app_icon_service.dart';
 import '../core/theme/app_palette.dart';
 import '../core/theme/app_style.dart';
 import '../presentation/widgets/adaptive.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// Settings → App icon: the icons on offer, the current one checked.
 class AppIconScreen extends StatefulWidget {
@@ -59,8 +60,8 @@ class _AppIconScreenState extends State<AppIconScreen> {
         ? 'Your new icon appears after you leave Momentum.'
         // Since iOS 18.1, Notification Center keeps the old icon until a restart
         // (an iOS bug, developer.apple.com/forums/thread/780074): nothing an app can refresh
-        : 'Match system switches between light and dark with your phone, on iOS 18 and later. '
-            'Notifications may show the old icon until you restart your iPhone.';
+        : 'Match system switches between light and dark with your ${DeviceWords.device(context)}, on iOS 18 and later. '
+            'Notifications may show the old icon until you restart your ${DeviceWords.appleDevice(context)}.';
 
     return Scaffold(
       backgroundColor: palette.background,

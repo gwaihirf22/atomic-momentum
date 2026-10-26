@@ -10,6 +10,7 @@ import 'adaptive.dart';
 import 'health_settings_section.dart' show healthSyncAgo;
 import 'info_button.dart';
 import 'settings_list.dart';
+import '../layout/app_layout.dart';
 
 /// Settings → Sync (Momentum Plus): one switch, where it stands, Sync now,
 /// and what it does. Until the purchase is built, only in builds with
@@ -41,7 +42,7 @@ class _SyncSection extends StatelessWidget {
 
   /// Where it stands, in a few words.
   String get status => switch (sync.state) {
-        SyncState.off => _android ? 'Your habits on your other Android devices' : 'Your habits on your iPad and other iPhones',
+        SyncState.off => _android ? 'Your habits on your other Android devices' : 'Your habits on your other iPhones and iPads',
         SyncState.syncing => 'Syncing',
         SyncState.synced => 'Synced ${healthSyncAgo(sync.lastSynced).toLowerCase()}',
         SyncState.offline => 'Waiting for a connection',
@@ -59,7 +60,7 @@ class _SyncSection extends StatelessWidget {
       await sync.turnOn();
       return;
     }
-    final device = _android ? 'this phone' : 'this iPhone';
+    final device = _android ? DeviceWords.thisDevice(context) : 'this ${DeviceWords.appleDevice(context)}';
     final choice = await showAdaptiveAlert<String>(
       context,
       title: 'Turn off sync?',
