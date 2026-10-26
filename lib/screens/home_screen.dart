@@ -37,6 +37,7 @@ import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_anchor.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/layout/app_layout.dart';
+import '../presentation/layout/habit_pages.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -399,7 +400,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             for (final habit in habits)
               HabitCard(
                 key: _cardKeys.putIfAbsent(habit.id, GlobalKey.new),
-                highlighted: habit.id == _highlightedId,
+                // Tapped from a notification, or showing beside the list (iPad)
+                highlighted: habit.id == _highlightedId || HabitPages.isSelected(context, habit.id),
                 habit: habit,
                 category: context.read<CategoryProvider>().resolve(habit.categoryId),
                 onEdit: () => _editHabit(habit),
@@ -446,6 +448,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!categories.filterHabits([habit]).contains(habit)) categories.clearSelectedCategory();
 
     setState(() => _highlightedId = habit.id);
+    // Beside the list on a wide iPad window, its page opens too
+    HabitPages.selectIfPane(context, habit.id);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final card = _cardKeys[habit.id]?.currentContext;
       if (card != null && card.mounted) {
@@ -548,9 +552,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Holding a category, or a card (that habit shown on Arrange).
   void _arrange({Habit? habit}) => CategoriesScreen.open(context, habitId: habit?.id);
 
-  void _openHabit(Habit habit) {
-    Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));
-  }
+  void _openHabit(Habit habit) => HabitPages.open(context, habit.id);
 
   void _editHabit(Habit habit) {
     // Over the tabs, so the tab bar never covers the form's Save button

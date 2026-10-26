@@ -21,6 +21,7 @@ import '../presentation/layout/app_layout.dart';
 import '../presentation/widgets/app_sidebar.dart';
 import '../presentation/widgets/floating_tab_bar.dart';
 import '../presentation/widgets/tab_swipe.dart';
+import 'habit_detail_screen.dart';
 import 'habit_editor_screen.dart';
 import 'home_screen.dart';
 import 'calendar_screen.dart';
@@ -31,6 +32,7 @@ import 'inspire_screen.dart';
 import 'settings_screen.dart';
 import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/tours.dart';
+import '../presentation/layout/habit_pages.dart';
 
 /// The main tabs, in the bar's order. Inspire can be turned off in Settings.
 enum AppTab {
@@ -125,6 +127,14 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
   late final _slide = AnimationController.unbounded(vsync: this);
   AppTab? _revealed;
   double _width = 0;
+
+  /// What each tab's detail pane shows, on wide windows (Habits; Insights
+  /// spreads its cards into columns instead).
+  final _selections = {AppTab.habits: HabitSelection()};
+
+  /// The window was wide last build: narrowing it moves a habit showing
+  /// beside a list onto that tab's own stack.
+  bool _wasWide = false;
 
   /// Tabs are built the first time they're shown, then kept.
   late final _opened = <AppTab>{widget.initialTab};
@@ -224,6 +234,9 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     NotificationService.vacationBackRequests.removeListener(_endVacation);
     NotificationService.weeklyReviewRequests.removeListener(_showWeeklyReview);
     IOSMainNavigation.tabRequests.removeListener(_showRequestedTab);
+    for (final selection in _selections.values) {
+      selection.dispose();
+    }
     _fadeTimer?.cancel();
     _slide.dispose();
     super.dispose();
@@ -429,6 +442,22 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     _switchTo(tab);
   }
 
+  /// The window narrowed (Split View, Stage Manager): a habit that was
+  /// showing beside a list opens on that tab's stack instead.
+  void _keepSelectedPages() {
+    for (final entry in _selections.entries) {
+      final id = entry.value.habitId;
+      if (id == null) continue;
+      final day = entry.value.day;
+      entry.value.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigators[entry.key]!.currentState?.push(
+          CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: id, day: day)),
+        );
+      });
+    }
+  }
+
   /// A category in the sidebar: Habits, filtered to it.
   void _showCategory(String id) {
     context.read<CategoryProvider>().setSelectedCategoryId(id);
@@ -463,13 +492,26 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
     final faded = _barFaded && _fades;
     final position = _visible.indexOf(_current);
 
-    Widget tabView(AppTab tab) => _opened.contains(tab)
-        ? CupertinoTabView(
-            navigatorKey: _navigators[tab],
-            navigatorObservers: [_observers[tab]!],
-            builder: (context) => tab.screen,
-          )
-        : const SizedBox.shrink();
+    final wide = AppLayout.of(context).isWide;
+    if (_wasWide && !wide) _keepSelectedPages();
+    _wasWide = wide;
+
+    Widget tabView(AppTab tab) {
+      if (!_opened.contains(tab)) return const SizedBox.shrink();
+      final view = CupertinoTabView(
+        navigatorKey: _navigators[tab],
+        navigatorObservers: [_observers[tab]!],
+        builder: (context) => tab.screen,
+      );
+      final selection = _selections[tab];
+      // Wide (iPad landscape): the list, and the habit's page beside it
+      if (!wide || selection == null) return view;
+      return HabitSplitView(
+        selection: selection,
+        list: DetailPaneScope(selection: selection, child: view),
+        placeholder: const PickAHabit(),
+      );
+    }
 
     final content = Stack(
         children: [

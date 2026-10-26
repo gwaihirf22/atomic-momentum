@@ -31,6 +31,8 @@ import 'heatmap_screen.dart';
 import 'weekly_review_screen.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/tour/tour_gate.dart';
+import '../presentation/layout/habit_pages.dart';
+import '../presentation/layout/card_columns.dart';
 
 /// How far back the Insights cards look, in weeks (about six months).
 const insightsWeeks = 26;
@@ -82,26 +84,28 @@ class _InsightsScreenState extends State<InsightsScreen> {
             children: overall == null
                 ? [_EmptyState(palette: palette)]
                 : [
-                    // The latest week in review, until the next one
-                    if (review != null) ...[
-                      WeekSummaryCard(
-                        key: const Key('insightsWeeklyReview'),
-                        review: review,
-                        action: PillButton(
-                          key: const Key('insightsSeeWeek'),
-                          label: 'See your week',
-                          icon: CupertinoIcons.chevron_right,
-                          onPressed: () {
-                            if (!TourGate.isFree) return;
-                            Navigator.of(context)
-                                .push(CupertinoPageRoute<void>(builder: (_) => const WeeklyReviewScreen()));
-                          },
+                    // Two columns where there's room (iPad); one on a phone
+                    CardColumns(children: [
+                      // The latest week in review, until the next one
+                      if (review != null)
+                        WeekSummaryCard(
+                          key: const Key('insightsWeeklyReview'),
+                          review: review,
+                          action: PillButton(
+                            key: const Key('insightsSeeWeek'),
+                            label: 'See your week',
+                            icon: CupertinoIcons.chevron_right,
+                            onPressed: () {
+                              if (!TourGate.isFree) return;
+                              Navigator.of(context)
+                                  .push(CupertinoPageRoute<void>(builder: (_) => const WeeklyReviewScreen()));
+                            },
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-                    _MomentumCard(overall: overall, data: data),
+                      _MomentumCard(overall: overall, data: data),
+                    ]),
                     const SizedBox(height: 14),
+                    // The heatmap takes the whole width
                     _DaysCard(
                       data: data,
                       habits: habits,
@@ -118,13 +122,12 @@ class _InsightsScreenState extends State<InsightsScreen> {
                       },
                     ),
                     const SizedBox(height: 14),
-                    _TwoMinuteCard(data: data, habits: habits),
-                    const SizedBox(height: 14),
-                    _WeekCard(data: data, weekStart: weekStart),
-                    const SizedBox(height: 14),
-                    _AchievementsCard(data: data),
-                    const SizedBox(height: 14),
-                    _HabitsCard(habits: habits),
+                    CardColumns(children: [
+                      _TwoMinuteCard(data: data, habits: habits),
+                      _WeekCard(data: data, weekStart: weekStart),
+                      _AchievementsCard(data: data),
+                      _HabitsCard(habits: habits),
+                    ]),
                   ],
           ),
         ),
@@ -880,6 +883,5 @@ class _HabitRow extends StatelessWidget {
     );
   }
 
-  void _open(BuildContext context) =>
-      Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => HabitDetailScreen(habitId: habit.id)));
+  void _open(BuildContext context) => HabitPages.open(context, habit.id);
 }

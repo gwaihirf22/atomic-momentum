@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Theme;
 import 'package:provider/provider.dart';
 
 import '../../core/feedback/haptics.dart';
@@ -62,7 +63,10 @@ class AppSidebar extends StatelessWidget {
       ),
       child: SafeArea(
         right: false,
-        child: MediaQuery.withClampedTextScaling(
+        // Not under a page's scaffold: the app's own text style, explicitly
+        child: DefaultTextStyle(
+          style: Theme.of(context).textTheme.bodyLarge ?? const TextStyle(),
+          child: MediaQuery.withClampedTextScaling(
           maxScaleFactor: 1.6,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 16, 12, 24),
@@ -121,6 +125,7 @@ class AppSidebar extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -33,6 +33,8 @@ import 'package:clock/clock.dart';
 import 'categories_screen.dart';
 import 'habit_detail_screen.dart';
 import '../presentation/tour/tour_events.dart';
+import '../presentation/layout/habit_pages.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// Any day's habits: a month (or week) of days, each inside a ring that fills
 /// with that day's completion, and the selected day's habits below, which
@@ -275,9 +277,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 onLongPress: () => CategoriesScreen.open(context),
               ),
             ),
-            SliverToBoxAdapter(child: _buildCalendar(context, habits)),
-            SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
-            _buildDayHabits(context, dayHabits, notStarted),
+            if (AppLayout.of(context).isWide)
+              // iPad sideways: the month beside the chosen day's habits
+              SliverToBoxAdapter(
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: _buildCalendar(context, habits)),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      _buildDayHeading(context, dayHabits),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppStyle.screenPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _dayHabitRows(context, dayHabits, notStarted),
+                        ),
+                      ),
+                    ]),
+                  ),
+                ]),
+              )
+            else ...[
+              SliverToBoxAdapter(child: _buildCalendar(context, habits)),
+              SliverToBoxAdapter(child: _buildDayHeading(context, dayHabits)),
+              _buildDayHabits(context, dayHabits, notStarted),
+            ],
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         );
@@ -301,15 +324,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCalendar(BuildContext context, List<Habit> habits) {
+  Widget _buildCalendar(BuildContext context, List<Habit> habits) =>
+      LayoutBuilder(builder: (context, constraints) => _buildCalendarIn(context, habits, constraints.maxWidth));
+
+  Widget _buildCalendarIn(BuildContext context, List<Habit> habits, double width) {
     final accent = Theme.of(context).colorScheme.primary;
     final palette = AppPalette.of(context);
     final label = palette.text;
     final secondary = secondaryLabel(context);
     final firstTracked = _firstTrackedDay(habits);
-    // Rows and day cells grow with the text size, within a seventh of the width
+    // Rows and day cells grow with the text size, within a seventh of the
+    // calendar's own width (beside the day's habits on an iPad), and a
+    // little bigger where there's room
     final textScale = MediaQuery.textScalerOf(context).scale(1);
-    final double cellSize = math.min(40.0 * math.max(1.0, textScale), MediaQuery.sizeOf(context).width / 7 - 2);
+    final cap = width >= 600 ? 52.0 : 40.0;
+    final double cellSize = math.min(cap * math.max(1.0, textScale), width / 7 - 2);
 
     Widget cell(DateTime utcDay, {required bool isSelected, required bool isToday}) {
       final day = _localDay(utcDay);
@@ -414,20 +443,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildDayHabits(BuildContext context, List<Habit> habits, List<Habit> notStarted) {
+  Widget _buildDayHabits(BuildContext context, List<Habit> habits, List<Habit> notStarted) => SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: AppStyle.screenPadding),
+        sliver: SliverList.list(children: _dayHabitRows(context, habits, notStarted)),
+      );
+
+  /// The selected day's habits, one row each (those not started yet last).
+  List<Widget> _dayHabitRows(BuildContext context, List<Habit> habits, List<Habit> notStarted) {
     final day = _selectedDay;
     // Editing past days is how missed logs are fixed and streaks repaired
     final isEditable = !day.isAfter(_today);
     final categories = context.read<CategoryProvider>();
-    void open(Habit habit) => Navigator.of(context).push(CupertinoPageRoute<void>(
-          builder: (_) => HabitDetailScreen(habitId: habit.id, day: day),
-        ));
+    void open(Habit habit) => HabitPages.open(context, habit.id, day: day);
 
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: AppStyle.screenPadding),
-      sliver: SliverList.builder(
-        itemCount: habits.length + notStarted.length,
-        itemBuilder: (context, index) {
+    return [
+      for (var index = 0; index < habits.length + notStarted.length; index++)
+        Builder(builder: (context) {
           if (index >= habits.length) {
             final habit = notStarted[index - habits.length];
             return _NotStartedRow(
@@ -448,15 +479,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onSetTwoMinute: (done) => _setTwoMinuteForDay(habit, day, done),
             onHold: () => _holdOnDay(habit, day),
             // The habit's page, on this day
-            onOpen: () => Navigator.of(context).push(CupertinoPageRoute<void>(
-              builder: (_) => HabitDetailScreen(habitId: habit.id, day: day),
-            )),
+            onOpen: () => open(habit),
             holdUndo: _holdUndos[_undoKey(habit, day)],
             onArrange: () => CategoriesScreen.open(context, habitId: habit.id),
           );
-        },
-      ),
-    );
+        }),
+    ];
   }
 }
 
