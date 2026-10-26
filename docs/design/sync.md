@@ -2,7 +2,7 @@
 
 *Decided October 21, 2026. Reworked October 25, 2026: sync is the first part of **Momentum Plus** (see [../strategy/product-strategy.md](../strategy/product-strategy.md), §2), built on the `plus` branch. It ships with the iPad app.*
 
-**Status (2026-10-25, `plus`):** steps 1–5 below are built and tested (the merge, recording and applying, `SyncService`, Settings → Sync behind Developer tools, `CloudSync.swift`). Not yet tried against real iCloud: that needs iCloud and Push Notifications turned on for the App ID (Xcode → Signing & Capabilities) and two simulators signed into one Apple ID. Left for later: offering to combine same-named habits when joining, and the Keychain copy of the device id (restores are caught by comparing records instead).
+**Status (2026-10-25, `plus`):** steps 1–5 below are built and tested (the merge, recording and applying, `SyncService`, Settings → Sync behind Developer tools, `CloudSync.swift`). **Tried on real iCloud 2026-10-26** (development environment): Paul's iPhone 15 Pro Max and iPad Pro, both installed with `FULL_ENTITLEMENTS=1 DEV_TOOLS=1 tool/install_on_iphone.sh <device id>`; turning sync on on the iPad brought all 8 habits over (the iPad then asked for its own Health permission, as each device reads its own Health). TestFlight and App Store builds use CloudKit's production environment, separate from development: deploy the schema there (CloudKit Console → Deploy Schema Changes) before a TestFlight build with sync. Left for later: offering to combine same-named habits when joining, and the Keychain copy of the device id (restores are caught by comparing records instead).
 
 ## The decision
 
