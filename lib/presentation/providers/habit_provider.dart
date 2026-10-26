@@ -25,6 +25,7 @@ import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 import 'package:flutter/foundation.dart' show mapEquals;
 import '../../core/services/habit_order.dart';
 import '../../domain/services/habit_arrangement.dart';
+import '../../domain/sync/habit_change_listener.dart';
 import 'category_provider.dart';
 
 enum HabitProviderState {
@@ -63,6 +64,16 @@ class HabitProvider extends ChangeNotifier {
 
   // Null: freezes cost nothing (tests that don't exercise the bank)
   final FreezeBank? _freezes;
+
+  /// Told about every change made here, for sync (null while sync is off).
+  /// Numbers from Health aren't passed on, and nor is what came from other
+  /// devices ([applySynced] doesn't go through here).
+  HabitChangeListener? syncListener;
+
+  void _tellSync(Habit? before, Habit? after) {
+    if (_fromHealth) return;
+    syncListener?.habitChanged(before, after);
+  }
 
   HabitProvider({
     required GetHabitsUseCase getHabitsUseCase,
@@ -123,6 +134,12 @@ class HabitProvider extends ChangeNotifier {
       categoryRanks: _ranks,
       grouped: groupByCategory,
     );
+  }
+
+  /// The order changed underneath (sync brought it): habits follow.
+  void refreshOrder() {
+    _arrange();
+    notifyListeners();
   }
 
   /// Habits follow their category's order (Arrange's switch).
@@ -237,6 +254,7 @@ class HabitProvider extends ChangeNotifier {
       
       final habit = await _createHabitUseCase(params);
       _habits.add(habit);
+      _tellSync(null, habit);
       await _streakWarnings?.sync(habit);
       await _reminders?.syncAll(_habits);
       await _weeklyReview?.sync(weeklyReviewInput);
@@ -696,6 +714,7 @@ class HabitProvider extends ChangeNotifier {
     _lastSaved.putIfAbsent(habitId, () => current);
     notifyListeners();
     _mirrorToHealth(current, _habits[index]);
+    _tellSync(current, _habits[index]);
 
     record(_unsaved.putIfAbsent(habitId, _PendingChange.new));
     // A save already running picks this up when it finishes
@@ -712,6 +731,12 @@ class HabitProvider extends ChangeNotifier {
         final pending = _unsaved.remove(habitId)!;
         try {
           Habit? saved;
+          if (pending.delete) {
+            await _deleteHabitUseCase(habitId);
+            _lastSaved.remove(habitId);
+            continue;
+          }
+          if (pending.replace != null) saved = await _updateHabitUseCase.putSynced(pending.replace!);
           if (pending.startFrom != null) saved = await _updateHabitUseCase.startFrom(habitId, pending.startFrom!);
           if (pending.countFrom != null) {
             saved = await _updateHabitUseCase.countFrom(habitId, pending.countFrom!, clearEarlier: pending.clearEarlier);
@@ -749,7 +774,10 @@ class HabitProvider extends ChangeNotifier {
           // Roll back: never show a change that isn't actually stored
           _unsaved.remove(habitId);
           final stored = _lastSaved.remove(habitId);
-          if (stored != null) _replaceHabit(stored);
+          if (stored != null) {
+            _tellSync(getHabitById(habitId), stored);
+            _replaceHabit(stored);
+          }
           _error = 'Could not save progress: $saveError';
           notifyListeners();
           allSaved = false;
@@ -769,12 +797,53 @@ class HabitProvider extends ChangeNotifier {
   }
 
 
+  /// Brings in what other devices changed (sync). [changes] is handed this
+  /// device's habits and returns the ones that differ once merged, by id
+  /// (null: deleted there). It runs at once, so a tap made a moment ago is
+  /// already in what it returns. The changes show straight away and are
+  /// saved through the queue taps use, before anything tapped after this.
+  Future<void> applySynced(Map<String, Habit?> Function(Map<String, Habit> local) changes) async {
+    final result = changes({for (final habit in _habits) habit.id: habit});
+    if (result.isEmpty) return;
+    for (final entry in result.entries) {
+      final index = _habits.indexWhere((habit) => habit.id == entry.key);
+      final merged = entry.value;
+      if (merged == null) {
+        if (index < 0) continue;
+        _habits.removeAt(index);
+        _unsaved[entry.key] = _PendingChange()..delete = true;
+        _streakWarnings?.cancel(entry.key);
+        continue;
+      }
+      if (index < 0) {
+        _habits.add(merged);
+      } else {
+        _lastSaved.putIfAbsent(entry.key, () => _habits[index]);
+        _habits[index] = merged;
+      }
+      // What was waiting to be saved is already part of the merged habit
+      _unsaved[entry.key] = _PendingChange()..replace = merged;
+      _streakWarnings?.sync(merged);
+    }
+    final order = _order;
+    final gone = {for (final e in result.entries) if (e.value == null) e.key};
+    if (order != null && gone.any(order.ids.contains)) {
+      await order.setIds([for (final id in order.ids) if (!gone.contains(id)) id]);
+    }
+    _arrange();
+    notifyListeners();
+    if (!_saving) await _saveChanges();
+    // Days filled in from this device's Health stay above what came in
+    syncHealth();
+  }
+
   Future<bool> updateHabitDetails(String habitId, UpdateHabitParams params) async {
     try {
       _setOperationInProgress(true);
       
       final before = getHabitById(habitId);
       final updatedHabit = await _updateHabitUseCase.updateDetails(habitId, params);
+      _tellSync(before, updatedHabit);
       _updateHabitInList(updatedHabit);
       // A new category: to the end of that category's habits
       if (before != null && before.categoryId != updatedHabit.categoryId && _order != null) {
@@ -801,8 +870,10 @@ class HabitProvider extends ChangeNotifier {
       // Its streak warnings go now; its reminders go with the resync below
       await _streakWarnings?.cancel(habitId);
       
+      final before = getHabitById(habitId);
       await _deleteHabitUseCase(habitId);
       _habits.removeWhere((habit) => habit.id == habitId);
+      if (before != null) _tellSync(before, null);
       final order = _order;
       if (order != null && order.ids.contains(habitId)) await order.setIds([...order.ids]..remove(habitId));
       await _reminders?.syncAll(_habits);
@@ -967,6 +1038,11 @@ class HabitProvider extends ChangeNotifier {
 
 /// Changes to one habit waiting to be saved.
 class _PendingChange {
+  /// The whole habit as merged from another device's changes (sync), saved
+  /// before anything tapped since; or the habit deleted there.
+  Habit? replace;
+  bool delete = false;
+
   /// Days set directly (clearing or restoring a period), applied first.
   final Map<DateTime, int> days = {};
   int? progress;

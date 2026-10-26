@@ -96,6 +96,10 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
+  /// Settings are read from storage as they're used; this tells everything
+  /// showing them that some changed underneath (sync brought them).
+  void reload() => notifyListeners();
+
   /// The user's choice of first weekday (DateTime.monday..sunday), or null
   /// for Automatic (follow the device's region, like iOS Calendar).
   int? get weekStartOverride => _prefs.getInt(_weekStartKey);

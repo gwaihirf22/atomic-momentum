@@ -89,6 +89,12 @@ class UpdateHabitUseCase {
     }
   }
 
+  /// Stores [habit] as it is: made or changed on another device (sync).
+  Future<Habit> putSynced(Habit habit) async {
+    await _repository.saveHabit(habit);
+    return habit;
+  }
+
   /// Why the person keeps the habit (see [Habit.setWhy]).
   Future<Habit> setWhy(String habitId, String text) => _change(habitId, (habit) => habit.setWhy(text));
 

@@ -15,9 +15,7 @@ class SyncMerge {
     // same way everywhere (stamps never tie across devices)
     final devices = replicas.keys.toList()..sort();
     for (final device in devices) {
-      for (final entry in replicas[device]!.entries) {
-        state._add(device, entry.key, entry.value);
-      }
+      state.add(device, replicas[device]!);
     }
     return state;
   }
@@ -39,6 +37,14 @@ class MergedState {
   /// Sets that only grow, by set name: their members, each with the first
   /// value set for it.
   final Map<String, Map<String, Stamped>> sets = {};
+
+  /// Takes in more of [device]'s records (this device's latest changes),
+  /// without merging everything again.
+  void add(String device, Records records) {
+    for (final entry in records.entries) {
+      _add(device, entry.key, entry.value);
+    }
+  }
 
   void _add(String device, String key, Stamped record) {
     final habitId = SyncKeys.habitOf(key);

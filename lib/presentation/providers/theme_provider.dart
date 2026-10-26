@@ -45,6 +45,17 @@ class ThemeProvider extends ChangeNotifier {
     return ThemeProvider(appearance, prefs, dayTheme);
   }
 
+  /// Reads the choice again (sync brought one from another device).
+  void reload() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+    final read = ThemeProvider.fromPrefs(prefs);
+    if (read._appearance == _appearance && read._dayTheme == _dayTheme) return;
+    _appearance = read._appearance;
+    _dayTheme = read._dayTheme;
+    notifyListeners();
+  }
+
   Appearance get appearance => _appearance;
 
   /// The light theme System uses by day: Light or Sepia.
