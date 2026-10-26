@@ -5,7 +5,8 @@
 ## What changes
 
 Momentum used to be iPhone-only: on an iPad it ran as a phone-sized window, locked upright. Now it's a universal app (`TARGETED_DEVICE_FAMILY = "1,2"`, app and widgets):
-- **It turns any way on iPad** (Info.plist's `~ipad` orientations). iPhones stay upright: `main()` locks portrait only when the screen's short side is under 600 points (`isTabletScreen`).
+- **It turns any way on iPad** (Info.plist's `~ipad` orientations). iPhones stay upright: `main()` locks portrait unless the device is a tablet (`isTabletScreen`).
+- **What's an iPad** comes from iOS itself (`DeviceKind`, channel `momentum/device`: `userInterfaceIdiom == .pad`), not from the size: the **iPhone Duo** unfolds to 669 × 951 points, bigger than many tablets' short side, and is still an iPhone ("this phone", upright, the phone layout with roomier cards). Where the platform can't say (Android, tests) a short side of 700 points or more counts (`AppLayout.tabletFrom`; the iPad mini is 744).
 - **It works at any window size:** Split View, Slide Over and Stage Manager. The layout follows the window, never the device.
 - **One window at a time.** Flutter on iOS runs one engine bound to one window, and the app's request notifiers are global (`NotificationService.focusRequests`, `IOSMainNavigation.tabRequests`, `TourGate.step`, `HabitCard._all`): with two windows a notification tap would be handled twice. `UIApplicationSupportsMultipleScenes` stays false.
 

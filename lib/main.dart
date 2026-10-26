@@ -14,6 +14,7 @@ import 'presentation/providers/theme_provider.dart';
 import 'presentation/intro/intro_screen.dart';
 import 'presentation/home_widgets/home_widget_host.dart';
 import 'presentation/sync/sync_host.dart';
+import 'presentation/layout/app_layout.dart';
 import 'presentation/providers/habit_provider.dart';
 import 'presentation/providers/category_provider.dart';
 import 'presentation/providers/quote_provider.dart';
@@ -33,6 +34,7 @@ void main() async {
   // Initialize dependency injection
   await initializeDependencies();
 
+  await DeviceKind.load();
   // Portrait only on phones (matches Info.plist); iPads and tablets turn
   // any way (Info.plist's ~ipad list), and the layout follows the window
   if (!isTabletScreen()) SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -73,13 +75,16 @@ void main() async {
   }
 }
 
-/// Whether the device is a tablet, from its screen (before any widget has a
-/// window to measure): phones are under 600 points on their short side.
+/// Whether the device is a tablet, before any widget has a window to
+/// measure: as iOS says (an iPad; never the iPhone Duo, however big it
+/// unfolds), else from the screen ([AppLayout.tabletFrom]).
 bool isTabletScreen() {
+  final known = DeviceKind.tablet;
+  if (known != null) return known;
   final views = PlatformDispatcher.instance.views;
   if (views.isEmpty) return false;
   final display = views.first.display;
-  return display.size.shortestSide / display.devicePixelRatio >= 600;
+  return display.size.shortestSide / display.devicePixelRatio >= AppLayout.tabletFrom;
 }
 
 class MomentumApp extends StatefulWidget {

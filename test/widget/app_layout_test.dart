@@ -45,6 +45,16 @@ void main() {
     expect(await wordsAt(tester, const Size(844, 390)), {'device': 'phone', 'this': 'this phone', 'apple': 'iPhone'});
     expect(await wordsAt(tester, const Size(834, 1194)), {'device': 'iPad', 'this': 'this iPad', 'apple': 'iPad'});
     expect(await wordsAt(tester, const Size(1194, 834)), {'device': 'iPad', 'this': 'this iPad', 'apple': 'iPad'});
+    // The iPhone Duo unfolded: a big phone, never an iPad
+    expect(await wordsAt(tester, const Size(669, 951)), {'device': 'phone', 'this': 'this phone', 'apple': 'iPhone'});
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets('what iOS says wins: an iPad in a narrow Split View is an iPad, a big iPhone never is', (tester) async {
+    addTearDown(() => DeviceKind.tablet = null);
+    DeviceKind.tablet = true;
+    expect((await wordsAt(tester, const Size(507, 834)))['this'], 'this iPad');
+    DeviceKind.tablet = false;
+    expect((await wordsAt(tester, const Size(1004, 1426)))['this'], 'this phone');
   }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   testWidgets('an Android tablet is "this tablet"', (tester) async {

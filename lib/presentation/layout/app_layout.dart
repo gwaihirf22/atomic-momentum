@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// How much room the app has, from the window's width (never the device):
@@ -46,9 +47,36 @@ abstract final class AppLayout {
   /// How many cards fit across [width], at least [cardMin] each (1 to 3).
   static int columnsFor(double width) => math.max(1, math.min(3, (width / cardMin).floor()));
 
-  /// Whether the device is a tablet (an iPad), from the shorter side of the
-  /// window: phones are under 600 points either way round.
-  static bool isTablet(BuildContext context) => MediaQuery.sizeOf(context).shortestSide >= 600;
+  /// Where the platform doesn't say (Android, tests), a window this wide on
+  /// its short side counts as a tablet's: the smallest iPad (mini) is 744
+  /// points; the iPhone Duo, unfolded, is 669 and stays a phone.
+  static const tabletFrom = 700.0;
+
+  /// Whether the device is a tablet: an iPad, as iOS says ([DeviceKind]),
+  /// so an iPad in a narrow Split View is still one and a big iPhone never
+  /// is; elsewhere, from the window's short side.
+  static bool isTablet(BuildContext context) =>
+      DeviceKind.tablet ?? MediaQuery.sizeOf(context).shortestSide >= tabletFrom;
+}
+
+/// What kind of device this is, as the platform says it (iOS: an iPad or
+/// not), asked once at launch ([load]); null where it can't say (Android,
+/// tests).
+abstract final class DeviceKind {
+  static const _channel = MethodChannel('momentum/device');
+
+  static bool? tablet;
+
+  static Future<void> load() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
+    try {
+      tablet = await _channel.invokeMethod<bool>('isTablet');
+    } on MissingPluginException {
+      tablet = null;
+    } on PlatformException {
+      tablet = null;
+    }
+  }
 }
 
 /// [child] no wider than [maxWidth], centred in whatever room there is.

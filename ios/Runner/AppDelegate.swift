@@ -23,6 +23,7 @@ import UIKit
     StorefrontChannel.register(messenger: messenger)
     WidgetChannel.register(messenger: messenger)
     SyncChannel.register(messenger: messenger)
+    DeviceChannel.register(messenger: messenger)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetLinks") {
       WidgetLinks.register(with: registrar)
     }
@@ -175,5 +176,18 @@ enum WidgetChannel {
       if reply == nil { opened = nil }
     }
     return true
+  }
+}
+
+/// `momentum/device`: whether this is an iPad. Dart can't tell a big iPhone
+/// (the Duo, unfolded) from an iPad by its size alone.
+enum DeviceChannel {
+  static func register(messenger: FlutterBinaryMessenger) {
+    FlutterMethodChannel(name: "momentum/device", binaryMessenger: messenger).setMethodCallHandler { call, result in
+      switch call.method {
+      case "isTablet": result(UIDevice.current.userInterfaceIdiom == .pad)
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
   }
 }

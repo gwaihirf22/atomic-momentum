@@ -43,6 +43,7 @@ const sizes = {
   'ipad13_wide': Size(1376, 1032),
   'split_half': Size(597, 834),
   'iphone': Size(390, 844),
+  'duo_unfolded': Size(669, 951),
 };
 
 const tabs = ['habits', 'calendar', 'insights', 'inspire', 'settings'];
