@@ -134,7 +134,7 @@ Future<T?> chooseAdaptive<T>(
   if (isCupertino(context)) {
     return showCupertinoModalPopup<T>(
       context: context,
-      builder: (context) => CupertinoActionSheet(
+      builder: (context) => _PopupWidth(child: CupertinoActionSheet(
         title: Text(title),
         message: message == null ? null : Text(message),
         actions: [
@@ -153,7 +153,7 @@ Future<T?> chooseAdaptive<T>(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-      ),
+      )),
     );
   }
   return showDialog<T>(
@@ -238,7 +238,7 @@ Future<DateTime?> _cupertinoPicker(
     context: context,
     builder: (context) {
       final background = AppPalette.of(context).surface;
-      return Container(
+      return _PopupWidth(child: Container(
         color: background,
         child: SafeArea(
           top: false,
@@ -283,7 +283,21 @@ Future<DateTime?> _cupertinoPicker(
             ],
           ),
         ),
-      );
+      ));
     },
   );
+}
+
+/// An action sheet or picker at the bottom of the screen, no wider than a
+/// phone's on an iPad.
+class _PopupWidth extends StatelessWidget {
+  final Widget child;
+
+  const _PopupWidth({required this.child});
+
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 500), child: child),
+      );
 }

@@ -19,6 +19,7 @@ import '../presentation/widgets/habit_icons.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/stat_card.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// The latest week in review for [habits] and the person's settings.
 WeeklyReview? weeklyReviewFor(BuildContext context, List<Habit> habits) {
@@ -44,6 +45,7 @@ class WeeklyReviewScreen extends StatelessWidget {
     final review = weeklyReviewFor(context, context.watch<HabitProvider>().habits);
 
     return LargeTitleScaffold(
+      maxContentWidth: AppLayout.readableMax,
       title: 'Your week',
       backgroundColor: palette.background,
       header: LargeTitleHeader(

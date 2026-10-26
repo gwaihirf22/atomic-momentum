@@ -77,6 +77,9 @@ void main() {
   for (final (name, size, scale) in const [
     ('6.1-inch iPhone, standard text', Size(390, 844), 1.0),
     ('iPhone SE, 135% text', Size(375, 667), 1.35),
+    // iPads: the sidebar, and sideways a habit beside its list
+    ('11-inch iPad sideways', Size(1194, 834), 1.0),
+    ('11-inch iPad upright, 135% text', Size(834, 1194), 1.35),
   ]) {
     testWidgets('$_steps random steps on a $name (seed $_seed)', timeout: const Timeout(Duration(minutes: 30)),
         (tester) async {
@@ -92,7 +95,7 @@ void main() {
       if (report.existsSync()) report.deleteSync();
       await tester.pumpWidget(MomentumApp(worlds: worlds));
       await _settle(tester);
-      final monkey = _Monkey(tester, Random(_seed + (scale == 1.0 ? 0 : 1000)), size);
+      final monkey = _Monkey(tester, Random(_seed + (scale == 1.0 ? 0 : 1000) + (size.width > 600 ? 500 : 0)), size);
       for (var step = 1; step <= _steps; step++) {
         await monkey.step();
         final error = tester.takeException();

@@ -33,6 +33,7 @@ import 'settings_screen.dart';
 import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/tours.dart';
 import '../presentation/layout/habit_pages.dart';
+import '../presentation/layout/form_sheet.dart';
 
 /// The main tabs, in the bar's order. Inspire can be turned off in Settings.
 enum AppTab {
@@ -95,7 +96,7 @@ class IOSMainNavigation extends StatefulWidget {
   /// Opens New Habit over everything (the tab bar included), from anywhere.
   static Future<void> addHabit(BuildContext context) async {
     await Navigator.of(context, rootNavigator: true).push(
-      CupertinoPageRoute<void>(fullscreenDialog: true, builder: (_) => const HabitEditorScreen()),
+      FormSheet.route<void>(context, (_) => const HabitEditorScreen(), fullscreenDialog: true),
     );
     if (!context.mounted) return;
     final habitProvider = context.read<HabitProvider>();
@@ -562,7 +563,12 @@ class _IOSMainNavigationState extends State<IOSMainNavigation> with SingleTicker
                                   ignoring: tab != _current,
                                   child: TickerMode(
                                     enabled: tab == _current,
-                                    child: FocusScope(canRequestFocus: tab == _current, child: tabView(tab)),
+                                    // Hidden tabs take no part in a page's opening (a SnackBar
+                                    // shown in every tab would otherwise fly from each)
+                                    child: HeroMode(
+                                      enabled: tab == _current,
+                                      child: FocusScope(canRequestFocus: tab == _current, child: tabView(tab)),
+                                    ),
                                   ),
                                 ),
                               ),

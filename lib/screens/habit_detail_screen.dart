@@ -49,6 +49,7 @@ import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/tour/tour.dart';
 import '../presentation/tour/tour_controller.dart';
+import '../presentation/layout/form_sheet.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -225,7 +226,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
 
   /// The editor for [habit] (Edit in the bar, or the row at the bottom).
   void _openEditor(Habit habit) => Navigator.of(context, rootNavigator: true).push(
-        CupertinoPageRoute<void>(builder: (_) => HabitEditorScreen(editHabit: habit)),
+        FormSheet.route<void>(context, (_) => HabitEditorScreen(editHabit: habit)),
       );
 
   @override
@@ -245,6 +246,7 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
     final stats = HabitStats.of(habit, clock.now(), weekStart: weekStart);
 
     return LargeTitleScaffold(
+      maxContentWidth: 760,
       title: habit.name,
       backgroundColor: palette.background,
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [

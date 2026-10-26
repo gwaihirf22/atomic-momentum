@@ -118,6 +118,11 @@ void main() {
       final card = find.byWidgetPredicate((w) => w.key is ValueKey && '${(w.key as ValueKey).value}'.startsWith('habitCard_'));
       await tester.tap(card.first);
       await shot(tester, '${entry.key}_habit');
+      // Adding a habit (a form sheet on an iPad)
+      closeOverlays();
+      await _settle(tester);
+      await tester.tap(find.byKey(const Key('addHabitButton')));
+      await shot(tester, '${entry.key}_add');
     });
   }
 }

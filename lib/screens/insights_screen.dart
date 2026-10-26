@@ -74,6 +74,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final review = weeklyReviewFor(context, habits);
 
     return LargeTitleScaffold(
+      maxContentWidth: 1100,
       title: 'Insights',
       backgroundColor: palette.background,
       header: const LargeTitleHeader(title: 'Insights', titleKey: Key('insightsTitle')),

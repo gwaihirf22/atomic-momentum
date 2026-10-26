@@ -345,6 +345,21 @@ void main() {
         ),
   };
 
+  // Every screen on its own at iPad widths too, upright and sideways (the
+  // whole app at iPad sizes, with its sidebar and split view, is
+  // ipad_layouts_test)
+  for (final width in [834.0, 1194.0]) {
+    for (final scale in [1.0, 1.35]) {
+      final setting = 'iPad ${width.toInt()}pt, text ${(scale * 100).round()}%';
+      for (final entry in screens.entries) {
+        testWidgets('${entry.key} at $setting', (tester) async {
+          await pump(tester, entry.value(), width: width, scale: scale);
+          expectNothingCutOff(tester, '${entry.key} at $setting');
+        });
+      }
+    }
+  }
+
   for (final width in [375.0, 390.0]) {
     for (final scale in [1.0, 1.35]) {
       final setting = '${width.toInt()}pt, text ${(scale * 100).round()}%';

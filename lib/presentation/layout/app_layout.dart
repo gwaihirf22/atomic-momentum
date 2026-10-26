@@ -66,6 +66,21 @@ class ReadableWidth extends StatelessWidget {
       );
 }
 
+/// [child] (a list that fills the height) no wider than [maxWidth], centred
+/// at the top: whole pages such as Arrange and How to on an iPad.
+class ReadableColumn extends StatelessWidget {
+  final double maxWidth;
+  final Widget child;
+
+  const ReadableColumn({super.key, this.maxWidth = AppLayout.readableMax, required this.child});
+
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: child),
+      );
+}
+
 /// What to call the device in the app's words: "this phone" on a phone,
 /// "this iPad" or "this tablet" on a tablet.
 abstract final class DeviceWords {

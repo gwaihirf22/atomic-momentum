@@ -61,6 +61,8 @@ class IOSTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppStyle.cardRadius)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
+        // On an iPad, a sheet is a readable width, not the whole screen
+        constraints: const BoxConstraints(maxWidth: 640),
         backgroundColor: palette.background,
         surfaceTintColor: Colors.transparent,
         shape: const RoundedRectangleBorder(

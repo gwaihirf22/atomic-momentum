@@ -24,6 +24,10 @@ class LargeTitleScaffold extends StatefulWidget {
   /// How the page scrolls (e.g. not at all while something inside is pinched).
   final ScrollPhysics? physics;
 
+  /// The widest the page's content gets (iPad); wider, it's centred. Null:
+  /// the whole width (Calendar's month beside its day).
+  final double? maxContentWidth;
+
   const LargeTitleScaffold({
     super.key,
     required this.title,
@@ -32,6 +36,7 @@ class LargeTitleScaffold extends StatefulWidget {
     required this.slivers,
     required this.backgroundColor,
     this.physics,
+    this.maxContentWidth,
   });
 
   @override
@@ -93,17 +98,25 @@ class _LargeTitleScaffoldState extends State<LargeTitleScaffold> {
           child: SafeArea(
             bottom: false,
             // Inside the Scaffold, the bottom padding includes the tab bar
-            child: Builder(
-              builder: (context) => CustomScrollView(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Centred within the cap, on wide windows
+                final max = widget.maxContentWidth;
+                final inset = max == null ? 0.0 : ((constraints.maxWidth - max) / 2).clamp(0.0, double.infinity);
+                Widget fit(Widget sliver) => inset == 0
+                    ? sliver
+                    : SliverPadding(padding: EdgeInsets.symmetric(horizontal: inset), sliver: sliver);
+                return CustomScrollView(
                 controller: _controller,
                 physics: widget.physics,
                 slivers: [
-                  SliverToBoxAdapter(child: widget.header),
-                  ...widget.slivers,
+                  fit(SliverToBoxAdapter(child: widget.header)),
+                  for (final sliver in widget.slivers) fit(sliver),
                   // The home indicator, and the tab bar when there is one
                   SliverToBoxAdapter(child: SizedBox(height: MediaQuery.paddingOf(context).bottom)),
                 ],
-              ),
+                );
+              },
             ),
           ),
         ),

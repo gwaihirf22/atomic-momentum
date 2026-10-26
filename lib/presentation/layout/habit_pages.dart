@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Theme;
+import 'package:flutter/material.dart' show ScaffoldMessenger, Theme;
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_palette.dart';
@@ -102,10 +102,14 @@ class HabitSplitView extends StatelessWidget {
                 // A habit deleted (or gone with a sync) leaves the pane empty
                 final exists = id != null && context.watch<HabitProvider>().getHabitById(id) != null;
                 if (!exists) return placeholder;
-                return Navigator(
-                  key: ValueKey(('pane', selection.version)),
-                  onGenerateRoute: (_) => CupertinoPageRoute<void>(
-                    builder: (_) => HabitDetailScreen(key: Key('paneHabit_$id'), habitId: id, day: selection.day),
+                // Its own SnackBars: a notice shows in the column it's about,
+                // never in both at once
+                return ScaffoldMessenger(
+                  child: Navigator(
+                    key: ValueKey(('pane', selection.version)),
+                    onGenerateRoute: (_) => CupertinoPageRoute<void>(
+                      builder: (_) => HabitDetailScreen(key: Key('paneHabit_$id'), habitId: id, day: selection.day),
+                    ),
                   ),
                 );
               },

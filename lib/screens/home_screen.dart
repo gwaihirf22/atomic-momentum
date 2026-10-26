@@ -38,6 +38,7 @@ import '../presentation/tour/tour_anchor.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/layout/app_layout.dart';
 import '../presentation/layout/habit_pages.dart';
+import '../presentation/layout/form_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -228,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
             return SlidableAutoCloseBehavior(
               child: LargeTitleScaffold(
+                maxContentWidth: 760,
                 title: 'Habits',
                 backgroundColor: palette.background,
                 header: LargeTitleHeader(
@@ -557,9 +559,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _editHabit(Habit habit) {
     // Over the tabs, so the tab bar never covers the form's Save button
     Navigator.of(context, rootNavigator: true).push(
-      CupertinoPageRoute(
-        builder: (context) => HabitEditorScreen(editHabit: habit),
-      ),
+      FormSheet.route<void>(context, (context) => HabitEditorScreen(editHabit: habit)),
     ).then((_) {
       // Refresh habits when returning from edit screen
       context.read<HabitProvider>().refreshHabits();

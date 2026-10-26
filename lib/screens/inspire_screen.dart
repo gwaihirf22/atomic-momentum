@@ -20,6 +20,7 @@ import '../presentation/widgets/floating_tab_bar.dart';
 import '../presentation/widgets/info_button.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import 'quote_search_screen.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// The Inspire tab: the quote of the day, on its own, with nothing else to
 /// look at (the tab bar fades away, see IOSMainNavigation). Search finds
@@ -178,7 +179,10 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: Center(
-                      child: Padding(
+                      // Lines a reader can follow, however wide the iPad
+                      child: ReadableWidth(
+                        maxWidth: 600,
+                        child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: quote == null
                             ? const _NoQuotes()
@@ -191,6 +195,7 @@ class _InspireScreenState extends State<InspireScreen> with WidgetsBindingObserv
                                   onAnother: () => _another(families),
                                 ),
                               ),
+                      ),
                       ),
                     ),
                   ),

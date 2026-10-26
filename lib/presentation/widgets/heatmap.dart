@@ -104,6 +104,10 @@ class Heatmap extends StatelessWidget {
 
   static const gap = 2.0;
   static const maxCell = 12.0;
+
+  /// Squares can grow to this where there's room for them (an iPad's
+  /// Insights): the same six months, easier to see and tap.
+  static const maxWideCell = 20.0;
   static const labelWidth = 14.0;
 
   /// How full a day looks, 0 to 4 (0: something due, nothing done).
@@ -134,7 +138,8 @@ class Heatmap extends StatelessWidget {
     return MediaQuery.withNoTextScaling(
       // Labels sit beside squares a few points tall
       child: LayoutBuilder(builder: (context, constraints) {
-        final cell = math.min(maxCell, (constraints.maxWidth - labelWidth - gap * layout.columns) / layout.columns);
+        final cap = constraints.maxWidth > 500 ? maxWideCell : maxCell;
+        final cell = math.min(cap, (constraints.maxWidth - labelWidth - gap * layout.columns) / layout.columns);
         final gridWidth = layout.width(cell);
         final gridHeight = _Layout.height(cell);
         final labelStyle = TextStyle(fontSize: 10, height: 1, color: palette.textSecondary);

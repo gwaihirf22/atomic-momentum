@@ -12,6 +12,7 @@ import '../presentation/howto/guides.dart';
 import '../presentation/howto/phone_frame.dart';
 import '../presentation/tour/world_scope.dart';
 import '../presentation/widgets/settings_list.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// Settings → Help → How to: the guides, each a page of pictures of the app.
 /// The pictures show the example habits, built when the page opens.
@@ -105,6 +106,7 @@ class GuideScreen extends StatelessWidget {
           ? CupertinoNavigationBar(backgroundColor: palette.background, middle: Text(guide.title))
           : AppBar(title: Text(guide.title)) as PreferredSizeWidget,
       body: SafeArea(
+        child: ReadableColumn(
         child: ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           itemCount: guide.cards.length,
@@ -125,6 +127,7 @@ class GuideScreen extends StatelessWidget {
               ]),
             );
           },
+        ),
         ),
       ),
     );

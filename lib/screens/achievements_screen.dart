@@ -31,6 +31,7 @@ class AchievementsScreen extends StatelessWidget {
         );
 
     return LargeTitleScaffold(
+      maxContentWidth: 900,
       title: 'Achievements',
       backgroundColor: palette.background,
       header: const LargeTitleHeader(title: 'Achievements', titleKey: Key('achievementsTitle')),

@@ -97,6 +97,7 @@ class _QuoteSearchScreenState extends State<QuoteSearchScreen> {
     final browsing = _filter.isEmpty;
 
     return LargeTitleScaffold(
+      maxContentWidth: 720,
       title: title,
       backgroundColor: palette.background,
       header: LargeTitleHeader(title: title, titleKey: const Key('quoteSearchTitle')),

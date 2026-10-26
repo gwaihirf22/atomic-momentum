@@ -284,7 +284,13 @@ void main() {
 
   group('every tour finds each of its targets', () {
     for (final id in Tours.all.keys.where((id) => id != TourId.habits && id != TourId.editor)) {
-      for (final (size, scale) in const [(Size(375, 667), 1.35), (Size(390, 844), 1.0)]) {
+      for (final (size, scale) in const [
+        (Size(375, 667), 1.35),
+        (Size(390, 844), 1.0),
+        // iPads: the sidebar in place of the bar, upright and sideways
+        (Size(1194, 834), 1.0),
+        (Size(834, 1194), 1.35),
+      ]) {
         testWidgets('${id.name} at ${size.width.toInt()}pt, ${(scale * 100).round()}%', (tester) async {
           await setUpWith({TourStore.key: ['habits']});
           // Arrange points at a habit
@@ -335,10 +341,11 @@ void main() {
         find.byWidgetPredicate((w) => w.runtimeType.toString().startsWith('_ModalScope')).evaluate().length;
 
     for (final id in Tours.all.keys) {
-      testWidgets(id.name, (tester) async {
+      for (final size in const [Size(390, 844), Size(1194, 834)]) {
+      testWidgets('${id.name} at ${size.width.toInt()}pt', (tester) async {
         await setUpWith({TourStore.key: ['habits']});
         if (id == TourId.arrange) await addHabits(['Drink water', 'Read 20 pages']);
-        tester.view.physicalSize = const Size(390, 844) * 3;
+        tester.view.physicalSize = size * 3;
         tester.view.devicePixelRatio = 3;
         tester.view.padding = const FakeViewPadding(top: 20 * 3);
         addTearDown(tester.view.reset);
@@ -395,6 +402,7 @@ void main() {
           await tester.tap(find.byType(TourNextButton));
         }
       });
+      }
     }
   });
 

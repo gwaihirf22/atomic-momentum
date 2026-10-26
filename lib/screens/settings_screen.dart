@@ -43,6 +43,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     context.watch<ThemeProvider>(); // rebuild when the appearance changes
     return LargeTitleScaffold(
+      maxContentWidth: AppLayout.readableMax,
       title: 'Settings',
       backgroundColor: AppPalette.of(context).background,
       header: const LargeTitleHeader(title: 'Settings', titleKey: Key('settingsTitle')),

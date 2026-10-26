@@ -22,6 +22,7 @@ import '../presentation/tour/tour.dart';
 import '../presentation/tour/tour_anchor.dart';
 import '../presentation/tour/tour_controller.dart';
 import '../presentation/tour/world_scope.dart';
+import '../presentation/layout/app_layout.dart';
 
 /// Arrange (holding a category or a habit's card on Habits, or Settings): the order of
 /// categories and habits, and managing categories (add, edit, delete,
@@ -86,7 +87,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               trailing: addButton,
             )
           : AppBar(title: const Text('Arrange'), actions: [addButton]) as PreferredSizeWidget,
-      body: CustomScrollView(
+      body: ReadableColumn(
+        child: CustomScrollView(
         // Every row built, so the habit asked for can be scrolled to
         cacheExtent: 4000,
         slivers: [
@@ -117,6 +119,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           ],
           SliverToBoxAdapter(child: _Footer(atLimit: atLimit, habits: habits)),
         ],
+      ),
       ),
     );
   }
