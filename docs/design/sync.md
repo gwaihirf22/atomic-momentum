@@ -2,6 +2,8 @@
 
 *Decided October 21, 2026. Reworked October 25, 2026: sync is the first part of **Momentum Plus** (see [../strategy/product-strategy.md](../strategy/product-strategy.md), §2), built on the `plus` branch. It ships with the iPad app.*
 
+**Status (2026-10-25, `plus`):** steps 1–5 below are built and tested (the merge, recording and applying, `SyncService`, Settings → Sync behind Developer tools, `CloudSync.swift`). Not yet tried against real iCloud: that needs iCloud and Push Notifications turned on for the App ID (Xcode → Signing & Capabilities) and two simulators signed into one Apple ID. Left for later: offering to combine same-named habits when joining, and the Keychain copy of the device id (restores are caught by comparing records instead).
+
 ## The decision
 
 Momentum syncs **within each platform's own cloud**, with no accounts and no server:
@@ -107,7 +109,7 @@ Deleting a habit records a final marker. A habit that's merely missing (Develope
 
 ### Buckets
 
-Records travel in **buckets**, gzipped JSON, each owned by one device:
+Records travel in **buckets**, plain JSON (a month is about 2 KB, so not compressed), each owned by one device:
 - `<device>~h~<habit>`: a habit's settings and deletion;
 - `<device>~d~<habit>~<yyyy-MM>`: that habit's days and marks for a month;
 - `<device>~meta`: everything else.
@@ -129,7 +131,7 @@ A tap rewrites one small month bucket. A year is about 150 buckets per device, e
 
 ### Android: Google Drive's app folder
 - **Access:** `google_sign_in` 7 with only the `drive.appdata` scope (a hidden folder only this app can see; nothing in the person's Drive), and `googleapis` Drive v3. Pure Dart, no Kotlin. Check whether Google's OAuth verification applies to that scope before building, and set up the Google Cloud project's Android clients (debug, upload and Play signing keys).
-- **One file per device** holding its buckets; each device reads the others'. Drive only stores files, so the same "each device writes only its own" rule makes it work.
+- **One file per device** holding its buckets; each device reads the others'. (`DriveTransport` implements `CloudTransport`, like `CloudKitTransport`.) Drive only stores files, so the same "each device writes only its own" rule makes it work.
 - **No pushes:** check on launch, on resume, and a few seconds after a change.
 
 ## Testing
