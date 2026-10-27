@@ -41,6 +41,7 @@ import '../../presentation/providers/quote_provider.dart';
 // Services
 import '../services/health_source.dart';
 import '../services/health_sync_service.dart';
+import '../services/health_watch.dart';
 import '../services/notification_service.dart';
 import '../services/streak_warning_service.dart';
 import '../services/reminder_service.dart';
@@ -116,6 +117,7 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
     return (firstSpentOn: bank.firstSpentOn, fundReachedOn: bank.fundReachedOn);
   };
   sl.registerLazySingleton<HealthSource>(() => PluginHealthSource());
+  sl.registerLazySingleton<HealthWatch>(() => PlatformHealthWatch());
   // Reads the source when it syncs, so tests can swap in a fake after setup
   sl.registerLazySingleton(() => HealthSyncService(source: () => sl<HealthSource>(), prefs: sl()));
   sl.registerLazySingleton(() => StreakWarningService(

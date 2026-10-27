@@ -10,6 +10,9 @@
 	<true/>
 	<key>com.apple.developer.healthkit.access</key>
 	<array/>
+	<!-- Health wakes the app when a linked habit's data changes (HealthWatch.swift) -->
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
 	<!-- Sync between the person's devices (Momentum Plus): their private CloudKit
 	     database, and pushes when another device changes something. Enable iCloud
 	     (CloudKit, this container) and Push Notifications for the App ID too -->

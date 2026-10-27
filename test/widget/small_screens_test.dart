@@ -52,6 +52,7 @@ import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/plus_screen.dart';
 import 'package:atomic_momentum/screens/sync_log_screen.dart';
+import 'package:atomic_momentum/presentation/widgets/sync_now_feedback.dart';
 import 'package:atomic_momentum/core/sync/sync_log.dart';
 import 'package:atomic_momentum/screens/year_review_screen.dart';
 import 'package:atomic_momentum/presentation/plus/plus_mention.dart';
@@ -483,6 +484,23 @@ void main() {
         await tester.tap(find.byKey(const Key('syncAbout')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'About sync at $setting');
+      });
+
+      testWidgets('Apple Health Sync now, running and done, at $setting', (tester) async {
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('healthSyncNow')), 300,
+            scrollable: find.byType(Scrollable).first);
+        // Clear of the bottom edge, where the tap would miss
+        await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('healthSyncNow')));
+        await tester.pump();
+        expectNothingCutOff(tester, 'Sync now running at $setting');
+        await tester.pump(SyncNowFeedback.least);
+        await tester.pump();
+        expect(find.byKey(const Key('syncNowDone')), findsOneWidget);
+        expectNothingCutOff(tester, 'Sync now done at $setting');
+        await tester.pump(SyncNowFeedback.shown);
       });
 
       testWidgets('the sync log at $setting', (tester) async {

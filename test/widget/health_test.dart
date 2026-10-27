@@ -21,6 +21,7 @@ import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/screens/add_habit_screen.dart';
 import 'package:atomic_momentum/screens/habit_detail_screen.dart';
 import 'package:atomic_momentum/presentation/help/explainers.dart';
+import 'package:atomic_momentum/presentation/widgets/sync_now_feedback.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/story_habit_screen.dart';
 
@@ -215,8 +216,14 @@ void main() {
     await pump(tester, HabitDetailScreen(habitId: id));
     health.values[HealthMetric.steps] = {today: 4321};
     await tester.tap(find.byKey(const Key('detailHealthSyncNow')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    expect(find.byKey(const Key('syncNowSpinner')), findsOneWidget, reason: 'it shows it started');
+    await tester.pump(SyncNowFeedback.least);
+    await tester.pump();
     expect(habits.getHabitById(id)!.history[today], 4321);
+    expect(find.byKey(const Key('syncNowDone')), findsOneWidget, reason: 'and that it finished');
+    await tester.pump(SyncNowFeedback.shown);
+    expect(find.text('Sync now'), findsOneWidget);
   });
 
   testWidgets('Settings syncs now and counts linked habits', (tester) async {
@@ -226,8 +233,15 @@ void main() {
     await tester.scrollUntilVisible(find.byKey(const Key('healthSyncNow')), 300, scrollable: find.byType(Scrollable).first);
     expect(find.text('1 habit linked'), findsOneWidget);
     await tester.tap(find.byKey(const Key('healthSyncNow')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    expect(find.byKey(const Key('syncNowSpinner')), findsOneWidget);
+    await tester.pump(SyncNowFeedback.least);
+    await tester.pump();
     expect(habits.habits.single.history[today], 1200);
+    expect(find.text('Synced'), findsOneWidget);
+    await tester.pump(SyncNowFeedback.shown);
+    expect(find.text('Synced'), findsNothing);
+    expect(find.text('Just now'), findsOneWidget, reason: 'back to when it last read');
   });
 
   testWidgets('Settings names Apple Health and explains what Momentum reads, with no habit linked yet', (tester) async {
@@ -441,7 +455,7 @@ void main() {
       expect(find.byKey(const Key('detailHealthBlocked')), findsNothing);
     });
 
-    testWidgets('a week of nothing from Health asks whether Momentum is allowed', (tester) async {
+    testWidgets('a week of nothing from Health asks whether Health is on there and Momentum allowed', (tester) async {
       final id = await addLinked(HealthMetric.steps);
       final weekAgo = DateTime(today.year, today.month, today.day - 6);
       await habits.startFrom(id, weekAgo);
@@ -452,7 +466,29 @@ void main() {
       await habits.updateHabitDetails(id, UpdateHabitParams(health: HealthLink(metric: HealthMetric.steps, linkedOn: weekAgo)));
       await habits.syncHealth(force: true);
       await pump(tester, HabitDetailScreen(habitId: id));
+      expect(find.textContaining('Nothing from Apple Health on this iPhone this week'), findsOneWidget);
+      expect(find.textContaining('Is Health turned on here'), findsOneWidget);
+
+      // Health Connect: whether Momentum may read it
+      health.isAndroid = true;
+      await pump(tester, const SizedBox());
+      await pump(tester, HabitDetailScreen(habitId: id));
       expect(find.textContaining('Is Momentum allowed to read your steps?'), findsOneWidget);
+    });
+
+    testWidgets('on an iPad, the week of nothing names the iPad', (tester) async {
+      final id = await addLinked(HealthMetric.steps);
+      final weekAgo = DateTime(today.year, today.month, today.day - 6);
+      await habits.startFrom(id, weekAgo);
+      await habits.updateHabitDetails(id, UpdateHabitParams(health: HealthLink(metric: HealthMetric.steps, linkedOn: weekAgo)));
+      health.values[HealthMetric.steps] = {
+        for (var i = 0; i < 7; i++) DateTime(today.year, today.month, today.day - i): 0,
+      };
+      await habits.syncHealth(force: true);
+      await pump(tester, HabitDetailScreen(habitId: id));
+      tester.view.physicalSize = const Size(834, 3600);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Nothing from Apple Health on this iPad this week'), findsOneWidget);
     });
   });
 

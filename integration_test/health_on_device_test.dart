@@ -6,6 +6,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/services/health_source.dart';
 import 'package:atomic_momentum/core/services/health_sync_service.dart';
+import 'package:atomic_momentum/core/services/health_watch.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
@@ -92,9 +93,27 @@ void main() {
       final asleep = await plugin.getHealthDataFromTypes(types: [HealthDataType.SLEEP_ASLEEP], startTime: napFrom, endTime: napTo);
       expect(asleep, isEmpty, reason: 'Health already has sleep at 2–3 PM yesterday; the test needs that hour free');
 
+      // iPhone: Health says when steps change (HealthWatch.swift), which is
+      // how the app follows Health while it's open. It may say so once as
+      // the watch starts; a write has to make it say so again
+      var heard = 0;
+      final watch = PlatformHealthWatch();
+      if (!android) {
+        await watch.watch({HealthMetric.steps}, () => heard++);
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+      final heardBefore = heard;
+
       // Steps; a nap (sleep counts toward the day until 6 PM);
       // a run, and the copy another app keeps of it; mindful minutes
       expect(await plugin.writeHealthData(value: 1234, type: HealthDataType.STEPS, startTime: at(2, 0), endTime: at(2, 20)), isTrue);
+      if (!android) {
+        for (var i = 0; i < 50 && heard == heardBefore; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 200));
+        }
+        expect(heard, greaterThan(heardBefore), reason: 'Health said steps changed');
+        await watch.watch({}, () {});
+      }
       expect(await plugin.writeHealthData(value: 0, type: HealthDataType.SLEEP_ASLEEP, startTime: at(14, 0), endTime: at(14, 50)), isTrue);
       expect(await plugin.writeWorkoutData(activityType: HealthWorkoutActivityType.RUNNING, start: at(2, 10), end: at(2, 40), title: 'Test run'), isTrue);
       expect(await plugin.writeWorkoutData(activityType: HealthWorkoutActivityType.RUNNING, start: at(2, 11), end: at(2, 39), title: 'Test run copy'), isTrue);

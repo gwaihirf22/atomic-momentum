@@ -19,9 +19,9 @@ import '../sync/sync_service.dart';
 
 /// Work the app does while it isn't on screen (docs/design/sync.md, "In
 /// the background"): another device's changes when iCloud says there are
-/// some, and every so often (iOS's background refresh) Health's numbers
-/// too, so reminders for what's already done stop and the widgets show
-/// the day as it is.
+/// some, and Health's numbers when Health says they changed (HealthWatch)
+/// or every so often (iOS's background refresh), so reminders for what's
+/// already done stop and the widgets show the day as it is.
 ///
 /// iOS asks through `momentum/background` (`BackgroundRun` in
 /// CloudSync.swift). With the app running, its own providers do the work
@@ -41,7 +41,10 @@ class BackgroundRefresh {
   /// iOS's background refresh.
   static const refresh = 'refresh';
 
-  /// Does the work for [reason] on [habits]: Health (for a refresh), then
+  /// Apple Health changed what a linked habit reads (HealthWatch.swift).
+  static const health = 'health';
+
+  /// Does the work for [reason] on [habits]: Health (unless a push), then
   /// sync, then waits until what they started (saves, notifications) is
   /// done.
   static Future<void> run({required HabitProvider habits, SyncService? sync, required String reason}) async {

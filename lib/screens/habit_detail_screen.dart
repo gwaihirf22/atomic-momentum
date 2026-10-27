@@ -49,7 +49,9 @@ import '../presentation/tour/world_scope.dart';
 import '../presentation/tour/tour_events.dart';
 import '../presentation/tour/tour.dart';
 import '../presentation/tour/tour_controller.dart';
+import '../presentation/layout/app_layout.dart';
 import '../presentation/layout/form_sheet.dart';
+import '../presentation/widgets/sync_now_feedback.dart';
 
 /// Everything about one habit: the chosen day's amount (tap the number to
 /// type it), its week or month, how it's going, why it matters, and notes.
@@ -1587,7 +1589,11 @@ class _HealthLine extends StatelessWidget {
           Text(
             habits.healthAccessMissing
                 ? "Momentum can't read your $what. Allow it in ${source.name}."
-                : 'Nothing from ${source.name} this week. Is Momentum allowed to read your $what?',
+                : source.isAndroid
+                    ? 'Nothing from ${source.name} this week. Is Momentum allowed to read your $what?'
+                    // An iPad has Apple Health only once it's turned on there
+                    : 'Nothing from ${source.name} on this ${DeviceWords.appleDevice(context)} this week. Is Health '
+                        'turned on here, and allowed for Momentum?',
             key: const Key('detailHealthBlocked'),
             style: TextStyle(fontSize: 13, color: palette.warning),
           ),
@@ -1611,15 +1617,26 @@ class _SyncNowButton extends StatefulWidget {
 }
 
 class _SyncNowButtonState extends State<_SyncNowButton> {
-  bool _syncing = false;
+  final _feedback = SyncNowFeedback();
 
-  Future<void> _sync() async {
-    setState(() => _syncing = true);
-    try {
-      await context.read<HabitProvider>().syncHealth(force: true);
-    } finally {
-      if (mounted) setState(() => _syncing = false);
-    }
+  @override
+  void initState() {
+    super.initState();
+    _feedback.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _feedback.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sync() {
+    final habits = context.read<HabitProvider>();
+    return _feedback.run(() async {
+      await habits.syncHealth(force: true);
+      return !habits.healthAccessMissing;
+    });
   }
 
   @override
@@ -1628,10 +1645,10 @@ class _SyncNowButtonState extends State<_SyncNowButton> {
       key: const Key('detailHealthSyncNow'),
       padding: const EdgeInsets.only(left: 8),
       minSize: 44,
-      onPressed: _syncing ? null : _sync,
-      child: _syncing
-          ? const CupertinoActivityIndicator(radius: 8)
-          : const Text('Sync now', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      onPressed: _feedback.isIdle ? _sync : null,
+      child: _feedback.isIdle
+          ? const Text('Sync now', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600))
+          : SyncNowMark(_feedback.phase, compact: true),
     );
   }
 }

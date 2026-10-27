@@ -77,6 +77,9 @@ class SettingsTile extends StatelessWidget {
   final bool enabled;
   final bool showChevron;
 
+  /// Shown at the end in place of the chevron (Sync now's spinner).
+  final Widget? trailing;
+
   const SettingsTile({
     super.key,
     this.tileKey,
@@ -88,6 +91,7 @@ class SettingsTile extends StatelessWidget {
     this.onTap,
     this.enabled = true,
     this.showChevron = true,
+    this.trailing,
   });
 
   @override
@@ -100,7 +104,7 @@ class SettingsTile extends StatelessWidget {
           leading: _SettingsIcon(icon, iconColor),
           title: _TitleAndValue(title: title, value: value),
           subtitle: subtitle == null ? null : _Wrapping(subtitle!),
-          trailing: showChevron && onTap != null ? const CupertinoListTileChevron() : null,
+          trailing: trailing ?? (showChevron && onTap != null ? const CupertinoListTileChevron() : null),
           onTap: enabled ? onTap : null,
         ),
       );
@@ -111,7 +115,7 @@ class SettingsTile extends StatelessWidget {
       leading: Icon(icon, color: enabled ? iconColor : null),
       title: _TitleAndValue(title: title, value: value),
       subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: showChevron && onTap != null ? const Icon(Icons.chevron_right) : null,
+      trailing: trailing ?? (showChevron && onTap != null ? const Icon(Icons.chevron_right) : null),
       onTap: onTap,
     );
   }

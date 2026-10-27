@@ -28,6 +28,7 @@
 		C10D5A122EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
 		C10D5A132EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
 		C10D5A152EB0000100A1B2C3 /* MomentumShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */; };
+		C10D5A312EB0000100A1B2C3 /* HealthWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */; };
 		C10D5A162EB0000100A1B2C3 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
 		7611539B60BA665BB79B8D18 /* MomentumWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AEC4980BBFDEF20A17DCC336 /* MomentumWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
@@ -117,6 +118,7 @@
 		C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
 		C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntity.swift; sourceTree = "<group>"; };
 		C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentumShortcuts.swift; sourceTree = "<group>"; };
+		C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWatch.swift; sourceTree = "<group>"; };
 		7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
@@ -266,6 +268,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */,
 				C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */,
+				C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */,
 			);
@@ -584,6 +587,7 @@
 				C10D5A0F2EB0000100A1B2C3 /* CloudSync.swift in Sources */,
 				C10D5A122EB0000100A1B2C3 /* HabitEntity.swift in Sources */,
 				C10D5A152EB0000100A1B2C3 /* MomentumShortcuts.swift in Sources */,
+				C10D5A312EB0000100A1B2C3 /* HealthWatch.swift in Sources */,
 				C10D5A162EB0000100A1B2C3 /* Snapshot.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				DA36AF6D322EB4348BC8A6C7 /* WidgetStore.swift in Sources */,

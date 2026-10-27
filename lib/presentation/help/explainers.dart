@@ -236,11 +236,23 @@ class Explainer {
           lead: 'Which wins',
           icon: CupertinoIcons.arrow_up_circle,
         ),
-        const ExplainerPoint(
-          'It checks when you open or return to the app, at midnight and with Sync now, filling in the past week.',
+        ExplainerPoint(
+          android
+              ? 'It checks when you open or return to the app, every few minutes while it\'s open, at midnight and '
+                  'with Sync now, filling in the past week.'
+              : 'It checks as soon as $name changes while the app is open, now and then while it\'s closed, at '
+                  'midnight and with Sync now, filling in the past week.',
           lead: 'When',
           icon: CupertinoIcons.arrow_2_circlepath,
         ),
+        // Health Connect stays on one phone; Apple Health shares through iCloud
+        if (!android)
+          const ExplainerPoint(
+            'Each device shows its own Apple Health. If numbers differ, open the Health app on each, with Health '
+            'turned on in iCloud.',
+            lead: 'On more than one device',
+            icon: CupertinoIcons.device_phone_portrait,
+          ),
         const ExplainerPoint(
           'Pick the unit you count in (glasses, ml, fl oz, hours or minutes). Sleep counts on the morning you wake.',
           lead: 'Units',

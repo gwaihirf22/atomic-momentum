@@ -14,6 +14,7 @@ import 'core/services/plus_store.dart';
 import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/intro/intro_screen.dart';
+import 'presentation/health/health_live.dart';
 import 'presentation/home_widgets/home_widget_host.dart';
 import 'presentation/sync/sync_host.dart';
 import 'presentation/layout/app_layout.dart';
@@ -197,78 +198,80 @@ class _MomentumAppState extends State<MomentumApp> {
       ],
       // Above the app there's no MediaQuery yet; this one tracks the device's
       // light/dark setting so "System" follows it as it changes. The home
-      // screen widgets and sync follow the providers from here
-      child: HomeWidgetHost(
-        child: SyncHost(
-          child: MediaQuery.fromView(
-            view: View.of(context),
-            child: Consumer2<ThemeProvider, WorldController>(
-              builder: (context, themeProvider, worlds, child) {
-                final palette = themeProvider.paletteIn(context);
-                final world = worlds.world;
+      // screen widgets, sync and Health follow the providers from here
+      child: HealthLiveHost(
+        child: HomeWidgetHost(
+          child: SyncHost(
+            child: MediaQuery.fromView(
+              view: View.of(context),
+              child: Consumer2<ThemeProvider, WorldController>(
+                builder: (context, themeProvider, worlds, child) {
+                  final palette = themeProvider.paletteIn(context);
+                  final world = worlds.world;
 
-                return CupertinoApp(
-                  title: 'Atomic Momentum',
-                  debugShowCheckedModeBanner: false,
-                  theme: IOSTheme.cupertino(palette),
-                  // A world of its own: switching remounts everything below,
-                  // the editor and sheets on the root navigator included
-                  navigatorKey: world.navigatorKey,
-                  navigatorObservers: [_snackBarsAway[world] ??= _SnackBarsAway()],
-                  home: const WorldHome(),
-                  // Screens built from Material widgets read Theme.of(context), which
-                  // CupertinoApp doesn't provide; it also carries the palette
-                  // (AppPalette.of) every widget draws with
-                  // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
-                  // it no SnackBar can show
-                  builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-                    // Status bar icons that show on the theme's background (Android
-                    // takes this; iOS follows the navigation bars too)
-                    value: (palette.brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
-                        .copyWith(statusBarColor: Colors.transparent),
-                    child: Theme(
-                      data: IOSTheme.material(palette),
-                      child: IntroGate(
-                        enabled: showIntro,
-                        onDone: onIntroDone,
-                        // Fades into Habits once they've loaded (a long history takes a moment)
-                        isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
-                        // The world's providers around the root navigator, so
-                        // whatever opens on it sees the same habits
-                        child: TourAnchorScope(
-                          anchors: _anchors,
-                          child: Stack(children: [
-                            Positioned.fill(
-                              child: WorldScope(
-                                world: world,
-                                child: KeyedSubtree(key: ObjectKey(world), child: ScaffoldMessenger(child: child!)),
-                              ),
-                            ),
-                            // A tour, over everything
-                            const Positioned.fill(child: TourLayer()),
-                            // Never mistaken for the person's own habits (a tour
-                            // leaves them with its Skip)
-                            if (world.isDemo)
-                              Positioned(
-                                top: MediaQuery.paddingOf(context).top + 4,
-                                left: 0,
-                                right: 0,
-                                child: Center(
-                                  child: ExampleHabitsPill(onDone: _tours.isRunning ? null : worlds.exitDemo),
+                  return CupertinoApp(
+                    title: 'Atomic Momentum',
+                    debugShowCheckedModeBanner: false,
+                    theme: IOSTheme.cupertino(palette),
+                    // A world of its own: switching remounts everything below,
+                    // the editor and sheets on the root navigator included
+                    navigatorKey: world.navigatorKey,
+                    navigatorObservers: [_snackBarsAway[world] ??= _SnackBarsAway()],
+                    home: const WorldHome(),
+                    // Screens built from Material widgets read Theme.of(context), which
+                    // CupertinoApp doesn't provide; it also carries the palette
+                    // (AppPalette.of) every widget draws with
+                    // ScaffoldMessenger: CupertinoApp doesn't provide one, and without
+                    // it no SnackBar can show
+                    builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+                      // Status bar icons that show on the theme's background (Android
+                      // takes this; iOS follows the navigation bars too)
+                      value: (palette.brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+                          .copyWith(statusBarColor: Colors.transparent),
+                      child: Theme(
+                        data: IOSTheme.material(palette),
+                        child: IntroGate(
+                          enabled: showIntro,
+                          onDone: onIntroDone,
+                          // Fades into Habits once they've loaded (a long history takes a moment)
+                          isReady: () => context.read<HabitProvider>().state.index >= HabitProviderState.loaded.index,
+                          // The world's providers around the root navigator, so
+                          // whatever opens on it sees the same habits
+                          child: TourAnchorScope(
+                            anchors: _anchors,
+                            child: Stack(children: [
+                              Positioned.fill(
+                                child: WorldScope(
+                                  world: world,
+                                  child: KeyedSubtree(key: ObjectKey(world), child: ScaffoldMessenger(child: child!)),
                                 ),
                               ),
-                          ]),
+                              // A tour, over everything
+                              const Positioned.fill(child: TourLayer()),
+                              // Never mistaken for the person's own habits (a tour
+                              // leaves them with its Skip)
+                              if (world.isDemo)
+                                Positioned(
+                                  top: MediaQuery.paddingOf(context).top + 4,
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: ExampleHabitsPill(onDone: _tours.isRunning ? null : worlds.exitDemo),
+                                  ),
+                                ),
+                            ]),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  localizationsDelegates: const [
-                    GlobalMaterialLocalizations.delegate,
-                    GlobalCupertinoLocalizations.delegate,
-                    GlobalWidgetsLocalizations.delegate,
-                  ],
-                );
-              },
+                    localizationsDelegates: const [
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ),

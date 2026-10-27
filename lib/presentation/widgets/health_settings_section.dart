@@ -9,6 +9,7 @@ import '../help/explainers.dart';
 import '../providers/habit_provider.dart';
 import 'info_button.dart';
 import 'settings_list.dart';
+import 'sync_now_feedback.dart';
 import '../tour/world_scope.dart';
 import '../layout/app_layout.dart';
 
@@ -36,12 +37,26 @@ class HealthSettingsSection extends StatefulWidget {
 class _HealthSettingsSectionState extends State<HealthSettingsSection> {
   late final HealthSource _source = WorldScope.healthSourceOf(context);
   late Future<HealthAvailability> _availability = _source.availability();
-  bool _syncing = false;
+  final _syncNowFeedback = SyncNowFeedback();
 
-  Future<void> _syncNow() async {
-    setState(() => _syncing = true);
-    await context.read<HabitProvider>().syncHealth(force: true);
-    if (mounted) setState(() => _syncing = false);
+  @override
+  void initState() {
+    super.initState();
+    _syncNowFeedback.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _syncNowFeedback.dispose();
+    super.dispose();
+  }
+
+  Future<void> _syncNow() {
+    final habits = context.read<HabitProvider>();
+    return _syncNowFeedback.run(() async {
+      await habits.syncHealth(force: true);
+      return !habits.healthAccessMissing;
+    });
   }
 
   Future<void> _addSamples() async {
@@ -95,10 +110,11 @@ class _HealthSettingsSectionState extends State<HealthSettingsSection> {
                 tileKey: const Key('healthSyncNow'),
                 icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
                 iconColor: HabitColor.green.color,
-                title: _syncing ? 'Syncing…' : 'Sync now',
+                title: 'Sync now',
                 subtitle: linked == 0 ? 'No habits linked yet' : (linked == 1 ? '1 habit linked' : '$linked habits linked'),
-                value: healthSyncAgo(habits.lastHealthSync),
-                onTap: _syncing || linked == 0 ? null : _syncNow,
+                value: _syncNowFeedback.isIdle ? healthSyncAgo(habits.lastHealthSync) : null,
+                trailing: _syncNowFeedback.isIdle ? null : SyncNowMark(_syncNowFeedback.phase),
+                onTap: !_syncNowFeedback.isIdle || linked == 0 ? null : _syncNow,
               ),
             if (habits.healthAccessMissing && linked > 0)
               SettingsTile(

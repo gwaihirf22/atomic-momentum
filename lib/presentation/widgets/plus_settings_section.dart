@@ -13,6 +13,7 @@ import 'adaptive.dart';
 import 'health_settings_section.dart' show healthSyncAgo;
 import 'info_button.dart';
 import 'settings_list.dart';
+import 'sync_now_feedback.dart';
 import '../layout/app_layout.dart';
 
 /// Settings → Momentum Plus: the Plus row (what it is, buying it), sync
@@ -111,14 +112,7 @@ class _PlusSection extends StatelessWidget {
           value: sync.isOn,
           onChanged: sync.state == SyncState.syncing && !sync.isOn ? null : (on) => _toggle(context, on),
         ),
-        if (sync.isOn)
-          SettingsTile(
-            tileKey: const Key('syncNow'),
-            icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
-            iconColor: HabitColor.green.color,
-            title: 'Sync now',
-            onTap: sync.state == SyncState.syncing ? null : sync.syncNow,
-          ),
+        if (sync.isOn) _SyncNowTile(sync: sync),
         // What sync did here, to trace a problem between devices
         if (DevTools.enabled && (sync.isOn || sync.log.entries.isNotEmpty))
           SettingsTile(
@@ -136,6 +130,54 @@ class _PlusSection extends StatelessWidget {
           onTap: () => showInfoSheet(context, InfoTopic.sync),
         ),
       ],
+    );
+  }
+}
+
+/// Sync now, showing it ran: a spinner, then "Synced" (or "Couldn't sync",
+/// with the reason in the switch's line above).
+class _SyncNowTile extends StatefulWidget {
+  final SyncService sync;
+
+  const _SyncNowTile({required this.sync});
+
+  @override
+  State<_SyncNowTile> createState() => _SyncNowTileState();
+}
+
+class _SyncNowTileState extends State<_SyncNowTile> {
+  final _feedback = SyncNowFeedback();
+
+  @override
+  void initState() {
+    super.initState();
+    _feedback.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _feedback.dispose();
+    super.dispose();
+  }
+
+  Future<void> _syncNow() {
+    final sync = widget.sync;
+    return _feedback.run(() async {
+      await sync.syncNow();
+      await sync.whenIdle();
+      return sync.state == SyncState.synced;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SettingsTile(
+      tileKey: const Key('syncNow'),
+      icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
+      iconColor: HabitColor.green.color,
+      title: 'Sync now',
+      trailing: _feedback.isIdle ? null : SyncNowMark(_feedback.phase),
+      onTap: !_feedback.isIdle || widget.sync.state == SyncState.syncing ? null : _syncNow,
     );
   }
 }

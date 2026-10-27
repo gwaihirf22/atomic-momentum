@@ -14,6 +14,8 @@ import UIKit
     CloudSync.shared.startIfOn()
     BackgroundRun.registerRefresh()
     BackgroundRun.testAtLaunch()
+    // Before launch ends, as iOS asks for Health's background delivery
+    HealthWatch.startAtLaunch()
     NotificationCenter.default.addObserver(
       forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
     ) { _ in BackgroundRun.scheduleRefresh() }
@@ -44,6 +46,7 @@ import UIKit
     StorefrontChannel.register(messenger: messenger)
     WidgetChannel.register(messenger: messenger)
     SyncChannel.register(messenger: messenger)
+    HealthWatch.register(messenger: messenger)
     BackgroundRun.registerApp(engine: engineBridge.pluginRegistry as? FlutterEngine, messenger: messenger)
     DeviceChannel.register(messenger: messenger)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetLinks") {

@@ -13,6 +13,7 @@ import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
 import 'package:atomic_momentum/presentation/widgets/plus_settings_section.dart';
+import 'package:atomic_momentum/presentation/widgets/sync_now_feedback.dart';
 import 'package:atomic_momentum/screens/plus_screen.dart';
 
 import '../helpers/fake_cloud.dart';
@@ -85,6 +86,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(text('Waiting for a connection'), findsOneWidget);
     // Nothing left waiting to run when the test ends
+    await sync.turnOff();
+  }, variant: ios);
+
+  testWidgets('Sync now spins, says it synced (or couldn\'t), then goes back', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(const Key('syncSwitch')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('syncNow')));
+    await tester.pump();
+    expect(find.byKey(const Key('syncNowSpinner')), findsOneWidget);
+    await tester.pump(SyncNowFeedback.least);
+    await tester.pump();
+    expect(find.byKey(const Key('syncNowDone')), findsOneWidget);
+    await tester.pump(SyncNowFeedback.shown);
+    expect(find.byKey(const Key('syncNowDone')), findsNothing);
+
+    link.offline = true;
+    await tester.tap(find.byKey(const Key('syncNow')));
+    await tester.pump(SyncNowFeedback.least);
+    await tester.pump();
+    expect(find.byKey(const Key('syncNowFailed')), findsOneWidget);
+    expect(text("Couldn't sync"), findsOneWidget);
+    await tester.pump(SyncNowFeedback.shown);
     await sync.turnOff();
   }, variant: ios);
 
