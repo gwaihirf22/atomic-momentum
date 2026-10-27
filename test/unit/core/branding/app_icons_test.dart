@@ -26,7 +26,7 @@ void main() {
 
     test('a new install matches the system on iOS and is Charged on Android', () {
       expect(AppIcons.defaultFor(TargetPlatform.iOS), AppIcons.system);
-      expect(AppIcons.defaultFor(TargetPlatform.android), AppIcons.charged);
+      expect(AppIcons.defaultFor(TargetPlatform.android), AppIcons.light);
       for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
         expect(AppIcons.offeredOn(platform), contains(AppIcons.defaultFor(platform)));
       }
@@ -43,7 +43,7 @@ void main() {
       expect(AppIcons.fromPlatform(TargetPlatform.android, 'IconLight'), AppIcons.light);
       // An icon from a newer or older version falls back to the default
       expect(AppIcons.fromPlatform(TargetPlatform.iOS, 'AppIcon-Gone'), AppIcons.system);
-      expect(AppIcons.fromPlatform(TargetPlatform.android, null), AppIcons.charged);
+      expect(AppIcons.fromPlatform(TargetPlatform.android, null), AppIcons.light);
     });
   });
 

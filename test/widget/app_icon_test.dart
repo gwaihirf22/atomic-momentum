@@ -97,13 +97,13 @@ void main() {
       await pump(tester, const AppIconScreen());
 
       expect(tile(AppIcons.system), findsNothing);
-      expect(checked(AppIcons.charged), isTrue);
+      expect(checked(AppIcons.light), isTrue, reason: 'Light by default');
       expect(find.text('Your new icon appears after you leave Momentum.'), findsOneWidget);
       expect(find.textContaining('restart'), findsNothing, reason: 'an iPhone quirk');
 
-      await tester.tap(tile(AppIcons.light));
+      await tester.tap(tile(AppIcons.charged));
       await tester.pumpAndSettle();
-      expect(service.changes, [AppIcons.light]);
+      expect(service.changes, [AppIcons.charged]);
     });
   });
 
