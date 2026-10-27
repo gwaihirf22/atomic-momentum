@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../core/services/home_widget_bridge.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/plus_store.dart';
 import '../../core/theme/app_palette.dart';
 import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/services/step_size.dart';
@@ -29,6 +30,9 @@ class HomeWidgetSync with WidgetsBindingObserver {
   final QuoteProvider quotes;
   final CategoryProvider? categories;
 
+  /// Momentum Plus (the snapshot says whether Siri and Shortcuts work).
+  final PlusStore? plus;
+
   /// Changes come in bursts (a tap notifies several times); one write after.
   static const delay = Duration(milliseconds: 400);
 
@@ -39,6 +43,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
     required this.theme,
     required this.quotes,
     this.categories,
+    this.plus,
   });
 
   Timer? _timer;
@@ -57,6 +62,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
     theme.addListener(_changed);
     quotes.addListener(_changed);
     categories?.addListener(_changed);
+    plus?.addListener(_changed);
     bridge.onLogsWaiting = applyLogs;
     bridge.onOpen = _open;
     WidgetsBinding.instance.addObserver(this);
@@ -91,6 +97,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
     theme.removeListener(_changed);
     quotes.removeListener(_changed);
     categories?.removeListener(_changed);
+    plus?.removeListener(_changed);
     bridge.onLogsWaiting = null;
     bridge.onOpen = null;
     WidgetsBinding.instance.removeObserver(this);
@@ -139,6 +146,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
       categories: categories?.categories ?? const [],
       findQuote: quotes.find,
       weekStart: settings.firstDayOfWeek,
+      plus: plus?.unlocked ?? false,
     );
     final written = jsonEncode(snapshot);
     // The time it was written changes every time; anything else is news

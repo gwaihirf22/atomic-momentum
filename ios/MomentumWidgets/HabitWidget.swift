@@ -5,27 +5,7 @@ import WidgetKit
 // One habit: its ring and today's progress, with a + that logs from the home
 // screen (small and medium) or the lock screen (HabitLockWidgets.swift).
 
-/// A habit, as the widget's settings list it.
-struct HabitEntity: AppEntity {
-  let id: String
-  let name: String
-
-  static var typeDisplayRepresentation: TypeDisplayRepresentation = "Habit"
-  static var defaultQuery = HabitQuery()
-
-  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
-}
-
-struct HabitQuery: EntityQuery {
-  func entities(for identifiers: [String]) async throws -> [HabitEntity] {
-    let habits = Snapshot.load()?.habits ?? []
-    return habits.filter { identifiers.contains($0.id) }.map { HabitEntity(id: $0.id, name: $0.name) }
-  }
-
-  func suggestedEntities() async throws -> [HabitEntity] {
-    (Snapshot.load()?.habits ?? []).map { HabitEntity(id: $0.id, name: $0.name) }
-  }
-}
+// HabitEntity and HabitQuery: Shared/HabitEntity.swift (Siri and Shortcuts use them too)
 
 /// Hold the widget → Edit Widget: which habit it shows.
 struct PickHabitIntent: WidgetConfigurationIntent {

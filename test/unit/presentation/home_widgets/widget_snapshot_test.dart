@@ -141,6 +141,20 @@ void main() {
     expect((withQuote('epictetus-say-what-you-would-be')['quote'] as Map)['author'], 'Epictetus');
   });
 
+  test('says whether Momentum Plus is this person\'s (Siri and Shortcuts read it), without a new version', () {
+    Map<String, Object?> withPlus(bool plus) => withClock(Clock.fixed(now), () => WidgetSnapshot.build(
+          habits: [make('Water')],
+          momentum: null,
+          now: now,
+          light: AppTheme.light,
+          dark: AppTheme.light,
+          plus: plus,
+        ));
+    expect(withPlus(true)['plus'], isTrue);
+    expect(withPlus(false)['plus'], isFalse);
+    expect(withPlus(true)['v'], 1, reason: 'an added field: widgets reading version 1 still read it');
+  });
+
   test('encodes to JSON with its version', () {
     final json = withClock(Clock.fixed(now), () => WidgetSnapshot.encode(
           habits: [make('Water')],
