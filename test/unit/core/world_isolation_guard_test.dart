@@ -19,6 +19,8 @@ void main() {
     'lib/screens/how_to_screen.dart',
     // Sync works on the person's own data, above the world switch
     'lib/presentation/sync/sync_host.dart',
+    // The Plus mention's once-ever flag is the person's own (never shown in an example world)
+    'lib/presentation/plus/plus_mention.dart',
   };
 
   test('screens never reach past their world to the person\'s data', () {

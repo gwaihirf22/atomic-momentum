@@ -7,6 +7,7 @@ import '../../core/services/plus_store.dart';
 import '../../core/theme/app_palette.dart';
 import '../../screens/plus_screen.dart';
 import '../layout/app_layout.dart';
+import '../tour/world_scope.dart';
 import '../widgets/stat_card.dart';
 
 /// The one gentle mention of Momentum Plus: at the end of a week in review,
@@ -48,8 +49,10 @@ class _PlusMentionState extends State<PlusMention> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Decided once, so marking it shown doesn't take it away while it's up
-    _show ??= sl.isRegistered<SharedPreferences>() &&
+    // Decided once, so marking it shown doesn't take it away while it's up;
+    // never over the tours' example habits (it's the person's own once-ever)
+    _show ??= !WorldScope.isDemo(context) &&
+        sl.isRegistered<SharedPreferences>() &&
         PlusMention.decide(
           get<SharedPreferences>(),
           sl.isRegistered<PlusStore>() ? get<PlusStore>() : null,

@@ -15,6 +15,8 @@ import '../widgets/achievement_widgets.dart';
 import '../widgets/heatmap.dart';
 import '../widgets/large_title_scaffold.dart';
 import '../widgets/momentum_chart.dart';
+import '../../domain/services/year_review.dart';
+import '../review/year_review_words.dart';
 
 /// How a share card looks: the app's three themes, or Ember (the orb's
 /// amber gradient).
@@ -411,6 +413,54 @@ class WeekShareCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(_title(win),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: look.ink)),
+              ),
+            ]),
+          ),
+      ]),
+    );
+  }
+}
+
+/// The year in review: how much was kept, every day of the year, and the
+/// top highlights.
+class YearShareCard extends StatelessWidget {
+  final YearReview review;
+  final int weekStart;
+  final ShareLook look;
+
+  /// Habit names left out of the highlights ("A habit").
+  final bool hideName;
+
+  const YearShareCard({super.key, required this.review, required this.weekStart, required this.look, this.hideName = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final highlights = YearReviewWords.highlights(review, hideName: hideName).take(2);
+    return ShareCardFrame(
+      key: const Key('shareCard_year'),
+      look: look,
+      caption: YearReviewWords.momentum(review) == null ? 'My year' : 'Momentum ${YearReviewWords.momentum(review)}',
+      body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text('My ${review.year}', style: _display(look, 30)),
+        Text(review.underWay ? 'So far' : 'In review',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: look.ink2)),
+        const Spacer(),
+        Text(YearReviewWords.keptShare(review), style: _display(look, 56)),
+        Text(YearReviewWords.kept(review), style: _display(look, 18, color: look.ink2)),
+        const SizedBox(height: 12),
+        Heatmap(days: review.days, weekStart: weekStart, semanticLabel: 'Every day of ${review.year}'),
+        const Spacer(),
+        for (final (title, _) in highlights)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              Icon(Icons.star_rounded, size: 16, color: look.accent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: look.ink)),

@@ -33,6 +33,9 @@ import '../presentation/tour/tour_events.dart';
 import '../presentation/tour/tour_gate.dart';
 import '../presentation/layout/habit_pages.dart';
 import '../presentation/layout/card_columns.dart';
+import '../core/injection/injection_container.dart';
+import '../core/services/plus_store.dart';
+import 'year_review_screen.dart';
 
 /// How far back the Insights cards look, in weeks (about six months).
 const insightsWeeks = 26;
@@ -52,6 +55,25 @@ class _InsightsScreenState extends State<InsightsScreen> {
   DateTime? _selected;
 
   _InsightsData? _data;
+
+  /// Momentum Plus adds the year card; bought while showing, it appears.
+  final PlusStore? _plus = sl.isRegistered<PlusStore>() ? get<PlusStore>() : null;
+
+  void _plusChanged() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    _plus?.addListener(_plusChanged);
+  }
+
+  @override
+  void dispose() {
+    _plus?.removeListener(_plusChanged);
+    super.dispose();
+  }
+
+  bool get _showsYear => _plus != null && _plus.isSupported && _plus.unlocked;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +126,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
                           ),
                         ),
                       _MomentumCard(overall: overall, data: data),
+                      // The year so far, or in review (Momentum Plus)
+                      if (_showsYear && yearReviewFor(context, habits) != null) _YearCard(habits: habits),
                     ]),
                     const SizedBox(height: 14),
                     // The heatmap takes the whole width
@@ -886,3 +910,29 @@ class _HabitRow extends StatelessWidget {
 
   void _open(BuildContext context) => HabitPages.open(context, habit.id);
 }
+
+/// The year so far (or, from December 26, in review), for Momentum Plus.
+class _YearCard extends StatelessWidget {
+  final List<Habit> habits;
+
+  const _YearCard({required this.habits});
+
+  @override
+  Widget build(BuildContext context) {
+    final review = yearReviewFor(context, habits)!;
+    return YearSummaryCard(
+          key: const Key('insightsYearReview'),
+          review: review,
+          action: PillButton(
+            key: const Key('insightsSeeYear'),
+            label: 'See your year',
+            icon: CupertinoIcons.chevron_right,
+            onPressed: () {
+              if (!TourGate.isFree) return;
+              Navigator.of(context).push(CupertinoPageRoute<void>(builder: (_) => const YearReviewScreen()));
+            },
+          ),
+        );
+  }
+}
+

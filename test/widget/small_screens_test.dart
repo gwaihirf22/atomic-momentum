@@ -51,6 +51,7 @@ import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/plus_screen.dart';
+import 'package:atomic_momentum/screens/year_review_screen.dart';
 import 'package:atomic_momentum/presentation/plus/plus_mention.dart';
 import 'package:atomic_momentum/core/sync/sync_service.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
@@ -223,6 +224,7 @@ void main() {
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
     'Momentum Plus': () => const PlusScreen(),
+    'Year in review': () => const YearReviewScreen(),
     'App icon': () => const AppIconScreen(),
     'Tours': () => const ToursScreen(),
     'How to': () => HowToScreen(seed: (now) async => DemoSeed.build(now)),
@@ -567,6 +569,31 @@ void main() {
           scale: scale,
         );
         expectNothingCutOff(tester, 'Week share card at $setting');
+      });
+
+      testWidgets('Year in review (Plus), its Insights card and its picture, at $setting', (tester) async {
+        await monthOfHistory();
+        FakePlusStore.install(unlocked: true);
+        await pump(tester, const YearReviewScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('yearHighlights')), findsOneWidget, reason: 'a year to review');
+        expectNothingCutOff(tester, 'Year in review at $setting');
+        await pump(tester, const InsightsScreen(), width: width, scale: scale);
+        expect(find.byKey(const Key('insightsYearReview')), findsOneWidget);
+        expectNothingCutOff(tester, 'Insights with the year at $setting');
+        await pump(
+          tester,
+          Scaffold(
+            body: Center(
+              child: Builder(builder: (context) {
+                final review = yearReviewFor(context, habits.habits)!;
+                return YearShareCard(review: review, weekStart: DateTime.monday, look: ShareLook.of(ShareStyle.sepia));
+              }),
+            ),
+          ),
+          width: width,
+          scale: scale,
+        );
+        expectNothingCutOff(tester, 'Year share card at $setting');
       });
 
       testWidgets('Arrange, in any order, at $setting', (tester) async {
