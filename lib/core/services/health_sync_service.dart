@@ -140,6 +140,21 @@ class HealthSyncService {
     return rest <= _tiny ? 0 : link.unit.fromBase(rest);
   }
 
+  /// What this phone's Health shows for [habit] on [day], apart from what
+  /// the app wrote there ([floorOn]), or null when it isn't known: a day no
+  /// sync looks at, or one not read yet. Sync shows a day of a Health-linked
+  /// habit as at least this, and never sends it to the cloud.
+  int? healthOn(Habit habit, DateTime day) {
+    final link = habit.health;
+    if (link == null || habit.isBreak) return null;
+    final d = DateTime(day.year, day.month, day.day);
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (d.isBefore(HealthMerge.firstDay(habit, today)) || d.isAfter(today)) return null;
+    if (_readValues()[habit.id]?[_dayKey(d)] == null) return null;
+    return floorOn(habit, d);
+  }
+
   /// What Health holds for [habitId] on [day] changed by the app's own
   /// write ([delta], base unit): the remembered number follows, so the floor
   /// is right before the next sync.

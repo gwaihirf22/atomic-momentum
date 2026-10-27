@@ -79,6 +79,28 @@ void main() {
     expect(link.copyWith(metric: HealthMetric.mindfulMinutes).linkedOn, DateTime(2026, 10, 1));
   });
 
+  test("what Health shows for sync: known days only, without the app's own writes", () async {
+    await withClock(Clock.fixed(morning), () async {
+      final h = water();
+      // 750 ml today (3 glasses), read at the last sync; yesterday never read
+      await prefs.setString(HealthSyncService.valuesKey, jsonEncode({h.id: {'2026-10-14': 750.0}}));
+      expect(sync.healthOn(h, DateTime(2026, 10, 14)), 3);
+      expect(sync.healthOn(h, DateTime(2026, 10, 13)), isNull, reason: 'not read');
+      expect(sync.healthOn(h, DateTime(2026, 9, 30)), isNull, reason: 'before it was linked');
+      final unlinked = Habit.create(
+        name: 'Read',
+        target: 1,
+        units: 'chapters',
+        color: HabitColor.blue,
+        categoryId: BuiltInCategoryIds.mind,
+      );
+      expect(sync.healthOn(unlinked, DateTime(2026, 10, 14)), isNull, reason: 'not linked');
+      // A glass logged in the app goes to Health too, but isn't Health's
+      await sync.logChange(h, h.copyWith(history: {DateTime(2026, 10, 14): 1}));
+      expect(sync.healthOn(h, DateTime(2026, 10, 14)), 3);
+    });
+  });
+
   test("a sync whose read fails still counts as a sync, and there's no floor from it", () async {
     await withClock(Clock.fixed(morning), () async {
       final h = water();

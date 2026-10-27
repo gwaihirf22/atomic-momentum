@@ -18,6 +18,9 @@ class Device {
   final Records own = {};
   final Map<String, Habit> habits = {};
 
+  /// What this device's Health shows, by day (a day missing: not known).
+  final Map<DateTime, int> health = {};
+
   Device(this.id) : clock = HlcClock(id);
 
   /// Records a change, as the app would when it's made.
@@ -43,7 +46,7 @@ class Device {
     final before = Map.of(habits);
     habits.clear();
     for (final habit in merged.habits.values) {
-      final built = HabitRecords.build(habit, local: before[habit.id]);
+      final built = HabitRecords.build(habit, local: before[habit.id], healthOn: (day) => health[day]);
       if (built != null) habits[habit.id] = built;
     }
   }
@@ -170,6 +173,29 @@ void main() {
     at(world.syncAll);
     expect(phone.habits[habit.id]!.history[daysAgo(10)], 6);
     expect(ipad.habits[habit.id]!.history[daysAgo(10)], isNull);
+  });
+
+  test("a Health-linked day never shows less than this device's Health, and Health's own days are each device's", () {
+    final habit = add(phone, make(health: HealthLink(metric: HealthMetric.water, linkedOn: daysAgo(20))));
+    edit(phone, habit.id, (h) => h.setDays({today: 3}));
+    ipad.health[today] = 5;
+    at(world.syncAll);
+    expect(phone.habits[habit.id]!.history[today], 3);
+    expect(ipad.habits[habit.id]!.history[today], 5, reason: "the iPad's Health shows more");
+    // Filled in from the iPad's own Health: stays the iPad's
+    ipad.health[daysAgo(1)] = 4;
+    ipad.habits[habit.id] = ipad.habits[habit.id]!.setDays({daysAgo(1): 4});
+    at(world.syncAll);
+    expect(ipad.habits[habit.id]!.history[daysAgo(1)], 4);
+    expect(phone.habits[habit.id]!.history[daysAgo(1)], isNull);
+
+    // A record cleared (it was only that device's Health) leaves each to its own
+    phone.own[SyncKeys.dayValue(habit.id, SyncKeys.day(today))] = Stamped(null, phone.clock.tick());
+    at(world.syncAll);
+    expect(ipad.habits[habit.id]!.history[today], 5);
+    ipad.health.remove(today);
+    at(world.syncAll);
+    expect(ipad.habits[habit.id]!.history[today], 5, reason: "unknown to Health: what it had stays");
   });
 
   test('settings: the latest change wins, and a target stays with its units', () {

@@ -106,6 +106,8 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton(() => SyncService(
         prefs: sl(),
         transport: CloudKitTransport.isSupported ? CloudKitTransport() : const NoCloudTransport(),
+        // Each device's own Health, never synced
+        healthOn: (habit, day) => sl<HealthSyncService>().healthOn(habit, day),
       ));
   // The freeze achievements read what the bank remembers
   Achievements.freezeSource = () {

@@ -16,6 +16,7 @@ import 'package:atomic_momentum/data/repositories/quote_repository_impl.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/health_link.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/domain/usecases/delete_habit_usecase.dart';
@@ -43,6 +44,10 @@ class Device {
   late final QuoteProvider quotes;
   late final FreezeBank bank;
   late final SyncService sync;
+
+  /// What this device's Health shows, by habit name and day (a day missing:
+  /// not known).
+  final Map<String, Map<DateTime, int>> health = {};
 
   Device._(this.prefs, this.link);
 
@@ -74,21 +79,32 @@ class Device {
     theme = ThemeProvider.fromPrefs(prefs);
     await habits.loadHabits();
     await quotes.load();
-    sync = SyncService(prefs: prefs, transport: link, delay: const Duration(hours: 1))
+    sync = SyncService(
+      prefs: prefs,
+      transport: link,
+      delay: const Duration(hours: 1),
+      healthOn: (habit, day) => health[habit.name]?[DateTime(day.year, day.month, day.day)],
+    )
       ..attach(habits: habits, settings: settings, theme: theme, categories: categories, quotes: quotes, bank: bank);
   }
 
   Habit named(String name) => habits.habits.firstWhere((h) => h.name == name);
 
-  Future<void> add(String name, {int target = 8, ResetFrequency frequency = ResetFrequency.daily}) async {
+  Future<void> add(
+    String name, {
+    int target = 8,
+    ResetFrequency frequency = ResetFrequency.daily,
+    HealthLink? health,
+  }) async {
     expect(
       await habits.createHabit(CreateHabitParams(
         name: name,
         target: target,
-        units: 'times',
+        units: health == null ? 'times' : 'steps',
         color: HabitColor.blue,
         categoryId: BuiltInCategoryIds.body,
         resetFrequency: frequency,
+        health: health,
       )),
       isTrue,
     );
@@ -141,6 +157,86 @@ void main() {
         }
         expect(phone.sync.state, SyncState.synced);
       }));
+
+  group('Health-linked habits', () {
+    DateTime day(int ago) => DateTime(now.year, now.month, now.day - ago);
+    HealthLink steps() => HealthLink(metric: HealthMetric.steps, linkedOn: day(30));
+
+    test('Health\'s numbers never go to the cloud; each device shows its own', () => run(() async {
+          final phone = await Device.create(cloud);
+          final ipad = await Device.create(cloud);
+          await phone.add('Walk', target: 8000, health: steps());
+          final id = phone.named('Walk').id;
+          // Filled in from the phone's Health, then 500 more typed in on Monday
+          phone.health['Walk'] = {day(2): 6000, day(1): 7000, day(0): 4000};
+          await phone.habits.setDays(id, {day(2): 6000, day(1): 7500, day(0): 4000});
+
+          await phone.sync.turnOn();
+          final sent = cloud.buckets.values.map((b) => b.contents).join();
+          expect(sent, isNot(contains('"v":6000')));
+          expect(sent, isNot(contains('"v":4000')));
+          // What the person logged over Health does go
+          expect(sent, contains('"v":7500'));
+
+          await ipad.sync.turnOn();
+          await syncAll([phone, ipad]);
+          // The phone's Health numbers don't come (the iPad's own Health
+          // fills those days in, as applySynced asks it to); what was logged does
+          final walk = ipad.named('Walk');
+          expect(walk.history[day(2)], isNull);
+          expect(walk.history[day(1)], 7500);
+          expect(walk.history[day(0)], isNull);
+          // And the phone keeps its own
+          expect(phone.named('Walk').history[day(0)], 4000);
+          expect(phone.named('Walk').history[day(2)], 6000);
+        }));
+
+    test('a logged day never shows less than this device\'s Health', () => run(() async {
+          final phone = await Device.create(cloud);
+          final ipad = await Device.create(cloud);
+          await phone.add('Walk', target: 8000, health: steps());
+          await phone.sync.turnOn();
+          await ipad.sync.turnOn();
+          await syncAll([phone, ipad]);
+          final id = phone.named('Walk').id;
+
+          phone.health['Walk'] = {day(0): 3000};
+          await phone.habits.setDays(id, {day(0): 5000});
+          ipad.health['Walk'] = {day(0): 6000};
+          await syncAll([phone, ipad]);
+          expect(phone.named('Walk').history[day(0)], 5000);
+          expect(ipad.named('Walk').history[day(0)], 6000);
+        }));
+
+    test('a number that turns out to be only Health\'s is cleared from the cloud', () => run(() async {
+          final phone = await Device.create(cloud);
+          final ipad = await Device.create(cloud);
+          await phone.add('Walk', target: 8000, health: steps());
+          await phone.sync.turnOn();
+          await ipad.sync.turnOn();
+          await syncAll([phone, ipad]);
+          final id = phone.named('Walk').id;
+
+          // 5000 logged over Health's 3000; then the phone's Health catches up
+          phone.health['Walk'] = {day(0): 3000};
+          await phone.habits.setDays(id, {day(0): 5000});
+          ipad.health['Walk'] = {day(0): 2000};
+          await syncAll([phone, ipad]);
+          expect(ipad.named('Walk').history[day(0)], 5000);
+
+          phone.health['Walk'] = {day(0): 9000};
+          await syncAll([phone, ipad]);
+          final sent = cloud.buckets.values.map((b) => b.contents).join();
+          expect(sent, isNot(contains('"v":5000')));
+          expect(ipad.named('Walk').history[day(0)], 2000);
+
+          // A later log on the iPad still stands
+          later();
+          await ipad.habits.setDays(id, {day(0): 9500});
+          await syncAll([phone, ipad]);
+          expect(phone.named('Walk').history[day(0)], 9500);
+        }));
+  });
 
   test('taps on two devices while one is offline add up', () => run(() async {
         final phone = await Device.create(cloud);

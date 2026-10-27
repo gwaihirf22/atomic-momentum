@@ -66,8 +66,18 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// How long after a change sync waits, so a run of taps goes together.
   final Duration delay;
 
-  SyncService({required SharedPreferences prefs, required this.transport, this.delay = const Duration(seconds: 3)})
-      : _prefs = prefs,
+  /// What this device's Health shows for a day of a Health-linked habit, or
+  /// null when that isn't known (`HealthSyncService.healthOn`). Health's
+  /// numbers never go to the cloud (each device reads its own, and App
+  /// Review's 5.1.3 keeps them out of iCloud), and a day never shows less.
+  final int? Function(Habit habit, DateTime day)? healthOn;
+
+  SyncService({
+    required SharedPreferences prefs,
+    required this.transport,
+    this.delay = const Duration(seconds: 3),
+    this.healthOn,
+  })  : _prefs = prefs,
         _store = SyncStore(prefs);
 
   final SyncStore _store;
@@ -244,6 +254,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       final view = MetaRecords.read(_prefs);
       _recordOwn(MetaRecords.changes(_store.base, view, _clock!.tick));
       _store.base = view;
+      _recordOwn(_healthOnly());
 
       if (_store.dirty.isNotEmpty) {
         final names = Set.of(_store.dirty);
@@ -312,6 +323,38 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     }
   }
 
+  /// This device's day records of Health-linked habits that hold no more
+  /// than its Health shows, cleared: that number was Health's (sent before
+  /// joining kept them back), and each device reads its own. Only records
+  /// that are still the day's latest, so another device's later log stands.
+  Records _healthOnly() {
+    final health = healthOn;
+    final habits = _habits;
+    final clock = _clock;
+    if (health == null || habits == null || clock == null) return const {};
+    final cleared = <String, Stamped>{};
+    for (final entry in _store.own.entries) {
+      final key = entry.key;
+      if (!key.startsWith('r/') || entry.value.value == null) continue;
+      final parts = key.split('/');
+      if (parts.length < 3) continue;
+      final habit = habits.getHabitById(parts[1]);
+      final merged = _merged.habits[parts[1]];
+      if (habit == null || habit.health == null || merged == null) continue;
+      if (merged.days[parts[2]]?.value?.stamp != entry.value.stamp) continue;
+      final DateTime date;
+      try {
+        date = SyncKeys.parseDay(parts[2]);
+      } on FormatException {
+        continue;
+      }
+      final shows = health(habit, date);
+      if (shows == null || merged.total(parts[2], HabitRecords.generationOf(merged)) > shows) continue;
+      cleared[key] = Stamped(null, clock.tick());
+    }
+    return cleared;
+  }
+
   /// Whether the cloud has records of this device's that it doesn't: it's
   /// a copy restored from a backup (the cloud moved on since).
   bool _isRestored(Records cloud) {
@@ -357,7 +400,13 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
         if (mine != null) changes[merged.id] = null;
         continue;
       }
-      final built = HabitRecords.build(merged, local: mine, now: now);
+      final health = healthOn;
+      final built = HabitRecords.build(
+        merged,
+        local: mine,
+        now: now,
+        healthOn: health == null || mine == null ? null : (day) => health(mine, day),
+      );
       if (built == null) continue;
       if (mine == null || !sameHabit(mine, built)) changes[merged.id] = built;
     }
@@ -447,7 +496,13 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     for (final habit in habits.habits) {
       final merged = cloud.habits[habit.id];
       if (merged == null) {
-        own.addAll(HabitRecords.changes(before: null, after: habit, merged: null, device: device, stamp: clock.tick));
+        final shared = habit.health == null
+            ? habit
+            : habit.copyWith(history: {
+                for (final day in habit.history.entries)
+                  if (!_onlyHealth(habit, day.key, day.value)) day.key: day.value,
+              });
+        own.addAll(HabitRecords.changes(before: null, after: shared, merged: null, device: device, stamp: clock.tick));
       } else if (!merged.isDeleted) {
         own.addAll(_joinDays(habit, merged, clock));
       }
@@ -479,12 +534,24 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     _joined = true;
   }
 
+  /// Whether joining keeps [day] of [habit] (holding [value]) back from the
+  /// cloud, as Health's: a Health-linked day goes only where more was logged
+  /// than this device's Health shows. Days from before it was linked are the
+  /// person's own; ones Health can't be asked about any more stay here.
+  bool _onlyHealth(Habit habit, DateTime day, int value) {
+    final link = habit.health;
+    if (link == null || day.isBefore(link.linkedOn)) return false;
+    final health = healthOn?.call(habit, day);
+    return health == null || value <= health;
+  }
+
   /// A local habit's days that the cloud's copy doesn't have, or has less
   /// of. Its settings are left to the cloud's.
   Records _joinDays(Habit habit, MergedHabit merged, HlcClock clock) {
     final records = <String, Stamped>{};
     final generation = HabitRecords.generationOf(merged);
     for (final entry in habit.history.entries) {
+      if (_onlyHealth(habit, entry.key, entry.value)) continue;
       final day = SyncKeys.day(entry.key);
       final cloudTotal = merged.total(day, generation);
       if (entry.value <= cloudTotal) continue;

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 
 import '../../data/models/habit_model.dart';
@@ -188,8 +190,10 @@ class HabitRecords {
   /// The habit [merged] describes, or null when it was deleted or hasn't
   /// all it needs yet. [local] is this device's copy: days of a Health-linked
   /// habit that no device has a record of (filled in from this phone's
-  /// Health) are kept from it.
-  static Habit? build(MergedHabit merged, {Habit? local, DateTime? now}) {
+  /// Health) are kept from it. [healthOn] is what this phone's Health shows
+  /// on a day of a Health-linked habit (null: not known): such a day never
+  /// shows less, and one only Health filled in shows this phone's number.
+  static Habit? build(MergedHabit merged, {Habit? local, DateTime? now, int? Function(DateTime day)? healthOn}) {
     if (merged.isDeleted) return null;
     final fields = merged.fields;
     if (fields['name']?.value == null || fields['amount']?.value == null || fields['schedule']?.value == null) {
@@ -249,12 +253,29 @@ class HabitRecords {
       if (note is String && note.isNotEmpty) notes[day] = note;
     }
     final linked = json['health'] != null;
-    if (linked && local != null) {
-      for (final entry in local.history.entries) {
-        final key = SyncKeys.day(entry.key);
-        if (entry.key.isBefore(from) || merged.days[key]?.counts.isNotEmpty == true) continue;
-        if (merged.days[key]?.value != null) continue;
-        history[entry.key.toIso8601String()] = entry.value;
+    if (linked && (local != null || healthOn != null)) {
+      final dates = {
+        for (final day in days) SyncKeys.parseDay(day),
+        for (final date in local?.history.keys ?? const <DateTime>[]) DateTime(date.year, date.month, date.day),
+      };
+      for (final date in dates) {
+        if (date.isBefore(from)) continue;
+        final record = merged.days[SyncKeys.day(date)];
+        // A day logged on some device (a cleared record holds no value: its
+        // number was only that device's Health)
+        final recorded = record != null && (record.counts.isNotEmpty || record.value?.value != null);
+        final health = healthOn?.call(date);
+        final key = date.toIso8601String();
+        final value = recorded
+            // What was logged, never under this phone's own Health
+            ? math.max(history[key] ?? 0, health ?? 0)
+            // Only Health's: this phone's own, or what it had when that's unknown
+            : health ?? local?.history[date] ?? 0;
+        if (value > 0) {
+          history[key] = value;
+        } else {
+          history.remove(key);
+        }
       }
     }
     json['history'] = history;
