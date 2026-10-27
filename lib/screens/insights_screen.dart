@@ -36,6 +36,10 @@ import '../presentation/layout/card_columns.dart';
 import '../core/injection/injection_container.dart';
 import '../core/services/plus_store.dart';
 import 'year_review_screen.dart';
+import '../domain/services/health_insights.dart';
+import '../domain/entities/health_link.dart';
+import '../presentation/insights/health_insight_words.dart';
+import '../presentation/tour/world_scope.dart';
 
 /// How far back the Insights cards look, in weeks (about six months).
 const insightsWeeks = 26;
@@ -73,7 +77,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
     super.dispose();
   }
 
-  bool get _showsYear => _plus != null && _plus.isSupported && _plus.unlocked;
+  bool get _showsPlus => _plus != null && _plus.isSupported && _plus.unlocked;
+  bool get _showsYear => _showsPlus;
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +157,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
                       _WeekCard(data: data, weekStart: weekStart),
                       _AchievementsCard(data: data),
                       _HabitsCard(habits: habits),
+                      // How sleep, steps and exercise go with the rest (Momentum Plus)
+                      if (_showsPlus) _HealthInsightsCard(habits: habits),
                     ]),
                   ],
           ),
@@ -933,6 +940,59 @@ class _YearCard extends StatelessWidget {
             },
           ),
         );
+  }
+}
+
+/// Health insights (Momentum Plus): up to three findings in plain words,
+/// from habits filled in from Health, worked out on the device.
+class _HealthInsightsCard extends StatelessWidget {
+  final List<Habit> habits;
+
+  const _HealthInsightsCard({required this.habits});
+
+  static IconData _icon(HealthMetric metric) => switch (metric) {
+        HealthMetric.sleepHours => CupertinoIcons.moon_fill,
+        HealthMetric.steps => CupertinoIcons.person_crop_circle_fill,
+        _ => CupertinoIcons.flame_fill,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final health = WorldScope.healthSourceOf(context).name;
+    final findings = HealthInsights.of(habits, now: clock.now());
+    final drivers = HealthInsights.driversIn(habits);
+    return StatCard(
+      key: const Key('insightsHealth'),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Expanded(child: StatCardHeading('Health insights')),
+          const InfoButton(topic: InfoTopic.healthInsights),
+        ]),
+        const SizedBox(height: 8),
+        if (findings.isEmpty)
+          Text(
+            drivers.isEmpty ? HealthInsightWords.noDrivers(health) : HealthInsightWords.notYet,
+            key: const Key('insightsHealthEmpty'),
+            style: TextStyle(fontSize: 15, height: 1.4, color: palette.textSecondary),
+          ),
+        for (final f in findings)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(_icon(f.metric), size: 20, color: palette.habitColor(f.driver.color.color)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(HealthInsightWords.sentence(f),
+                      style: TextStyle(fontSize: 15, height: 1.4, fontWeight: FontWeight.w600, color: palette.text)),
+                  Text(HealthInsightWords.basis(f), style: TextStyle(fontSize: 13, color: palette.textSecondary)),
+                ]),
+              ),
+            ]),
+          ),
+      ]),
+    );
   }
 }
 
