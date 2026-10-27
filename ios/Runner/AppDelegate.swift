@@ -10,7 +10,27 @@ import UIKit
   ) -> Bool {
     // flutter_local_notifications: lets notifications show while the app is open
     UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+    // Sync and Health while the app isn't on screen (BackgroundRun in CloudSync.swift)
+    CloudSync.shared.startIfOn()
+    BackgroundRun.registerRefresh()
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
+    ) { _ in BackgroundRun.scheduleRefresh() }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  /// iCloud's pushes when another device changed something (and test ones
+  /// carrying `momentum`); any other goes to the plugins.
+  override func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    guard let reason = BackgroundRun.reason(forPush: userInfo) else {
+      return super.application(
+        application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+    }
+    BackgroundRun.push(reason) { changed in completionHandler(changed ? .newData : .noData) }
   }
 
   /// The app runs on the scene lifecycle (iOS 27 won't launch apps without
@@ -23,6 +43,7 @@ import UIKit
     StorefrontChannel.register(messenger: messenger)
     WidgetChannel.register(messenger: messenger)
     SyncChannel.register(messenger: messenger)
+    BackgroundRun.registerApp(engine: engineBridge.pluginRegistry as? FlutterEngine, messenger: messenger)
     DeviceChannel.register(messenger: messenger)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "WidgetLinks") {
       WidgetLinks.register(with: registrar)

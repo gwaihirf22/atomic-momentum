@@ -72,6 +72,15 @@ class CloudKitTransport implements CloudTransport {
   }
 
   @override
+  Future<void> acknowledge(Iterable<String> names) async {
+    if (names.isEmpty) return;
+    await _call<void>('acknowledge', {'names': names.toList()});
+  }
+
+  @override
+  Future<void> setActive(bool active) => _call<void>('setActive', {'active': active});
+
+  @override
   Future<void> resetCursor() => _call<void>('resetCursor');
 
   @override
@@ -96,6 +105,12 @@ class NoCloudTransport implements CloudTransport {
 
   @override
   Future<Map<String, String>> pull() => Future.error(_none);
+
+  @override
+  Future<void> acknowledge(Iterable<String> names) async {}
+
+  @override
+  Future<void> setActive(bool active) async {}
 
   @override
   Future<void> resetCursor() async {}

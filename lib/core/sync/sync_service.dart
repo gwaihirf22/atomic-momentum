@@ -141,6 +141,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     WidgetsBinding.instance.addObserver(this);
     _state = SyncState.syncing;
     notifyListeners();
+    _tellTransport(transport.setActive(true));
     _schedule(now: true, why: 'started');
   }
 
@@ -242,6 +243,12 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       _again = true;
       return;
     }
+    // Not before this device's habits have loaded: what comes in is merged
+    // with them, never with an empty list
+    if (_habits!.state.index < HabitProviderState.loaded.index) {
+      _whenLoaded();
+      return;
+    }
     if (YearOfUse.hasBackup(_prefs)) {
       _setState(SyncState.paused);
       return;
@@ -254,8 +261,47 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       } while (_again && isOn);
     } finally {
       _running = false;
+      final idle = _idle;
+      _idle = null;
+      idle?.complete();
     }
   }
+
+  Completer<void>? _idle;
+  bool _waitingForLoad = false;
+
+  void _whenLoaded() {
+    final habits = _habits;
+    if (_waitingForLoad || habits == null) return;
+    _waitingForLoad = true;
+    void check() {
+      if (habits.state.index < HabitProviderState.loaded.index) return;
+      habits.removeListener(check);
+      _waitingForLoad = false;
+      if (_habits == habits) _schedule(now: true);
+    }
+
+    habits.addListener(check);
+  }
+
+  /// Once nothing is waiting or running (a run asked for a moment ago
+  /// included): for work in the background, which ends when sync has.
+  Future<void> whenIdle() async {
+    while (isOn && (_running || (_timer?.isActive ?? false))) {
+      if (!_running) {
+        // Waiting on its delay: run now
+        _timer?.cancel();
+        await syncNow();
+        continue;
+      }
+      await (_idle ??= Completer<void>()).future;
+    }
+  }
+
+  /// A call to the transport that only informs it (failures don't matter).
+  void _tellTransport(Future<void> call) => unawaited(call.catchError((Object e) {
+        logWarning('Sync: $e');
+      }));
 
   Future<void> _runOnce() async {
     final device = _store.device!;
@@ -324,6 +370,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       _store.clock = _clock!.last;
       _store.lastSynced = clock.now();
       await _store.save();
+      // Saved here: the cloud can let them go
+      _tellTransport(transport.acknowledge(pulled.keys));
       _setState(SyncState.synced);
     } on CloudException catch (e) {
       await _store.save();
@@ -572,6 +620,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       ..clock = clock.last
       ..dirty = {for (final key in own.keys) SyncBuckets.nameFor(device, key)};
     await _store.save();
+    _tellTransport(transport.acknowledge(pulled.keys));
     _joined = true;
     log.add('Joined as device ${device.substring(0, 4)}: '
         '${_count(others.length, 'other device')} in the cloud, ${_count(own.length, 'record')} of its own to send');
@@ -635,6 +684,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// removes the copy in the cloud, for every device.
   Future<void> turnOff({bool deleteCloud = false}) async {
     log.add(deleteCloud ? 'Turned off, and the copy in the cloud deleted' : 'Turned off');
+    _tellTransport(transport.setActive(false));
     _detach();
     await _store.clear();
     _merged = SyncMerge.merge(const {});
@@ -653,6 +703,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// off, to be turned on again by the person.
   Future<void> _stop() async {
     log.add('Stopped: the account changed, or another device deleted the copy in the cloud');
+    _tellTransport(transport.setActive(false));
     _detach();
     await _store.clear();
     _merged = SyncMerge.merge(const {});

@@ -75,6 +75,16 @@ class FakeCloudLink implements CloudTransport {
     return changed;
   }
 
+  /// Buckets acknowledged as saved, and whether sync was last said to be on.
+  final acknowledged = <String>[];
+  bool? active;
+
+  @override
+  Future<void> acknowledge(Iterable<String> names) async => acknowledged.addAll(names);
+
+  @override
+  Future<void> setActive(bool active) async => this.active = active;
+
   @override
   Future<void> resetCursor() async {
     _cursor = 0;

@@ -797,6 +797,23 @@ class HabitProvider extends ChangeNotifier {
   }
 
 
+  /// Once what was started here has finished, or after [most]: saves,
+  /// Health, and planning notifications again. Work in the background
+  /// (sync, Health) ends only after it, so iOS doesn't stop it halfway.
+  Future<void> whenSettled({Duration most = const Duration(seconds: 10)}) async {
+    bool busy() =>
+        _saving ||
+        _healthSyncing ||
+        _mirroring ||
+        (_reminders?.isBusy ?? false) ||
+        (_vacationNotices?.isBusy ?? false) ||
+        (_weeklyReview?.isBusy ?? false);
+    final waited = Stopwatch()..start();
+    while (busy() && waited.elapsed < most) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
   /// Brings in what other devices changed (sync). [changes] is handed this
   /// device's habits and returns the ones that differ once merged, by id
   /// (null: deleted there). It runs at once, so a tap made a moment ago is

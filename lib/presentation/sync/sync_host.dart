@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/background/background_refresh.dart';
 import '../../core/injection/injection_container.dart';
 import '../../core/services/freeze_bank.dart';
 import '../../core/sync/sync_service.dart';
@@ -31,7 +32,10 @@ class _SyncHostState extends State<SyncHost> {
     // Tests that set up their own dependencies may leave sync out
     if (_attached || !sl.isRegistered<SyncService>()) return;
     _attached = true;
-    get<SyncService>().attach(
+    final sync = get<SyncService>();
+    // iOS's requests while the app is running (in the background too)
+    BackgroundRefresh.listen(habits: context.read<HabitProvider>(), sync: sync);
+    sync.attach(
       habits: context.read<HabitProvider>(),
       settings: context.read<SettingsProvider>(),
       theme: context.read<ThemeProvider>(),

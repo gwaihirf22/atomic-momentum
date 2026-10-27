@@ -68,6 +68,9 @@ class VacationNoticeService {
   // One sync at a time; requests meanwhile collapse into one more pass
   // (a flag and a pending value, not a chained Future: see ReminderService)
   bool _running = false;
+
+  /// Planning notifications now (what's asked meanwhile runs after).
+  bool get isBusy => _running;
   bool _hasPending = false;
   VacationPlan? _pending;
 

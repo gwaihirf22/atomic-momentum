@@ -1,8 +1,11 @@
 import 'dart:math';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:atomic_momentum/core/background/background_refresh.dart';
 import 'package:atomic_momentum/core/demo/memory_prefs.dart';
 import 'package:atomic_momentum/core/dev/year_of_use.dart';
 import 'package:atomic_momentum/core/services/achievement_store.dart';
@@ -57,7 +60,12 @@ class Device {
     return device;
   }
 
-  Future<void> _build() async {
+  /// One whose habits haven't loaded yet: [wire] sets it up, the test loads.
+  static Device unloaded(FakeCloud cloud, {MemoryPrefs? prefs}) => Device._(prefs ?? MemoryPrefs(), cloud.link());
+
+  Future<void> wire() => _build(load: false);
+
+  Future<void> _build({bool load = true}) async {
     final repository = HabitRepositoryImpl(SharedPreferencesDataSource(prefs));
     final categoryRepository = CategoryRepositoryImpl(prefs);
     final quoteRepository = QuoteRepositoryImpl(prefs);
@@ -77,7 +85,7 @@ class Device {
     quotes = QuoteProvider(quoteRepository, ManageQuotesUseCase(quoteRepository));
     settings = SettingsProvider(prefs);
     theme = ThemeProvider.fromPrefs(prefs);
-    await habits.loadHabits();
+    if (load) await habits.loadHabits();
     await quotes.load();
     sync = SyncService(
       prefs: prefs,
@@ -241,6 +249,91 @@ void main() {
           expect(phone.named('Walk').history[day(0)], 9500);
         }));
   });
+
+  test('what came down is acknowledged once saved; iCloud hears when sync is on or off', () => run(() async {
+        final phone = await Device.create(cloud);
+        final ipad = await Device.create(cloud);
+        await phone.add('Walk');
+        await phone.sync.turnOn();
+        await pumpEventQueue();
+        expect(phone.link.active, isTrue);
+        await ipad.sync.turnOn();
+        await pumpEventQueue();
+        expect(ipad.link.acknowledged, isNotEmpty, reason: "the phone's buckets, saved on the iPad");
+        expect(ipad.link.acknowledged.every(cloud.buckets.containsKey), isTrue);
+
+        await ipad.sync.turnOff();
+        await pumpEventQueue();
+        expect(ipad.link.active, isFalse);
+      }));
+
+  test('sync waits for the habits to load, and whenIdle waits for the run', () => run(() async {
+        final phone = await Device.create(cloud);
+        await phone.add('Walk');
+        await phone.sync.turnOn();
+        final ipad = await Device.create(cloud);
+        await ipad.sync.turnOn();
+        await ipad.sync.whenIdle();
+        expect(ipad.named('Walk'), isNotNull);
+
+        // A fresh start whose habits are still loading: nothing merges
+        // until they're in, then it runs by itself
+        final later = Device.unloaded(cloud, prefs: ipad.prefs);
+        await later.wire();
+        await later.sync.syncNow();
+        expect(later.sync.lastSynced, ipad.sync.lastSynced, reason: 'not run yet');
+        await phone.habits.updateHabitProgress(phone.named('Walk').id, 2);
+        await phone.sync.whenIdle();
+        await later.habits.loadHabits();
+        await pumpEventQueue();
+        await later.sync.whenIdle();
+        expect(later.named('Walk').progress, 2);
+      }));
+
+  test("a push in the background brings the other device's change in, and ends once it's saved", () => run(() async {
+        final phone = await Device.create(cloud);
+        final ipad = await Device.create(cloud);
+        await phone.add('Walk');
+        await phone.sync.turnOn();
+        await ipad.sync.turnOn();
+        await syncAll([phone, ipad]);
+        final id = phone.named('Walk').id;
+
+        await phone.habits.updateHabitProgress(id, 2);
+        await phone.sync.syncNow();
+        later();
+        await BackgroundRefresh.run(habits: ipad.habits, sync: ipad.sync, reason: BackgroundRefresh.push);
+        expect(ipad.named('Walk').progress, 2);
+        // Stored, so a copy of the app opening now finds it
+        final reopened = await Device.create(FakeCloud(), prefs: ipad.prefs);
+        expect(reopened.named('Walk').progress, 2);
+      }));
+
+  test('iOS asks the running app through its channel, and hears when it has finished', () => run(() async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+        final phone = await Device.create(cloud);
+        final ipad = await Device.create(cloud);
+        await phone.add('Walk');
+        await phone.sync.turnOn();
+        await ipad.sync.turnOn();
+        await syncAll([phone, ipad]);
+        await phone.habits.updateHabitProgress(phone.named('Walk').id, 3);
+        await phone.sync.syncNow();
+
+        BackgroundRefresh.listen(habits: ipad.habits, sync: ipad.sync);
+        addTearDown(() => BackgroundRefresh.channel.setMethodCallHandler(null));
+        final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        const codec = StandardMethodCodec();
+        final reply = await messenger.handlePlatformMessage(
+          BackgroundRefresh.channel.name,
+          codec.encodeMethodCall(const MethodCall('run', BackgroundRefresh.push)),
+          (_) {},
+        );
+        expect(codec.decodeEnvelope(reply!), isTrue);
+        expect(ipad.named('Walk').progress, 3);
+        expect(ipad.sync.log.entries.map((e) => e.text), contains('Woke in the background (push)'));
+      }));
 
   test('taps on two devices while one is offline add up', () => run(() async {
         final phone = await Device.create(cloud);

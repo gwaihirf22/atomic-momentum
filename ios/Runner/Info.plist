@@ -80,10 +80,17 @@
 	     tool/install_on_iphone.sh): CloudSync.swift never touches CloudKit without it -->
 	<key>MomentumICloud</key>
 	<string>$(MOMENTUM_ICLOUD)</string>
-	<!-- iCloud wakes the app when another device changes something (sync) -->
+	<!-- iCloud wakes the app when another device changes something (sync), and
+	     iOS's background refresh brings Health and sync up to date now and then
+	     (BackgroundRun in CloudSync.swift) -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.paulblake.momentum.refresh</string>
 	</array>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

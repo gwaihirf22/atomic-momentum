@@ -54,8 +54,17 @@ abstract class CloudTransport {
   Future<void> push(Map<String, String> buckets);
 
   /// Every bucket changed since the last pull (all of them the first time,
-  /// or after [resetCursor]), this device's own included.
+  /// or after [resetCursor]), this device's own included. Until they're
+  /// [acknowledge]d they come again, so an app stopped before it saved
+  /// them loses nothing.
   Future<Map<String, String>> pull();
+
+  /// The buckets [pull] handed over that are now saved on this device.
+  Future<void> acknowledge(Iterable<String> names);
+
+  /// Sync is on here (or off): iCloud then listens for other devices'
+  /// changes from launch, and in the background, before the app asks.
+  Future<void> setActive(bool active);
 
   /// Starts the next [pull] from the beginning.
   Future<void> resetCursor();

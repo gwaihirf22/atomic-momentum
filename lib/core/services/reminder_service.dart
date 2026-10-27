@@ -90,6 +90,9 @@ class ReminderService {
   // (A flag rather than a chained Future: a Future kept across calls breaks
   // under test clocks and isn't needed.)
   bool _running = false;
+
+  /// Planning notifications now (what's asked meanwhile runs after).
+  bool get isBusy => _running;
   List<Habit>? _pending;
 
   /// What the last sync left scheduled (null before the first), by what

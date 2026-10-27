@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'core/background/background_refresh.dart';
 import 'core/injection/injection_container.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/plus_store.dart';
@@ -31,6 +32,8 @@ import 'presentation/tour/world_scope.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Never two copies writing: a background run (sync, Health) finishes first
+  await BackgroundRefresh.waitForBackground();
 
   // Initialize dependency injection
   await initializeDependencies();

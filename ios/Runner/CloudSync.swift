@@ -1,3 +1,4 @@
+import BackgroundTasks
 import CloudKit
 import Flutter
 import UIKit
@@ -42,6 +43,10 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
   /// Something Dart has to hear about on its next call ("accountChanged",
   /// "deleted", "full").
   private var problem: String?
+  /// What the last pull handed Dart: taken off the inbox once Dart says
+  /// it's saved them (acknowledge), so an app stopped between the two
+  /// gets them again.
+  private var handedOver: [String: String] = [:]
 
   private lazy var container = CKContainer(identifier: Self.containerID)
 
@@ -117,6 +122,7 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
       engine = nil
       outbox = [:]
       inbox = [:]
+      handedOver = [:]
       systemFields = [:]
       problem = nil
     }
@@ -132,6 +138,42 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
       return p
     }
     if let problem { throw SyncProblem(code: problem) }
+  }
+
+  // MARK: - On or off
+
+  /// A file whose presence says sync is on here (Dart says so: setActive),
+  /// so the engine can start at launch, before Flutter does.
+  private var activeFile: URL { file("active") }
+
+  var isOn: Bool { FileManager.default.fileExists(atPath: activeFile.path) }
+
+  func setActive(_ active: Bool) {
+    if active {
+      FileManager.default.createFile(atPath: activeFile.path, contents: Data())
+    } else {
+      try? FileManager.default.removeItem(at: activeFile)
+    }
+  }
+
+  /// At launch, with sync on: the engine listens for other devices' changes
+  /// (iCloud's pushes) and fetches what it missed, app open or not.
+  func startIfOn() {
+    guard Self.isAvailableInBuild, isOn else { return }
+    _ = syncEngine()
+  }
+
+  /// iCloud says something changed: fetches it into the inbox. True when
+  /// there's something there for Dart to bring in.
+  func fetchInBackground() async -> Bool {
+    guard Self.isAvailableInBuild, isOn else { return false }
+    let engine = syncEngine()
+    do {
+      try await engine.fetchChanges()
+    } catch {
+      // Offline and the like: whatever did arrive is in the inbox
+    }
+    return locked { !inbox.isEmpty }
   }
 
   // MARK: - What Dart calls
@@ -167,13 +209,22 @@ final class CloudSync: NSObject, CKSyncEngineDelegate, @unchecked Sendable {
     try takeProblem()
     try await engine.fetchChanges()
     try takeProblem()
-    let fetched = locked { () -> [String: String] in
-      let all = inbox
-      inbox = [:]
-      return all
+    // Kept until Dart has saved them
+    return locked { () -> [String: String] in
+      handedOver = inbox
+      return inbox
+    }
+  }
+
+  /// Dart saved these (from the last pull): they leave the inbox, unless a
+  /// newer copy came in meanwhile.
+  func acknowledge(_ names: [String]) {
+    locked {
+      for name in names where inbox[name] != nil && inbox[name] == handedOver[name] {
+        inbox[name] = nil
+      }
     }
     save()
-    return fetched
   }
 
   func resetCursor() {
@@ -315,12 +366,25 @@ struct SyncProblem: Error {
   let code: String
 }
 
-/// `momentum/sync`: how Dart reaches [CloudSync].
+/// `momentum/sync`: how Dart reaches [CloudSync], from the app or from the
+/// engine that works in the background (BackgroundRun).
 enum SyncChannel {
-  static func register(messenger: FlutterBinaryMessenger) {
+  private static var app: FlutterMethodChannel?
+  private static var background: FlutterMethodChannel?
+
+  static func register(messenger: FlutterBinaryMessenger, inBackground: Bool = false) {
     let channel = FlutterMethodChannel(name: "momentum/sync", binaryMessenger: messenger)
+    if inBackground {
+      background = channel
+    } else {
+      app = channel
+    }
+    // Fetched buckets: whichever Dart is running hears of them
     CloudSync.shared.onChanged = {
-      DispatchQueue.main.async { channel.invokeMethod("changed", arguments: nil) }
+      DispatchQueue.main.async {
+        (BackgroundRun.appIsRunning ? SyncChannel.app : SyncChannel.background)?
+          .invokeMethod("changed", arguments: nil)
+      }
     }
     channel.setMethodCallHandler { call, result in
       let reply: (Any?) -> Void = { value in DispatchQueue.main.async { result(value) } }
@@ -340,6 +404,13 @@ enum SyncChannel {
             reply(nil)
           case "pull":
             reply(try await CloudSync.shared.pull())
+          case "acknowledge":
+            let names = (call.arguments as? [String: Any])?["names"] as? [String] ?? []
+            CloudSync.shared.acknowledge(names)
+            reply(nil)
+          case "setActive":
+            CloudSync.shared.setActive((call.arguments as? [String: Any])?["active"] as? Bool ?? false)
+            reply(nil)
           case "resetCursor":
             CloudSync.shared.resetCursor()
             reply(nil)
@@ -360,6 +431,11 @@ enum SyncChannel {
     }
   }
 
+  /// The background engine ended.
+  static func backgroundEnded() {
+    background = nil
+  }
+
   /// What Dart's CloudProblem calls a CloudKit error.
   static func code(for error: CKError) -> String {
     switch error.code {
@@ -373,6 +449,205 @@ enum SyncChannel {
       return "deleted"
     default:
       return "other"
+    }
+  }
+}
+
+/// Work while the app isn't on screen (lib/core/background/background_refresh.dart):
+/// another device's changes when iCloud says there are some (a push), and
+/// iOS's background refresh every so often (Health, sync, notifications
+/// planned again, the widgets). With the app running (even suspended in
+/// the background) its own Dart does it; otherwise an engine of its own
+/// starts at `backgroundMain`, and an app opening meanwhile waits for it
+/// (`waitIdle`, at most a few seconds), so two never write at once.
+enum BackgroundRun {
+  static let refreshTask = "com.paulblake.momentum.refresh"
+
+  /// The app's own engine, while it's alive (iOS can let a window go and
+  /// keep the process), and its channel.
+  private static weak var appEngine: FlutterEngine?
+  private static var appChannel: FlutterMethodChannel?
+
+  static var appIsRunning: Bool { appEngine != nil && appChannel != nil }
+
+  /// The engine working in the background, and why it was started.
+  private static var engine: FlutterEngine?
+  private static var reason = "refresh"
+  /// Which start this is, so a timeout only ends its own.
+  private static var started = 0
+  private static var finishing: [(Bool) -> Void] = []
+  private static var opening: [() -> Void] = []
+
+  /// How long a run may take: iOS gives about 30 seconds.
+  private static let most: TimeInterval = 25
+  /// How long the app, opening, waits for a run before ending it.
+  private static let openWait: TimeInterval = 4
+
+  /// The app's engine is up (called before its Dart runs).
+  static func registerApp(engine: FlutterEngine?, messenger: FlutterBinaryMessenger) {
+    appEngine = engine
+    let channel = FlutterMethodChannel(name: "momentum/background", binaryMessenger: messenger)
+    appChannel = channel
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "waitIdle": waitIdle { result(nil) }
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  /// A push: from iCloud ("push"), or a test one carrying `momentum`
+  /// ("push" or "refresh", for trying this on a simulator). Nil for any other.
+  static func reason(forPush userInfo: [AnyHashable: Any]) -> String? {
+    if let test = userInfo["momentum"] as? String, test == "push" || test == "refresh" { return test }
+    if CloudSync.isAvailableInBuild, CKNotification(fromRemoteNotificationDictionary: userInfo) != nil { return "push" }
+    return nil
+  }
+
+  /// Fetches what iCloud has (with sync on), then has Dart bring it in;
+  /// [completion] says whether there was anything.
+  static func push(_ reason: String, completion: @escaping (Bool) -> Void) {
+    Task {
+      let waiting = await CloudSync.shared.fetchInBackground()
+      // A test refresh runs anyway; a push only when something came
+      guard waiting || reason == "refresh" else { return completion(false) }
+      run(reason, completion: completion)
+    }
+  }
+
+  /// Has Dart do the work for [reason]: the app's own, or the background
+  /// engine's. [completion] runs once, on the main thread.
+  static func run(_ reason: String, completion: @escaping (Bool) -> Void) {
+    DispatchQueue.main.async {
+      var answered = false
+      let answer: (Bool) -> Void = { ok in
+        guard !answered else { return }
+        answered = true
+        completion(ok)
+      }
+      if appIsRunning, let channel = appChannel {
+        channel.invokeMethod("run", arguments: reason) { reply in
+          DispatchQueue.main.async { answer((reply as? Bool) ?? false) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + most) { answer(false) }
+        return
+      }
+      finishing.append(answer)
+      // Already running: hears when it ends
+      if engine == nil { start(reason) }
+    }
+  }
+
+  private static func start(_ reason: String) {
+    self.reason = reason
+    let engine = FlutterEngine(name: "momentum.background", project: nil, allowHeadlessExecution: true)
+    let library = "package:atomic_momentum/core/background/background_refresh.dart"
+    guard engine.run(withEntrypoint: "backgroundMain", libraryURI: library) else {
+      return end(false)
+    }
+    GeneratedPluginRegistrant.register(with: engine)
+    let messenger = engine.binaryMessenger
+    SyncChannel.register(messenger: messenger, inBackground: true)
+    BackgroundWidgets.register(messenger: messenger)
+    let channel = FlutterMethodChannel(name: "momentum/background", binaryMessenger: messenger)
+    channel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "reason":
+        result(BackgroundRun.reason)
+      case "done":
+        result(nil)
+        end((call.arguments as? Bool) ?? false)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    self.engine = engine
+    started += 1
+    let run = started
+    DispatchQueue.main.asyncAfter(deadline: .now() + most) {
+      if started == run { end(false) }
+    }
+  }
+
+  /// Ends the background engine (after it said it's done, or when time is
+  /// up) and tells whoever was waiting.
+  private static func end(_ ok: Bool) {
+    if let running = engine {
+      engine = nil
+      started += 1
+      SyncChannel.backgroundEnded()
+      // After the reply to "done" has gone out
+      DispatchQueue.main.async { running.destroyContext() }
+    }
+    let done = finishing
+    finishing = []
+    done.forEach { $0(ok) }
+    let waiting = opening
+    opening = []
+    waiting.forEach { $0() }
+  }
+
+  /// The app opening: goes once nothing runs in the background, ending a
+  /// run that takes longer than [openWait].
+  private static func waitIdle(_ go: @escaping () -> Void) {
+    guard engine != nil else { return go() }
+    opening.append(go)
+    let run = started
+    DispatchQueue.main.asyncAfter(deadline: .now() + openWait) {
+      if started == run { end(false) }
+    }
+  }
+
+  // MARK: - iOS's background refresh
+
+  /// At launch (iOS wants it registered before launch ends).
+  static func registerRefresh() {
+    BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTask, using: nil) { task in
+      scheduleRefresh()
+      var completed = false
+      let complete: (Bool) -> Void = { ok in
+        DispatchQueue.main.async {
+          guard !completed else { return }
+          completed = true
+          task.setTaskCompleted(success: ok)
+        }
+      }
+      task.expirationHandler = {
+        DispatchQueue.main.async { end(false) }
+        complete(false)
+      }
+      Task {
+        _ = await CloudSync.shared.fetchInBackground()
+        run("refresh", completion: complete)
+      }
+    }
+  }
+
+  /// Asks iOS for a refresh in half an hour or so (it decides when).
+  static func scheduleRefresh() {
+    let request = BGAppRefreshTaskRequest(identifier: refreshTask)
+    request.earliestBeginDate = Date(timeIntervalSinceNow: 30 * 60)
+    try? BGTaskScheduler.shared.submit(request)
+  }
+}
+
+/// `momentum/widgets` for the background engine: writes the widgets'
+/// snapshot and hands over taps queued on them, nothing that needs the
+/// app on screen (WidgetChannel is the app's).
+enum BackgroundWidgets {
+  static func register(messenger: FlutterBinaryMessenger) {
+    FlutterMethodChannel(name: "momentum/widgets", binaryMessenger: messenger).setMethodCallHandler { call, result in
+      switch call.method {
+      case "save":
+        if let json = call.arguments as? String { WidgetStore.saveSnapshot(json) }
+        result(nil)
+      case "takeLogs":
+        result(WidgetStore.takeLogs())
+      case "applied", "takeOpened":
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
     }
   }
 }

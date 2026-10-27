@@ -53,8 +53,10 @@ class HomeWidgetSync with WidgetsBindingObserver {
   bool _applying = false;
   bool _applyAgain = false;
 
-  /// Starts listening; does nothing where there are no widgets.
-  void start() {
+  /// Starts listening; does nothing where there are no widgets. In the
+  /// [background] (no screen) it takes queued taps and writes, but leaves
+  /// a widget's link to the app that opens.
+  void start({bool background = false}) {
     if (_started || !bridge.isSupported) return;
     _started = true;
     habits.addListener(_changed);
@@ -64,9 +66,10 @@ class HomeWidgetSync with WidgetsBindingObserver {
     categories?.addListener(_changed);
     plus?.addListener(_changed);
     bridge.onLogsWaiting = applyLogs;
-    bridge.onOpen = _open;
     WidgetsBinding.instance.addObserver(this);
     _changed();
+    if (background) return;
+    bridge.onOpen = _open;
     // A widget tap that launched the app
     bridge.takeOpened().then((route) {
       if (route != null) _open(route);
