@@ -44,10 +44,9 @@ The privacy manifests (`ios/Runner/PrivacyInfo.xcprivacy`, `ios/MomentumWidgets/
 
 ## EU Digital Services Act (trader status)
 
-Before the app can be offered in the EU, App Store Connect asks whether you're a trader. A trader's address, phone and email are shown on the EU App Store.
-- A free app with no ads or purchases is usually non-trader.
-- The US-only tip link is still worth a moment's thought.
-- **This is Paul's call.** Choosing "not a trader" doesn't stop the app from being offered in the EU.
+App Store Connect asks whether you're a trader. A trader's address, phone and email are shown on the EU App Store.
+- **Paul is a trader** (declared 2026-10-27), since Momentum Plus and tips are sold in the EU.
+- An individual can give a P.O. box in place of a home address; change it in App Store Connect → Business.
 
 ---
 

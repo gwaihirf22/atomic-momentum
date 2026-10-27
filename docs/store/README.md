@@ -29,10 +29,7 @@ The checklist for the first release. The texts are in this folder:
    - **2026-10-27:**
      - the legal entity and the W-9 are filled in: Individual/Sole proprietor, Non-Exempt Payee;
      - the Schwab bank account is waiting for Apple's approval (up to 24 hours, with no other changes allowed meanwhile).
-2. **EU trader status (DSA), before 1.1 goes on sale:**
-   - 1.0 sells nothing, so it is "not a trader".
-   - Selling Plus and tips in the EU makes Paul a trader, and a trader's address, phone and email show on the EU App Store pages.
-   - **Plan:** rent a USPS P.O. box (Apple accepts a P.O. box for individuals) and a Google Voice number, use momentum@paul-blake.com, then switch to trader in App Store Connect → Business before 1.1 is released.
+2. **EU trader status (DSA):** ~~declare it~~ Paul declared himself a **trader** on 2026-10-27, since Plus and tips are sold in the EU. A trader's address, phone and email show on the EU App Store pages. Apple accepts a P.O. box in place of a home address (App Store Connect → Business to change them).
 3. **App Store Small Business Program** (developer.apple.com/app-store/small-business-program): enrol, so Apple takes 15% instead of 30%.
 4. **The four in-app purchases** (App Store Connect → the app → Monetization → In-App Purchases), each with a display name, description and a review screenshot (the Plus page):
    - `com.paulblake.momentum.plus`: **Non-Consumable**, $1.99, "Momentum Plus", **Family Sharing on**;
@@ -90,7 +87,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] Build 1.0.0 (2) submitted for App Review (2026-10-21)
 - [x] A Buy Me a Coffee page: buymeacoffee.com/paulblake (2026-10-21)
 - [x] The seller name: individual, branded Blake Built (2026-10-21)
-- [ ] EU trader status (App Store Connect → Business): "not a trader" for 1.0; trader with a P.O. box before 1.1 (see "Momentum Plus" above)
+- [x] EU trader status: a trader (2026-10-27)
 - [ ] Ask Apple Developer Support to show the seller as "Paul Blake"
 - [ ] Review the tours
 - [x] The NKJV licence: gratis use with the notice, under 500 verses and 25% of the library (2026-10-20)
