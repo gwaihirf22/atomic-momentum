@@ -22,6 +22,7 @@ import '../services/freeze_bank.dart';
 import 'cloud_transport.dart';
 import 'habit_records.dart';
 import 'meta_records.dart';
+import 'sync_log.dart';
 import 'sync_store.dart';
 
 /// Where sync stands, for Settings.
@@ -78,9 +79,13 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     this.delay = const Duration(seconds: 3),
     this.healthOn,
   })  : _prefs = prefs,
-        _store = SyncStore(prefs);
+        _store = SyncStore(prefs),
+        log = SyncLog(prefs);
 
   final SyncStore _store;
+
+  /// What sync did here, for Developer tools.
+  final SyncLog log;
   HlcClock? _clock;
   MergedState _merged = SyncMerge.merge(const {});
 
@@ -130,21 +135,23 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
     _merged = SyncMerge.merge(_replicas());
     _habits!.syncListener = this;
     for (final source in _metaSources) {
-      source.addListener(_schedule);
+      source.addListener(_metaChanged);
     }
-    _wakes = transport.wakes.listen((_) => _schedule());
+    _wakes = transport.wakes.listen((_) => _schedule(why: 'iCloud says something changed'));
     WidgetsBinding.instance.addObserver(this);
     _state = SyncState.syncing;
     notifyListeners();
-    _schedule(now: true);
+    _schedule(now: true, why: 'started');
   }
+
+  void _metaChanged() => _schedule(why: 'settings');
 
   List<Listenable> get _metaSources => [_settings, _theme, _categories, _quotes, _bank].whereType<Listenable>().toList();
 
   void _detach() {
     if (_habits?.syncListener == this) _habits!.syncListener = null;
     for (final source in _metaSources) {
-      source.removeListener(_schedule);
+      source.removeListener(_metaChanged);
     }
     _wakes?.cancel();
     _wakes = null;
@@ -160,7 +167,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _schedule(now: true);
+    if (state == AppLifecycleState.resumed) _schedule(now: true, why: 'opened');
     if (state == AppLifecycleState.paused) unawaited(_store.save());
   }
 
@@ -194,7 +201,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       device: device,
       stamp: clock.tick,
     ));
-    _schedule();
+    _schedule(why: 'a change here');
   }
 
   void _recordOwn(Records records) {
@@ -216,8 +223,12 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   bool _joined = false;
   bool _again = false;
 
-  void _schedule({bool now = false}) {
+  /// Why the next run is happening, for the log.
+  final Set<String> _why = {};
+
+  void _schedule({bool now = false, String? why}) {
     if (!isOn) return;
+    if (why != null) _why.add(why);
     _timer?.cancel();
     _timer = Timer(now ? Duration.zero : delay, () => unawaited(syncNow()));
   }
@@ -249,6 +260,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   Future<void> _runOnce() async {
     final device = _store.device!;
     _setState(SyncState.syncing);
+    final why = _why.isEmpty ? 'asked' : _why.join(', ');
+    _why.clear();
     try {
       // What changed in settings, categories, quotes and the rest
       final view = MetaRecords.read(_prefs);
@@ -260,9 +273,14 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
         final names = Set.of(_store.dirty);
         await transport.push(SyncBuckets.encode(device, _store.own, names: names));
         _store.dirty.removeAll(names);
+        log.add('Sent ${_count(names.length, 'change')} ($why)');
       }
 
       final pulled = await transport.pull();
+      if (pulled.isNotEmpty) {
+        final from = {for (final name in pulled.keys) _short(SyncBuckets.deviceOf(name))};
+        log.add('Got ${_count(pulled.length, 'change')} from ${from.join(', ')} ($why)');
+      }
       var newer = false;
       var restored = false;
       for (final entry in pulled.entries) {
@@ -291,13 +309,17 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
         // A copy of this device restored from a backup (here or onto another
         // phone): take a new id, and join again
         logWarning('Sync: this device was restored from a backup; joining again');
+        log.add('This device was restored from a backup: joining again');
         await _rejoin();
         // Straight on to bringing the cloud in, before anything is tapped
         // against this device's old copy
         _again = true;
         return;
       }
-      if (newer || _joined) await _apply();
+      if (newer || _joined) {
+        await _apply();
+        if (_applied.isNotEmpty) log.add('Brought in: ${_applied.join(', ')}');
+      }
       _joined = false;
       _store.clock = _clock!.last;
       _store.lastSynced = clock.now();
@@ -305,6 +327,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       _setState(SyncState.synced);
     } on CloudException catch (e) {
       await _store.save();
+      log.add('Stopped by ${e.problem.name}${e.message.isEmpty ? '' : ': ${e.message}'} ($why)');
       switch (e.problem) {
         case CloudProblem.offline:
           _setState(SyncState.offline);
@@ -318,10 +341,19 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       }
     } catch (e) {
       logWarning('Sync failed: $e');
+      log.add('Failed: $e ($why)');
       await _store.save();
       _setState(SyncState.failed);
     }
   }
+
+  static String _count(int n, String thing) => '$n $thing${n == 1 ? '' : 's'}';
+
+  /// A device's id, short enough to read ("this device" for this one).
+  String _short(String device) => device == _store.device ? 'this device' : 'device ${device.substring(0, 4)}';
+
+  /// The habits the last [_apply] changed here, by name.
+  List<String> _applied = const [];
 
   /// This device's day records of Health-linked habits that hold no more
   /// than its Health shows, cleared: that number was Health's (sent before
@@ -369,6 +401,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// habit first (so achievements celebrated elsewhere aren't celebrated
   /// again), then the habits through [HabitProvider.applySynced].
   Future<void> _apply() async {
+    _applied = const [];
     _merged = SyncMerge.merge(_replicas());
     final local = MetaRecords.read(_prefs);
     final view = MetaRecords.viewOf(_merged);
@@ -394,10 +427,14 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   Map<String, Habit?> _habitChanges(Map<String, Habit> local) {
     final now = clock.now();
     final changes = <String, Habit?>{};
+    final names = <String>[];
     for (final merged in _merged.habits.values) {
       final mine = local[merged.id];
       if (merged.isDeleted) {
-        if (mine != null) changes[merged.id] = null;
+        if (mine != null) {
+          changes[merged.id] = null;
+          names.add('${mine.name} (deleted)');
+        }
         continue;
       }
       final health = healthOn;
@@ -408,8 +445,12 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
         healthOn: health == null || mine == null ? null : (day) => health(mine, day),
       );
       if (built == null) continue;
-      if (mine == null || !sameHabit(mine, built)) changes[merged.id] = built;
+      if (mine == null || !sameHabit(mine, built)) {
+        changes[merged.id] = built;
+        names.add(mine == null ? '${built.name} (new)' : built.name);
+      }
     }
+    _applied = names;
     return changes;
   }
 
@@ -532,6 +573,8 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
       ..dirty = {for (final key in own.keys) SyncBuckets.nameFor(device, key)};
     await _store.save();
     _joined = true;
+    log.add('Joined as device ${device.substring(0, 4)}: '
+        '${_count(others.length, 'other device')} in the cloud, ${_count(own.length, 'record')} of its own to send');
   }
 
   /// Whether joining keeps [day] of [habit] (holding [value]) back from the
@@ -591,6 +634,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// Turns sync off. Everything stays on this device; [deleteCloud] also
   /// removes the copy in the cloud, for every device.
   Future<void> turnOff({bool deleteCloud = false}) async {
+    log.add(deleteCloud ? 'Turned off, and the copy in the cloud deleted' : 'Turned off');
     _detach();
     await _store.clear();
     _merged = SyncMerge.merge(const {});
@@ -608,6 +652,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver implements 
   /// Stops (the account changed, or the copy in the cloud was deleted):
   /// off, to be turned on again by the person.
   Future<void> _stop() async {
+    log.add('Stopped: the account changed, or another device deleted the copy in the cloud');
     _detach();
     await _store.clear();
     _merged = SyncMerge.merge(const {});

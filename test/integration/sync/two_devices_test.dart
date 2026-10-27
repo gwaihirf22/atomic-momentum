@@ -156,6 +156,10 @@ void main() {
           expect(device.named('Read').progress, 1);
         }
         expect(phone.sync.state, SyncState.synced);
+        // And the log says what happened
+        final lines = ipad.sync.log.entries.map((e) => e.text).join('\n');
+        expect(lines, contains('Joined as device'));
+        expect(lines, contains('Brought in: Walk (new)'));
       }));
 
   group('Health-linked habits', () {

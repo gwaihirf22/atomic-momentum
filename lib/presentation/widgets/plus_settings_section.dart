@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../core/dev/dev_tools.dart';
 import '../../core/injection/injection_container.dart';
 import '../../core/services/plus_store.dart';
 import '../../core/sync/sync_service.dart';
 import '../../screens/plus_screen.dart';
+import '../../screens/sync_log_screen.dart';
 import '../../domain/entities/habit_color.dart';
 import '../help/explainers.dart';
 import 'adaptive.dart';
@@ -116,6 +118,15 @@ class _PlusSection extends StatelessWidget {
             iconColor: HabitColor.green.color,
             title: 'Sync now',
             onTap: sync.state == SyncState.syncing ? null : sync.syncNow,
+          ),
+        // What sync did here, to trace a problem between devices
+        if (DevTools.enabled && (sync.isOn || sync.log.entries.isNotEmpty))
+          SettingsTile(
+            tileKey: const Key('syncLog'),
+            icon: CupertinoIcons.list_bullet,
+            iconColor: HabitColor.blueGrey.color,
+            title: 'Sync log',
+            onTap: () => SyncLogScreen.open(context, sync.log),
           ),
         SettingsTile(
           tileKey: const Key('syncAbout'),

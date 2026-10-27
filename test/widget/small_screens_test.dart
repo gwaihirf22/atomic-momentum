@@ -51,6 +51,8 @@ import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/plus_screen.dart';
+import 'package:atomic_momentum/screens/sync_log_screen.dart';
+import 'package:atomic_momentum/core/sync/sync_log.dart';
 import 'package:atomic_momentum/screens/year_review_screen.dart';
 import 'package:atomic_momentum/presentation/plus/plus_mention.dart';
 import 'package:atomic_momentum/core/sync/sync_service.dart';
@@ -481,6 +483,19 @@ void main() {
         await tester.tap(find.byKey(const Key('syncAbout')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'About sync at $setting');
+      });
+
+      testWidgets('the sync log at $setting', (tester) async {
+        final log = SyncLog(get<SharedPreferences>());
+        await pump(tester, SyncLogScreen(log: log), width: width, scale: scale);
+        expectNothingCutOff(tester, 'an empty sync log at $setting');
+        log
+          ..add('Joined as device 4168: 2 other devices in the cloud, 169 records of its own to send')
+          ..add('Got 3 changes from device 7fa8, device 851d (iCloud says something changed, opened)')
+          ..add('Brought in: Scrolling social media late at night, Read Bible (new), Walk (deleted)')
+          ..add('Stopped by offline: The Internet connection appears to be offline. (a change here)');
+        await pump(tester, SyncLogScreen(log: log), width: width, scale: scale);
+        expectNothingCutOff(tester, 'the sync log at $setting');
       });
 
       testWidgets('Momentum Plus: Settings with and without it, the page, and tips at $setting', (tester) async {
