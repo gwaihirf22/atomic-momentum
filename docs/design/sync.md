@@ -9,7 +9,7 @@
 Momentum syncs **within each platform's own cloud**, with no accounts and no server:
 - **iPhone and iPad:** iCloud (CloudKit, the person's private database).
 - **Android:** Google Drive's hidden app folder (`appDataFolder`), on the person's own Drive.
-- **Off by default.** Settings → Sync turns it on. Until the purchase is built it's in builds with Developer tools only (Developer → "Sync (testing)").
+- **Off by default,** and part of Momentum Plus: Settings → Momentum Plus → "Sync with iCloud" turns it on once Plus is bought (sync already on stays on whatever happens to the purchase).
 - **Not planned:** syncing between an iPhone and an Android phone. That would need accounts (Sign in with Apple and Google, email) and a hosted service such as Firebase or Supabase. Revisit only if people ask for it.
 
 ## Why

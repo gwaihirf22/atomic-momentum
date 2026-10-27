@@ -2,7 +2,7 @@
 
 *Planned with Paul on October 26, 2026; built after the iPad version. Both ship together as 1.1 (`plus` branch).*
 
-**This round (October 26, 2026):** Plus and tips working end to end, tested on the simulator (`ios/Runner/Momentum.storekit`, running from Xcode) and on TestFlight (sandbox). The name stays Momentum Plus. **Left for 1.1's finish:** the weekly-review mention, the listing's "No in-app purchases" line, the privacy policy's paragraphs on sync and purchases, and the App Review notes. The rest of 1.1 (the Apple Watch, icons and themes, the year in review, Health insights, Shortcuts) is in the strategy's roadmap.
+**Built (October 26, 2026):** `PlusStore`, the Plus page, Settings → Momentum Plus with sync behind it, Apple tips in Say thanks outside the US, the Developer switch and `ios/Runner/Momentum.storekit`; 2069 tests pass. **This round:** Plus and tips working end to end, tested on the simulator (`ios/Runner/Momentum.storekit`, running from Xcode) and on TestFlight (sandbox). The name stays Momentum Plus. **Left for 1.1's finish:** the weekly-review mention, the listing's "No in-app purchases" line, the privacy policy's paragraphs on sync and purchases, and the App Review notes. The rest of 1.1 (the Apple Watch, icons and themes, the year in review, Health insights, Shortcuts) is in the strategy's roadmap.
 
 ## Context
 Sync works between Paul's iPhone and iPad (2026-10-26), but only in builds with Developer tools. To ship it, and to test through TestFlight on his second iPhone, the app needs the Plus purchase.
@@ -137,3 +137,9 @@ Everything goes on the `plus` branch.
 3. Tips in Say thanks outside the US.
 4. The weekly review mention.
 5. The StoreKit file, then docs, listing, privacy and review notes.
+
+## Testing it
+
+- **On a simulator, from Xcode** (`open ios/Runner.xcworkspace`, choose a simulator, Run): purchases go through `ios/Runner/Momentum.storekit`, without Apple. Debug → StoreKit → Manage Transactions refunds, approves Ask to Buy or fails a purchase. The test storefront is the US (the coffee link shows, not the tips): change it in the .storekit file's Editor → Default Storefront to see the tips. If the scheme doesn't pick the file up, set it in Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration.
+- **Developer builds** (`flutter run`, `DEV_TOOLS=1` installs): Settings → Developer → "Pretend Plus is bought".
+- **TestFlight** (sandbox purchases, free): needs Paul's App Store Connect steps (docs/store/README.md, "Momentum Plus"), then a store build from `plus` as 1.1.0 (1).

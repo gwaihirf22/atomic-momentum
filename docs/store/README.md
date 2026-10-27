@@ -23,6 +23,18 @@ The checklist for the first release. The texts are in this folder:
   - add the link to paul-blake.com/momentum and the Buy Me a Coffee page.
 - **If it's rejected:** fix what the message names, then upload a new build of the same version.
 
+## Momentum Plus (1.1, `plus` branch): Paul's steps before TestFlight
+
+1. **Agreements, Tax, and Banking** in App Store Connect: accept the **Paid Applications** agreement, add the bank account and the tax forms. Nothing can be sold, even in TestFlight, until it's active.
+2. **App Store Small Business Program** (developer.apple.com/app-store/small-business-program): enrol, so Apple takes 15% instead of 30%.
+3. **The four in-app purchases** (App Store Connect → the app → Monetization → In-App Purchases), each with a display name, description and a review screenshot (the Plus page):
+   - `com.paulblake.momentum.plus`: **Non-Consumable**, $1.99, "Momentum Plus", **Family Sharing on**;
+   - `com.paulblake.momentum.tip.small` / `.medium` / `.large`: **Consumable**, $0.99 / $2.99 / $4.99, "Small tip" / "Medium tip" / "Large tip".
+4. **iCloud for TestFlight:** CloudKit Console → the `iCloud.com.paulblake.momentum` container → **Deploy Schema Changes** to Production (TestFlight and the App Store sync in production).
+5. **The build:** on `plus`, set `version: 1.1.0+1` in `pubspec.yaml`, `flutter build ipa`, upload, and add it to TestFlight. Testers buy with their own Apple Account, free (sandbox).
+
+The products are submitted for review with the 1.1 version itself.
+
 ## Making the next build
 
 1. Raise the build number in `pubspec.yaml` (`version: 1.0.0+3`). After release, an update also takes a new version (`1.0.1+4`). The widgets follow it by themselves (`ios/MomentumWidgets/Widgets.xcconfig`).
