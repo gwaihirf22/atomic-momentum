@@ -48,3 +48,13 @@ Before the app can be offered in the EU, App Store Connect asks whether you're a
 - A free app with no ads or purchases is usually non-trader.
 - The US-only tip link is still worth a moment's thought.
 - **This is Paul's call.** Choosing "not a trader" doesn't stop the app from being offered in the EU.
+
+---
+
+## 1.1 draft notes for the reviewer (Momentum Plus, iPad; not live)
+
+- **Momentum Plus** (`com.paulblake.momentum.plus`, non-consumable, $1.99, Family Sharing) unlocks **sync between the person's devices through their own iCloud** (CloudKit private database). Settings → Momentum Plus → the Plus page; Restore Purchases is on that page. Sync turns on in Settings → Momentum Plus → "Sync with iCloud". The other items on the Plus page are listed as "Coming in 1.1" and unlock nothing yet.
+- **Tips** (`com.paulblake.momentum.tip.small/medium/large`, consumable) are a thank-you and **unlock nothing**. They show in Settings → Say thanks outside the United States; in the United States, Say thanks keeps the "Buy Paul a coffee" link (3.1.1(a)), and there are no in-app tips there.
+- **To test:** sandbox purchases work on the Plus page; for sync, two devices signed in to the same Apple Account.
+- **iPad:** the app now runs natively on iPad (sidebar, split view). The habit editor opens as a form sheet.
+- **App Privacy:** unchanged, Data Not Collected. Sync data lives in the user's own iCloud, which the developer can't access; purchases are handled by Apple.

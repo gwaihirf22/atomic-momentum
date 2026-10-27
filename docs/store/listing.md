@@ -114,3 +114,27 @@ The words and the order of looks are in `SCREENS` and `FINAL` in that script.
 | 10 | Sepia | Celebrate the milestones | Achievements |
 
 The first three show in search results.
+
+## 1.1 draft (Momentum Plus, iPad; not live)
+
+*Written 2026-10-26 on `plus`, to paste in when 1.1 is submitted. The text above stays live until then.*
+
+**Promotional text (170):** Now on iPad. Momentum Plus keeps your iPhone and iPad in sync, with more on the way. Momentum itself stays free: no ads, no subscriptions. [154]
+
+**Description, changed sections** (the rest stays as above):
+
+> SYNC WITH MOMENTUM PLUS
+> One purchase, yours for good and shared with your family: your habits on your iPhone and iPad, kept in your own iCloud. Coming to Plus: an Apple Watch app, new icons and themes, a year in review, Health insights, and Siri and Shortcuts. Buy once, get everything that comes.
+>
+> IPHONE AND IPAD
+> On iPad, a sidebar with your categories, a habit's page beside the list, and every screen laid out for the bigger display, any way up.
+>
+> PRIVATE BY DESIGN
+> No account, no ads, no tracking. Your habits stay on your devices, and in your own iCloud if you turn on sync. I never see them.
+>
+> FREE
+> Every habit-building feature is free, and nothing that's free today will ever cost money. Momentum Plus is an optional one-time purchase.
+
+**Price and in-app purchases:** Free, with in-app purchases: Momentum Plus ($1.99, non-consumable, Family Sharing), and tips of $0.99, $2.99 and $4.99 (consumable; outside the US, where the coffee link doesn't show). The listing shows "In-App Purchases" under the Get button.
+
+**Screenshots:** the iPad set too (`build/store_frames/final_ipad/`; see "iPad" under Screenshots).

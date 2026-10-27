@@ -51,6 +51,7 @@ import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
 import 'package:atomic_momentum/screens/plus_screen.dart';
+import 'package:atomic_momentum/presentation/plus/plus_mention.dart';
 import 'package:atomic_momentum/core/sync/sync_service.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
 import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
@@ -496,6 +497,16 @@ void main() {
         plus.unlocked = true;
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'the Plus page, yours, with tips at $setting');
+
+        // The week in review's one mention
+        plus.unlocked = false;
+        final prefs = get<SharedPreferences>();
+        await prefs.setStringList(PlusMention.weeksKey, ['2026-1-5']);
+        await prefs.remove(PlusMention.shownKey);
+        await pump(tester, Scaffold(body: SingleChildScrollView(child: PlusMention(week: DateTime(2026, 1, 12)))),
+            width: width, scale: scale);
+        expect(find.byKey(const Key('plusMention')), findsOneWidget);
+        expectNothingCutOff(tester, 'the Plus mention at $setting');
       });
 
       testWidgets('Settings with quiet hours on at $setting', (tester) async {

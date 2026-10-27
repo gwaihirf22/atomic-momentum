@@ -52,3 +52,15 @@ If this policy changes, the new version will be posted here with a new date. Sin
 ## Contact
 
 Questions: momentum@paul-blake.com
+
+---
+
+## 1.1 draft: sync and purchases (not live)
+
+*To add to paul-blake.com/momentum/privacy when 1.1 ships; written 2026-10-26.*
+
+### Sync (Momentum Plus)
+If you turn on sync, Momentum keeps a copy of your habits, settings and quotes in **your own iCloud** (Apple's private database for your Apple Account), so your other iPhones and iPads signed in to the same account have them too. I can't see or read that copy: it's stored by Apple for you, not on any server of mine. Apple Health data is never part of it: each device reads Health for itself. Turning sync off keeps everything on your device; you can also delete the copy in iCloud from Settings.
+
+### Purchases
+Momentum Plus and tips are bought through the App Store. Apple handles the payment; I don't receive your name, card or purchase history, only Apple's word to the app on your device that Plus is yours. Momentum doesn't send purchase information anywhere.

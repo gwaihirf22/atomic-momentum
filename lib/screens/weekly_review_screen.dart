@@ -20,6 +20,7 @@ import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/orb_button.dart';
 import '../presentation/widgets/stat_card.dart';
 import '../presentation/layout/app_layout.dart';
+import '../presentation/plus/plus_mention.dart';
 
 /// The latest week in review for [habits] and the person's settings.
 WeeklyReview? weeklyReviewFor(BuildContext context, List<Habit> habits) {
@@ -86,6 +87,8 @@ class WeeklyReviewScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Once ever, on an iPhone without Plus
+                    PlusMention(week: review.start),
                   ],
           ),
         ),
