@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/injection/injection_container.dart';
+import '../../core/services/health_sync_service.dart';
 import '../../core/services/home_widget_bridge.dart';
 import '../../core/services/plus_store.dart';
 import '../providers/category_provider.dart';
@@ -38,6 +39,7 @@ class _HomeWidgetHostState extends State<HomeWidgetHost> {
       quotes: context.read<QuoteProvider>(),
       categories: context.read<CategoryProvider>(),
       plus: sl.isRegistered<PlusStore>() ? get<PlusStore>() : null,
+      floorOn: HomeWidgetSync.healthFloor(sl.isRegistered<HealthSyncService>() ? get<HealthSyncService>() : null),
     )..start();
   }
 

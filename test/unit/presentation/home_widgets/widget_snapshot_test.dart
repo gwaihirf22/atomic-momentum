@@ -155,6 +155,38 @@ void main() {
     expect(withPlus(true)['v'], 1, reason: 'an added field: widgets reading version 1 still read it');
   });
 
+  test("the watch's fields: the goal, the two-minute version and Apple Health's floor", () {
+    final read = withClock(Clock.fixed(DateTime(2026, 10, 1, 9)), () => Habit.create(
+          name: 'Read',
+          target: 20,
+          units: 'pages',
+          color: HabitColor.blue,
+          categoryId: BuiltInCategoryIds.body,
+          twoMinute: const TwoMinuteVersion(description: 'Read one page'),
+        ));
+    final kept = withClock(Clock.fixed(now), () => read.setTwoMinuteForDate(today, true));
+    final smoking = make('Smoking', target: 0, goal: HabitGoal.quit);
+    final walk = make('Walk', target: 8000);
+    final snap = withClock(Clock.fixed(now), () => WidgetSnapshot.build(
+          habits: [read, smoking, walk, kept],
+          momentum: null,
+          now: now,
+          light: AppTheme.light,
+          dark: AppTheme.dark,
+          floorOn: (habit, day) => habit.name == 'Walk' && day == today ? 5210 : 0,
+        ));
+
+    expect(habitIn(snap, 0)['goal'], 'build');
+    expect(habitIn(snap, 0)['twoMinute'], {'can': true, 'done': false});
+    expect(habitIn(snap, 1)['goal'], 'quit');
+    expect(habitIn(snap, 1)['twoMinute'], isNull, reason: 'a habit being broken has none');
+    expect(habitIn(snap, 2)['twoMinute'], isNull, reason: 'no two-minute version');
+    expect(habitIn(snap, 2)['floor'], 5210, reason: "the Crown can't go below what Apple Health shows");
+    expect(habitIn(snap, 0)['floor'], 0);
+    expect(habitIn(snap, 3)['twoMinute'], {'can': true, 'done': true});
+    expect(snap['v'], 1, reason: 'added fields: widgets reading version 1 still read it');
+  });
+
   test('encodes to JSON with its version', () {
     final json = withClock(Clock.fixed(now), () => WidgetSnapshot.encode(
           habits: [make('Water')],

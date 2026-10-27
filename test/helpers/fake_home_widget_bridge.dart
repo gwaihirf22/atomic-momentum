@@ -35,9 +35,10 @@ class FakeHomeWidgetBridge implements HomeWidgetBridge {
   Map<String, dynamic> habit(String name) =>
       (last!['habits'] as List).cast<Map<String, dynamic>>().firstWhere((h) => h['name'] == name);
 
-  /// A widget's + tapped: queues it and tells the app, as the intent does.
-  void tap(String habitId, DateTime day, {bool notify = true}) {
-    queue.add(WidgetLog(id: 'tap${queue.length}_${day.day}', habitId: habitId, day: day));
+  /// A widget's + tapped (or, with [kind], the watch's Crown or "2 min"):
+  /// queues it and tells the app, as the intent does.
+  void tap(String habitId, DateTime day, {bool notify = true, WidgetLogKind kind = WidgetLogKind.step, int? amount}) {
+    queue.add(WidgetLog(id: 'tap${queue.length}_${day.day}', habitId: habitId, day: day, kind: kind, amount: amount));
     if (notify) _onLogsWaiting?.call();
   }
 

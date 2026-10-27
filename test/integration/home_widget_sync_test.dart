@@ -2,11 +2,14 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:atomic_momentum/core/injection/injection_container.dart';
+import 'package:atomic_momentum/core/services/home_widget_bridge.dart';
 import 'package:atomic_momentum/core/services/notification_service.dart';
 import 'package:atomic_momentum/core/theme/app_palette.dart';
 import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit_color.dart';
 import 'package:atomic_momentum/domain/entities/habit_goal.dart';
+import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
+import 'package:atomic_momentum/domain/entities/two_minute_version.dart';
 import 'package:atomic_momentum/domain/usecases/create_habit_usecase.dart';
 import 'package:atomic_momentum/presentation/home_widgets/home_widget_sync.dart';
 import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
@@ -149,6 +152,80 @@ void main() {
       expect(habits.getHabitById(smoking)!.progress, 0);
       expect(bridge.queue, isEmpty);
       expect(bridge.appliedCount, greaterThan(0));
+    });
+  });
+
+  test("the watch's Crown sets today's amount, up to the target", () async {
+    await at(() async {
+      final id = await add('Water', units: 'glasses');
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.set, amount: 5);
+      await sync.applyLogs();
+      expect(habits.getHabitById(id)!.progress, 5);
+
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.set, amount: 3);
+      await sync.applyLogs();
+      expect(habits.getHabitById(id)!.progress, 3, reason: 'the Crown turns down too');
+
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.set, amount: 40);
+      await sync.applyLogs();
+      expect(habits.getHabitById(id)!.progress, 8, reason: 'never past the target, as +');
+      expect(bridge.habit('Water')['done'], isTrue);
+    });
+  });
+
+  test("the Crown on a weekly habit before midnight changes that day's own amount", () async {
+    await at(() async {
+      await habits.createHabit(const CreateHabitParams(
+        name: 'Run',
+        target: 3,
+        units: '',
+        color: HabitColor.blue,
+        categoryId: BuiltInCategoryIds.body,
+        resetFrequency: ResetFrequency.weekly,
+      ));
+      final id = habits.habits.firstWhere((h) => h.name == 'Run').id;
+      await habits.updateProgressForDate(id, DateTime(2026, 10, 16), 1);
+      final total = habits.getHabitById(id)!.progressForPeriodContaining(yesterday);
+
+      // The watch showed the week's total and set it one higher, yesterday
+      bridge.tap(id, yesterday, notify: false, kind: WidgetLogKind.set, amount: total + 1);
+      await sync.applyLogs();
+      final run = habits.getHabitById(id)!;
+      expect(run.getProgressForDate(yesterday), 1);
+      expect(run.getProgressForDate(DateTime(2026, 10, 16)), 1, reason: 'other days are left as they were');
+    });
+  });
+
+  test("the watch's 2 min keeps the day with the two-minute version", () async {
+    await at(() async {
+      await habits.createHabit(const CreateHabitParams(
+        name: 'Read',
+        target: 20,
+        units: 'pages',
+        color: HabitColor.blue,
+        categoryId: BuiltInCategoryIds.body,
+        twoMinute: TwoMinuteVersion(description: 'Read one page'),
+      ));
+      final id = habits.habits.firstWhere((h) => h.name == 'Read').id;
+      final water = await add('Water');
+
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.twoMinute);
+      bridge.tap(water, today, notify: false, kind: WidgetLogKind.twoMinute);
+      await sync.applyLogs();
+
+      expect(habits.getHabitById(id)!.usedTwoMinuteButtonOn(today), isTrue);
+      expect(bridge.habit('Read')['twoMinute'], {'can': true, 'done': true});
+      expect(habits.getHabitById(water)!.twoMinuteDays, isEmpty, reason: 'Water has no two-minute version');
+    });
+  });
+
+  test('the Crown and 2 min change nothing on a habit being broken', () async {
+    await at(() async {
+      final id = await add('Soda', target: 2, goal: HabitGoal.limit);
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.set, amount: 1);
+      bridge.tap(id, today, notify: false, kind: WidgetLogKind.twoMinute);
+      await sync.applyLogs();
+      expect(habits.getHabitById(id)!.progress, 0);
     });
   });
 

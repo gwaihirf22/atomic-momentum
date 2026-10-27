@@ -1,7 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// A tap on a home screen widget's +, waiting for the app to log it.
+/// What a queued log does.
+enum WidgetLogKind {
+  /// The next step toward the target, as the card's + (widgets, Siri, the
+  /// watch's +, a reminder's Log).
+  step,
+
+  /// Sets the period's amount to [WidgetLog.amount] (the watch's Crown).
+  set,
+
+  /// Keeps the period with the two-minute version (the watch's "2 min").
+  twoMinute,
+}
+
+/// A tap on a home screen widget's + (or the watch, Siri, a reminder's Log),
+/// waiting for the app to log it.
 ///
 /// The widget can't change habits itself: it queues the tap in the App Group
 /// and the app applies it the way a tap on the card would, so streaks,
@@ -16,17 +30,42 @@ class WidgetLog {
   /// for that day if the app only gets it after).
   final DateTime day;
 
-  const WidgetLog({required this.id, required this.habitId, required this.day});
+  final WidgetLogKind kind;
 
-  /// From the queue's JSON ({"id", "habit", "day": "2026-10-18"}); null when
-  /// it can't be read.
+  /// For [WidgetLogKind.set]: the period's amount it was set to.
+  final int? amount;
+
+  const WidgetLog({
+    required this.id,
+    required this.habitId,
+    required this.day,
+    this.kind = WidgetLogKind.step,
+    this.amount,
+  });
+
+  /// From the queue's JSON ({"id", "habit", "day": "2026-10-18"}, and for
+  /// the watch "kind": "set" with "amount": "6", or "kind": "twoMinute"; every
+  /// value a string); null when it can't be read.
   static WidgetLog? fromJson(Object? json) {
     if (json is! Map) return null;
     final id = json['id'];
     final habitId = json['habit'];
     final day = DateTime.tryParse('${json['day']}');
     if (id is! String || habitId is! String || day == null) return null;
-    return WidgetLog(id: id, habitId: habitId, day: DateTime(day.year, day.month, day.day));
+    final kindName = json['kind'];
+    final kind = kindName == null
+        ? WidgetLogKind.step
+        : WidgetLogKind.values.where((k) => k.name == '$kindName').firstOrNull;
+    if (kind == null) return null; // from a newer watch app: leave it
+    final amount = int.tryParse('${json['amount']}');
+    if (kind == WidgetLogKind.set && (amount == null || amount < 0)) return null;
+    return WidgetLog(
+      id: id,
+      habitId: habitId,
+      day: DateTime(day.year, day.month, day.day),
+      kind: kind,
+      amount: kind == WidgetLogKind.set ? amount : null,
+    );
   }
 
   @override
@@ -36,7 +75,7 @@ class WidgetLog {
   int get hashCode => id.hashCode;
 
   @override
-  String toString() => 'WidgetLog($id, $habitId, $day)';
+  String toString() => 'WidgetLog($id, $habitId, $day, ${kind.name}${amount == null ? '' : ' $amount'})';
 }
 
 /// The app's side of the home screen widgets (iOS WidgetKit): hands them a

@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../core/services/health_sync_service.dart';
 import '../../core/services/home_widget_bridge.dart';
 import '../../core/services/notification_service.dart';
 import '../../core/services/plus_store.dart';
 import '../../core/theme/app_palette.dart';
+import '../../domain/entities/habit.dart';
 import '../../domain/services/quote_of_the_day.dart';
 import '../../domain/services/step_size.dart';
 import '../providers/category_provider.dart';
@@ -30,8 +33,20 @@ class HomeWidgetSync with WidgetsBindingObserver {
   final QuoteProvider quotes;
   final CategoryProvider? categories;
 
-  /// Momentum Plus (the snapshot says whether Siri and Shortcuts work).
+  /// Momentum Plus (the snapshot says whether Siri and Shortcuts, and the
+  /// watch's Plus screens, work).
   final PlusStore? plus;
+
+  /// What Apple Health says a linked habit holds on a day: the watch's Crown
+  /// stops there (`HealthSyncService.floorOn`).
+  final int Function(Habit habit, DateTime day)? floorOn;
+
+  /// [floorOn] from [health]: Health's number for a linked habit being
+  /// built, 0 for any other.
+  static int Function(Habit habit, DateTime day)? healthFloor(HealthSyncService? health) {
+    if (health == null) return null;
+    return (habit, day) => habit.health == null || habit.isBreak ? 0 : health.floorOn(habit, day);
+  }
 
   /// Changes come in bursts (a tap notifies several times); one write after.
   static const delay = Duration(milliseconds: 400);
@@ -44,6 +59,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
     required this.quotes,
     this.categories,
     this.plus,
+    this.floorOn,
   });
 
   Timer? _timer;
@@ -150,6 +166,7 @@ class HomeWidgetSync with WidgetsBindingObserver {
       findQuote: quotes.find,
       weekStart: settings.firstDayOfWeek,
       plus: plus?.unlocked ?? false,
+      floorOn: floorOn,
     );
     final written = jsonEncode(snapshot);
     // The time it was written changes every time; anything else is news
@@ -167,6 +184,9 @@ class HomeWidgetSync with WidgetsBindingObserver {
       };
 
   AppTheme get _darkLook => theme.appearance == Appearance.system ? AppTheme.dark : _lightLook;
+
+  /// Whether queued logs are being applied now.
+  bool get isApplying => _applying;
 
   /// Logs every queued widget tap, rewrites the snapshot, and lets the
   /// waiting widget know. Waits for habits to load first.
@@ -193,21 +213,42 @@ class HomeWidgetSync with WidgetsBindingObserver {
     await bridge.applied();
   }
 
-  /// One + from a widget: the next step toward the target, on the day it was
-  /// tapped (the card's + for today, the Calendar's for an earlier day).
+  /// One log from a widget, Siri, the watch or a reminder, on the day it
+  /// was made (as the card for today, the Calendar for an earlier day):
+  /// the next step toward the target, an amount the watch's Crown set, or
+  /// the two-minute version.
   Future<void> _apply(WidgetLog log) async {
     final habit = habits.getHabitById(log.habitId);
     if (habit == null || habit.isBreak) return;
     final now = clock.now();
     final today = DateTime(now.year, now.month, now.day);
-    if (log.day == today) {
-      if (habit.progress >= habit.target) return;
-      await habits.updateHabitProgress(habit.id, StepSize.up(habit.progress, habit.target));
-    } else if (log.day.isBefore(today)) {
-      if (habit.progressForPeriodContaining(log.day) >= habit.target) return;
-      final logged = habit.getProgressForDate(log.day);
-      await habits.updateProgressForDate(habit.id, log.day, StepSize.up(logged, habit.target));
+    // A log dated after today (the clock moved back): ignored
+    if (log.day.isAfter(today)) return;
+    final isToday = log.day == today;
+    final total = isToday ? habit.progress : habit.progressForPeriodContaining(log.day);
+    switch (log.kind) {
+      case WidgetLogKind.step:
+        if (total >= habit.target) return;
+        await _setTotal(habit, log.day, isToday, total, StepSize.up(total, habit.target));
+      case WidgetLogKind.set:
+        // The Crown goes up to the target (or what's already over it)
+        final amount = math.min(log.amount ?? total, math.max(habit.target, total));
+        if (amount == total) return;
+        await _setTotal(habit, log.day, isToday, total, amount);
+      case WidgetLogKind.twoMinute:
+        if (habit.twoMinute == null || total >= habit.target || habit.usedTwoMinuteButtonOn(log.day)) return;
+        await habits.setTwoMinute(habit.id, true, date: log.day);
     }
-    // A tap dated after today (the clock moved back): ignored
+  }
+
+  /// Sets the period containing [day] to [amount] (from [total]): today as
+  /// the card does, an earlier day by changing that day's own amount.
+  Future<void> _setTotal(Habit habit, DateTime day, bool isToday, int total, int amount) async {
+    if (isToday) {
+      await habits.updateHabitProgress(habit.id, amount);
+    } else {
+      final logged = habit.getProgressForDate(day);
+      await habits.updateProgressForDate(habit.id, day, math.max(0, logged + amount - total));
+    }
   }
 }

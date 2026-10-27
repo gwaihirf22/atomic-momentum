@@ -15,6 +15,7 @@ import '../logging/log.dart';
 import '../services/freeze_bank.dart';
 import '../services/health_sync_service.dart';
 import '../services/home_widget_bridge.dart';
+import '../services/plus_store.dart';
 import '../sync/sync_service.dart';
 
 /// Work the app does while it isn't on screen (docs/design/sync.md, "In
@@ -44,11 +45,15 @@ class BackgroundRefresh {
   /// Apple Health changed what a linked habit reads (HealthWatch.swift).
   static const health = 'health';
 
-  /// Does the work for [reason] on [habits]: Health (unless a push), then
-  /// sync, then waits until what they started (saves, notifications) is
-  /// done.
+  /// The Apple Watch sent a log (WatchLink.swift): the widgets' queue has
+  /// it, and HomeWidgetSync applies it.
+  static const watch = 'watch';
+
+  /// Does the work for [reason] on [habits]: Health (unless a push or a
+  /// watch's log, which are about the app's own data), then sync, then waits
+  /// until what they started (saves, notifications) is done.
   static Future<void> run({required HabitProvider habits, SyncService? sync, required String reason}) async {
-    if (reason != push) await habits.syncHealth(force: true);
+    if (reason != push && reason != watch) await habits.syncHealth(force: true);
     if (sync != null && sync.isOn) {
       await sync.syncNow();
       await sync.whenIdle();
@@ -118,7 +123,17 @@ Future<void> backgroundMain() async {
       theme: get<ThemeProvider>(),
       quotes: get<QuoteProvider>(),
       categories: get<CategoryProvider>(),
+      // What's remembered (no store lookups here), so the watch and Siri
+      // keep Plus after a background run
+      plus: get<PlusStore>(),
+      floorOn: HomeWidgetSync.healthFloor(get<HealthSyncService>()),
     )..start(background: true);
+    // Taps from the watch, widgets or a reminder's Log (starting it applied
+    // them already; this waits for that to finish)
+    await widgets.applyLogs();
+    while (widgets.isApplying) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
     await BackgroundRefresh.run(habits: habits, sync: sync, reason: reason);
     await widgets.write();
     widgets.dispose();

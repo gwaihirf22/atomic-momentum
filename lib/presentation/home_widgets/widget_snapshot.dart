@@ -39,7 +39,9 @@ class WidgetSnapshot {
   /// and [quoteNext] tomorrow's (shown from midnight if the app hasn't
   /// written by then); [shortQuote] and [shortQuoteNext] the same for small
   /// widgets. [findQuote] looks up the quotes kept with each habit. [plus]:
-  /// Momentum Plus is unlocked (Siri and Shortcuts read it).
+  /// Momentum Plus is unlocked (Siri and Shortcuts, and the watch, read it).
+  /// [floorOn]: what Apple Health says a linked habit holds on a day (the
+  /// watch's Crown stops there).
   static Map<String, Object?> build({
     required List<Habit> habits,
     required Momentum? momentum,
@@ -54,6 +56,7 @@ class WidgetSnapshot {
     Quote? Function(String id)? findQuote,
     int weekStart = DateTime.monday,
     bool plus = false,
+    int Function(Habit habit, DateTime day)? floorOn,
   }) {
     final today = DateTime(now.year, now.month, now.day);
     final due = habits.where((h) => h.schedule.isPeriodic && h.isDueOn(today) && h.startedOn(today)).toList();
@@ -74,7 +77,10 @@ class WidgetSnapshot {
               'rising': tracked.where((h) => h.momentum.isRising).length,
             },
       'today': {'done': due.where((h) => h.wasCompletedOnDate(today)).length, 'due': due.length},
-      'habits': [for (final habit in habits) _habit(habit, now, light: light, dark: dark, findQuote: findQuote)],
+      'habits': [
+        for (final habit in habits)
+          _habit(habit, now, light: light, dark: dark, findQuote: findQuote, floor: floorOn?.call(habit, today) ?? 0),
+      ],
       'categories': [
         for (final category in categories) {'id': category.id, 'name': category.name},
       ],
@@ -107,6 +113,7 @@ class WidgetSnapshot {
     required AppTheme light,
     required AppTheme dark,
     Quote? Function(String id)? findQuote,
+    int floor = 0,
   }) {
     final periodic = habit.schedule.isPeriodic;
     // Frozen or on vacation (and not kept): held as it is, no +
@@ -126,6 +133,8 @@ class WidgetSnapshot {
       // A mark drawn on a full ring of that color (the done check)
       'onColor': colors((p) => p.onColor(p.habitColor(habit.color.color))),
       'isBreak': habit.isBreak,
+      // build, quit or limit (added for the watch, like those below)
+      'goal': habit.goal.name,
       'progress': habit.progress,
       'target': habit.target,
       'units': habit.units,
@@ -157,6 +166,13 @@ class WidgetSnapshot {
       // water 8 glasses every day."
       'sentence': _sentence(habit),
       'hardDay': _hardDay(habit),
+      // The watch's "2 min": whether there is one (not while paused, done or
+      // being broken) and whether this period was kept with it
+      'twoMinute': habit.twoMinute == null || habit.isBreak || !periodic
+          ? null
+          : {'can': !paused && !habit.isCompleted, 'done': habit.isTwoMinuteOn(now)},
+      // Apple Health's number today: the watch's Crown can't go below it
+      'floor': floor,
       // "Words for this habit", in order; the widget takes a turn a day
       'quotes': [
         if (findQuote != null)
