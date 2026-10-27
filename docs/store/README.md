@@ -29,7 +29,7 @@ The checklist for the first release. The texts are in this folder:
    - **2026-10-27:**
      - the legal entity and the W-9 are filled in: Individual/Sole proprietor, Non-Exempt Payee;
      - the Schwab bank account is waiting for Apple's approval (up to 24 hours, with no other changes allowed meanwhile).
-2. **EU trader status (DSA):** ~~declare it~~ Paul declared himself a **trader** on 2026-10-27, since Plus and tips are sold in the EU. A trader's address, phone and email show on the EU App Store pages. Apple accepts a P.O. box in place of a home address (App Store Connect → Business to change them).
+2. **EU trader status (DSA):** Paul declared himself a **trader** on 2026-10-27, since Plus and tips are sold in the EU. A trader's address, phone and email show on the EU App Store pages. Apple accepts a P.O. box in place of a home address (App Store Connect → Business to change them).
 3. **App Store Small Business Program** (developer.apple.com/app-store/small-business-program): enrol, so Apple takes 15% instead of 30%.
 4. **The four in-app purchases** (App Store Connect → the app → Monetization → In-App Purchases), each with a display name, description and a review screenshot (the Plus page):
    - `com.paulblake.momentum.plus`: **Non-Consumable**, $1.99, "Momentum Plus", **Family Sharing on**;
