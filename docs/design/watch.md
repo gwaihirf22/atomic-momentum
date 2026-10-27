@@ -31,7 +31,9 @@ Not on the watch: adding or editing habits, Insights, Inspire, Settings, freezes
 - **Logging back.** A tap on the watch is shown at once (the same `WidgetStore.showStep` arithmetic), queued, and sent with `transferUserInfo` (guaranteed, in order, even if the phone is away). The phone's `WatchChannel` takes them into the same queue as the widgets' + (`widget_logs_v1`) and calls `HomeWidgetSync.applyLogs`, so streaks, momentum, Health, reminders and warnings all follow, exactly as for a widget. Taps from before midnight go on that day (each log carries its time).
 - **The Crown and 2 min** need two more log kinds besides "one step": "set to N" and "two-minute". The queue's JSON gains a `kind`; `applyLogs` handles them through `HabitProvider.updateProgressForDate` and `setTwoMinute`. Widgets keep sending plain steps.
 - **The phone asleep or the app not running.** `WCSession` wakes the iPhone app in the background for `transferUserInfo`; with the scene lifecycle, `AppDelegate` activates the session in `didFinishLaunching` (not the engine callback), keeps the logs, and Flutter takes them at the next launch or resume, as widget taps are taken now.
-- **Plus.** The watch app is a **Momentum Plus** feature: without Plus it shows one screen, "The Apple Watch app comes with Momentum Plus", with "Open on iPhone". The snapshot's `plus` field already says. (Notifications reach the watch for everyone, as now.)
+- **Plus or free: undecided** (Paul, October 27). Two ways, and the build is nearly the same for both, because the snapshot's `plus` field already tells the watch which it is (notifications reach the watch for everyone either way):
+  - **All Plus, as part of sync:** the watch is one more of your devices kept in step, like the iPad. Without Plus it shows one screen, "The Apple Watch app comes with Momentum Plus", with "Open on iPhone".
+  - **Basic watch free, Plus adds more:** for everyone: Today with its rings and +, the complications, and a reminder's Log action. With Plus: a habit's own screen (the Crown, 2 min), the Momentum screen and the Smart Stack's "Don't miss twice". The split is a proposal for Paul to change.
 - **Looks.** The watch is always dark: Charged's colors on true black, the habit colors drawn with the Dark palette's lift (`palette.habitColor`), already in the snapshot.
 
 ## Building it
@@ -46,7 +48,7 @@ Not on the watch: adding or editing habits, Insights, Inspire, Settings, freezes
 
 - **Apple Developer:** the watch app's App ID (`com.paulblake.momentum.watchkitapp`) and its widgets' (`…watchkitapp.widgets`), each with App Groups (`group.com.paulblake.momentum`); Xcode's automatic signing can make them once the target exists, signed in with the paid team.
 - **A watch to test on**, paired with the iPhone 12 Pro (Developer Mode on the watch too).
-- **Decide:** whether the watch is Plus or free. The proposal says Plus (it's new, and like the iPad it's "more devices"); free would make the app's best quick-logging story available to everyone.
+- **Decide:** the watch all Plus (part of sync), or a free basic watch with Plus adding more (see "Plus or free" above). Free basics would make the app's best quick-logging story available to everyone; all Plus keeps it with the iPad as "more devices".
 
 ## Open questions
 
