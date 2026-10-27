@@ -83,9 +83,10 @@ class AppIcons {
       all.where((icon) => icon.offeredOn(platform)).toList();
 
   /// What a new install shows: matching the system where it can (iOS),
-  /// otherwise Charged.
+  /// otherwise Light (Android takes Charged instead when it's first opened
+  /// in dark mode, see MainActivity.kt).
   static AppIconChoice defaultFor(TargetPlatform platform) =>
-      platform == TargetPlatform.iOS ? system : charged;
+      platform == TargetPlatform.iOS ? system : light;
 
   /// The choice for what the platform reports showing: an iOS icon name
   /// (null for the primary) or an Android alias.

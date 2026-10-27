@@ -3,6 +3,8 @@ package com.paulblake.momentum
 import android.content.ComponentName
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.os.Bundle
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -12,6 +14,27 @@ class MainActivity : FlutterFragmentActivity() {
     // Settings → App icon: the launcher alias picked, switched to once the
     // app leaves the screen (switching while it shows can close it)
     private var pendingIcon: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        firstIcon()
+    }
+
+    // A new install starts on Light; opened first in dark mode, it takes
+    // Charged instead, once. Android can't follow dark mode the way iOS's
+    // icon does, so after that only Settings → App icon changes it
+    private fun firstIcon() {
+        val prefs = getSharedPreferences("momentum_icon", MODE_PRIVATE)
+        if (prefs.getBoolean("firstIconDone", false)) return
+        prefs.edit().putBoolean("firstIconDone", true).apply()
+        val dark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // Never over an icon someone picked (one set before this check existed)
+        val neverPicked = iconActivities().all {
+            packageManager.getComponentEnabledSetting(ComponentName(this, it.name)) ==
+                PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+        }
+        if (dark && neverPicked && pendingIcon == null) pendingIcon = "IconCharged"
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

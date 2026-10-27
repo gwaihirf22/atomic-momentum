@@ -16,7 +16,7 @@
     <application
         android:label="Momentum"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher_light">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -55,7 +55,7 @@
         <activity-alias
             android:name=".IconCharged"
             android:exported="true"
-            android:enabled="true"
+            android:enabled="false"
             android:icon="@mipmap/ic_launcher"
             android:targetActivity=".MainActivity">
             <intent-filter>
@@ -66,7 +66,7 @@
         <activity-alias
             android:name=".IconLight"
             android:exported="true"
-            android:enabled="false"
+            android:enabled="true"
             android:icon="@mipmap/ic_launcher_light"
             android:targetActivity=".MainActivity">
             <intent-filter>
