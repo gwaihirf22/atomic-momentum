@@ -26,7 +26,6 @@ import '../presentation/widgets/momentum_chart.dart';
 import '../presentation/widgets/momentum_ring.dart';
 import '../presentation/widgets/stat_card.dart';
 import 'achievements_screen.dart';
-import 'habit_detail_screen.dart';
 import 'heatmap_screen.dart';
 import 'weekly_review_screen.dart';
 import '../presentation/tour/tour_events.dart';
@@ -965,9 +964,9 @@ class _HealthInsightsCard extends StatelessWidget {
     return StatCard(
       key: const Key('insightsHealth'),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(children: [
-          const Expanded(child: StatCardHeading('Health insights')),
-          const InfoButton(topic: InfoTopic.healthInsights),
+        const Row(children: [
+          Expanded(child: StatCardHeading('Health insights')),
+          InfoButton(topic: InfoTopic.healthInsights),
         ]),
         const SizedBox(height: 8),
         if (findings.isEmpty)

@@ -2,7 +2,7 @@
 
 Things to do that aren't on the product roadmap, or that are smaller than a roadmap item: performance, polish, loose ends and decisions still to make. The roadmap itself (statistics, onboarding, store readiness, routines, widgets) is in [strategy/product-strategy.md](strategy/product-strategy.md#4-roadmap).
 
-*Last updated October 21, 2026.* Move an item to "Done" with its commit when it's built.
+*Last updated October 26, 2026.* Move an item to "Done" with its commit when it's built.
 
 ## Next up: Paul's to-dos (October 18, 2026)
 
@@ -96,6 +96,13 @@ How it fits together:
 
 - **Health:** accounts and sync, background delivery, and what raising a target does to past days. See [design/health.md](design/health.md) ("Later").
 - **Inspire:** widgets, a habit's quote as its reminder text, and quotes on moments (a comeback, a two-minute day, a habit formed). See [design/inspire.md](design/inspire.md) ("Later").
+
+## Momentum Plus loose ends (1.1, on `plus`)
+
+- **Year in review:** a December 31 notification ("Your year in review is ready"), which needs its own planner like `WeeklyReviewPlanner` and a notification simulator scenario; and a check of `YearReview` against the year simulator's `Reference` on its last day. Neither was done in the first round (October 26).
+- **Health insights:** more drivers once there's data to say they help (mindful minutes, workouts), and an Insights line per habit ("You read more after good sleep") instead of only the other habits together.
+- **Siri and Shortcuts:** check them on Paul's iPhone (the simulator build lists them; Siri itself wasn't tried); a "Two-minute version" intent, and an interactive snippet instead of a dialog.
+- **Plus mention:** count how often it's dismissed against opened, once there's a way to know without analytics (there isn't, by design; ask testers instead).
 
 ## Quality
 
