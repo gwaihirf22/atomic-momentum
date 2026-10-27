@@ -537,8 +537,9 @@ enum BackgroundRun {
   }
 
   /// Has Dart do the work for [reason]: the app's own, or the background
-  /// engine's. [completion] runs once, on the main thread.
-  static func run(_ reason: String, completion: @escaping (Bool) -> Void) {
+  /// engine's. [completion] runs once, on the main thread. [force] starts
+  /// the background engine even with the app opening on screen (a test).
+  static func run(_ reason: String, force: Bool = false, completion: @escaping (Bool) -> Void) {
     onMain {
       var answered = false
       let answer: (Bool) -> Void = { ok in
@@ -553,6 +554,12 @@ enum BackgroundRun {
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + most) { answer(false) }
         return
+      }
+      // Opening on screen, its engine not up yet: the app does all this as
+      // it loads, and a second engine beside it would only hold the launch
+      if engine == nil, !force, UIApplication.shared.applicationState != .background {
+        trace("Run (\(reason)) left to the app opening")
+        return answer(true)
       }
       finishing.append(answer)
       // Already running: hears when it ends
@@ -675,7 +682,7 @@ enum BackgroundRun {
   static func testAtLaunch() {
     guard _isDebugAssertConfiguration(), UserDefaults.standard.bool(forKey: "momentumBackgroundTest") else { return }
     trace("Test: a background run at launch")
-    run("refresh") { ok in trace("Test run finished: \(ok)") }
+    run("refresh", force: true) { ok in trace("Test run finished: \(ok)") }
   }
 }
 
