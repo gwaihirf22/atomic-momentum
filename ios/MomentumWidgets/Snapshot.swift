@@ -16,6 +16,9 @@ struct Snapshot: Decodable {
   let quoteNext: QuoteInfo?
   let shortQuote: QuoteInfo?
   let shortQuoteNext: QuoteInfo?
+  /// Momentum Plus is this person's (Siri and Shortcuts work); absent from
+  /// snapshots written before it existed.
+  let plus: Bool?
 
   static let supportedVersion = 1
 

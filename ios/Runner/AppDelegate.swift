@@ -127,6 +127,8 @@ enum WidgetChannel {
       switch call.method {
       case "save":
         if let json = call.arguments as? String { WidgetStore.saveSnapshot(json) }
+        // Siri learns the habits' names for "Log water in Momentum"
+        if #available(iOS 17.0, *) { MomentumShortcuts.updateAppShortcutParameters() }
         result(nil)
       case "takeLogs":
         result(WidgetStore.takeLogs())

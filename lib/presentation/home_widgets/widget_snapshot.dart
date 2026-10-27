@@ -38,7 +38,8 @@ class WidgetSnapshot {
   /// person picked one), so widgets match the app. [quote] is today's quote
   /// and [quoteNext] tomorrow's (shown from midnight if the app hasn't
   /// written by then); [shortQuote] and [shortQuoteNext] the same for small
-  /// widgets. [findQuote] looks up the quotes kept with each habit.
+  /// widgets. [findQuote] looks up the quotes kept with each habit. [plus]:
+  /// Momentum Plus is unlocked (Siri and Shortcuts read it).
   static Map<String, Object?> build({
     required List<Habit> habits,
     required Momentum? momentum,
@@ -52,6 +53,7 @@ class WidgetSnapshot {
     List<Category> categories = const [],
     Quote? Function(String id)? findQuote,
     int weekStart = DateTime.monday,
+    bool plus = false,
   }) {
     final today = DateTime(now.year, now.month, now.day);
     final due = habits.where((h) => h.schedule.isPeriodic && h.isDueOn(today) && h.startedOn(today)).toList();
@@ -81,6 +83,9 @@ class WidgetSnapshot {
       'quoteNext': quoteNext == null ? null : _quote(quoteNext),
       'shortQuote': shortQuote == null ? null : _quote(shortQuote),
       'shortQuoteNext': shortQuoteNext == null ? null : _quote(shortQuoteNext),
+      // Momentum Plus is this person's: Siri and Shortcuts work (an added
+      // field, so widgets reading version 1 are unaffected)
+      'plus': plus,
     };
   }
 

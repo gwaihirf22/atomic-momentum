@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/injection/injection_container.dart';
 import '../../core/services/home_widget_bridge.dart';
+import '../../core/services/plus_store.dart';
 import '../providers/category_provider.dart';
 import '../providers/habit_provider.dart';
 import '../providers/quote_provider.dart';
@@ -36,6 +37,7 @@ class _HomeWidgetHostState extends State<HomeWidgetHost> {
       theme: context.read<ThemeProvider>(),
       quotes: context.read<QuoteProvider>(),
       categories: context.read<CategoryProvider>(),
+      plus: sl.isRegistered<PlusStore>() ? get<PlusStore>() : null,
     )..start();
   }
 
