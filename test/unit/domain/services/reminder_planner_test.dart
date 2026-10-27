@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:atomic_momentum/domain/entities/category.dart';
 import 'package:atomic_momentum/domain/entities/habit.dart';
+import 'package:atomic_momentum/domain/entities/habit_color.dart';
+import 'package:atomic_momentum/domain/entities/habit_goal.dart';
 import 'package:atomic_momentum/domain/entities/reminder_settings.dart';
 import 'package:atomic_momentum/domain/entities/reset_frequency.dart';
 import 'package:atomic_momentum/domain/services/reminder_planner.dart';
@@ -99,6 +102,22 @@ void main() {
       expect(ReminderPlanner.plan(off, now: eightAm), isEmpty);
       expect(ReminderPlanner.plan(habit().copyWith(), now: eightAm), isNotEmpty);
     });
+  });
+
+  test("a habit being built gets the Log button; one being broken never does (it would log a slip)", () {
+    expect(ReminderPlanner.plan(habit(), now: eightAm).every((r) => r.canLog), isTrue);
+    final smoking = Habit.create(
+      name: 'Smoking',
+      target: 0,
+      units: '',
+      color: HabitColor.blue,
+      categoryId: BuiltInCategoryIds.body,
+      goal: HabitGoal.quit,
+      reminder: ReminderSettings.smart(time: nine),
+    );
+    final checkIns = ReminderPlanner.plan(smoking, now: eightAm);
+    expect(checkIns, isNotEmpty);
+    expect(checkIns.any((r) => r.canLog), isFalse);
   });
 
   test('custom reminders fire on the chosen weekdays', () {

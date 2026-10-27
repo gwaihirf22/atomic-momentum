@@ -1,3 +1,4 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -56,6 +57,28 @@ void main() {
       expect(NotificationService.vacationBackRequests.value, before + 1);
       expect(NotificationService.focusRequests.value, isNull);
       expect(NotificationService.habitIdFromPayload(NotificationService.vacationPayload), isNull);
+    });
+  });
+
+  group("a reminder's Log button", () {
+    test('is registered at setup, without opening the app', () {
+      final category = NotificationService.initializationSettings.iOS!.notificationCategories
+          .singleWhere((c) => c.identifier == NotificationService.logCategory);
+      final log = category.actions.single;
+      expect(log.identifier, NotificationService.logAction);
+      expect(log.options, isNot(contains(DarwinNotificationActionOption.foreground)),
+          reason: 'logged where it was tapped, on the lock screen or the watch');
+    });
+
+    test('only reminders that can log carry it', () {
+      expect(NotificationService.detailsFor(canLog: true).iOS!.categoryIdentifier, NotificationService.logCategory);
+      expect(NotificationService.detailsFor().iOS!.categoryIdentifier, 'habit_reminder');
+    });
+
+    test('is handled natively: the app is asked to show nothing', () {
+      NotificationService.focusRequests.value = null;
+      NotificationService.handleResponse(NotificationService.logAction, '${NotificationService.reminderPayloadPrefix}h1');
+      expect(NotificationService.focusRequests.value, isNull);
     });
   });
 }

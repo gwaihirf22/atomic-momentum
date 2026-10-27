@@ -158,6 +158,10 @@ class _PlusScreenState extends State<PlusScreen> {
             (CupertinoIcons.sparkles, HabitColor.amber, 'A year in review', 'Your year so far, on Insights'),
             (CupertinoIcons.heart_fill, HabitColor.red, 'Health insights', 'How sleep and steps shape your habits'),
             (CupertinoIcons.mic_fill, HabitColor.purple, 'Siri and Shortcuts', 'Log a habit without opening the app'),
+            // The watch's basics (Today, complications, Log on a reminder)
+            // are free; Plus adds these
+            (CupertinoIcons.time, HabitColor.orange, 'Apple Watch',
+                "A habit's own screen with the Crown, and momentum; today's habits are free"),
           ])
             SettingsTile(icon: icon, iconColor: color.color, title: title, subtitle: subtitle),
         ],
@@ -167,7 +171,6 @@ class _PlusScreenState extends State<PlusScreen> {
         footer: "Nothing that's free today will ever cost money. Buy once, get everything that comes.",
         children: [
           for (final (icon, color, title, subtitle) in [
-            (CupertinoIcons.time, HabitColor.orange, 'Apple Watch', 'Log and see your rings from your wrist'),
             (CupertinoIcons.paintbrush_fill, HabitColor.pink, 'New icons and themes', 'More ways to make it yours'),
           ])
             SettingsTile(icon: icon, iconColor: color.color, title: title, subtitle: subtitle),

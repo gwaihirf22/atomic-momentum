@@ -16,6 +16,8 @@ import UIKit
     BackgroundRun.testAtLaunch()
     // Before launch ends, as iOS asks for Health's background delivery
     HealthWatch.startAtLaunch()
+    // The Apple Watch app: a log it sent may be what launched the app
+    WatchLink.start()
     NotificationCenter.default.addObserver(
       forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
     ) { _ in BackgroundRun.scheduleRefresh() }
@@ -34,6 +36,27 @@ import UIKit
         application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
     }
     BackgroundRun.push(reason) { changed in completionHandler(changed ? .newData : .noData) }
+  }
+
+  /// A reminder's Log button (category `habit_reminder_log`, on the lock
+  /// screen or the watch): one step on its habit, logged as a widget's +
+  /// without opening the app. Every other response goes to the plugins.
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    guard response.actionIdentifier == "log_step",
+          let payload = response.notification.request.content.userInfo["payload"] as? String
+    else {
+      return super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
+    }
+    // Reminders carry "reminder|<habitId>", warnings the bare id
+    let habitId = payload.hasPrefix("reminder|") ? String(payload.dropFirst("reminder|".count)) : payload
+    Task { @MainActor in
+      await WatchLink.deliver(WidgetStore.newLog(habitId: habitId, at: Date()))
+      completionHandler()
+    }
   }
 
   /// The app runs on the scene lifecycle (iOS 27 won't launch apps without
@@ -151,7 +174,10 @@ enum WidgetChannel {
     channel.setMethodCallHandler { call, result in
       switch call.method {
       case "save":
-        if let json = call.arguments as? String { WidgetStore.saveSnapshot(json) }
+        if let json = call.arguments as? String {
+          WidgetStore.saveSnapshot(json)
+          WatchLink.send(json)
+        }
         // Siri learns the habits' names for "Log water in Momentum"
         if #available(iOS 17.0, *) { MomentumShortcuts.updateAppShortcutParameters() }
         result(nil)

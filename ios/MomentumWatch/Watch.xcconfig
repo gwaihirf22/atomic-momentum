@@ -1,0 +1,4 @@
+// The watch app's and its complications' settings: only the app's version
+// (from Flutter), so the watch always matches the phone. Not the Runner's
+// xcconfigs, which bring in CocoaPods.
+#include "../Flutter/Generated.xcconfig"

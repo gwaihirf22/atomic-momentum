@@ -40,6 +40,11 @@ ICONS = [
     ('light', 'app_icon_source_light.png', 'AppIcon-Light', 'ic_launcher_light'),
 ]
 
+# The Apple Watch app's icon (the watch is always dark; watchOS masks it to a
+# circle)
+WATCH = 'charged'
+WATCH_XCASSETS = 'ios/MomentumWatch/Assets.xcassets'
+
 # The primary icon: light in light mode, dark in dark mode (iOS 18+)
 PRIMARY_LIGHT = 'light'
 PRIMARY_DARK = 'charged'
@@ -216,6 +221,19 @@ def write_appiconset(name, any_image, dark_image):
         f.write('\n')
 
 
+def write_watch_icon(image):
+    folder = os.path.join(WATCH_XCASSETS, 'AppIcon.appiconset')
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(WATCH_XCASSETS, 'Contents.json'), 'w') as f:
+        json.dump({'info': {'author': 'xcode', 'version': 1}}, f, indent=2)
+        f.write('\n')
+    image.convert('RGB').save(os.path.join(folder, 'icon.png'))
+    images = [{'filename': 'icon.png', 'idiom': 'universal', 'platform': 'watchos', 'size': '1024x1024'}]
+    with open(os.path.join(folder, 'Contents.json'), 'w') as f:
+        json.dump({'images': images, 'info': {'author': 'xcode', 'version': 1}}, f, indent=2)
+        f.write('\n')
+
+
 def main():
     icons = {icon_id: full_bleed(os.path.join(BRANDING, source)) for icon_id, source, _, _ in ICONS}
     # Every icon is the same logo in different colours. Each one's colours
@@ -240,6 +258,8 @@ def main():
     write_adaptive_colours(colours)
     write_appiconset('AppIcon', icons[PRIMARY_LIGHT], icons[PRIMARY_DARK])
     print(f'AppIcon: {PRIMARY_LIGHT}, {PRIMARY_DARK} in dark mode')
+    write_watch_icon(icons[WATCH])
+    print(f'Apple Watch: {WATCH}')
 
 
 if __name__ == '__main__':

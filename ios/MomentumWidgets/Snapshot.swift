@@ -141,6 +141,19 @@ struct HabitInfo: Decodable, Identifiable {
   let sentence: [SentencePart]?
   /// "fill one glass" (On a hard day, I'll just …).
   let hardDay: String?
+  /// "build", "quit" or "limit" (added for the watch; nil in older snapshots).
+  var goal: String?
+  /// The watch's "2 min": nil without a two-minute version.
+  var twoMinute: TwoMinuteInfo?
+  /// What Apple Health shows today: the watch's Crown can't go below it.
+  var floor: Int?
+
+  struct TwoMinuteInfo: Decodable {
+    /// It can be used now (not done, frozen or on vacation).
+    var can: Bool
+    /// This period was kept with it.
+    var done: Bool
+  }
 
   /// The habit's quote for [date]: they take turns, a new one each day.
   func quote(on date: Date) -> QuoteInfo? {
@@ -160,6 +173,7 @@ struct HabitInfo: Decodable, Identifiable {
     fresh.progress = 0
     fresh.done = false
     fresh.frozen = false
+    if fresh.twoMinute != nil { fresh.twoMinute = TwoMinuteInfo(can: true, done: false) }
     let unitsSuffix = units.isEmpty ? "" : " \(units)"
     if isBreak {
       fresh.text = target == 0 ? "Clean \(period)" : "0 of \(target)\(unitsSuffix) \(period)"

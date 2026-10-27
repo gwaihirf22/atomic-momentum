@@ -27,14 +27,19 @@ if [ -z "$device" ]; then
 fi
 
 # Each target's entitlements are its own setting (RUNNER_ENTITLEMENTS,
-# WIDGETS_ENTITLEMENTS), so overriding one doesn't touch the other
+# WIDGETS_ENTITLEMENTS, and the Apple Watch app's WATCH_ENTITLEMENTS and
+# WATCH_WIDGETS_ENTITLEMENTS), so overriding one doesn't touch the others
 # (and MOMENTUM_ICLOUD tells the app whether it was signed with iCloud, for sync)
 entitlements="Runner/Runner-PersonalTeam.entitlements"
 widgets_entitlements=""
+watch_entitlements=""
+watch_widgets_entitlements=""
 icloud="NO"
 if [ "${FULL_ENTITLEMENTS:-0}" = "1" ]; then
   entitlements="Runner/Runner.entitlements"
   widgets_entitlements="MomentumWidgets/MomentumWidgets.entitlements"
+  watch_entitlements="MomentumWatch/MomentumWatch.entitlements"
+  watch_widgets_entitlements="MomentumWatchWidgets/MomentumWatchWidgets.entitlements"
   icloud="YES"
 fi
 
@@ -58,7 +63,9 @@ mkdir -p "$derived"
 status=0
 xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
   -destination "id=$device" -derivedDataPath "$derived" -allowProvisioningUpdates \
-  RUNNER_ENTITLEMENTS="$entitlements" WIDGETS_ENTITLEMENTS="$widgets_entitlements" MOMENTUM_ICLOUD="$icloud" build >"$log" 2>&1 || status=$?
+  RUNNER_ENTITLEMENTS="$entitlements" WIDGETS_ENTITLEMENTS="$widgets_entitlements" \
+  WATCH_ENTITLEMENTS="$watch_entitlements" WATCH_WIDGETS_ENTITLEMENTS="$watch_widgets_entitlements" \
+  MOMENTUM_ICLOUD="$icloud" build >"$log" 2>&1 || status=$?
 grep -E "error:|warning: .*(sign|profile)|BUILD (SUCCEEDED|FAILED)" "$log" || true
 if [ "$status" -ne 0 ] || [ ! -d "$app" ]; then
   echo "Build failed: nothing installed (full log: $log)." >&2

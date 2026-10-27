@@ -17,16 +17,22 @@ class PlannedReminder extends Equatable {
   /// How it arrives: the habit's sound and time sensitivity.
   final HabitNotify notify;
 
+  /// Whether it carries a Log button (a step toward the target, from the
+  /// lock screen or the watch); never for a habit being broken, where it
+  /// would log a slip.
+  final bool canLog;
+
   const PlannedReminder({
     required this.habitId,
     required this.at,
     required this.title,
     required this.body,
     this.notify = HabitNotify.standard,
+    this.canLog = false,
   });
 
   @override
-  List<Object?> get props => [habitId, at, title, body, notify];
+  List<Object?> get props => [habitId, at, title, body, notify, canLog];
 
   @override
   String toString() => 'PlannedReminder($habitId at $at: $body)';
@@ -96,6 +102,7 @@ class ReminderPlanner {
             habitId: habit.id,
             at: at(day),
             notify: habit.notify,
+            canLog: !habit.isBreak,
             title: habit.name,
             body:
                 reminder.customMessage?.trim().isNotEmpty == true ? reminder.customMessage!.trim() : _body(habit, day),

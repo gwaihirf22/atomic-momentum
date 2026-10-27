@@ -47,7 +47,7 @@ class LocalNotificationReminderScheduler implements ReminderScheduler {
       title: reminder.title,
       body: reminder.body,
       habitId: reminder.habitId,
-      details: _defaults().detailsFor(reminder.notify),
+      details: _defaults().detailsFor(reminder.notify, canLog: reminder.canLog),
     );
   }
 

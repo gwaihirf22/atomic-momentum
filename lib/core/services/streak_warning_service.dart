@@ -32,7 +32,7 @@ class LocalNotificationStreakWarningScheduler implements StreakWarningScheduler 
 
   @override
   Future<void> schedule(String habitId, StreakWarning warning) {
-    return NotificationService.scheduleStreakWarning(habitId, warning, details: _defaults().detailsFor(warning.notify));
+    return NotificationService.scheduleStreakWarning(habitId, warning, details: _defaults().detailsFor(warning.notify, canLog: true));
   }
 
   @override

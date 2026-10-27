@@ -81,11 +81,16 @@ class NotificationService {
     requestBadgePermission: false,
     requestSoundPermission: false,
     // Vacation check-ins carry an "I'm back" button; it opens the app, which
-    // ends vacation mode
+    // ends vacation mode. Reminders of habits being built carry "Log", which
+    // logs a step without opening the app (on the lock screen or the watch;
+    // AppDelegate takes it, as a widget's +)
     notificationCategories: [
       DarwinNotificationCategory(vacationCategory, actions: [
         DarwinNotificationAction.plain(vacationBackAction, "I'm back",
             options: {DarwinNotificationActionOption.foreground}),
+      ]),
+      DarwinNotificationCategory(logCategory, actions: [
+        DarwinNotificationAction.plain(logAction, 'Log'),
       ]),
     ],
   );
@@ -199,6 +204,8 @@ class NotificationService {
   /// A tapped notification, or one of its buttons ([actionId]).
   @visibleForTesting
   static void handleResponse(String? actionId, String? payload) {
+    // Logged natively without opening the app; nothing to show
+    if (actionId == logAction) return;
     if (actionId == vacationBackAction) {
       vacationBackRequests.value++;
       return;
@@ -259,6 +266,11 @@ class NotificationService {
   /// The vacation check-ins' category (iOS) and their "I'm back" button.
   static const vacationCategory = 'vacation';
   static const vacationBackAction = 'vacation_back';
+
+  /// The category (iOS) of reminders and warnings with a Log button, and the
+  /// button (handled natively: AppDelegate.swift, `logAction`).
+  static const logCategory = 'habit_reminder_log';
+  static const logAction = 'log_step';
 
   /// Payloads of habit reminders start with this, so they can be found and
   /// replaced as a set (see ReminderService).
@@ -580,7 +592,12 @@ class NotificationService {
   /// How a notification arrives: [sound] (a bundled tone, iOS's own, or
   /// silent) and whether it may break through Focus. Android keeps one
   /// channel per sound, since a channel's sound can't change once made.
-  static NotificationDetails detailsFor({NotifySound sound = NotifySound.system, bool timeSensitive = false}) {
+  /// [canLog]: with the Log button (habits being built).
+  static NotificationDetails detailsFor({
+    NotifySound sound = NotifySound.system,
+    bool timeSensitive = false,
+    bool canLog = false,
+  }) {
     final silent = sound == NotifySound.silent;
     final file = sound.fileName;
     final android = AndroidNotificationDetails(
@@ -595,7 +612,7 @@ class NotificationService {
       icon: '@mipmap/ic_launcher',
     );
     final darwin = DarwinNotificationDetails(
-      categoryIdentifier: 'habit_reminder',
+      categoryIdentifier: canLog ? logCategory : 'habit_reminder',
       threadIdentifier: 'habit_reminders',
       presentSound: !silent,
       sound: file,
@@ -678,6 +695,6 @@ class NotifyDefaults {
   /// Whether [notify] arrives as time-sensitive.
   bool timeSensitiveFor(HabitNotify notify) => notify.timeSensitive && allowTimeSensitive;
 
-  NotificationDetails detailsFor(HabitNotify notify) =>
-      NotificationService.detailsFor(sound: soundFor(notify), timeSensitive: timeSensitiveFor(notify));
+  NotificationDetails detailsFor(HabitNotify notify, {bool canLog = false}) => NotificationService.detailsFor(
+      sound: soundFor(notify), timeSensitive: timeSensitiveFor(notify), canLog: canLog);
 }

@@ -35,7 +35,8 @@ The checklist for the first release. The texts are in this folder:
    - `com.paulblake.momentum.plus`: **Non-Consumable**, $1.99, "Momentum Plus", **Family Sharing on**;
    - `com.paulblake.momentum.tip.small` / `.medium` / `.large`: **Consumable**, $0.99 / $2.99 / $4.99, "Small tip" / "Medium tip" / "Large tip".
 5. **iCloud for TestFlight:** CloudKit Console → the `iCloud.com.paulblake.momentum` container → **Deploy Schema Changes** to Production (TestFlight and the App Store sync in production).
-6. **The build:** on `plus`, set `version: 1.1.0+1` in `pubspec.yaml`, `flutter build ipa`, upload, and add it to TestFlight. Testers buy with their own Apple Account, free (sandbox).
+6. **The Apple Watch's App IDs** (once, in Xcode; the command line can't use Paul's account): open `ios/Runner.xcworkspace`, and on the `MomentumWatch` and `MomentumWatchWidgets` targets → Signing & Capabilities let automatic signing (team 9EWP23T2HE) register `com.paulblake.momentum.watchkitapp` and `.watchkitapp.widgets` with the App Group. Watch screenshots for the listing (Series 11 46 mm, Ultra).
+7. **The build:** on `plus`, set `version: 1.1.0+1` in `pubspec.yaml`, `flutter build ipa`, upload, and add it to TestFlight. Testers buy with their own Apple Account, free (sandbox).
 
 The products are submitted for review with the 1.1 version itself.
 

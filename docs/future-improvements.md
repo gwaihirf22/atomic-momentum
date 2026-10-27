@@ -102,6 +102,8 @@ How it fits together:
 - **Year in review:** a December 31 notification ("Your year in review is ready"), which needs its own planner like `WeeklyReviewPlanner` and a notification simulator scenario; and a check of `YearReview` against the year simulator's `Reference` on its last day. Neither was done in the first round (October 26).
 - **Health insights:** more drivers once there's data to say they help (mindful minutes, workouts), and an Insights line per habit ("You read more after good sleep") instead of only the other habits together.
 - **Siri and Shortcuts:** check them on Paul's iPhone (the simulator build lists them; Siri itself wasn't tried); a "Two-minute version" intent, and an interactive snippet instead of a dialog.
+- **Apple Watch:** try it on Paul's watch (the Crown, 2 min, complications on a face, the Smart Stack, a reminder's Log from the wrist, a tap with the iPhone app closed); a + on complications and the Smart Stack (a watch widget can't reach the phone itself: it would need the watch app to pass its taps on); reading Apple Health on the watch directly instead of the phone's last number.
+- **Garmin watches** (idea, Paul 2026-10-27): a Garmin app would be a separate one, on Garmin's Connect IQ (Monkey C, its own store), talking to the phone through the Connect IQ Mobile SDK. Meanwhile Garmin Connect writes steps, sleep and workouts into Apple Health and Health Connect, so Health-linked habits already fill in from a Garmin.
 - **Plus mention:** count how often it's dismissed against opened, once there's a way to know without analytics (there isn't, by design; ask testers instead).
 
 ## Quality

@@ -1,6 +1,6 @@
 # Apple Watch
 
-*Proposed October 26, 2026, for 1.1. Not built: waiting for Paul's review of the mockups (artifact `9abHpkxgwsjBy32pavyc7J`: the app's three screens, faces and complications, a reminder's Log button, the screen without Plus).*
+*Proposed October 26, 2026; **built October 27** on `plus`, for 1.1 (mockups: artifact `9abHpkxgwsjBy32pavyc7J`). Paul's decisions: the basics are free and Plus adds more; everything in the design ships in the first build. Not yet tried on a real watch (see "Testing").*
 
 The watch is where a habit gets logged in two seconds: raise the wrist after a run, after a glass of water, after ten minutes of reading. It doesn't replace the phone. It shows today, takes a tap, and tells you where your momentum stands.
 
@@ -14,7 +14,7 @@ The watch is where a habit gets logged in two seconds: raise the wrist after a r
 | **Complications** | Circular: today's count ("3/6") or one habit's ring; rectangular: one habit's name, ring and streak; corner: momentum's gauge; inline: "Momentum 74 · Strong". The Smart Stack gets a relevant widget: the habit due soonest, or "Don't miss twice" on a day that would end a streak. |
 | **Notifications** | Reminders and "Don't miss twice" already reach the watch (iOS mirrors them). 1.1 adds a **Log** action to a reminder, so "Time to drink water" can be answered from the wrist. |
 
-Not on the watch: adding or editing habits, Insights, Inspire, Settings, freezes, vacation mode. A long press on Today offers "Open on iPhone".
+Not on the watch: adding or editing habits, Insights, Inspire, Settings, freezes, vacation mode. (No "Open on iPhone": watchOS has no way to open the iPhone app.)
 
 ## How it works
 
@@ -26,32 +26,36 @@ Not on the watch: adding or editing habits, Insights, Inspire, Settings, freezes
  AppDelegate WatchChannel ◀── transferUserInfo(log) ◀── queued logs (shown at once)
 ```
 
-- **The snapshot is the source.** The watch draws the same `WidgetSnapshot` the widgets draw (habits, steps, rings, streaks, momentum, today's count, the palette), so it always agrees with the phone and the widgets. `Snapshot.swift` and its pieces already live in `ios/MomentumWidgets/Shared/`; the watch target compiles them too.
+- **The snapshot is the source.** The watch draws the same `WidgetSnapshot` the widgets draw (habits, steps, rings, streaks, momentum, today's count, the palette), so it always agrees with the phone and the widgets. `ios/MomentumWidgets/Snapshot.swift`, `Shared/WidgetStore.swift` and `Pieces.swift` are compiled into the watch app and its complications too (`HabitEntity.swift` into the complications).
 - **Getting it there.** The phone sends the snapshot with `WCSession.updateApplicationContext` each time `HomeWidgetSync` writes it (the latest replaces the last, delivered when the watch wakes). A watch with no phone nearby shows the last one, with the period ends the snapshot already carries so a new day starts over on time.
-- **Logging back.** A tap on the watch is shown at once (the same `WidgetStore.showStep` arithmetic), queued, and sent with `transferUserInfo` (guaranteed, in order, even if the phone is away). The phone's `WatchChannel` takes them into the same queue as the widgets' + (`widget_logs_v1`) and calls `HomeWidgetSync.applyLogs`, so streaks, momentum, Health, reminders and warnings all follow, exactly as for a widget. Taps from before midnight go on that day (each log carries its time).
-- **The Crown and 2 min** need two more log kinds besides "one step": "set to N" and "two-minute". The queue's JSON gains a `kind`; `applyLogs` handles them through `HabitProvider.updateProgressForDate` and `setTwoMinute`. Widgets keep sending plain steps.
-- **The phone asleep or the app not running.** `WCSession` wakes the iPhone app in the background for `transferUserInfo`; with the scene lifecycle, `AppDelegate` activates the session in `didFinishLaunching` (not the engine callback), keeps the logs, and Flutter takes them at the next launch or resume, as widget taps are taken now.
-- **Plus or free: undecided** (Paul, October 27). Two ways, and the build is nearly the same for both, because the snapshot's `plus` field already tells the watch which it is (notifications reach the watch for everyone either way):
-  - **All Plus, as part of sync:** the watch is one more of your devices kept in step, like the iPad. Without Plus it shows one screen, "The Apple Watch app comes with Momentum Plus", with "Open on iPhone".
-  - **Basic watch free, Plus adds more:** for everyone: Today with its rings and +, the complications, and a reminder's Log action. With Plus: a habit's own screen (the Crown, 2 min), the Momentum screen and the Smart Stack's "Don't miss twice". The split is a proposal for Paul to change.
+- **Logging back.** A tap on the watch is shown at once (`WidgetStore.showStep`, `showSet`, `showTwoMinute`), then sent: as a message when the phone is reachable (at once, waking the iPhone app), else with `transferUserInfo` (guaranteed, in order, delivered when it is). The phone's `WatchLink` (`ios/Runner/WatchLink.swift`) takes each log once by its id (`watch_logs_seen_v1`) into the widgets' queue (`widget_logs_v1`): the running app applies it (`AppHook.logsWaiting` → `HomeWidgetSync.applyLogs`), a closed one through a background engine (`BackgroundRun.run("watch")`, no Health read), and one opening on screen as it loads. Streaks, momentum, Health, reminders and warnings follow, exactly as for a widget. Taps from before midnight go on that day (each log carries its day).
+- **The Crown and 2 min** are two more log kinds (`WidgetLogKind`): `set` (with `amount`, the period's total) and `twoMinute`. `HomeWidgetSync._apply` sets today's total as the card does, or an earlier day's own amount by the difference, never past the target (or what's already over it) and never below Apple Health's number (the snapshot's `floor`); 2 min goes through `setTwoMinute`. Habits being broken take none of them. Widgets keep sending plain steps.
+- **The phone asleep or the app not running.** `WatchLink.start()` runs in `didFinishLaunching` (not the engine callback), so a log that launched the app in the background is taken; a background engine applies it and writes the snapshot, which goes back to the watch.
+- **A reminder's Log button.** Reminders and "Don't miss twice" of habits being built carry category `habit_reminder_log` with a background "Log" action (`PlannedReminder.canLog`, never for a habit being broken); iOS shows it on the watch too. `AppDelegate.userNotificationCenter(_:didReceive:)` takes it natively and hands one step to `WatchLink.deliver`, the same path as the watch's taps (no second Dart isolate).
+- **Plus (decided October 27): the basics are free, Plus adds more.** For everyone: Today with its rings and +, every complication, and a reminder's Log button. With Plus: a habit's own screen (the Crown, 2 min) and the Momentum page; the Smart Stack brings up "Don't miss twice" only with Plus. Without Plus, tapping a habit or swiping to Momentum shows what comes with Plus (`PlusLockedView`). The watch reads the snapshot's `plus`, which background runs now keep too (they used to write `false`).
 - **Looks.** The watch is always dark: Charged's colors on true black, the habit colors drawn with the Dark palette's lift (`palette.habitColor`), already in the snapshot.
 
-## Building it
+## What was built
 
-1. **Xcode:** a watchOS App target `MomentumWatch` (`com.paulblake.momentum.watchkitapp`), watchOS 10, embedded in Runner ("Embed Watch Content"), with the Shared folder in its sources, and a widget extension target for its complications (`com.paulblake.momentum.watchkitapp.widgets`). Version from an xcconfig like `Widgets.xcconfig`.
-2. **Phone side:** `WatchChannel` in `AppDelegate.swift` (`WCSessionDelegate`): send the snapshot on save, take logs; Dart: `HomeWidgetBridge` gains nothing (the snapshot it saves is sent as is), `applyLogs` learns the new kinds.
-3. **Watch side:** SwiftUI views (`TodayView`, `HabitView`, `MomentumView`), the log queue, the complications (WidgetKit on watchOS, sharing the lock screen widgets' views where they fit).
-4. **Tests:** Dart for the new log kinds and their dates; the Swift builds for the watch simulator; a hand check on a paired watch simulator (Xcode makes one with the iPhone 17 Pro) and on Paul's watch.
-5. **Store:** watch screenshots (Series 11 46 mm and Ultra 3), a line in the listing, and the review notes.
+- **Targets** (added by `tool/add_watch_targets.rb`, the xcodeproj gem that ships with CocoaPods; run once): `MomentumWatch` (`com.paulblake.momentum.watchkitapp`, a single-target watchOS 10 app, `WKCompanionAppBundleIdentifier` in its own Info.plist so `flutter build` treats it as a companion) and `MomentumWatchWidgets` (`…watchkitapp.widgets`, the complications), both `SUPPORTED_PLATFORMS = watchos watchsimulator` so the iPhone build makes them for watchOS, versions from `MomentumWatch/Watch.xcconfig`, entitlements through `WATCH_ENTITLEMENTS` / `WATCH_WIDGETS_ENTITLEMENTS` (`tool/install_on_iphone.sh` sets them with `FULL_ENTITLEMENTS=1`). Runner embeds the watch app in "Embed Watch Content", before Flutter's Thin Binary. The icon is Charged (`tool/make_app_icons.py`, `WATCH`).
+- **Watch app** (`ios/MomentumWatch/`): `WatchModel` (the session, the snapshot in the watch's App Group, sending logs, "Not on your iPhone yet" after an hour), `TodayView` (header, rows, + ; done ones last; "Not today" for the rest), `HabitView` (Plus: the ring, the Crown between `floor` and the target, settling 0.7 s before it logs, 2 min, streak, the last 7 bars), `MomentumPage` (Plus), `PlusLockedView`. Debug builds take `-momentumTest step/<habit name>` (or `set/6/<name>`, `twoMinute/<name>`, `open/<name>`) at launch, since a simulator can't be tapped from the command line.
+- **Complications** (`ios/MomentumWatchWidgets/WatchComplications.swift`): Today (circular "3/6", corner, inline), Momentum (circular gauge, corner with the gauge along the screen's curve, inline "Momentum 74 · Strong", rectangular), Habit (picked through `HabitEntity`, with a recommendation per habit, as watch faces need; circular, corner, inline, rectangular) and Next up (the Smart Stack: the habit to do next, "Don't miss twice" first, relevant only with Plus). A tap opens the app (on the habit, `momentum://habit/<id>`). No + on complications: a watch widget can't reach the phone itself.
+- **Tests:** Dart for the log kinds (`widget_log_test`, `home_widget_sync_test`), the snapshot's fields (`widget_snapshot_test`), a background run woken by the watch keeping Plus (`background_main_test`), and the Log button (`notification_service_test`, `reminder_planner_test`).
+
+## Testing
+
+- **Simulators:** "Momentum Watch" (Apple Watch Series 11 46 mm, watchOS 27.0, `3EA42732-…`) is paired with the "iPhone 17 Pro" simulator. `flutter build ios --simulator -d <iPhone>` (a device id is needed with a watch companion), `simctl install` the iPhone app, then the watch app from `Runner.app/Watch/`, and launch the iPhone app once more so it sees the watch app. Checked there: the phone's habits on the watch; a + from the watch logged on the phone ("1/10 minutes"); the Plus screens locked without Plus.
+- **The simulators' relay is unreliable** (Xcode 27.1): watch-to-phone messages sometimes stop at the phone's daemon ("XPC has informed us that a fatal error has occured") until the pair is unpaired and paired again (`xcrun simctl unpair`, `pair`, boot the watch).
+- **Still to try on Paul's watch:** the Crown, 2 min, complications on a face, the Smart Stack, a reminder's Log from the wrist, and a tap with the iPhone app closed.
 
 ## What Paul needs to do
 
-- **Apple Developer:** the watch app's App ID (`com.paulblake.momentum.watchkitapp`) and its widgets' (`…watchkitapp.widgets`), each with App Groups (`group.com.paulblake.momentum`); Xcode's automatic signing can make them once the target exists, signed in with the paid team.
-- **A watch to test on**, paired with the iPhone 12 Pro (Developer Mode on the watch too).
-- **Decide:** the watch all Plus (part of sync), or a free basic watch with Plus adding more (see "Plus or free" above). Free basics would make the app's best quick-logging story available to everyone; all Plus keeps it with the iPad as "more devices".
+- **Signing, once, in Xcode** (the command line can't use his account): open `ios/Runner.xcworkspace`, select the `MomentumWatch` target → Signing & Capabilities (team 9EWP23T2HE, automatic) and let Xcode register `com.paulblake.momentum.watchkitapp` with App Groups (`group.com.paulblake.momentum`); the same for `MomentumWatchWidgets` (`…watchkitapp.widgets`). Then `FULL_ENTITLEMENTS=1 DEV_TOOLS=1 tool/install_on_iphone.sh` builds with the watch.
+- **His Apple Watch** (paired with the 15 Pro Max): Developer Mode on (Settings → Privacy & Security on the watch, after the first install attempt), then the Watch app on the iPhone installs Momentum (or it installs by itself with automatic installs on).
+- **Store (1.1):** watch screenshots (Series 11 46 mm and Ultra), a line in the listing.
 
 ## Open questions
 
-- Should the Crown be able to go past the target as typing on the phone can (`Habit.maxOverTarget`)? Proposed: no, stop at the target like +.
-- Watch-only logging with no iPhone near for days: the queue keeps everything; is a "Not synced yet" mark worth showing? Proposed: a small dot on Today after an hour unsent.
+- The Crown stops at the target, like + (or at what's already logged over it).
+- With no iPhone near, taps wait in the queue; Today says "Not on your iPhone yet" after an hour.
 - Health: a linked habit fills in from Health on the phone; the watch shows what the phone last sent. Reading Health on the watch directly would be fresher but doubles the Health code. Proposed: not in 1.1.

@@ -9,48 +9,76 @@
 /* Begin PBXBuildFile section */
 		01E9748DC8ED785658DC85CA /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45231D4F5BCADAE5BBA3FF7A /* Pods_RunnerTests.framework */; };
 		030B661B289834A6F06B26EB /* LogHabitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC85D89052A375FF71801A7 /* LogHabitIntent.swift */; };
+		10C1AB8D4B1FC7967C1AB644 /* MomentumPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B82A2D1B5929E1C7AD23EA9 /* MomentumPage.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		159F10C2E77372D8DEEB213A /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B543224B0282BD84C110D33A /* Pods_Runner.framework */; };
 		1CF61F530445F67387D2C4E7 /* Sora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6AB97F1682D806DC2AC21917 /* Sora-SemiBold.ttf */; };
+		21E5693E6AAB3CA9251F2E11 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
 		282BB63C896E9FE87FF75866 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A0CB4B3BE8C3BA2FDC2E4970 /* Foundation.framework */; };
+		3070580639FA74CAE7F3C261 /* WatchComplications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E754D0EBA3C87D241566FDA /* WatchComplications.swift */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
 		396E62CEB6B082F6A5FD5D41 /* GroupWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ADB55AD3C59D4AEED309BEE /* GroupWidget.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		3B898F2A982716D8FBDBD11B /* WatchLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBE49A8E5CF7C3AF06651CD7 /* WatchLink.swift */; };
+		3F14AD504233D61E868D71B4 /* Pieces.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC76E336B490CC607178E1E0 /* Pieces.swift */; };
+		40CDE4C0138447BECEE09351 /* MomentumWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AEB9AAA65CE2A04B2DFA9821 /* MomentumWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		40D8FE8CD2D997463F7C6619 /* IWillWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EDA38217A7562C3F5C9D6A3 /* IWillWidget.swift */; };
-		D8C646D048DBF6517E46D5F3 /* HabitLockWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFE9CBEFC64BAB6EF2004FE2 /* HabitLockWidgets.swift */; };
-		E262DC08C89A66F996564D73 /* StreakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD057FF40CD3C645267818F9 /* StreakWidget.swift */; };
-		493EC16671BD396F62168477 /* LogHabitControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F0B3A375590AF84503871C /* LogHabitControl.swift */; };
 		42446468399B1B1B6B9399B6 /* Sora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BCF0CCBB06A23131E7071596 /* Sora-Bold.ttf */; };
+		493EC16671BD396F62168477 /* LogHabitControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F0B3A375590AF84503871C /* LogHabitControl.swift */; };
+		497C2FDB1DA6BEA5C41D75FE /* Sora-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6AB97F1682D806DC2AC21917 /* Sora-SemiBold.ttf */; };
 		5532CFB5EC520B79EA0ED810 /* Pieces.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC76E336B490CC607178E1E0 /* Pieces.swift */; };
 		5A6F8D232E2B360853136C36 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */; };
+		5FC320DDA1DD0E9DEEA0FE7B /* Pieces.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC76E336B490CC607178E1E0 /* Pieces.swift */; };
+		69D93D1FAAAE72FD4530DB8D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D705DC87614CC034258DA531 /* Assets.xcassets */; };
+		728BBB5D6B6DE037C350D49F /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
-		C10D5A0F2EB0000100A1B2C3 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */; };
-		C10D5A122EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
-		C10D5A132EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
-		C10D5A152EB0000100A1B2C3 /* MomentumShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */; };
-		C10D5A312EB0000100A1B2C3 /* HealthWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */; };
-		C10D5A162EB0000100A1B2C3 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
 		7611539B60BA665BB79B8D18 /* MomentumWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AEC4980BBFDEF20A17DCC336 /* MomentumWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		7E5BD785CCF4411D23117371 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
+		8C9FECF07AEF9CE0B44DBE66 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
 		8DEF76054D259840A1ACD31B /* MomentumWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B47E22B0EC64C38F3109F55 /* MomentumWidget.swift */; };
+		96FFEE3E1C21547E88661B1B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF8039CC9287EE74B61271B4 /* Foundation.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		A06AA2903B9B4C1FD8487791 /* WatchModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87448C26D2B7495CF024AE02 /* WatchModel.swift */; };
 		A1B2C3D4E5F6071829304111 /* chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304101 /* chime.wav */; };
 		A1B2C3D4E5F6071829304112 /* ding.wav in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304102 /* ding.wav */; };
 		A1B2C3D4E5F6071829304113 /* soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6071829304103 /* soft.wav */; };
 		A5D1866C29D9E74A3ABFF254 /* MomentumWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11D1272DDE734BC29CE8D7EE /* MomentumWidgetsBundle.swift */; };
+		A73236F29260991F6F6C60EA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF8039CC9287EE74B61271B4 /* Foundation.framework */; };
 		B28549264B18922643E164C5 /* InsightsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123B356E1CAB3ABD2F11FF86 /* InsightsWidget.swift */; };
 		B403B7561FB75E0BC4AC0A68 /* QuoteWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698A1D57A7172285EF710CB5 /* QuoteWidget.swift */; };
 		B9BCDB983FB720699277EE46 /* HabitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 677640DD458CA208A3516B98 /* HabitWidget.swift */; };
+		C10D5A0F2EB0000100A1B2C3 /* CloudSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */; };
+		C10D5A122EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
+		C10D5A132EB0000100A1B2C3 /* HabitEntity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */; };
+		C10D5A152EB0000100A1B2C3 /* MomentumShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */; };
+		C10D5A162EB0000100A1B2C3 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
+		C10D5A312EB0000100A1B2C3 /* HealthWatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */; };
+		C752ED4958F8173DE967DF0A /* MomentumWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1C0A5B2A2C135507764197B8 /* MomentumWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C8E7FB13498901F3D03DEC7B /* HabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36905835A6F3EF7FAA1658D5 /* HabitView.swift */; };
 		CE0E6739E2F4F976D0114949 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */; };
 		CEF426EF9AFB7F6AA81CCB73 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
+		D8C646D048DBF6517E46D5F3 /* HabitLockWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFE9CBEFC64BAB6EF2004FE2 /* HabitLockWidgets.swift */; };
 		DA36AF6D322EB4348BC8A6C7 /* WidgetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E92D562D392CA7CF5038FED /* WidgetStore.swift */; };
 		DE0923EACC8DDDA168B1F950 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
 		DE516BA924F85D90D92D76FD /* LogHabitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC85D89052A375FF71801A7 /* LogHabitIntent.swift */; };
+		E262DC08C89A66F996564D73 /* StreakWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD057FF40CD3C645267818F9 /* StreakWidget.swift */; };
+		E4B496A92245A7950C31AC93 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8B872404FA9603F208F77E9 /* Snapshot.swift */; };
+		ECC865306CB78A266DF03F96 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E118005EE28258ED3A80BFB /* TodayView.swift */; };
+		F367B03A3036F14EA10E10F1 /* Sora-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BCF0CCBB06A23131E7071596 /* Sora-Bold.ttf */; };
+		F6CAA20410928446FAE5F6C9 /* MomentumWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6DFB223D109DA2079C81008 /* MomentumWatchApp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		11B0AB412403B1D233C53400 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C9E7B17BDF4A1DD7B1ACC8E2;
+			remoteInfo = MomentumWatch;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
@@ -65,9 +93,27 @@
 			remoteGlobalIDString = 6017D8C5C6A7BBB4B8028502;
 			remoteInfo = MomentumWidgets;
 		};
+		D95519A1CFD9B940AB31F644 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 068D61A4D0B12DAE10F97F68;
+			remoteInfo = MomentumWatchWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		5A7E9EC3D7400399223514A4 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				C752ED4958F8173DE967DF0A /* MomentumWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		9705A1C41CF9048500538489 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -76,6 +122,17 @@
 			files = (
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E256C201A5E47889DEEDEA94 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				40CDE4C0138447BECEE09351 /* MomentumWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		FF488AB7D8B6A68A8FDD4126 /* Embed Foundation Extensions */ = {
@@ -99,30 +156,31 @@
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		19099845A8554D3A714CE695 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
+		1C0A5B2A2C135507764197B8 /* MomentumWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MomentumWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		321769408E47DE388E988418 /* MomentumWatchWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = MomentumWatchWidgets.entitlements; sourceTree = "<group>"; };
 		330905B742A99B60761D0246 /* Widgets.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Widgets.xcconfig; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		36905835A6F3EF7FAA1658D5 /* HabitView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitView.swift; sourceTree = "<group>"; };
+		397B20AF84479224CF6751E9 /* MomentumWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = MomentumWatch.entitlements; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
 		3EDA38217A7562C3F5C9D6A3 /* IWillWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IWillWidget.swift; sourceTree = "<group>"; };
-		BFE9CBEFC64BAB6EF2004FE2 /* HabitLockWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitLockWidgets.swift; sourceTree = "<group>"; };
-		AD057FF40CD3C645267818F9 /* StreakWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreakWidget.swift; sourceTree = "<group>"; };
-		A8F0B3A375590AF84503871C /* LogHabitControl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogHabitControl.swift; sourceTree = "<group>"; };
 		45231D4F5BCADAE5BBA3FF7A /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		526BFAD8BCAD32B713741612 /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		5BB4037B932D19424E624694 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5E754D0EBA3C87D241566FDA /* WatchComplications.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchComplications.swift; sourceTree = "<group>"; };
 		677640DD458CA208A3516B98 /* HabitWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitWidget.swift; sourceTree = "<group>"; };
 		698A1D57A7172285EF710CB5 /* QuoteWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QuoteWidget.swift; sourceTree = "<group>"; };
 		6AB97F1682D806DC2AC21917 /* Sora-SemiBold.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Sora-SemiBold.ttf"; sourceTree = "<group>"; };
 		6AC85D89052A375FF71801A7 /* LogHabitIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogHabitIntent.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
-		C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntity.swift; sourceTree = "<group>"; };
-		C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentumShortcuts.swift; sourceTree = "<group>"; };
-		C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWatch.swift; sourceTree = "<group>"; };
 		7810C5C23E5028B37E5F6091 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7E92D562D392CA7CF5038FED /* WidgetStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WidgetStore.swift; sourceTree = "<group>"; };
+		8271152BE96C75D28958139D /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		87448C26D2B7495CF024AE02 /* WatchModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchModel.swift; sourceTree = "<group>"; };
 		8D986B1887F5BDB6A77986EC /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -133,20 +191,35 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9ADB55AD3C59D4AEED309BEE /* GroupWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroupWidget.swift; sourceTree = "<group>"; };
 		9B47E22B0EC64C38F3109F55 /* MomentumWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentumWidget.swift; sourceTree = "<group>"; };
+		9B82A2D1B5929E1C7AD23EA9 /* MomentumPage.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentumPage.swift; sourceTree = "<group>"; };
 		9D47CB01C4BFE209C803DC16 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		9E118005EE28258ED3A80BFB /* TodayView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		A0CB4B3BE8C3BA2FDC2E4970 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		A1B2C3D4E5F6071829304101 /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304102 /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304103 /* soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = soft.wav; sourceTree = "<group>"; };
 		A1B2C3D4E5F6071829304120 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
+		A8F0B3A375590AF84503871C /* LogHabitControl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LogHabitControl.swift; sourceTree = "<group>"; };
 		AC76E336B490CC607178E1E0 /* Pieces.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Pieces.swift; sourceTree = "<group>"; };
+		AD057FF40CD3C645267818F9 /* StreakWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreakWidget.swift; sourceTree = "<group>"; };
+		AEB9AAA65CE2A04B2DFA9821 /* MomentumWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MomentumWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AEC4980BBFDEF20A17DCC336 /* MomentumWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MomentumWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B543224B0282BD84C110D33A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		BCF0CCBB06A23131E7071596 /* Sora-Bold.ttf */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = file; path = "Sora-Bold.ttf"; sourceTree = "<group>"; };
 		BEFC1B69D39EDD8DC38DA826 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
+		BFE9CBEFC64BAB6EF2004FE2 /* HabitLockWidgets.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HabitLockWidgets.swift; sourceTree = "<group>"; };
+		C10D5A0E2EB0000100A1B2C3 /* CloudSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSync.swift; sourceTree = "<group>"; };
+		C10D5A112EB0000100A1B2C3 /* HabitEntity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitEntity.swift; sourceTree = "<group>"; };
+		C10D5A142EB0000100A1B2C3 /* MomentumShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MomentumShortcuts.swift; sourceTree = "<group>"; };
+		C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWatch.swift; sourceTree = "<group>"; };
 		C8B872404FA9603F208F77E9 /* Snapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
+		D6DFB223D109DA2079C81008 /* MomentumWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MomentumWatchApp.swift; sourceTree = "<group>"; };
+		D705DC87614CC034258DA531 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = Watch.xcconfig; sourceTree = "<group>"; };
 		E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F834893F0ABD3ED7724AAD30 /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		FBE49A8E5CF7C3AF06651CD7 /* WatchLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchLink.swift; sourceTree = "<group>"; };
+		FF8039CC9287EE74B61271B4 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,6 +228,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				282BB63C896E9FE87FF75866 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		59EC73A7926B197F33F357DB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				96FFEE3E1C21547E88661B1B /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -175,9 +256,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BED6597A17A3BE623DA980FB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A73236F29260991F6F6C60EA /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		10E85954AC23F206BB79BA78 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				FF8039CC9287EE74B61271B4 /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		331C8082294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -217,6 +314,34 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
+		8A9CE9C942EB8D8878B8F489 /* MomentumWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				5E754D0EBA3C87D241566FDA /* WatchComplications.swift */,
+				5BB4037B932D19424E624694 /* Info.plist */,
+				321769408E47DE388E988418 /* MomentumWatchWidgets.entitlements */,
+			);
+			name = MomentumWatchWidgets;
+			path = MomentumWatchWidgets;
+			sourceTree = "<group>";
+		};
+		8FEF969E1A419E032A950138 /* MomentumWatch */ = {
+			isa = PBXGroup;
+			children = (
+				DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */,
+				D6DFB223D109DA2079C81008 /* MomentumWatchApp.swift */,
+				87448C26D2B7495CF024AE02 /* WatchModel.swift */,
+				9E118005EE28258ED3A80BFB /* TodayView.swift */,
+				36905835A6F3EF7FAA1658D5 /* HabitView.swift */,
+				9B82A2D1B5929E1C7AD23EA9 /* MomentumPage.swift */,
+				D705DC87614CC034258DA531 /* Assets.xcassets */,
+				8271152BE96C75D28958139D /* Info.plist */,
+				397B20AF84479224CF6751E9 /* MomentumWatch.entitlements */,
+			);
+			name = MomentumWatch;
+			path = MomentumWatch;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
@@ -239,6 +364,8 @@
 				50C5FF6DBEB8B447FEFC3D37 /* Pods */,
 				991ABD0B6C4E412D16944758 /* Frameworks */,
 				B4E374BE60AA114B6FD0A45B /* MomentumWidgets */,
+				8FEF969E1A419E032A950138 /* MomentumWatch */,
+				8A9CE9C942EB8D8878B8F489 /* MomentumWatchWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -248,6 +375,8 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				AEC4980BBFDEF20A17DCC336 /* MomentumWidgets.appex */,
+				1C0A5B2A2C135507764197B8 /* MomentumWatch.app */,
+				AEB9AAA65CE2A04B2DFA9821 /* MomentumWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -271,6 +400,7 @@
 				C10D5A302EB0000100A1B2C3 /* HealthWatch.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				E16327C757C2A753AF294D9D /* PrivacyInfo.xcprivacy */,
+				FBE49A8E5CF7C3AF06651CD7 /* WatchLink.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -281,6 +411,7 @@
 				B543224B0282BD84C110D33A /* Pods_Runner.framework */,
 				45231D4F5BCADAE5BBA3FF7A /* Pods_RunnerTests.framework */,
 				54821CCC5FABCF763E280AF6 /* iOS */,
+				10E85954AC23F206BB79BA78 /* watchOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -314,6 +445,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		068D61A4D0B12DAE10F97F68 /* MomentumWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E27461C450AD8F15C13F72E /* Build configuration list for PBXNativeTarget "MomentumWatchWidgets" */;
+			buildPhases = (
+				6F0F3F8CBB2EAA778AF0DE31 /* Sources */,
+				59EC73A7926B197F33F357DB /* Frameworks */,
+				EEE3E6D7F3C9145CD46D8882 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MomentumWatchWidgets;
+			productName = MomentumWatchWidgets;
+			productReference = AEB9AAA65CE2A04B2DFA9821 /* MomentumWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		331C8080294A63A400263BE5 /* RunnerTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */;
@@ -362,6 +510,7 @@
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				FF488AB7D8B6A68A8FDD4126 /* Embed Foundation Extensions */,
+				5A7E9EC3D7400399223514A4 /* Embed Watch Content */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				1BE14EEBB150B4A8B75C6753 /* [CP] Embed Pods Frameworks */,
 			);
@@ -369,6 +518,7 @@
 			);
 			dependencies = (
 				ACE44AE55E6676435794A017 /* PBXTargetDependency */,
+				B154FF7EF28D25E6C3E17111 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -376,6 +526,25 @@
 			);
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C9E7B17BDF4A1DD7B1ACC8E2 /* MomentumWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 999F6B77CD3893CBA8178504 /* Build configuration list for PBXNativeTarget "MomentumWatch" */;
+			buildPhases = (
+				C842FE84E37F645C3A96BF6B /* Sources */,
+				BED6597A17A3BE623DA980FB /* Frameworks */,
+				B72654FF7D8E7B912653237F /* Resources */,
+				E256C201A5E47889DEEDEA94 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A2DFFFDBD837D9409CB7A543 /* PBXTargetDependency */,
+			);
+			name = MomentumWatch;
+			productName = MomentumWatch;
+			productReference = 1C0A5B2A2C135507764197B8 /* MomentumWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -388,6 +557,10 @@
 				LastUpgradeCheck = 2710;
 				ORGANIZATIONNAME = "";
 				TargetAttributes = {
+					068D61A4D0B12DAE10F97F68 = {
+						CreatedOnToolsVersion = 27.1;
+						DevelopmentTeam = 9EWP23T2HE;
+					};
 					331C8080294A63A400263BE5 = {
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 97C146ED1CF9000F007C117D;
@@ -399,6 +572,10 @@
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
+					};
+					C9E7B17BDF4A1DD7B1ACC8E2 = {
+						CreatedOnToolsVersion = 27.1;
+						DevelopmentTeam = 9EWP23T2HE;
 					};
 				};
 			};
@@ -421,6 +598,8 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				6017D8C5C6A7BBB4B8028502 /* MomentumWidgets */,
+				C9E7B17BDF4A1DD7B1ACC8E2 /* MomentumWatch */,
+				068D61A4D0B12DAE10F97F68 /* MomentumWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -445,6 +624,23 @@
 				A1B2C3D4E5F6071829304113 /* soft.wav in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 				CE0E6739E2F4F976D0114949 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B72654FF7D8E7B912653237F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69D93D1FAAAE72FD4530DB8D /* Assets.xcassets in Resources */,
+				497C2FDB1DA6BEA5C41D75FE /* Sora-SemiBold.ttf in Resources */,
+				F367B03A3036F14EA10E10F1 /* Sora-Bold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EEE3E6D7F3C9145CD46D8882 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -579,6 +775,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6F0F3F8CBB2EAA778AF0DE31 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3070580639FA74CAE7F3C261 /* WatchComplications.swift in Sources */,
+				E4B496A92245A7950C31AC93 /* Snapshot.swift in Sources */,
+				728BBB5D6B6DE037C350D49F /* WidgetStore.swift in Sources */,
+				5FC320DDA1DD0E9DEEA0FE7B /* Pieces.swift in Sources */,
+				7E5BD785CCF4411D23117371 /* HabitEntity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EA1CF9000F007C117D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -592,6 +800,22 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				DA36AF6D322EB4348BC8A6C7 /* WidgetStore.swift in Sources */,
 				030B661B289834A6F06B26EB /* LogHabitIntent.swift in Sources */,
+				3B898F2A982716D8FBDBD11B /* WatchLink.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C842FE84E37F645C3A96BF6B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F6CAA20410928446FAE5F6C9 /* MomentumWatchApp.swift in Sources */,
+				A06AA2903B9B4C1FD8487791 /* WatchModel.swift in Sources */,
+				ECC865306CB78A266DF03F96 /* TodayView.swift in Sources */,
+				C8E7FB13498901F3D03DEC7B /* HabitView.swift in Sources */,
+				10C1AB8D4B1FC7967C1AB644 /* MomentumPage.swift in Sources */,
+				8C9FECF07AEF9CE0B44DBE66 /* Snapshot.swift in Sources */,
+				21E5693E6AAB3CA9251F2E11 /* WidgetStore.swift in Sources */,
+				3F14AD504233D61E868D71B4 /* Pieces.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -625,11 +849,23 @@
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
 		};
+		A2DFFFDBD837D9409CB7A543 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = MomentumWatchWidgets;
+			target = 068D61A4D0B12DAE10F97F68 /* MomentumWatchWidgets */;
+			targetProxy = D95519A1CFD9B940AB31F644 /* PBXContainerItemProxy */;
+		};
 		ACE44AE55E6676435794A017 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = MomentumWidgets;
 			target = 6017D8C5C6A7BBB4B8028502 /* MomentumWidgets */;
 			targetProxy = B923FC1666B248FAB4EB6A08 /* PBXContainerItemProxy */;
+		};
+		B154FF7EF28D25E6C3E17111 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = MomentumWatch;
+			target = C9E7B17BDF4A1DD7B1ACC8E2 /* MomentumWatch */;
+			targetProxy = 11B0AB412403B1D233C53400 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -724,9 +960,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MOMENTUM_ICLOUD = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				MOMENTUM_ICLOUD = YES;
 				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -816,6 +1052,69 @@
 			};
 			name = Profile;
 		};
+		65FE64F785156436282C4BE2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_WIDGETS_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp.widgets;
+				PRODUCT_NAME = MomentumWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_WIDGETS_ENTITLEMENTS = MomentumWatchWidgets/MomentumWatchWidgets.entitlements;
+			};
+			name = Debug;
+		};
+		671D57821CBFB48A8358EBB8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_WIDGETS_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp.widgets;
+				PRODUCT_NAME = MomentumWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_WIDGETS_ENTITLEMENTS = MomentumWatchWidgets/MomentumWatchWidgets.entitlements;
+			};
+			name = Release;
+		};
 		7BC2F3467D3FCEDDB0FE9EA7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 330905B742A99B60761D0246 /* Widgets.xcconfig */;
@@ -842,6 +1141,37 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALIDATE_PRODUCT = YES;
 				WIDGETS_ENTITLEMENTS = MomentumWidgets/MomentumWidgets.entitlements;
+			};
+			name = Release;
+		};
+		81121B3D1A55C3D2EB5DA5F5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp;
+				PRODUCT_NAME = MomentumWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_ENTITLEMENTS = MomentumWatch/MomentumWatch.entitlements;
 			};
 			name = Release;
 		};
@@ -977,9 +1307,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MOMENTUM_ICLOUD = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				MOMENTUM_ICLOUD = YES;
 				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -1005,15 +1335,45 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MOMENTUM_ICLOUD = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				MOMENTUM_ICLOUD = YES;
 				RUNNER_ENTITLEMENTS = Runner/Runner.entitlements;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		A6B3755FC6AC348A3FF335C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp;
+				PRODUCT_NAME = MomentumWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_ENTITLEMENTS = MomentumWatch/MomentumWatch.entitlements;
+			};
+			name = Debug;
 		};
 		AEABB40F20E3709454D72707 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -1043,9 +1403,82 @@
 			};
 			name = Debug;
 		};
+		D1687C358D7D049469AF6716 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_WIDGETS_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatchWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp.widgets;
+				PRODUCT_NAME = MomentumWatchWidgets;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_WIDGETS_ENTITLEMENTS = MomentumWatchWidgets/MomentumWatchWidgets.entitlements;
+			};
+			name = Profile;
+		};
+		F3B9F9DA2C9FD9CEC6C627B5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = DF88B4356208D97A15EAA3A6 /* Watch.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "$(WATCH_ENTITLEMENTS)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = 9EWP23T2HE;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MomentumWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(FLUTTER_BUILD_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.paulblake.momentum.watchkitapp;
+				PRODUCT_NAME = MomentumWatch;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				WATCH_ENTITLEMENTS = MomentumWatch/MomentumWatch.entitlements;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1E27461C450AD8F15C13F72E /* Build configuration list for PBXNativeTarget "MomentumWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				671D57821CBFB48A8358EBB8 /* Release */,
+				65FE64F785156436282C4BE2 /* Debug */,
+				D1687C358D7D049469AF6716 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1082,6 +1515,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		999F6B77CD3893CBA8178504 /* Build configuration list for PBXNativeTarget "MomentumWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81121B3D1A55C3D2EB5DA5F5 /* Release */,
+				A6B3755FC6AC348A3FF335C9 /* Debug */,
+				F3B9F9DA2C9FD9CEC6C627B5 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

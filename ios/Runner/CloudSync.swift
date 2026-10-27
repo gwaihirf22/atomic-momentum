@@ -687,7 +687,10 @@ enum BackgroundWidgets {
     FlutterMethodChannel(name: "momentum/widgets", binaryMessenger: messenger).setMethodCallHandler { call, result in
       switch call.method {
       case "save":
-        if let json = call.arguments as? String { WidgetStore.saveSnapshot(json) }
+        if let json = call.arguments as? String {
+          WidgetStore.saveSnapshot(json)
+          WatchLink.send(json)
+        }
         result(nil)
       case "takeLogs":
         result(WidgetStore.takeLogs())
