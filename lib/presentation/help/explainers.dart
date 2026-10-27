@@ -8,7 +8,8 @@ enum InfoTopic {
   inspire('About Inspire'),
   health('About filling in from Health'),
   freezes('About freezes'),
-  sync('About sync');
+  sync('About sync'),
+  healthInsights('About Health insights');
 
   /// What the (i) button reads as to VoiceOver.
   final String buttonLabel;
@@ -48,7 +49,41 @@ class Explainer {
         InfoTopic.health => health(android: android, device: device),
         InfoTopic.freezes => freezes,
         InfoTopic.sync => sync(android: android),
+        InfoTopic.healthInsights => healthInsights(android: android, device: device),
       };
+
+  /// Health insights (Momentum Plus): how the lines are drawn, when it
+  /// speaks up, and that it all stays on the device.
+  static Explainer healthInsights({bool android = false, String device = 'phone'}) {
+    final health = android ? 'Health Connect' : 'Apple Health';
+    return Explainer(
+      title: 'Health insights',
+      intro: 'How your sleep, steps and exercise go with the rest of your habits, from the habits filled in from $health.',
+      points: [
+        const ExplainerPoint(
+          'I split your days by a line (7 hours of sleep; your own target for steps or exercise) and compare how '
+          'many of your other habits you kept on each side.',
+          lead: 'How',
+          badge: '1',
+        ),
+        const ExplainerPoint(
+          "Two weeks on each side of the line, and a difference of 10 points or more, before I say anything.",
+          lead: 'When',
+          badge: '2',
+        ),
+        ExplainerPoint(
+          "Worked out on this $device from what's already in Momentum. Nothing leaves it.",
+          lead: 'Private',
+          badge: '3',
+        ),
+        const ExplainerPoint(
+          "It's a pattern, not proof: plenty else happens on a good day. Still, it's worth a look.",
+          lead: 'A pattern',
+          badge: '4',
+        ),
+      ],
+    );
+  }
 
   /// Sync between the person's own devices (Momentum Plus): where it goes,
   /// that the developer never sees it, how two devices' days add up.
