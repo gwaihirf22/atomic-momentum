@@ -26,12 +26,19 @@ The checklist for the first release. The texts are in this folder:
 ## Momentum Plus (1.1, `plus` branch): Paul's steps before TestFlight
 
 1. **Agreements, Tax, and Banking** in App Store Connect: accept the **Paid Applications** agreement, add the bank account and the tax forms. Nothing can be sold, even in TestFlight, until it's active.
-2. **App Store Small Business Program** (developer.apple.com/app-store/small-business-program): enrol, so Apple takes 15% instead of 30%.
-3. **The four in-app purchases** (App Store Connect → the app → Monetization → In-App Purchases), each with a display name, description and a review screenshot (the Plus page):
+   - **2026-10-27:**
+     - the legal entity and the W-9 are filled in: Individual/Sole proprietor, Non-Exempt Payee;
+     - the Schwab bank account is waiting for Apple's approval (up to 24 hours, with no other changes allowed meanwhile).
+2. **EU trader status (DSA), before 1.1 goes on sale:**
+   - 1.0 sells nothing, so it is "not a trader".
+   - Selling Plus and tips in the EU makes Paul a trader, and a trader's address, phone and email show on the EU App Store pages.
+   - **Plan:** rent a USPS P.O. box (Apple accepts a P.O. box for individuals) and a Google Voice number, use momentum@paul-blake.com, then switch to trader in App Store Connect → Business before 1.1 is released.
+3. **App Store Small Business Program** (developer.apple.com/app-store/small-business-program): enrol, so Apple takes 15% instead of 30%.
+4. **The four in-app purchases** (App Store Connect → the app → Monetization → In-App Purchases), each with a display name, description and a review screenshot (the Plus page):
    - `com.paulblake.momentum.plus`: **Non-Consumable**, $1.99, "Momentum Plus", **Family Sharing on**;
    - `com.paulblake.momentum.tip.small` / `.medium` / `.large`: **Consumable**, $0.99 / $2.99 / $4.99, "Small tip" / "Medium tip" / "Large tip".
-4. **iCloud for TestFlight:** CloudKit Console → the `iCloud.com.paulblake.momentum` container → **Deploy Schema Changes** to Production (TestFlight and the App Store sync in production).
-5. **The build:** on `plus`, set `version: 1.1.0+1` in `pubspec.yaml`, `flutter build ipa`, upload, and add it to TestFlight. Testers buy with their own Apple Account, free (sandbox).
+5. **iCloud for TestFlight:** CloudKit Console → the `iCloud.com.paulblake.momentum` container → **Deploy Schema Changes** to Production (TestFlight and the App Store sync in production).
+6. **The build:** on `plus`, set `version: 1.1.0+1` in `pubspec.yaml`, `flutter build ipa`, upload, and add it to TestFlight. Testers buy with their own Apple Account, free (sandbox).
 
 The products are submitted for review with the 1.1 version itself.
 
@@ -83,7 +90,7 @@ Every earlier plan, design doc and note, checked against the code. One at a time
 - [x] Build 1.0.0 (2) submitted for App Review (2026-10-21)
 - [x] A Buy Me a Coffee page: buymeacoffee.com/paulblake (2026-10-21)
 - [x] The seller name: individual, branded Blake Built (2026-10-21)
-- [ ] EU trader status (App Store Connect → Business; see review-notes.md). Choosing "not a trader" doesn't keep the app out of the EU
+- [ ] EU trader status (App Store Connect → Business): "not a trader" for 1.0; trader with a P.O. box before 1.1 (see "Momentum Plus" above)
 - [ ] Ask Apple Developer Support to show the seller as "Paul Blake"
 - [ ] Review the tours
 - [x] The NKJV licence: gratis use with the notice, under 500 verses and 25% of the library (2026-10-20)
