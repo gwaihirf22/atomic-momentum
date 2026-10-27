@@ -94,6 +94,9 @@
       <MetalAPIValidationSettings
          isEnabled = "No">
       </MetalAPIValidationSettings>
+      <StoreKitConfigurationFileReference
+         identifier = "../../Runner/Momentum.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Profile"

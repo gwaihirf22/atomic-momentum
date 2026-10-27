@@ -6,6 +6,7 @@ import '../services/home_widget_bridge.dart';
 import '../services/freeze_bank.dart';
 import '../../domain/services/achievements.dart';
 import 'package:get_it/get_it.dart';
+import '../services/plus_store.dart';
 import '../sync/cloudkit_transport.dart';
 import '../sync/sync_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,6 +100,8 @@ Future<void> initializeDependencies({bool seedDefaultHabit = false}) async {
   sl.registerLazySingleton<HomeWidgetBridge>(() => PlatformHomeWidgetBridge());
   sl.registerLazySingleton(() => FreezeBank(sl()));
   sl.registerLazySingleton(() => HabitOrder(sl()));
+  // Momentum Plus and tips (Apple's in-app purchases)
+  sl.registerLazySingleton<PlusStore>(() => PlatformPlusStore(prefs: sl()));
   // Sync (Momentum Plus): iCloud on iPhone; nowhere yet on Android
   sl.registerLazySingleton(() => SyncService(
         prefs: sl(),

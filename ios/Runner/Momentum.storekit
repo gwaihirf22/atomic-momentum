@@ -1,0 +1,77 @@
+{
+  "identifier": "BB884597-6DD3-48B1-806D-B87892C84BBD",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "1.99",
+      "familyShareable": true,
+      "internalID": "9505073450",
+      "localizations": [
+        {
+          "description": "Sync with your iPad, and everything that comes next.",
+          "displayName": "Momentum Plus",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.paulblake.momentum.plus",
+      "referenceName": "Momentum Plus",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.99",
+      "familyShareable": false,
+      "internalID": "2417115901",
+      "localizations": [
+        {
+          "description": "A thank-you. Unlocks nothing.",
+          "displayName": "Small tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.paulblake.momentum.tip.small",
+      "referenceName": "Small tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": false,
+      "internalID": "3401019721",
+      "localizations": [
+        {
+          "description": "A thank-you. Unlocks nothing.",
+          "displayName": "Medium tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.paulblake.momentum.tip.medium",
+      "referenceName": "Medium tip",
+      "type": "Consumable"
+    },
+    {
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "6514953828",
+      "localizations": [
+        {
+          "description": "A thank-you. Unlocks nothing.",
+          "displayName": "Large tip",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.paulblake.momentum.tip.large",
+      "referenceName": "Large tip",
+      "type": "Consumable"
+    }
+  ],
+  "settings": {
+    "_developerTeamID": "9EWP23T2HE",
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

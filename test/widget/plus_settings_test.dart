@@ -12,16 +12,19 @@ import 'package:atomic_momentum/presentation/providers/habit_provider.dart';
 import 'package:atomic_momentum/presentation/providers/quote_provider.dart';
 import 'package:atomic_momentum/presentation/providers/settings_provider.dart';
 import 'package:atomic_momentum/presentation/providers/theme_provider.dart';
-import 'package:atomic_momentum/presentation/widgets/sync_settings_section.dart';
+import 'package:atomic_momentum/presentation/widgets/plus_settings_section.dart';
+import 'package:atomic_momentum/screens/plus_screen.dart';
 
 import '../helpers/fake_cloud.dart';
+import '../helpers/fake_plus_store.dart';
 
-/// Settings → Sync.
+/// Settings → Momentum Plus: the Plus row, and sync behind it.
 void main() {
   late FakeCloud cloud;
   late FakeCloudLink link;
   late SyncService sync;
   late HabitProvider habits;
+  late FakePlusStore plus;
 
   setUp(() async {
     await resetDependencies();
@@ -35,6 +38,8 @@ void main() {
     habits = get<HabitProvider>();
     await habits.loadHabits();
     sync.attach(habits: habits, settings: get<SettingsProvider>(), bank: get<FreezeBank>());
+    // Plus bought, unless a test says otherwise
+    plus = FakePlusStore.install(unlocked: true);
   });
 
   tearDown(() async {
@@ -54,7 +59,7 @@ void main() {
         ChangeNotifierProvider<SettingsProvider>.value(value: get<SettingsProvider>()),
         ChangeNotifierProvider<QuoteProvider>.value(value: get<QuoteProvider>()),
       ],
-      child: const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: SyncSettingsSection(always: true)))),
+      child: const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: PlusSettingsSection()))),
     ));
     await tester.pumpAndSettle();
   }
@@ -119,6 +124,48 @@ void main() {
     expect(text('I never see it'), findsOneWidget);
     expect(text('Apple Health numbers stay out of it'), findsOneWidget);
   }, variant: ios);
+
+  testWidgets('the Plus row says whether Plus is yours, and opens the Plus page', (tester) async {
+    plus.unlocked = false;
+    await pump(tester);
+    expect(find.text('Momentum Plus'), findsWidgets);
+    expect(text('Sync with your iPad, and what comes next'), findsOneWidget);
+    plus.unlocked = true;
+    await tester.pumpAndSettle();
+    expect(text('Thank you! Plus is yours'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('plusRow')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlusScreen), findsOneWidget);
+  }, variant: ios);
+
+  testWidgets('without Plus, sync says so, and turning it on opens the Plus page instead', (tester) async {
+    plus.unlocked = false;
+    await pump(tester);
+    expect(text('With Momentum Plus'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('syncSwitch')));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlusScreen), findsOneWidget);
+    expect(sync.isOn, isFalse);
+  }, variant: ios);
+
+  testWidgets('sync already on stays on without Plus (a refund never takes data away)', (tester) async {
+    await pump(tester);
+    await tester.tap(find.byKey(const Key('syncSwitch')));
+    await tester.pumpAndSettle();
+    expect(sync.isOn, isTrue);
+    plus.unlocked = false;
+    await tester.pumpAndSettle();
+    expect(sync.isOn, isTrue);
+    expect(text('With Momentum Plus'), findsNothing);
+    await sync.turnOff();
+  }, variant: ios);
+
+  testWidgets('hidden where Plus isn\'t sold (Android, until Google Drive sync)', (tester) async {
+    FakePlusStore.install(isSupported: false);
+    await pump(tester);
+    expect(find.byKey(const Key('plusRow')), findsNothing);
+    expect(find.byKey(const Key('syncSwitch')), findsNothing);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('says Google Drive on Android', (tester) async {
     await pump(tester);

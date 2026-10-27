@@ -50,6 +50,7 @@ import 'package:atomic_momentum/screens/story_habit_screen.dart';
 import 'package:atomic_momentum/screens/insights_screen.dart';
 import 'package:atomic_momentum/screens/weekly_review_screen.dart';
 import 'package:atomic_momentum/screens/settings_screen.dart';
+import 'package:atomic_momentum/screens/plus_screen.dart';
 import 'package:atomic_momentum/core/sync/sync_service.dart';
 import 'package:atomic_momentum/screens/app_icon_screen.dart';
 import 'package:atomic_momentum/presentation/intro/intro_screen.dart';
@@ -63,6 +64,7 @@ import 'package:atomic_momentum/presentation/share/share_sheet.dart';
 import 'package:atomic_momentum/presentation/widgets/info_button.dart';
 
 import '../helpers/fake_app_icon_service.dart';
+import '../helpers/fake_plus_store.dart';
 import '../helpers/fake_support_link.dart';
 import '../helpers/fake_health_source.dart';
 import '../helpers/real_fonts.dart';
@@ -219,6 +221,7 @@ void main() {
     'Habits': () => const HomeScreen(),
     'Calendar': () => const CalendarScreen(),
     'Settings': () => const SettingsScreen(),
+    'Momentum Plus': () => const PlusScreen(),
     'App icon': () => const AppIconScreen(),
     'Tours': () => const ToursScreen(),
     'How to': () => HowToScreen(seed: (now) async => DemoSeed.build(now)),
@@ -475,6 +478,24 @@ void main() {
         await tester.tap(find.byKey(const Key('syncAbout')));
         await tester.pumpAndSettle();
         expectNothingCutOff(tester, 'About sync at $setting');
+      });
+
+      testWidgets('Momentum Plus: Settings with and without it, the page, and tips at $setting', (tester) async {
+        final plus = FakePlusStore.install();
+        FakeSupportLink.install(available: false);
+        await pump(tester, const SettingsScreen(), width: width, scale: scale);
+        await tester.scrollUntilVisible(find.byKey(const Key('plusRow')), 300,
+            scrollable: find.byType(Scrollable).first);
+        expectNothingCutOff(tester, 'Settings, Plus not bought, at $setting');
+        await tester.scrollUntilVisible(find.byKey(const Key('tip_large')), 300,
+            scrollable: find.byType(Scrollable).first);
+        expectNothingCutOff(tester, 'Say thanks with tips at $setting');
+
+        await pump(tester, const PlusScreen(), width: width, scale: scale);
+        expectNothingCutOff(tester, 'the Plus page at $setting');
+        plus.unlocked = true;
+        await tester.pumpAndSettle();
+        expectNothingCutOff(tester, 'the Plus page, yours, with tips at $setting');
       });
 
       testWidgets('Settings with quiet hours on at $setting', (tester) async {

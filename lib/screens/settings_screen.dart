@@ -27,7 +27,7 @@ import '../presentation/widgets/adaptive.dart';
 import '../presentation/widgets/large_title_scaffold.dart';
 import '../presentation/widgets/freezes_settings_section.dart';
 import '../presentation/widgets/health_settings_section.dart';
-import '../presentation/widgets/sync_settings_section.dart';
+import '../presentation/widgets/plus_settings_section.dart';
 import '../presentation/widgets/settings_list.dart';
 import 'app_icon_screen.dart';
 import 'tours_screen.dart';
@@ -35,6 +35,9 @@ import 'categories_screen.dart';
 import 'notification_tester_screen.dart';
 import 'how_to_screen.dart';
 import '../presentation/layout/app_layout.dart';
+import '../core/services/plus_store.dart';
+import 'plus_screen.dart';
+import '../core/feedback/haptics.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -427,8 +430,8 @@ class SettingsScreen extends StatelessWidget {
           ],
         ),
         const HealthSettingsSection(),
-        // Momentum Plus: only in builds with Developer tools until it's sold
-        if (!demo) const SyncSettingsSection(),
+        // Momentum Plus, and sync with it (iPhone and iPad)
+        if (!demo) const PlusSettingsSection(),
         if (!demo) const _SupportSection(),
         if (!demo) const _AboutSection(),
         // Debug builds, and test builds made with DEV_TOOLS; never in a store build
@@ -437,6 +440,7 @@ class SettingsScreen extends StatelessWidget {
           SettingsSection(
             header: 'Developer',
             children: [
+              if (sl.isRegistered<PlusStore>()) const _PretendPlusTile(),
               SettingsTile(
                 tileKey: const Key('addSampleHabits'),
                 icon: CupertinoIcons.lab_flask_solid,
@@ -583,9 +587,7 @@ class _AppIconSettingState extends State<_AppIconSetting> {
   }
 }
 
-/// "Buy Paul a coffee": a personal tip for the developer, the only way to give
-/// something, as the app is free. Shown only where it's allowed and once
-/// there's a page (SupportLink).
+/// Say thanks: a personal tip for the developer, as the app is free.
 class _SupportSection extends StatefulWidget {
   const _SupportSection();
 
@@ -593,21 +595,104 @@ class _SupportSection extends StatefulWidget {
   State<_SupportSection> createState() => _SupportSectionState();
 }
 
+/// Say thanks: in the US, "Buy Paul a coffee" (a link out, as App Review
+/// allows there); elsewhere on iPhone and iPad, Apple tips, with Plus
+/// offered first to anyone without it. Tips are a thank-you and unlock
+/// nothing.
 class _SupportSectionState extends State<_SupportSection> {
   final _link = get<SupportLink>();
-  bool _available = false;
+  final PlusStore? _plus = sl.isRegistered<PlusStore>() ? get<PlusStore>() : null;
+
+  /// Null until the store's country is known.
+  bool? _coffee;
+  List<PlusOffer> _tips = const [];
+  PlusOffer? _plusOffer;
+  bool _buying = false;
 
   @override
   void initState() {
     super.initState();
-    _link.isAvailable().then((available) {
-      if (mounted && available) setState(() => _available = true);
+    _link.isAvailable().then((available) async {
+      if (!mounted) return;
+      setState(() => _coffee = available);
+      final plus = _plus;
+      if (available || plus == null || !plus.isSupported) return;
+      final offers = await plus.offers();
+      if (!mounted) return;
+      setState(() {
+        _tips = [for (final o in offers) if (o.kind == OfferKind.tip) o];
+        _plusOffer = offers.where((o) => o.kind == OfferKind.plus).firstOrNull;
+      });
     });
+  }
+
+  Future<void> _tip(PlusOffer tip) async {
+    setState(() => _buying = true);
+    final outcome = await _plus!.buy(tip);
+    if (!mounted) return;
+    setState(() => _buying = false);
+    switch (outcome.result) {
+      case PurchaseResult.bought:
+        Haptics.allDone();
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+          const SnackBar(key: Key('tipThanks'), content: Text('Thank you! That means a lot.')),
+        );
+      case PurchaseResult.pending:
+        await showAdaptiveAlert<void>(
+          context,
+          title: 'Waiting for approval',
+          message: 'Someone in your family needs to approve it. It comes through as soon as they do.',
+          actions: const [AdaptiveAction(label: 'OK', value: null, isDefault: true)],
+        );
+      case PurchaseResult.cancelled:
+        break;
+      case PurchaseResult.failed:
+        await showAdaptiveAlert<void>(
+          context,
+          title: "Couldn't complete the tip",
+          message: outcome.message ?? 'Try again in a moment.',
+          actions: const [AdaptiveAction(label: 'OK', value: null, isDefault: true)],
+        );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (!_available) return const SizedBox.shrink();
+    final coffee = _coffee;
+    if (coffee == null) return const SizedBox.shrink();
+    if (coffee) return _coffeeSection(context);
+    final plus = _plus;
+    if (plus == null || !plus.isSupported) return const SizedBox.shrink();
+    return ListenableBuilder(
+      listenable: plus,
+      builder: (context, _) => SettingsSection(
+        header: 'Say thanks',
+        footer: 'Tips are a thank-you, nothing more. Momentum stays free.',
+        children: [
+          if (!plus.unlocked)
+            SettingsTile(
+              tileKey: const Key('sayThanksPlus'),
+              icon: CupertinoIcons.star_circle_fill,
+              iconColor: HabitColor.orange.color,
+              title: _plusOffer == null ? 'Get Momentum Plus' : 'Get Momentum Plus · ${_plusOffer!.price}',
+              subtitle: 'A thank-you that gives you sync',
+              onTap: () => PlusScreen.open(context),
+            ),
+          for (final tip in _tips)
+            SettingsTile(
+              tileKey: Key('tip_${tip.id.split('.').last}'),
+              icon: CupertinoIcons.gift_fill,
+              iconColor: HabitColor.brown.color,
+              title: 'Leave a ${tip.price} tip',
+              showChevron: false,
+              onTap: _buying ? null : () => _tip(tip),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coffeeSection(BuildContext context) {
     return SettingsSection(
       header: 'Say thanks',
       footer: 'Momentum is free, with no ads. If you\'d like to say thanks, you can tip me there.',
@@ -630,6 +715,28 @@ class _SupportSectionState extends State<_SupportSection> {
           },
         ),
       ],
+    );
+  }
+}
+
+/// Developer tools: try either side of Momentum Plus without buying it.
+class _PretendPlusTile extends StatelessWidget {
+  const _PretendPlusTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final plus = get<PlusStore>();
+    return ListenableBuilder(
+      listenable: plus,
+      builder: (context, _) => SettingsSwitchTile(
+        tileKey: const Key('pretendPlus'),
+        icon: CupertinoIcons.star_circle_fill,
+        iconColor: HabitColor.orange.color,
+        title: 'Pretend Plus is bought',
+        subtitle: 'Unlocks sync without buying (Developer builds only)',
+        value: plus.pretending,
+        onChanged: plus.setPretending,
+      ),
     );
   }
 }

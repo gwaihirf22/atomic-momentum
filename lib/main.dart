@@ -9,6 +9,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/injection/injection_container.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/plus_store.dart';
 import 'core/theme/ios_theme.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/intro/intro_screen.dart';
@@ -35,6 +36,10 @@ void main() async {
   await initializeDependencies();
 
   await DeviceKind.load();
+  // Purchases waiting from last time finish, and Plus bought on another
+  // device of this Apple ID is found
+  final plus = get<PlusStore>();
+  if (plus is PlatformPlusStore) plus.start();
   // Portrait only on phones (matches Info.plist); iPads and tablets turn
   // any way (Info.plist's ~ipad list), and the layout follows the window
   if (!isTabletScreen()) SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);

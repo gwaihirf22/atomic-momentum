@@ -157,6 +157,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(settings.weeklyReview, isFalse);
     expect(time, findsNothing, reason: 'no time without the notification');
+    await tester.ensureVisible(find.byKey(const Key('weeklyReviewSwitch')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('weeklyReviewSwitch')));
     await tester.pumpAndSettle();
     expect(settings.weeklyReview, isTrue);
