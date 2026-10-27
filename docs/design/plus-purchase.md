@@ -2,7 +2,7 @@
 
 *Planned with Paul on October 26, 2026; built after the iPad version. Both ship together as 1.1 (`plus` branch).*
 
-**Built (October 26, 2026):** `PlusStore`, the Plus page, Settings → Momentum Plus with sync behind it, Apple tips in Say thanks outside the US, the Developer switch and `ios/Runner/Momentum.storekit`; 2069 tests pass. **This round:** Plus and tips working end to end, tested on the simulator (`ios/Runner/Momentum.storekit`, running from Xcode) and on TestFlight (sandbox). The name stays Momentum Plus. **Left for 1.1's finish:** the weekly-review mention, the listing's "No in-app purchases" line, the privacy policy's paragraphs on sync and purchases, and the App Review notes. The rest of 1.1 (the Apple Watch, icons and themes, the year in review, Health insights, Shortcuts) is in the strategy's roadmap.
+**Built (October 26, 2026):** `PlusStore`, the Plus page, Settings → Momentum Plus with sync behind it, Apple tips in Say thanks outside the US, the Developer switch and `ios/Runner/Momentum.storekit`; 2069 tests pass. **This round:** Plus and tips working end to end, tested on the simulator (`ios/Runner/Momentum.storekit`, running from Xcode) and on TestFlight (sandbox). The name stays Momentum Plus. **Since (October 26, overnight):** the weekly-review mention (`PlusMention`), 1.1 drafts of the listing, the privacy policy's paragraphs on sync and purchases, and the App Review notes (`docs/store/`), and three Plus features: the year in review, Health insights, and Siri and Shortcuts. **Designed, waiting on Paul:** the Apple Watch ([watch.md](watch.md)) and new icons and themes ([icons-themes.md](icons-themes.md)).
 
 ## Context
 Sync works between Paul's iPhone and iPad (2026-10-26), but only in builds with Developer tools. To ship it, and to test through TestFlight on his second iPhone, the app needs the Plus purchase.
@@ -65,8 +65,8 @@ Everything goes on the `plus` branch.
 ## The Plus page (`lib/screens/plus_screen.dart`, opened from Settings, the Sync switch and the mention)
 - **What's in it:**
   - "Momentum Plus" and one line: "One purchase, yours for good, shared with your family."
-  - **Now:** Sync with iCloud (iPhone and iPad).
-  - **Coming:** new icons and themes, a year in review, Health insights, Shortcuts, Apple Watch.
+  - **Now:** Sync with iCloud (iPhone and iPad), a year in review, Health insights, Siri and Shortcuts.
+  - **Coming next:** Apple Watch, new icons and themes.
   - **The promise:** "Nothing that's free today will ever cost money. Buy once, get everything that comes."
   - The **"Get Plus · $1.99"** button, with the price from the App Store.
   - **Outside the US, once Plus is yours:** "Want to give more?", with the three tips.

@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/injection/injection_container.dart';
@@ -95,7 +94,7 @@ class _PlusMentionState extends State<PlusMention> {
           CupertinoButton(
             key: const Key('plusMentionClose'),
             padding: EdgeInsets.zero,
-            minSize: 32,
+            minimumSize: const Size(32, 32),
             onPressed: () => setState(() => _dismissed = true),
             child: Icon(CupertinoIcons.xmark, size: 18, color: palette.textSecondary, semanticLabel: 'Not now'),
           ),

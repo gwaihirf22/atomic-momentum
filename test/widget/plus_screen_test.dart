@@ -68,8 +68,11 @@ void main() {
   testWidgets('says what it is, what\'s coming, the price, and the promise', (tester) async {
     await pump(tester);
     expect(find.text(r'Get Plus · $1.99'), findsOneWidget);
-    expect(find.text('Sync with iCloud'), findsOneWidget);
-    for (final coming in ['Apple Watch', 'New icons and themes', 'A year in review', 'Health insights', 'Siri and Shortcuts']) {
+    for (final now in ['Sync with iCloud', 'A year in review', 'Health insights', 'Siri and Shortcuts']) {
+      expect(find.text(now), findsOneWidget);
+    }
+    expect(find.text('COMING NEXT').evaluate().isNotEmpty || find.text('Coming next').evaluate().isNotEmpty, isTrue);
+    for (final coming in ['Apple Watch', 'New icons and themes']) {
       expect(find.text(coming), findsOneWidget);
     }
     expect(find.textContaining('Nothing that\'s free today will ever cost money'), findsOneWidget);

@@ -152,24 +152,23 @@ class _PlusScreenState extends State<PlusScreen> {
       SettingsSection(
         header: 'Now',
         children: [
-          SettingsTile(
-            icon: CupertinoIcons.cloud_fill,
-            iconColor: HabitColor.blue.color,
-            title: 'Sync with iCloud',
-            subtitle: 'Your habits on your iPhone and iPad, kept in your own iCloud',
-          ),
+          for (final (icon, color, title, subtitle) in [
+            (CupertinoIcons.cloud_fill, HabitColor.blue, 'Sync with iCloud',
+                'Your habits on your iPhone and iPad, kept in your own iCloud'),
+            (CupertinoIcons.sparkles, HabitColor.amber, 'A year in review', 'Your year so far, on Insights'),
+            (CupertinoIcons.heart_fill, HabitColor.red, 'Health insights', 'How sleep and steps shape your habits'),
+            (CupertinoIcons.mic_fill, HabitColor.purple, 'Siri and Shortcuts', 'Log a habit without opening the app'),
+          ])
+            SettingsTile(icon: icon, iconColor: color.color, title: title, subtitle: subtitle),
         ],
       ),
       SettingsSection(
-        header: 'Coming in 1.1',
+        header: 'Coming next',
         footer: "Nothing that's free today will ever cost money. Buy once, get everything that comes.",
         children: [
           for (final (icon, color, title, subtitle) in [
             (CupertinoIcons.time, HabitColor.orange, 'Apple Watch', 'Log and see your rings from your wrist'),
             (CupertinoIcons.paintbrush_fill, HabitColor.pink, 'New icons and themes', 'More ways to make it yours'),
-            (CupertinoIcons.sparkles, HabitColor.amber, 'A year in review', 'Your year, ready for December 31'),
-            (CupertinoIcons.heart_fill, HabitColor.red, 'Health insights', 'How sleep and steps shape your habits'),
-            (CupertinoIcons.mic_fill, HabitColor.purple, 'Siri and Shortcuts', 'Log a habit without opening the app'),
           ])
             SettingsTile(icon: icon, iconColor: color.color, title: title, subtitle: subtitle),
         ],
