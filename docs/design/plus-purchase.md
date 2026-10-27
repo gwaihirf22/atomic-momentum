@@ -2,6 +2,8 @@
 
 *Planned with Paul on October 26, 2026; built after the iPad version. Both ship together as 1.1 (`plus` branch).*
 
+**This round (October 26, 2026):** Plus and tips working end to end, tested on the simulator (`ios/Runner/Momentum.storekit`, running from Xcode) and on TestFlight (sandbox). The name stays Momentum Plus. **Left for 1.1's finish:** the weekly-review mention, the listing's "No in-app purchases" line, the privacy policy's paragraphs on sync and purchases, and the App Review notes. The rest of 1.1 (the Apple Watch, icons and themes, the year in review, Health insights, Shortcuts) is in the strategy's roadmap.
+
 ## Context
 Sync works between Paul's iPhone and iPad (2026-10-26), but only in builds with Developer tools. To ship it, and to test through TestFlight on his second iPhone, the app needs the Plus purchase.
 

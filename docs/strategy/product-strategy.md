@@ -89,10 +89,10 @@ These are expected from top apps but aren't the reason someone switches:
   - routines when they come, the iPad app, backup and export of your own data, and an app lock (privacy never costs money).
 - **No ads and no subscriptions.**
 - **Momentum Plus,** a one-time purchase (a non-consumable in-app purchase, with Family Sharing on):
-  - **The price** is set in App Store Connect and Google Play, somewhere between $0.99 and $2.99 (Paul's call).
+  - **The price** is $1.99 (Paul, 2026-10-26), set in App Store Connect (and Google Play later).
   - **Buyers get every later addition** at no extra cost: "buy once, get everything that comes".
   - **In it first:** sync between your own devices (iCloud, and Google Drive on Android; [../design/sync.md](../design/sync.md)).
-  - **Later:** new app icons and themes; a year in review (ready for its first December 31); Health insights worked out on the phone ("on days you sleep 7 hours, you keep 82% of your habits"); Siri and Shortcuts; the Apple Watch app.
+  - **Coming in 1.1:** new app icons and themes; a year in review (ready for its first December 31); Health insights worked out on the phone ("on days you sleep 7 hours, you keep 82% of your habits"); Siri and Shortcuts; the Apple Watch app.
   - **Maybe:** extra notification sounds; custom date ranges and habit comparisons in Insights; photo day notes.
   - **Built** with the official `in_app_purchase` plugin, not RevenueCat, so there's no third party seeing purchases and the privacy label stays "Data Not Collected". Restore Purchases is required.
   - **A purchase belongs to its store:** one made on an iPhone doesn't unlock Android, and the other way round.
@@ -101,7 +101,7 @@ These are expected from top apps but aren't the reason someone switches:
   - **US users only.** As of October 2026 both stores allow a link to an outside payment page in the United States: Apple through guideline 3.1.1(a), "These entitlements are not required for developers to include buttons, external links, or other calls to action in their United States storefront apps"; Google Play while its US court order stands, until November 2027 as reported.
   - **Elsewhere it's hidden.** Both stores forbid such links in other countries: Apple wants tips as in-app purchases, and Google Play allows outside donations only to registered charities (AnkiDroid was flagged over a donation link in September 2026). So the row hides itself outside the US.
   - **The page:** buymeacoffee.com/paulblake (live 2026-10-21), Paul's page for all his apps (Momentum, Lion Tails, Neighborly, Loom). An empty `AppLinks.coffee` would hide the row.
-- **Later, if wanted:** in-app tips for other countries (consumable purchases), easy to add once Plus has brought in-app purchases.
+- **In-app tips outside the US** ($0.99 / $2.99 / $4.99, consumables, plain thank-yous that don't unlock Plus; decided 2026-10-26), in Say thanks where the coffee link doesn't show. **Plus is $1.99.**
 
 ## 3. Platform: stay on Flutter
 
@@ -134,9 +134,9 @@ The `swift` branch and its worktree (see CLAUDE.md, "Branches and Worktrees") st
 | Phase | Contents, in order |
 |---|---|
 | **v1: App Store and Google Play** | 1. Momentum score and never miss twice (done). 2. Smart reminders (done): on by default, counting down to when a habit is due, with per-habit control. 3. Two-minute version (done). 4. Statistics: year heatmap, two-minute days and achievements (done, with Insights and sharing); rewards done as freezes and vacation mode; and the weekly review (done). 5. Onboarding tutorial that teaches the method (tours and How to, built). 6. Store readiness (done: submitted for App Review 2026-10-21, see [../store/README.md](../store/README.md)). |
-| **v1.x** | 1. **Momentum Plus with sync** (iCloud on iPhone and iPad; the iPad app, a full iPad design, built first: [../design/ipad.md](../design/ipad.md); the purchase: [../design/plus-purchase.md](../design/plus-purchase.md); Google Drive on Android; on the `plus` branch, see [../design/sync.md](../design/sync.md)). 2. Habit stacking. 3. Routines with timers (Live Activity on iOS, ongoing notification on Android). 4. Tips outside the US, if wanted (in-app purchases). |
-| **Plus, later** | New app icons and themes, the year in review (by December 31), Health insights, Siri and Shortcuts, the Apple Watch app. Maybe: extra sounds, custom ranges and comparisons, photo day notes. |
-| **v2** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)), Apple Watch (in Plus). Sync moved to v1.x with Plus. Logging from Apple Health was brought forward and is done. |
+| **1.1** (on `plus`; docket set 2026-10-26) | **Momentum Plus**: sync between your devices (iCloud; [../design/sync.md](../design/sync.md)), the iPad app with a full iPad design ([../design/ipad.md](../design/ipad.md)), the purchase and in-app tips outside the US ([../design/plus-purchase.md](../design/plus-purchase.md)), the **Apple Watch app**, new app icons and themes, the year in review (by December 31), Health insights, Siri and Shortcuts. Google Drive sync on Android when the Android release resumes. |
+| **After 1.1** | Habit stacking. Routines with timers (Live Activity on iOS, ongoing notification on Android). Maybe, in Plus: extra sounds, custom ranges and comparisons, photo day notes. |
+| **Done early** | Widgets (home screen, lock screen, StandBy; Paul moved these up before launch on October 18, see [../future-improvements.md](../future-improvements.md)). Logging from Apple Health. |
 
 Every feature ships with tests, as with everything so far.
 
