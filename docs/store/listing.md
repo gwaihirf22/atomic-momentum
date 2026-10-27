@@ -71,6 +71,7 @@ habit,tracker,streak,routine,goals,daily,two minute rule,quit,reminder,widget,he
   - **Health or wellness topics: Yes** (habits, Apple Health). Medical or treatment information: None (no advice or diagnosis).
   - Unrestricted web access: No (the links open fixed pages in Safari). User-generated content: No (your own quotes stay on the phone).
   - There's no user-generated content shared with others, no web browsing and no chat.
+  - **Social media capabilities: No** (Apple's question since July 2026: redistributing, amplifying or interacting with user-generated content through a feed). Share cards go out through iOS's share sheet to other apps, and sync (1.1) is only between the person's own devices.
   - The "Buy me a coffee" link opens Safari and isn't a purchase in the app.
 - **Price:** Free. No in-app purchases.
 
