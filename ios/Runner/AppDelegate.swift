@@ -13,6 +13,7 @@ import UIKit
     // Sync and Health while the app isn't on screen (BackgroundRun in CloudSync.swift)
     CloudSync.shared.startIfOn()
     BackgroundRun.registerRefresh()
+    BackgroundRun.testAtLaunch()
     NotificationCenter.default.addObserver(
       forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
     ) { _ in BackgroundRun.scheduleRefresh() }

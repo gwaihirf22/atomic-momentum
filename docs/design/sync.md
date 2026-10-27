@@ -4,6 +4,8 @@
 
 **Status (2026-10-25, `plus`):** steps 1–5 below are built and tested (the merge, recording and applying, `SyncService`, Settings → Sync behind Developer tools, `CloudSync.swift`). **Tried on real iCloud 2026-10-26** (development environment): Paul's iPhone 15 Pro Max and iPad Pro, both installed with `FULL_ENTITLEMENTS=1 DEV_TOOLS=1 tool/install_on_iphone.sh <device id>`; turning sync on on the iPad brought all 8 habits over (the iPad then asked for its own Health permission, as each device reads its own Health). TestFlight and App Store builds use CloudKit's production environment, separate from development: deploy the schema there (CloudKit Console → Deploy Schema Changes) before a TestFlight build with sync. Left for later: offering to combine same-named habits when joining, and the Keychain copy of the device id (restores are caught by comparing records instead).
 
+**2026-10-27, three devices** (the 15 Pro Max, the iPhone 12 Pro and the iPad): their saved data showed taps syncing to all three, but **Health-linked habits disagreeing** (Walk 9,371 steps on the phone, 4,745 on the others). Joining had sent every day of a Health-linked habit to iCloud, Health's numbers included, and the merge then put that record above each device's own Health. Fixed (see "Health-linked habits"), along with **sync in the background** (see "In the background"), a **sync log** (Settings → Momentum Plus → Sync log, Developer tools only: what went up, what came down and from which device, what woke it, what went wrong; `SyncLog`, `sync_log_v1`, the last 200 lines, this device only), fetched buckets kept until they're saved (`acknowledge`), and sync waiting for the habits to load before merging. Any number of devices works the same way: each writes only its own records, and every device merges all of them.
+
 ## The decision
 
 Momentum syncs **within each platform's own cloud**, with no accounts and no server:
@@ -87,6 +89,8 @@ A day of a habit filled in from Health is a **register**, shown as the higher of
 
 **Known limit:** each device only knows its own Health writes, so on the iPad − on a glass logged on the iPhone says "That came from Apple Health. Change it there."
 
+**Health's own numbers never go up** (fixed 2026-10-27): joining sends a Health-linked day only where more was logged than this device's Health shows (`HealthSyncService.healthOn`: Health's number less the app's own writes, null for days a sync doesn't read). Days from before the habit was linked are the person's own and go; days between linking and Health's week stay on the device. Building a habit from the merge (`HabitRecords.build`, `healthOn`) shows a logged day as the higher of the record and this device's Health, and a day only Health filled in as this device's own number. Each device also clears its own day records that hold no more than its Health (`SyncService._healthOnly`, an empty register), but only while they're the day's latest, so another device's later log stands.
+
 ### Start dates and unit changes
 
 - **"Counts from" and "Start from"** set the habit's start date, a register. Days before it are left out when merging, unless a day was logged *after* the start was set; then the start moves back to it, as logging before the start does today. So "Counts from, clear earlier" on one device beats an older offline log on the other.
@@ -107,12 +111,24 @@ Deleting a habit records a final marker. A habit that's merely missing (Develope
 - **The iCloud account changes,** or another device deletes the copy in iCloud: sync stops and asks to be turned on again. It never re-uploads by itself.
 - **Versions:** each bucket carries a schema version. A device running an older version that finds newer records pauses sync and asks to update the app, rather than misreading them.
 
+### In the background
+
+Changes from another device arrive with Momentum in the background or closed (built 2026-10-27):
+- **The iCloud engine starts at launch** when sync is on (`CloudSync.startIfOn`; Dart says on or off with `setActive`, a file in the CloudSync folder), so iCloud's pushes are heard before Flutter starts.
+- **A push** (`AppDelegate`'s `didReceiveRemoteNotification`) fetches into the inbox, then has Dart bring it in (`BackgroundRun.push`), answered within 20 seconds.
+- **iOS's background refresh** (`BGAppRefreshTask` `com.paulblake.momentum.refresh`, asked for half an hour after the app leaves the screen; iOS decides when) does the same and reads Health too, so reminders for what's already done stop and the widgets show the day.
+- **With the app running** (even suspended), its own Dart does the work (`BackgroundRefresh.listen`, channel `momentum/background`). **With it closed**, `BackgroundRun` starts an engine of its own at `backgroundMain` (`lib/core/background/background_refresh.dart`): it loads the habits (planning notifications afresh), reads Health without ever asking for access (`HealthSyncService.mayAsk`), syncs, writes the widgets and ends. The app, opening meanwhile, waits for it in `main()` (`BackgroundRefresh.waitForBackground`, at most 4 seconds, then the engine is ended), so two copies never write at once. Ended halfway, nothing is lost: buckets stay in the inbox until Dart says they're saved (`CloudTransport.acknowledge`).
+- **Tried on a simulator** (2026-10-27) with a debug build launched with `-momentumBackgroundTest YES`, which starts a background run at launch: the engine loaded the habits, ran and ended in about 1.5 s, the app waited for it and then opened, and no habit changed. A simulator can't schedule background refresh or take silent pushes, so those two triggers are tried on a real device (Console, subsystem `com.paulblake.momentum`, category `background`).
+- **Known edge:** a notification tapped in the seconds a background engine runs may open the app without going to its habit (both engines' notification plugins hear the tap).
+
 ### Buckets
 
 Records travel in **buckets**, plain JSON (a month is about 2 KB, so not compressed), each owned by one device:
 - `<device>~h~<habit>`: a habit's settings and deletion;
 - `<device>~d~<habit>~<yyyy-MM>`: that habit's days and marks for a month;
 - `<device>~meta`: everything else.
+
+The native inbox keeps fetched buckets until Dart has saved them (`acknowledge`, after `SyncStore.save`): an app stopped between a pull and its save gets them again.
 
 A tap rewrites one small month bucket. A year is about 150 buckets per device, each far under CloudKit's 1 MB per record.
 

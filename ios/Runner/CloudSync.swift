@@ -2,6 +2,7 @@ import BackgroundTasks
 import CloudKit
 import Flutter
 import UIKit
+import os
 
 /// iCloud sync for Momentum Plus (docs/design/sync.md). The Dart side does
 /// all the merging; this only keeps "buckets" (JSON, each owned by one
@@ -463,6 +464,15 @@ enum SyncChannel {
 enum BackgroundRun {
   static let refreshTask = "com.paulblake.momentum.refresh"
 
+  /// What happened, for Console (never anything about the person's habits).
+  private static let log = Logger(subsystem: "com.paulblake.momentum", category: "background")
+
+  private static func trace(_ message: String) {
+    log.notice("\(message, privacy: .public)")
+    // Debug builds: in the simulator's log too (Logger's lines don't show there)
+    if _isDebugAssertConfiguration() { NSLog("BackgroundRun: %@", message) }
+  }
+
   /// The app's own engine, while it's alive (iOS can let a window go and
   /// keep the process), and its channel.
   private static weak var appEngine: FlutterEngine?
@@ -507,18 +517,29 @@ enum BackgroundRun {
   /// Fetches what iCloud has (with sync on), then has Dart bring it in;
   /// [completion] says whether there was anything.
   static func push(_ reason: String, completion: @escaping (Bool) -> Void) {
+    trace("Push (\(reason))")
+    // Once, on the main thread, and in time: iOS allows about 30 seconds
+    var answered = false
+    let answer: (Bool) -> Void = { ok in
+      onMain {
+        guard !answered else { return }
+        answered = true
+        completion(ok)
+      }
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 20) { answer(false) }
     Task {
       let waiting = await CloudSync.shared.fetchInBackground()
       // A test refresh runs anyway; a push only when something came
-      guard waiting || reason == "refresh" else { return completion(false) }
-      run(reason, completion: completion)
+      guard waiting || reason == "refresh" else { return answer(false) }
+      run(reason, completion: answer)
     }
   }
 
   /// Has Dart do the work for [reason]: the app's own, or the background
   /// engine's. [completion] runs once, on the main thread.
   static func run(_ reason: String, completion: @escaping (Bool) -> Void) {
-    DispatchQueue.main.async {
+    onMain {
       var answered = false
       let answer: (Bool) -> Void = { ok in
         guard !answered else { return }
@@ -526,6 +547,7 @@ enum BackgroundRun {
         completion(ok)
       }
       if appIsRunning, let channel = appChannel {
+        trace("Run (\(reason)) in the app")
         channel.invokeMethod("run", arguments: reason) { reply in
           DispatchQueue.main.async { answer((reply as? Bool) ?? false) }
         }
@@ -538,7 +560,17 @@ enum BackgroundRun {
     }
   }
 
+  /// [body] on the main thread: now if this is it, else next.
+  private static func onMain(_ body: @escaping () -> Void) {
+    if Thread.isMainThread {
+      body()
+    } else {
+      DispatchQueue.main.async(execute: body)
+    }
+  }
+
   private static func start(_ reason: String) {
+    trace("Run (\(reason)) in a background engine")
     self.reason = reason
     let engine = FlutterEngine(name: "momentum.background", project: nil, allowHeadlessExecution: true)
     let library = "package:atomic_momentum/core/background/background_refresh.dart"
@@ -573,6 +605,7 @@ enum BackgroundRun {
   /// up) and tells whoever was waiting.
   private static func end(_ ok: Bool) {
     if let running = engine {
+      trace("Background engine ended (\(ok ? "done" : "stopped"))")
       engine = nil
       started += 1
       SyncChannel.backgroundEnded()
@@ -591,6 +624,7 @@ enum BackgroundRun {
   /// run that takes longer than [openWait].
   private static func waitIdle(_ go: @escaping () -> Void) {
     guard engine != nil else { return go() }
+    trace("The app opens: waiting for the background engine")
     opening.append(go)
     let run = started
     DispatchQueue.main.asyncAfter(deadline: .now() + openWait) {
@@ -603,6 +637,7 @@ enum BackgroundRun {
   /// At launch (iOS wants it registered before launch ends).
   static func registerRefresh() {
     BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTask, using: nil) { task in
+      trace("Background refresh")
       scheduleRefresh()
       var completed = false
       let complete: (Bool) -> Void = { ok in
@@ -627,7 +662,20 @@ enum BackgroundRun {
   static func scheduleRefresh() {
     let request = BGAppRefreshTaskRequest(identifier: refreshTask)
     request.earliestBeginDate = Date(timeIntervalSinceNow: 30 * 60)
-    try? BGTaskScheduler.shared.submit(request)
+    do {
+      try BGTaskScheduler.shared.submit(request)
+    } catch {
+      trace("Couldn't ask for a background refresh: \(error.localizedDescription)")
+    }
+  }
+
+  /// Debug builds launched with `-momentumBackgroundTest YES` start a
+  /// background run at launch, before the app's engine: the background
+  /// engine, and the app waiting for it, tried on a simulator.
+  static func testAtLaunch() {
+    guard _isDebugAssertConfiguration(), UserDefaults.standard.bool(forKey: "momentumBackgroundTest") else { return }
+    trace("Test: a background run at launch")
+    run("refresh") { ok in trace("Test run finished: \(ok)") }
   }
 }
 

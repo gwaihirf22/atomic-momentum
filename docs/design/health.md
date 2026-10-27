@@ -104,7 +104,7 @@ Paul asked (2026-10-18) to verify Health pedantically and expand it. He chose: w
    - **Alcoholic drinks:** the `health` package lacks them, so this needs a native channel (`ios/Runner/HealthExtras.swift`, iPhone only).
    - **Lift the `!habit.isBreak` check** on the habit page's Health offer (`_HealthOffer` in `habit_detail_screen.dart`) and in `HealthSection`.
    - **Check-ins** add "Apple Health shows 2 drinks today", keeping d9's vacation skip in `ReminderPlanner` (paused days, and everything while `isOnVacation`).
-4. **Background updates** (riskiest; prototype first):
+4. **Background updates** (riskiest; prototype first). **Partly built 2026-10-27** with background sync: iOS's background refresh now starts the headless entry point this item describes (`backgroundMain`, `BackgroundRun` in CloudSync.swift; see sync.md, "In the background"), which reads Health (never asking for access there), saves, and plans reminders and warnings again. It's opportunistic (iOS decides when). Still to do: `HKObserverQuery` background delivery (its entitlement changes the signing profile), Android, and the setting.
    - **iOS:** `HKObserverQuery` with `enableBackgroundDelivery` for each linked type, plus the entitlement `com.apple.developer.healthkit.background-delivery`. It wakes a headless Flutter entry point (`@pragma('vm:entry-point')`) that runs the sync and save, then the reminder and warning resync, so a finished goal silences today's reminder.
    - **Android:** a `workmanager` task about every 15 minutes, since Health Connect has no push.
    - **Settings:** "Update in the background".

@@ -39,6 +39,11 @@ class HealthSyncService {
   bool? accessAllowed;
   bool _accessChecked = false;
 
+  /// Whether a sync may ask for access (iPhone shows its sheet for what was
+  /// never asked). Never in the background, where no one can answer it:
+  /// there it reads what's already allowed.
+  bool mayAsk = true;
+
   static Set<HealthMetric> _reads(List<Habit> linked) => {for (final h in linked) h.health!.metric};
   static Set<HealthMetric> _writesFor(List<Habit> linked) =>
       {for (final h in linked) if (h.health!.logsToHealth) h.health!.metric};
@@ -241,7 +246,7 @@ class HealthSyncService {
     if (!available) return const {};
     // Once a launch: ask about anything never asked (a new phone, a
     // reinstall); on Android, find out whether it's allowed
-    if (!_accessChecked) {
+    if (!_accessChecked && mayAsk) {
       _accessChecked = true;
       accessAllowed = await source.ensureAccess(read: _reads(linked), write: _writesFor(linked));
     }

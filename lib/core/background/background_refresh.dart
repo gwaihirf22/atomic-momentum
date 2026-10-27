@@ -13,6 +13,7 @@ import '../../presentation/providers/theme_provider.dart';
 import '../injection/injection_container.dart';
 import '../logging/log.dart';
 import '../services/freeze_bank.dart';
+import '../services/health_sync_service.dart';
 import '../services/home_widget_bridge.dart';
 import '../sync/sync_service.dart';
 
@@ -71,7 +72,9 @@ class BackgroundRefresh {
       if (call.method != 'run') return null;
       final reason = call.arguments as String? ?? refresh;
       sync?.log.add('Woke in the background ($reason)');
+      logWarning('Background: $reason, in the app');
       await run(habits: habits, sync: sync, reason: reason);
+      logWarning('Background: $reason done');
       // The widgets write a moment after a change (HomeWidgetSync.delay)
       await Future<void>.delayed(HomeWidgetSync.delay * 2);
       return true;
@@ -88,9 +91,13 @@ Future<void> backgroundMain() async {
   var done = false;
   try {
     final reason = await BackgroundRefresh.channel.invokeMethod<String>('reason') ?? BackgroundRefresh.refresh;
+    logWarning('Background: $reason, in its own engine');
     await initializeDependencies();
+    // No one is there to answer Health's permission sheet
+    get<HealthSyncService>().mayAsk = false;
     final habits = get<HabitProvider>();
     await habits.loadHabits();
+    logWarning('Background: ${habits.habits.length} habits loaded');
     final sync = get<SyncService>()
       ..attach(
         habits: habits,
@@ -113,6 +120,7 @@ Future<void> backgroundMain() async {
     await widgets.write();
     widgets.dispose();
     done = true;
+    logWarning('Background: $reason done, ${habits.habits.length} habits');
   } catch (e) {
     logWarning('Background refresh failed: $e');
   } finally {
